@@ -49,12 +49,12 @@ export function SignupGuestForm({ className, ...props }) {
             <Image
               src="/logo/stem-name 2.png"
               alt="CSL USE Logo"
-              width={260}
+              width={220}
               height={24}
             />
           </Link>
           <p className="text-muted-foreground text-sm py-4">
-            Create your account to get started
+            Create your account to get started <i>as Guest</i>
           </p>
         </div>
 
@@ -64,6 +64,8 @@ export function SignupGuestForm({ className, ...props }) {
             id="fullname"
             name="fullName"
             type="text"
+            placeholder="Masukkan nama lengkap"
+            className="placeholder:text-muted-foreground/50"
             required
             value={formData.fullName}
             onChange={handleChange}
@@ -76,6 +78,8 @@ export function SignupGuestForm({ className, ...props }) {
             id="email"
             name="email"
             type="email"
+            placeholder="Masukkan email"
+            className="placeholder:text-muted-foreground/50"
             required
             value={formData.email}
             onChange={handleChange}
@@ -89,10 +93,11 @@ export function SignupGuestForm({ className, ...props }) {
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
+              placeholder="Buat password"
               required
               value={formData.password}
               onChange={handleChange}
-              className="pr-10"
+              className="pr-10 placeholder:text-muted-foreground/50"
             />
             <button
               type="button"
@@ -117,10 +122,11 @@ export function SignupGuestForm({ className, ...props }) {
               id="confirm-password"
               name="confirmPassword"
               type={showConfirmPassword ? "text" : "password"}
+              placeholder="Ulangi password"
               required
               value={formData.confirmPassword}
               onChange={handleChange}
-              className="pr-10"
+              className="pr-10 placeholder:text-muted-foreground/50"
             />
             <button
               type="button"

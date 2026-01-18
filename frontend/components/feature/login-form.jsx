@@ -39,7 +39,7 @@ export function LoginForm({ className, ...props }) {
             <Image
               src="/logo/stem-name 2.png"
               alt="CSL USE Logo"
-              width={260}
+              width={220}
               height={24}
             />
           </Link>
@@ -54,6 +54,8 @@ export function LoginForm({ className, ...props }) {
             id="username"
             name="username"
             type="text"
+            placeholder="nim@student.prasetyamulya.ac.id"
+            className="placeholder:text-muted-foreground/50"
             required
             value={formData.username}
             onChange={handleChange}
@@ -75,10 +77,11 @@ export function LoginForm({ className, ...props }) {
               id="password"
               name="password"
               type={showPassword ? "text" : "password"}
+              placeholder="Masukkan password"
               required
               value={formData.password}
               onChange={handleChange}
-              className="pr-10"
+              className="pr-10 placeholder:text-muted-foreground/50"
             />
             <button
               type="button"

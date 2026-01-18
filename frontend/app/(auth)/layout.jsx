@@ -6,7 +6,7 @@ export default function AuthLayout({ children }) {
           <div className="w-full max-w-xs">{children}</div>
         </div>
         <footer className="text-center text-xs text-muted-foreground">
-          2026 © STEM Universitas Prasetiya Mulya
+          2026 © CSL STEM Prasetiya Mulya
         </footer>
       </div>
       <div className="bg-red-800 relative hidden lg:block">
