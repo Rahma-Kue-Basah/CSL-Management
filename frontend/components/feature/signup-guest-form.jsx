@@ -12,12 +12,30 @@ import {
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { API_AUTH_LOGIN_GOOGLE } from "@/constants/api";
 import { useSignupGuest } from "@/hooks/use-signup-guest";
+import { useState, useEffect } from "react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export function SignupGuestForm({ className, ...props }) {
   const { formData, status, errorMessage, handleChange, handleSubmit } =
     useSignupGuest();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "error" && errorMessage) {
+      toast.error(errorMessage);
+    } else if (status === "success") {
+      toast.success("Registrasi berhasil. Cek email untuk verifikasi akun.");
+      setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+    }
+  }, [status, errorMessage, router]);
 
   return (
     <form
@@ -66,42 +84,69 @@ export function SignupGuestForm({ className, ...props }) {
 
         <Field>
           <FieldLabel htmlFor="password">Password</FieldLabel>
-          <Input
-            id="password"
-            name="password"
-            type="password"
-            required
-            value={formData.password}
-            onChange={handleChange}
-          />
+          <div className="relative">
+            <Input
+              id="password"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              required
+              value={formData.password}
+              onChange={handleChange}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </Field>
 
         <Field>
           <FieldLabel htmlFor="confirm-password">
             Konfirmasi Password
           </FieldLabel>
-          <Input
-            id="confirm-password"
-            name="confirmPassword"
-            type="password"
-            required
-            value={formData.confirmPassword}
-            onChange={handleChange}
-          />
+          <div className="relative">
+            <Input
+              id="confirm-password"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showConfirmPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </Field>
 
         <Field>
           <Button type="submit" disabled={status === "submitting"}>
-            {status === "submitting" ? "Mendaftar..." : "Sign Up"}
+            {status === "submitting" ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Mendaftar...
+              </>
+            ) : (
+              "Sign Up"
+            )}
           </Button>
-          {status === "success" && (
-            <FieldDescription>
-              Registrasi berhasil. Cek email untuk verifikasi akun.
-            </FieldDescription>
-          )}
-          {status === "error" && errorMessage && (
-            <FieldDescription>{errorMessage}</FieldDescription>
-          )}
         </Field>
 
         <FieldSeparator>Or</FieldSeparator>

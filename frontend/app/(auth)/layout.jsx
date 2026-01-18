@@ -5,13 +5,16 @@ export default function AuthLayout({ children }) {
         <div className="flex flex-1 items-center justify-center">
           <div className="w-full max-w-xs">{children}</div>
         </div>
+        <footer className="text-center text-xs text-muted-foreground">
+          2026 © STEM Universitas Prasetiya Mulya
+        </footer>
       </div>
-      <div className="bg-muted relative hidden lg:block">
-        <img
+      <div className="bg-red-800 relative hidden lg:block">
+        {/* <img
           src="/placeholder.svg"
           alt="Image"
           className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-        />
+        /> */}
       </div>
     </div>
   );

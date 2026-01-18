@@ -46,6 +46,8 @@ class CustomLoginSerializer(BaseLoginSerializer):
                 msg = 'User account is disabled.'
                 raise serializers.ValidationError(msg, code='authorization')
 
+            # Set backend attribute for multiple authentication backends
+            user.backend = 'django.contrib.auth.backends.ModelBackend'
             attrs['user'] = user
             return attrs
 
