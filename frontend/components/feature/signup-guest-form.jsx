@@ -1,3 +1,5 @@
+"use client";
+
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,10 +12,19 @@ import {
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import Link from "next/link";
+import { API_AUTH_LOGIN_GOOGLE } from "@/constants/api";
+import { useSignupGuest } from "@/hooks/use-signup-guest";
 
 export function SignupGuestForm({ className, ...props }) {
+  const { formData, status, errorMessage, handleChange, handleSubmit } =
+    useSignupGuest();
+
   return (
-    <form className={cn("flex flex-col gap-6", className)} {...props}>
+    <form
+      className={cn("flex flex-col gap-6", className)}
+      onSubmit={handleSubmit}
+      {...props}
+    >
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <Link href="/" className="flex items-center">
@@ -31,34 +42,76 @@ export function SignupGuestForm({ className, ...props }) {
 
         <Field>
           <FieldLabel htmlFor="fullname">Nama Lengkap</FieldLabel>
-          <Input id="fullname" type="text" required />
+          <Input
+            id="fullname"
+            name="fullName"
+            type="text"
+            required
+            value={formData.fullName}
+            onChange={handleChange}
+          />
         </Field>
 
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
-          <Input id="email" type="email" required />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            required
+            value={formData.email}
+            onChange={handleChange}
+          />
         </Field>
 
         <Field>
           <FieldLabel htmlFor="password">Password</FieldLabel>
-          <Input id="password" type="password" required />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            required
+            value={formData.password}
+            onChange={handleChange}
+          />
         </Field>
 
         <Field>
           <FieldLabel htmlFor="confirm-password">
             Konfirmasi Password
           </FieldLabel>
-          <Input id="confirm-password" type="password" required />
+          <Input
+            id="confirm-password"
+            name="confirmPassword"
+            type="password"
+            required
+            value={formData.confirmPassword}
+            onChange={handleChange}
+          />
         </Field>
 
         <Field>
-          <Button type="submit">Sign Up</Button>
+          <Button type="submit" disabled={status === "submitting"}>
+            {status === "submitting" ? "Mendaftar..." : "Sign Up"}
+          </Button>
+          {status === "success" && (
+            <FieldDescription>
+              Registrasi berhasil. Cek email untuk verifikasi akun.
+            </FieldDescription>
+          )}
+          {status === "error" && errorMessage && (
+            <FieldDescription>{errorMessage}</FieldDescription>
+          )}
         </Field>
 
         <FieldSeparator>Or</FieldSeparator>
 
         <Field>
-          <Button variant="outline" type="button">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => (window.location.href = API_AUTH_LOGIN_GOOGLE)}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -83,7 +136,8 @@ export function SignupGuestForm({ className, ...props }) {
             </svg>
             Continue with Google
           </Button>
-
+        </Field>
+        <Field>
           <FieldDescription className="text-center">
             Already have an account?{" "}
             <Link href="/login" className="underline underline-offset-4">

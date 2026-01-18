@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useEmailVerification } from "@/hooks/use-email-verification";
 import {
   Field,
   FieldDescription,
@@ -17,8 +18,18 @@ export default function VerifyEmailPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const email = searchParams?.get("email") || "";
-  const [status, setStatus] = useState("verifying"); // verifying, success, error
-  const [resendStatus, setResendStatus] = useState("idle"); // idle, sending, sent, error
+
+  const handleVerified = useCallback(() => {
+    setTimeout(() => {
+      router.push("/login");
+    }, 3000);
+  }, [router]);
+
+  const { status, resendStatus, resendVerification } = useEmailVerification({
+    key: params.key,
+    email,
+    onVerified: handleVerified,
+  });
 
   const getDisplayMessage = () => {
     if (status === "success") {
@@ -31,80 +42,6 @@ export default function VerifyEmailPage() {
 
     return "Mohon tunggu sebentar.";
   };
-
-  const resendVerification = async () => {
-    if (!email) {
-      setResendStatus("error");
-      return;
-    }
-
-    setResendStatus("sending");
-
-    try {
-      const response = await fetch(
-        "http://localhost:8000/api/auth/registration/resend-email/",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email }),
-        },
-      );
-
-      if (response.ok) {
-        setResendStatus("sent");
-      } else {
-        setResendStatus("error");
-      }
-    } catch (error) {
-      setResendStatus("error");
-      console.error("Resend verification error:", error);
-    }
-  };
-
-  useEffect(() => {
-    const verifyEmail = async () => {
-      const key = params.key;
-
-      if (!key) {
-        setStatus("error");
-        return;
-      }
-
-      // Decode URL-encoded key
-      const decodedKey = decodeURIComponent(key);
-
-      try {
-        const response = await fetch(
-          "http://localhost:8000/api/auth/registration/verify-email/",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({ key: decodedKey }),
-          },
-        );
-
-        if (response.ok) {
-          setStatus("success");
-
-          // Redirect to login after 3 seconds
-          setTimeout(() => {
-            router.push("/login");
-          }, 3000);
-        } else {
-          setStatus("error");
-        }
-      } catch (error) {
-        setStatus("error");
-        console.error("Verification error:", error);
-      }
-    };
-
-    verifyEmail();
-  }, [params.key, router]);
 
   return (
     <div className="flex flex-col gap-6">

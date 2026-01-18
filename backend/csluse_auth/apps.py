@@ -53,6 +53,8 @@ class CsluseAuthConfig(AppConfig):
     name = 'csluse_auth'
 
     def ready(self):
+        # Ensure signal handlers are registered
+        from . import signals  # noqa: F401
         from django.db.models.signals import post_migrate
 
         post_migrate.connect(_ensure_google_socialapp, dispatch_uid="ensure_google_socialapp")

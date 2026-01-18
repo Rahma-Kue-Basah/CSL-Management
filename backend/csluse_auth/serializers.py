@@ -1,7 +1,13 @@
+import re
+
+from allauth.account.adapter import get_adapter
+from dj_rest_auth.registration.serializers import RegisterSerializer
 from dj_rest_auth.serializers import LoginSerializer as BaseLoginSerializer
+from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
-from rest_framework import serializers
+
+from .models import Profile
 
 User = get_user_model()
 
@@ -59,3 +65,42 @@ class CustomLoginSerializer(BaseLoginSerializer):
         if user.check_password(password) and user.is_active:
             return user
         return None
+
+
+def _generate_unique_username(base):
+    sanitized = re.sub(r"[^a-zA-Z0-9_]+", "", base).lower()
+    username = sanitized or "user"
+
+    if not User.objects.filter(username=username).exists():
+        return username
+
+    suffix = 1
+    while True:
+        candidate = f"{username}{suffix}"
+        if not User.objects.filter(username=candidate).exists():
+            return candidate
+        suffix += 1
+
+
+class CustomRegisterSerializer(RegisterSerializer):
+    full_name = serializers.CharField(write_only=True)
+
+    def get_cleaned_data(self):
+        data = super().get_cleaned_data()
+        full_name = self.validated_data.get("full_name", "").strip()
+        email = data.get("email") or self.validated_data.get("email") or ""
+        base = email.split("@")[0] if email else "user"
+
+        data["username"] = _generate_unique_username(base)
+        data["full_name"] = full_name
+        return data
+
+    def save(self, request):
+        user = super().save(request)
+        full_name = self.get_cleaned_data().get("full_name")
+        if full_name:
+            Profile.objects.update_or_create(
+                user=user,
+                defaults={"full_name": full_name},
+            )
+        return user
