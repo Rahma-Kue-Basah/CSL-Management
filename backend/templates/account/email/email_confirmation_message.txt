@@ -1,0 +1,13 @@
+Halo {{ user.email }},
+
+Terima kasih sudah mendaftar di {{ current_site }}.
+Silakan konfirmasi email kamu lewat tautan berikut:
+{{ activate_url }}
+
+Jika kamu tidak merasa mendaftar, abaikan email ini.
+
+Terima kasih,
+
+CSL USE
+School of Science, Technology, Engineering, Mathematic
+Universitas Prasetiya Mulya
