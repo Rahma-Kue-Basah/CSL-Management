@@ -72,6 +72,7 @@ export function useLogin() {
         router.push("/dashboard");
       } else {
         setStatus("error");
+        setFormData({ username: "", password: "" });
         // Handle error messages dari backend
         if (data.non_field_errors) {
           setErrorMessage(data.non_field_errors[0]);
@@ -83,6 +84,7 @@ export function useLogin() {
       }
     } catch (error) {
       setStatus("error");
+      setFormData({ username: "", password: "" });
       setErrorMessage("Terjadi kesalahan jaringan. Coba lagi.");
       console.error("Login error:", error);
     }

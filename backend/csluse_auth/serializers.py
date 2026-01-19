@@ -6,6 +6,8 @@ from dj_rest_auth.serializers import LoginSerializer as BaseLoginSerializer
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
+from allauth.account.models import EmailAddress
+
 
 from .models import Profile
 
@@ -45,6 +47,9 @@ class CustomLoginSerializer(BaseLoginSerializer):
             if not user.is_active:
                 msg = 'User account is disabled.'
                 raise serializers.ValidationError(msg, code='authorization')
+            
+            if not EmailAddress.objects.filter(user=user, verified=True).exists():
+                raise serializers.ValidationError({'detail': 'Email belum diverifikasi', 'code': 'email_not_verified'})
 
             # Set backend attribute for multiple authentication backends
             user.backend = 'django.contrib.auth.backends.ModelBackend'
@@ -106,3 +111,4 @@ class CustomRegisterSerializer(RegisterSerializer):
                 defaults={"full_name": full_name},
             )
         return user
+

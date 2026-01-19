@@ -27,9 +27,7 @@ export function SignupGuestForm({ className, ...props }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "error" && errorMessage) {
-      toast.error(errorMessage);
-    } else if (status === "success") {
+    if (status === "success") {
       toast.success("Registrasi berhasil. Cek email untuk verifikasi akun.");
       setTimeout(() => {
         router.push("/login");
@@ -155,6 +153,14 @@ export function SignupGuestForm({ className, ...props }) {
           </Button>
         </Field>
 
+        {status === "error" && (
+          <Field>
+            <FieldDescription className="text-red-600 border border-red-200 bg-red-50 rounded-md px-3 py-2">
+              {errorMessage}
+            </FieldDescription>
+          </Field>
+        )}
+
         <FieldSeparator>Or</FieldSeparator>
 
         <Field>
@@ -189,7 +195,7 @@ export function SignupGuestForm({ className, ...props }) {
           </Button>
         </Field>
         <Field>
-          <FieldDescription className="text-center">
+          <FieldDescription className="text-center border border-muted bg-muted/40 rounded-md px-3 py-2">
             Already have an account?{" "}
             <Link href="/login" className="underline underline-offset-4">
               Login

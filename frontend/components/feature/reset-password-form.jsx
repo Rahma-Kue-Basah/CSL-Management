@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,21 +13,24 @@ import {
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
 import Link from "next/link";
-import { useLogin } from "@/hooks/use-login";
-import { useState, useEffect } from "react";
+import { useResetPassword } from "@/hooks/use-reset-password";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 
-export function LoginForm({ className, ...props }) {
+export function ResetPasswordForm({ uid, token, className, ...props }) {
+  const router = useRouter();
   const { formData, status, errorMessage, handleChange, handleSubmit } =
-    useLogin();
+    useResetPassword({ uid, token });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
-    if (status === "error" && errorMessage) {
-      toast.error(errorMessage);
+    if (status === "success") {
+      const timeoutId = setTimeout(() => {
+        router.push("/login");
+      }, 1500);
+      return () => clearTimeout(timeoutId);
     }
-  }, [status, errorMessage]);
+  }, [status, router]);
 
   return (
     <form
@@ -44,44 +49,22 @@ export function LoginForm({ className, ...props }) {
             />
           </Link>
           <p className="text-muted-foreground text-sm py-4">
-            Enter your email below to login to your account
+            Buat password baru untuk akun Anda
           </p>
         </div>
 
         <Field>
-          <FieldLabel htmlFor="username">Email</FieldLabel>
-          <Input
-            id="username"
-            name="username"
-            type="text"
-            placeholder="nim@student.prasetyamulya.ac.id"
-            className="placeholder:text-muted-foreground/50"
-            required
-            value={formData.username}
-            onChange={handleChange}
-          />
-        </Field>
-
-        <Field>
-          <div className="flex items-center">
-            <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Link
-              href="/forgot-password"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
-            >
-              Forgot your password?
-            </Link>
-          </div>
+          <FieldLabel htmlFor="new-password">Password Baru</FieldLabel>
           <div className="relative">
             <Input
-              id="password"
-              name="password"
+              id="new-password"
+              name="newPassword"
               type={showPassword ? "text" : "password"}
-              placeholder="Masukkan password"
+              placeholder="Buat password baru"
+              className="pr-10 placeholder:text-muted-foreground/60"
               required
-              value={formData.password}
+              value={formData.newPassword}
               onChange={handleChange}
-              className="pr-10 placeholder:text-muted-foreground/50"
             />
             <button
               type="button"
@@ -89,6 +72,35 @@ export function LoginForm({ className, ...props }) {
               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
             >
               {showPassword ? (
+                <EyeOff className="h-5 w-5" />
+              ) : (
+                <Eye className="h-5 w-5" />
+              )}
+            </button>
+          </div>
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="confirm-password">
+            Konfirmasi Password Baru
+          </FieldLabel>
+          <div className="relative">
+            <Input
+              id="confirm-password"
+              name="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              placeholder="Ulangi password baru"
+              className="pr-10 placeholder:text-muted-foreground/60"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showConfirmPassword ? (
                 <EyeOff className="h-5 w-5" />
               ) : (
                 <Eye className="h-5 w-5" />
@@ -105,25 +117,25 @@ export function LoginForm({ className, ...props }) {
           </Field>
         )}
 
+        {status === "success" && (
+          <Field>
+            <FieldDescription className="text-green-600 border border-green-200 bg-green-50 rounded-md px-3 py-2">
+              Password berhasil direset. Mengarahkan ke login...
+            </FieldDescription>
+          </Field>
+        )}
+
         <Field>
           <Button type="submit" disabled={status === "submitting"}>
             {status === "submitting" ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Logging in...
+                Menyimpan...
               </>
             ) : (
-              "Login"
+              "Reset Password"
             )}
           </Button>
-        </Field>
-        <Field>
-          <FieldDescription className="text-center border border-muted bg-muted/40 rounded-md px-3 py-2">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup-guest" className="underline underline-offset-4">
-              Sign up as Guest
-            </Link>
-          </FieldDescription>
         </Field>
       </FieldGroup>
     </form>

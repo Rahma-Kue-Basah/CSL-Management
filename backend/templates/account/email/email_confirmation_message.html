@@ -1,0 +1,60 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Konfirmasi Email</title>
+  </head>
+  <body style="margin:0; padding:0; background-color:#f6f7f9; font-family:Arial, sans-serif; color:#0f172a;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+      <tr>
+        <td align="center" style="padding:32px 16px;">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="560" style="max-width:560px; background:#ffffff; border-radius:12px; box-shadow:0 8px 24px rgba(15,23,42,0.08);">
+            <tr>
+              <td style="padding:32px 32px 16px;">
+                {% if backend_url %}
+                <img src="{{ backend_url }}/static/logo/stem-name%202.png" alt="CSL USE" style="height:32px; display:block;" />
+                {% elif frontend_url %}
+                <img src="{{ frontend_url }}/logo/stem-name%202.png" alt="CSL USE" style="height:32px; display:block;" />
+                {% endif %}
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 16px; font-size:18px; font-weight:600; color:#E30614;">
+                Konfirmasi email Anda
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 24px; font-size:14px; line-height:1.6;">
+                Halo {{ user.email }},
+                <br /><br />
+                Terima kasih sudah mendaftar di {{ current_site }}.
+                Silakan konfirmasi email Anda lewat tombol berikut.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 24px;">
+                <a href="{{ activate_url }}" style="display:inline-block; background:#E30614; color:#ffffff; text-decoration:none; padding:12px 20px; border-radius:8px; font-weight:600;">
+                  Konfirmasi Email
+                </a>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 24px; font-size:12px; color:#64748b;">
+                Jika Anda tidak merasa mendaftar, abaikan email ini.
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 32px 32px; font-size:12px; color:#64748b;">
+                Terima kasih,<br />
+                CSL USE<br />
+                School of Science, Technology, Engineering, Mathematic<br />
+                Universitas Prasetiya Mulya
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
