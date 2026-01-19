@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function AuthLayout({ children }) {
   return (
     <div className="grid min-h-svh lg:grid-cols-2 font-sans">
@@ -6,7 +8,10 @@ export default function AuthLayout({ children }) {
           <div className="w-full max-w-xs">{children}</div>
         </div>
         <footer className="text-center text-xs text-muted-foreground">
-          2026 © CSL STEM Prasetiya Mulya
+          2026 © 
+          <Link href="/" className="hover:underline ml-1">
+          CSL STEM Prasetiya Mulya
+          </Link>
         </footer>
       </div>
       <div className="bg-red-800 relative hidden lg:block">

@@ -31,7 +31,10 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-default-key')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+    'localhost',
+    'csluse-stg.azizrahmad.com',
+]
 
 # Application definition
 
@@ -153,6 +156,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://127.0.0.1:3000',
     'http://127.0.0.1:8000',
     'http://0.0.0.0:8000',
+    'https://csluse-stg.azizrahmad.com',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -175,6 +179,7 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:8000',
+    'https://csluse-stg.azizrahmad.com/',
 ]
 
 
@@ -200,7 +205,7 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 
 # Social login (Google) redirect targets
-LOGIN_REDIRECT_URL = os.getenv('LOGIN_REDIRECT_URL', 'http://localhost:3000/')
+LOGIN_REDIRECT_URL = os.getenv('LOGIN_REDIRECT_URL', 'http://localhost:3000/dashboard/')
 LOGOUT_REDIRECT_URL = os.getenv('LOGOUT_REDIRECT_URL', 'http://localhost:3000/')
 
 SOCIALACCOUNT_PROVIDERS = {

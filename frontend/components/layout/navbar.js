@@ -28,6 +28,7 @@ export default function Navbar() {
               alt="CSL USE Logo"
               width={160}
               height={32}
+              style={{ width: "auto", height: "auto" }}
             />
           </Link>
 

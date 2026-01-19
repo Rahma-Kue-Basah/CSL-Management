@@ -53,6 +53,7 @@ export default function VerifyEmailPage() {
               alt="CSL USE Logo"
               width={260}
               height={24}
+              style={{ width: "auto", height: "auto" }}
             />
           </Link>
           <p className="text-muted-foreground text-sm py-4">
