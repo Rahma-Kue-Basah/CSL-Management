@@ -2,25 +2,26 @@ import os
 
 from rest_framework import viewsets
 from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import IsAuthenticated
 
-from .models import S3Upload
-from .serializers import S3UploadSerializer
+from .models import Image
+from .serializers import ImageSerializer
 
 
-class S3UploadViewSet(viewsets.ModelViewSet):
-    queryset = S3Upload.objects.all().order_by('-created_at')
-    serializer_class = S3UploadSerializer
-    permission_classes = [AllowAny]
+class ImageViewSet(viewsets.ModelViewSet):
+    
+    queryset = Image.objects.all().order_by('-created_at')
+    serializer_class = ImageSerializer
+    permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
     def perform_create(self, serializer):
-        uploaded_file = self.request.FILES.get('file')
-        file_name = os.path.basename(uploaded_file.name) if uploaded_file else ''
+        uploaded_image = self.request.FILES.get('image')
+        name = os.path.basename(uploaded_image.name) if uploaded_image else ''
         instance = serializer.save(
-            uploaded_by=self.request.user if self.request.user.is_authenticated else None,
-            file_name=file_name,
+            created_by=self.request.user if self.request.user.is_authenticated else None,
+            name=name,
         )
-        if instance.file and not instance.url:
-            instance.url = instance.file.url
+        if instance.image and not instance.url:
+            instance.url = instance.image.url
             instance.save(update_fields=['url'])

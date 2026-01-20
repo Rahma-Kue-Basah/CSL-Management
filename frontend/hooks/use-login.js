@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { API_AUTH_LOGIN } from "@/constants/api";
+import { API_AUTH_LOGIN, API_AUTH_PROFILE } from "@/constants/api";
 import Cookies from "js-cookie";
 
 export function useLogin() {
@@ -66,6 +66,26 @@ export function useLogin() {
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
           });
+        }
+
+        try {
+          const profileResponse = await fetch(API_AUTH_PROFILE, {
+            credentials: "include",
+          });
+          if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            const hasAccessToken = Boolean(
+              Cookies.get("access_token") || Cookies.get("access"),
+            );
+            const nextProfile = {
+              name: profileData.full_name || profileData.username || "User",
+              email: profileData.email || "",
+              canResetPassword: hasAccessToken,
+            };
+            window.localStorage.setItem("profile", JSON.stringify(nextProfile));
+          }
+        } catch (error) {
+          console.error("Profile fetch after login error:", error);
         }
 
         // Redirect ke dashboard

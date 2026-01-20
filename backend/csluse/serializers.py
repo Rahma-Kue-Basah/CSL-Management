@@ -1,40 +1,24 @@
 from rest_framework import serializers
 
-from .models import S3Upload
+from .models import Image
 
-
-class S3UploadSerializer(serializers.ModelSerializer):
-    file = serializers.FileField(write_only=True)
-    file_url = serializers.SerializerMethodField()
-    uploaded_by = serializers.SerializerMethodField()
-    uploaded_by_id = serializers.IntegerField(read_only=True)
+class ImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(write_only=True)
+    url = serializers.SerializerMethodField()
 
     class Meta:
-        model = S3Upload
+        model = Image
         fields = [
-            'id',
-            'file',
-            'file_name',
-            'file_url',
-            'uploaded_by',
-            'uploaded_by_id',
-            'created_at',
+            'image',
+            'name',
+            'url',
         ]
         read_only_fields = [
-            'id',
-            'file_name',
-            'file_url',
-            'uploaded_by',
-            'uploaded_by_id',
-            'created_at',
+            'name',
+            'url',
         ]
 
-    def get_file_url(self, obj):
+    def get_url(self, obj):
         if obj.url:
             return obj.url
-        return obj.file.url if obj.file else None
-
-    def get_uploaded_by(self, obj):
-        if not obj.uploaded_by:
-            return None
-        return obj.uploaded_by.get_username()
+        return obj.image.url if obj.image else None

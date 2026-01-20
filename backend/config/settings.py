@@ -33,7 +33,9 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     'localhost',
+    '127.0.0.1',
     'csluse-stg.azizrahmad.com',
+    'csluse-api.azizrahmad.com',
 ]
 
 # Application definition
@@ -92,6 +94,16 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
+    'DEFAULT_THROTTLE_CLASSES': (
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ),
+
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '10/minute',
+        'user': '60/minute',
+    },
 }
 
 ROOT_URLCONF = 'config.urls'
@@ -179,7 +191,8 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:3000',
     'http://127.0.0.1:8000',
-    'https://csluse-stg.azizrahmad.com/',
+    'https://csluse-stg.azizrahmad.com',
+    'https://csluse-api.azizrahmad.com',
 ]
 
 
@@ -199,7 +212,6 @@ FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
 ACCOUNT_ADAPTER = 'csluse_auth.adapters.CustomAccountAdapter'
 ACCOUNT_EMAIL_VERIFICATION = 'mandatory'
 ACCOUNT_LOGIN_METHODS = {'email', 'username'}
-ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True

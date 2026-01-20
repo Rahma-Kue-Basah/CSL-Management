@@ -47,9 +47,49 @@ export function useSignupGuest() {
 
       if (response.ok) {
         setStatus("success");
+
+        // Reset form setelah registrasi berhasil
+        setFormData({
+          fullName: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
       } else {
         setStatus("error");
-        setErrorMessage("Gagal membuat akun. Periksa data dan coba lagi.");
+
+        let message = "Gagal membuat akun. Periksa data dan coba lagi.";
+
+        try {
+          const data = await response.json();
+
+          // Tangani kasus email/username (akun) sudah terdaftar
+          const isEmailDuplicate =
+            data?.email &&
+            Array.isArray(data.email) &&
+            data.email.includes(
+              "User is already registered with this e-mail address."
+            );
+
+          const isUsernameDuplicate =
+            data?.username &&
+            Array.isArray(data.username) &&
+            data.username.includes(
+              "A user with that username already exists."
+            );
+
+          if (isEmailDuplicate || isUsernameDuplicate) {
+            message = "Akun sudah terdaftar. Harap login.";
+          } else if (typeof data.detail === "string") {
+              message = data.detail;
+          } else if (typeof data.non_field_errors?.[0] === "string") {
+            message = data.non_field_errors[0];
+          }
+        } catch (parseError) {
+          console.error("Failed to parse signup error response:", parseError);
+        }
+
+        setErrorMessage(message);
       }
     } catch (error) {
       setStatus("error");

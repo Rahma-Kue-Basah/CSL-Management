@@ -1,9 +1,7 @@
 "use client";
 
 import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+import { useSidebar } from "@/components/ui/sidebar";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
@@ -15,102 +13,18 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-  useSidebar,
-} from "@/components/ui/sidebar";
-import { API_AUTH_LOGOUT, API_AUTH_PROFILE } from "@/constants/api";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
+import { useLoadProfile } from "@/hooks/use-load-profile";
+import { useLogout } from "@/hooks/use-logout";
 
 export function NavUser({ user }) {
   const { isMobile } = useSidebar();
-  const router = useRouter();
-  const [profile, setProfile] = useState(() => {
-    if (typeof window === "undefined") {
-      return {
-        name: user?.name || "User",
-        email: user?.email || "",
-        canResetPassword: true,
-      };
-    }
-
-    try {
-      const cached = window.localStorage.getItem("profile");
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        return {
-          name: parsed.name || user?.name || "User",
-          email: parsed.email || user?.email || "",
-          canResetPassword:
-            typeof parsed.canResetPassword === "boolean"
-              ? parsed.canResetPassword
-              : true,
-        };
-      }
-    } catch (error) {
-      console.error("Profile cache error:", error);
-    }
-
-    return {
-      name: user?.name || "User",
-      email: user?.email || "",
-      canResetPassword: true,
-    };
-  });
-
-  useEffect(() => {
-    const loadProfile = async () => {
-      try {
-        const response = await fetch(API_AUTH_PROFILE, {
-          credentials: "include",
-        });
-        if (!response.ok) return;
-        const data = await response.json();
-        const nextProfile = {
-          name: data.full_name || data.username || "User",
-          email: data.email || "",
-          canResetPassword:
-            typeof data.can_reset_password === "boolean"
-              ? data.can_reset_password
-              : true,
-        };
-        setProfile(nextProfile);
-        window.localStorage.setItem("profile", JSON.stringify(nextProfile));
-      } catch (error) {
-        console.error("Profile fetch error:", error);
-      }
-    };
-
-    loadProfile();
-  }, []);
-
-  const initials = useMemo(() => {
-    const source = profile.name || profile.email || "U";
-    const parts = source.trim().split(/\s+/);
-    const letters = parts.slice(0, 2).map((part) => part[0]);
-    return letters.join("").toUpperCase() || "U";
-  }, [profile.name, profile.email]);
+  const { profile, initials } = useLoadProfile(user);
+  const { handleLogout } = useLogout();
 
   const handleResetPassword = () => {
-    router.push("/forgot-password");
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch(API_AUTH_LOGOUT, {
-        method: "GET",
-        credentials: "include",
-      });
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
-      Cookies.remove("access_token");
-      Cookies.remove("refresh_token");
-      Cookies.remove("access");
-      Cookies.remove("refresh");
-      Cookies.remove("user");
-      router.push("/login");
+    if (typeof window !== "undefined") {
+      window.location.href = "/forgot-password";
     }
   };
 

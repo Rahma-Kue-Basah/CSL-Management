@@ -1,20 +1,27 @@
-from django.conf import settings
 from django.db import models
+from django.contrib.auth import get_user_model
+import uuid
 
+class BaseModel(models.Model):
+    id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
-class S3Upload(models.Model):
-    file = models.FileField(upload_to='uploads/')
-    file_name = models.CharField(max_length=255, blank=True)
+    class Meta:
+        abstract = True
+
+class Image(BaseModel):
+    image = models.ImageField(upload_to='images/')
+    name = models.CharField(max_length=255, blank=True)
     url = models.URLField(blank=True)
-    uploaded_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
+
+    created_by = models.ForeignKey(
+        get_user_model(),
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        on_delete=models.SET_NULL,
-        related_name='s3_uploads',
+        related_name='images_created_by',
     )
-    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        uploader = self.uploaded_by.get_username() if self.uploaded_by else "anonymous"
-        return f"{self.id} - {self.file_name or self.file.name} ({uploader})"
+        return f"{self.name or self.image.name} - {self.created_by.email if self.created_by else 'unknown'} - {self.created_at}"

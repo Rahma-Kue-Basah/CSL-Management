@@ -17,15 +17,6 @@ import { API_AUTH_LOGIN_GOOGLE } from "@/constants/api";
 import { useSignupGuest } from "@/hooks/use-signup-guest";
 import { useState, useEffect } from "react";
 import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 export function SignupGuestForm({ className, ...props }) {
   const { formData, status, errorMessage, handleChange, handleSubmit } =
@@ -38,8 +29,13 @@ export function SignupGuestForm({ className, ...props }) {
   useEffect(() => {
     if (status === "success") {
       setSuccessOpen(true);
+      const timer = setTimeout(() => {
+        router.push("/login");
+      }, 3000);
+
+      return () => clearTimeout(timer);
     }
-  }, [status, errorMessage, router]);
+  }, [status, router]);
 
   return (
     <form
@@ -47,25 +43,6 @@ export function SignupGuestForm({ className, ...props }) {
       onSubmit={handleSubmit}
       {...props}
     >
-      <AlertDialog open={successOpen} onOpenChange={setSuccessOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader className="items-center text-center">
-            <div className="flex size-12 items-center justify-center rounded-full bg-green-100">
-              <CheckCircle2 className="size-6 text-green-600" />
-            </div>
-            <AlertDialogTitle>Registrasi Berhasil!</AlertDialogTitle>
-            <AlertDialogDescription>
-              Silakan cek email untuk verifikasi, lalu
-              login.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-center">
-            <AlertDialogAction onClick={() => router.push("/login")}>
-              Ke Halaman Login
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <Link href="/" className="flex items-center">
@@ -178,6 +155,17 @@ export function SignupGuestForm({ className, ...props }) {
             )}
           </Button>
         </Field>
+
+        {status === "success" && successOpen && (
+          <Field>
+            <FieldDescription className="flex items-center gap-2 text-green-700 border border-green-200 bg-green-50 rounded-md px-3 py-2">
+              <CheckCircle2 className="h-5 w-5" />
+              <span>
+                Berhasil registrasi. Silakan cek email Anda untuk verifikasi.
+              </span>
+            </FieldDescription>
+          </Field>
+        )}
 
         {status === "error" && (
           <Field>

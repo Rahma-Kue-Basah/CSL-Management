@@ -1,10 +1,8 @@
 import re
 
-from allauth.account.adapter import get_adapter
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from dj_rest_auth.serializers import LoginSerializer as BaseLoginSerializer
 from rest_framework import serializers
-from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from allauth.account.models import EmailAddress
 
@@ -105,10 +103,23 @@ class CustomRegisterSerializer(RegisterSerializer):
     def save(self, request):
         user = super().save(request)
         full_name = self.get_cleaned_data().get("full_name")
+        defaults = {
+            "user_type": "external",
+        }
         if full_name:
-            Profile.objects.update_or_create(
-                user=user,
-                defaults={"full_name": full_name},
-            )
+            defaults["full_name"] = full_name
+
+        Profile.objects.update_or_create(
+            user=user,
+            defaults=defaults,
+        )
         return user
 
+
+class ProfileSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email", read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = ("email", "full_name")
+        read_only_fields = ("email", )

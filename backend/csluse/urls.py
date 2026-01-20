@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 
 
 router = DefaultRouter()
-router.register(r'upload-test', views.S3UploadViewSet, basename='upload-test')
+router.register(r'images', views.ImageViewSet, basename='images')
 
 urlpatterns = [
     path('', include(router.urls)),

@@ -1,5 +1,5 @@
 from django.contrib import admin
 
-from .models import S3Upload
+from .models import Image
 
-admin.site.register(S3Upload)
+admin.site.register(Image)
