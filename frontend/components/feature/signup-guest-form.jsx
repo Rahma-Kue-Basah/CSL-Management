@@ -16,22 +16,28 @@ import { useRouter } from "next/navigation";
 import { API_AUTH_LOGIN_GOOGLE } from "@/constants/api";
 import { useSignupGuest } from "@/hooks/use-signup-guest";
 import { useState, useEffect } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { toast } from "sonner";
+import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export function SignupGuestForm({ className, ...props }) {
   const { formData, status, errorMessage, handleChange, handleSubmit } =
     useSignupGuest();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
     if (status === "success") {
-      toast.success("Registrasi berhasil. Cek email untuk verifikasi akun.");
-      setTimeout(() => {
-        router.push("/login");
-      }, 1500);
+      setSuccessOpen(true);
     }
   }, [status, errorMessage, router]);
 
@@ -41,6 +47,25 @@ export function SignupGuestForm({ className, ...props }) {
       onSubmit={handleSubmit}
       {...props}
     >
+      <AlertDialog open={successOpen} onOpenChange={setSuccessOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader className="items-center text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-green-100">
+              <CheckCircle2 className="size-6 text-green-600" />
+            </div>
+            <AlertDialogTitle>Registrasi Berhasil!</AlertDialogTitle>
+            <AlertDialogDescription>
+              Silakan cek email untuk verifikasi, lalu
+              login.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="sm:justify-center">
+            <AlertDialogAction onClick={() => router.push("/login")}>
+              Ke Halaman Login
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       <FieldGroup>
         <div className="flex flex-col items-center gap-1 text-center">
           <Link href="/" className="flex items-center">
