@@ -112,6 +112,7 @@ REST_AUTH = {
     'TOKEN_MODEL': None,
     'JWT_AUTH_COOKIE': 'access',
     'JWT_AUTH_REFRESH_COOKIE': 'refresh',
+    'JWT_AUTH_COOKIE_DOMAIN': os.getenv('JWT_AUTH_COOKIE_DOMAIN'),
 
     'JWT_AUTH_SECURE': True,
     'JWT_AUTH_HTTPONLY': True,
