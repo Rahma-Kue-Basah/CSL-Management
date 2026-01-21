@@ -14,7 +14,7 @@ from dj_rest_auth.jwt_auth import set_jwt_cookies
 from dj_rest_auth.utils import jwt_encode
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
+from rest_framework.generics import GenericAPIView
 
 from .models import Profile
 from .serializers import ProfileSerializer
@@ -77,7 +77,8 @@ class GoogleOAuth2CallbackView(OAuth2CallbackView):
 google_oauth2_callback = GoogleOAuth2CallbackView.adapter_view(GoogleOAuth2Adapter)
 
 
-class ProfileView(APIView):
+class ProfileView(GenericAPIView):
+    serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get(self, request):

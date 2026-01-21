@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from typing import Optional
+
 from .models import Image
 
 class ImageSerializer(serializers.ModelSerializer):
@@ -18,7 +20,7 @@ class ImageSerializer(serializers.ModelSerializer):
             'url',
         ]
 
-    def get_url(self, obj):
+    def get_url(self, obj) -> Optional[str]:
         if obj.url:
             return obj.url
         return obj.image.url if obj.image else None
