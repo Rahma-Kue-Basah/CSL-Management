@@ -32,8 +32,6 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-default-key')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
-    'localhost',
-    '127.0.0.1',
     'csluse-stg.azizrahmad.com',
     'csluse-api.azizrahmad.com',
     "3.27.77.155",
@@ -114,9 +112,11 @@ REST_AUTH = {
     'TOKEN_MODEL': None,
     'JWT_AUTH_COOKIE': 'access',
     'JWT_AUTH_REFRESH_COOKIE': 'refresh',
-    'JWT_AUTH_SECURE': False,
+
+    'JWT_AUTH_SECURE': True,
     'JWT_AUTH_HTTPONLY': True,
-    'JWT_AUTH_SAMESITE': 'Lax',
+    'JWT_AUTH_SAMESITE': None,
+
     'LOGIN_SERIALIZER': 'csluse_auth.serializers.CustomLoginSerializer',
     'REGISTER_SERIALIZER': 'csluse_auth.serializers.CustomRegisterSerializer',
 }
@@ -153,23 +153,25 @@ ACCOUNT_LOGOUT_METHODS = ['GET', 'POST']
 
 # Session and Cookie Configuration
 
+SESSION_COOKIE_DOMAIN = ".azizrahmad.com"
+CSRF_COOKIE_DOMAIN = ".azizrahmad.com"
+
+# === COOKIE SECURITY (production) ===
+SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = True
+
 SESSION_COOKIE_AGE = 36000
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
-SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = 'Lax'
 
-CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = None
+
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_COOKIE_SAMESITE = None
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-    'http://localhost:8000',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:8000',
-    'http://0.0.0.0:8000',
     'https://csluse-stg.azizrahmad.com',
+    'https://csluse-api.azizrahmad.com',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -188,10 +190,6 @@ CORS_ALLOW_HEADERS = [
 
 # CSRF Configuration
 CSRF_TRUSTED_ORIGINS = [
-    'http://localhost:3000',
-    'http://localhost:8000',
-    'http://127.0.0.1:3000',
-    'http://127.0.0.1:8000',
     'https://csluse-stg.azizrahmad.com',
     'https://csluse-api.azizrahmad.com',
 ]
@@ -207,7 +205,7 @@ CSRF_EXEMPT_URLS = [
 SITE_ID = 1
 
 # Frontend URL for email links
-FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+FRONTEND_URL = os.getenv('FRONTEND_URL')
 
 # Django Allauth Configuration
 ACCOUNT_ADAPTER = 'csluse_auth.adapters.CustomAccountAdapter'
@@ -218,8 +216,8 @@ ACCOUNT_EMAIL_CONFIRMATION_EXPIRE_DAYS = 1
 ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
 
 # Social login (Google) redirect targets
-LOGIN_REDIRECT_URL = os.getenv('LOGIN_REDIRECT_URL', 'http://localhost:3000/dashboard/')
-LOGOUT_REDIRECT_URL = os.getenv('LOGOUT_REDIRECT_URL', 'http://localhost:3000/')
+LOGIN_REDIRECT_URL = os.getenv('LOGIN_REDIRECT_URL')
+LOGOUT_REDIRECT_URL = os.getenv('LOGOUT_REDIRECT_URL')
 
 SOCIALACCOUNT_PROVIDERS = {
     'google': {

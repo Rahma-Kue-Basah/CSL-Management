@@ -8,6 +8,9 @@ def _ensure_google_socialapp(*_, **__):
     client_id = os.getenv("GOOGLE_CLIENT_ID")
     secret = os.getenv("GOOGLE_CLIENT_SECRET")
 
+    site_domain = os.getenv("DJANGO_SITE_DOMAIN", "localhost")
+    site_name = os.getenv("DJANGO_SITE_NAME", site_domain)
+
     if not client_id or not secret:
         return
 
