@@ -2,7 +2,7 @@ from django.conf import settings
 from django.http import HttpResponseRedirect
 from django.urls import include, path
 
-from .views import google_oauth2_callback, ProfileView
+from .views import google_oauth2_callback, ProfileView, EmailVerificationStatusView
 
 def password_reset_confirm_redirect(request, uidb64, token):
     frontend_url = settings.FRONTEND_URL.rstrip("/")
@@ -25,6 +25,11 @@ urlpatterns = [
         'profile/',
         ProfileView.as_view(),
         name='profile',
+    ),
+    path(
+        'registration/check-email/',
+        EmailVerificationStatusView.as_view(),
+        name='email_verification_status',
     ),
     path('', include('dj_rest_auth.urls')),
     path('oauth/', include('allauth.urls')),

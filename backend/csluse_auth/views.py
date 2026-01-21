@@ -12,12 +12,13 @@ from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from allauth.socialaccount.providers.oauth2.views import OAuth2CallbackView
 from dj_rest_auth.jwt_auth import set_jwt_cookies
 from dj_rest_auth.utils import jwt_encode
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 
 from .models import Profile
 from .serializers import ProfileSerializer
+from allauth.account.models import EmailAddress
 
 
 class GoogleOAuth2CallbackView(OAuth2CallbackView):
@@ -92,3 +93,18 @@ class ProfileView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class EmailVerificationStatusView(GenericAPIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        email = (request.data.get("email") or "").strip().lower()
+        if not email:
+            return Response({"detail": "Email required."}, status=400)
+
+        address = EmailAddress.objects.filter(email__iexact=email).first()
+        if not address:
+            return Response({"exists": False, "verified": False})
+
+        return Response({"exists": True, "verified": bool(address.verified)})

@@ -36,6 +36,7 @@ ALLOWED_HOSTS = [
     'csluse-stg.azizrahmad.com',
     'csluse-api.azizrahmad.com',
     "3.27.77.155",
+    "127.0.0.1",
 ]
 
 # Application definition
@@ -177,6 +178,7 @@ if DEBUG:
     CSRF_COOKIE_SAMESITE = "Lax"
 
 CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',
     'https://csluse-stg.azizrahmad.com',
     'https://csluse-api.azizrahmad.com',
 ]

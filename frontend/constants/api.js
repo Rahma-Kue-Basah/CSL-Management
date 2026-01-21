@@ -11,6 +11,7 @@ const API_AUTH_LOGIN_GOOGLE = `${API_AUTH_BASE}/oauth/google/login/`;
 const API_AUTH_PROFILE = `${API_AUTH_BASE}/profile/`;
 const API_AUTH_REGISTER = `${API_AUTH_BASE}/registration/`;
 const API_AUTH_VERIFY_EMAIL = `${API_AUTH_BASE}/registration/verify-email/`;
+const API_AUTH_EMAIL_STATUS = `${API_AUTH_BASE}/registration/check-email/`;
 const API_AUTH_RESEND_VERIFICATION = `${API_AUTH_BASE}/registration/resend-email/`;
 const API_AUTH_PASSWORD_RESET = `${API_AUTH_BASE}/password/reset/`;
 const API_AUTH_PASSWORD_RESET_CONFIRM = `${API_AUTH_BASE}/password/reset/confirm/`;
@@ -24,6 +25,7 @@ export {
   API_AUTH_PROFILE,
   API_AUTH_REGISTER,
   API_AUTH_VERIFY_EMAIL,
+  API_AUTH_EMAIL_STATUS,
   API_AUTH_RESEND_VERIFICATION,
   API_AUTH_PASSWORD_RESET,
   API_AUTH_PASSWORD_RESET_CONFIRM,
