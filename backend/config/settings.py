@@ -32,6 +32,7 @@ SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-default-key')
 DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
+    "localhost",
     'csluse-stg.azizrahmad.com',
     'csluse-api.azizrahmad.com',
     "3.27.77.155",
@@ -82,8 +83,6 @@ AUTHENTICATION_BACKENDS = (
     'allauth.account.auth_backends.AuthenticationBackend',
 )
 
-CORS_ALLOW_ALL_ORIGINS = True
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         # 'rest_framework.authentication.SessionAuthentication',
@@ -115,7 +114,7 @@ REST_AUTH = {
 
     'JWT_AUTH_SECURE': True,
     'JWT_AUTH_HTTPONLY': True,
-    'JWT_AUTH_SAMESITE': None,
+    'JWT_AUTH_SAMESITE': "None",
 
     'LOGIN_SERIALIZER': 'csluse_auth.serializers.CustomLoginSerializer',
     'REGISTER_SERIALIZER': 'csluse_auth.serializers.CustomRegisterSerializer',
@@ -153,6 +152,8 @@ ACCOUNT_LOGOUT_METHODS = ['GET', 'POST']
 
 # Session and Cookie Configuration
 
+
+
 SESSION_COOKIE_DOMAIN = ".azizrahmad.com"
 CSRF_COOKIE_DOMAIN = ".azizrahmad.com"
 
@@ -164,10 +165,16 @@ SESSION_COOKIE_AGE = 36000
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 
 SESSION_COOKIE_HTTPONLY = True
-SESSION_COOKIE_SAMESITE = None
+SESSION_COOKIE_SAMESITE = "None"
 
 CSRF_COOKIE_HTTPONLY = False
-CSRF_COOKIE_SAMESITE = None
+CSRF_COOKIE_SAMESITE = "None"
+
+if DEBUG:
+    SESSION_COOKIE_DOMAIN = None
+    SESSION_COOKIE_SECURE = False
+    SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_SAMESITE = "Lax"
 
 CORS_ALLOWED_ORIGINS = [
     'https://csluse-stg.azizrahmad.com',
@@ -194,12 +201,6 @@ CSRF_TRUSTED_ORIGINS = [
     'https://csluse-api.azizrahmad.com',
 ]
 
-
-
-# Exempt API endpoints dari CSRF
-CSRF_EXEMPT_URLS = [
-    r'^api/',
-]
 
 # Django Sites Framework
 SITE_ID = 1
