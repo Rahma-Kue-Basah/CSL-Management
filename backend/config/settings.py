@@ -290,33 +290,30 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+# STATIC_URL = 'static/'
+# STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # S3 storage (django-storages)
 AWS_ACCESS_KEY_ID = os.getenv('S3_ACCESS_KEY')
 AWS_SECRET_ACCESS_KEY = os.getenv('S3_SECRET_KEY')
 AWS_STORAGE_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
 AWS_S3_REGION_NAME = os.getenv('S3_REGION')
-AWS_S3_CUSTOM_DOMAIN = os.getenv('S3_CUSTOM_DOMAIN')
-AWS_LOCATION = os.getenv('S3_LOCATION')
+
+AWS_LOCATION = (os.getenv("S3_LOCATION") or "").strip("/")
+
 AWS_S3_FILE_OVERWRITE = False
 AWS_QUERYSTRING_AUTH = False
 AWS_DEFAULT_ACL = None
 
-if AWS_STORAGE_BUCKET_NAME:
-    DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
-    location_path = f"{AWS_LOCATION.strip('/')}/" if AWS_LOCATION else ""
-    if AWS_S3_CUSTOM_DOMAIN:
-        MEDIA_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{location_path}"
-    elif AWS_S3_REGION_NAME:
-        MEDIA_URL = (
-            f"https://{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com/{location_path}"
-        )
-    else:
-        MEDIA_URL = (
-            f"https://{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com/{location_path}"
-        )
+AWS_S3_CUSTOM_DOMAIN = (
+    os.getenv("S3_CUSTOM_DOMAIN")
+    or f"{AWS_STORAGE_BUCKET_NAME}.s3.{AWS_S3_REGION_NAME}.amazonaws.com"
+)
+
+_prefix = f"{AWS_LOCATION}/" if AWS_LOCATION else ""
+
+STATIC_URL = f"https://{AWS_S3_CUSTOM_DOMAIN}/{_prefix}static/"
+MEDIA_URL  = f"https://{AWS_S3_CUSTOM_DOMAIN}/{_prefix}media/"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
