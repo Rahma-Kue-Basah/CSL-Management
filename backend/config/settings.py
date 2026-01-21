@@ -36,6 +36,7 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'csluse-stg.azizrahmad.com',
     'csluse-api.azizrahmad.com',
+    "3.27.77.155",
 ]
 
 # Application definition
@@ -306,6 +307,10 @@ USE_TZ = True
 # STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # S3 storage (django-storages)
+
+STATICFILES_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+
 AWS_ACCESS_KEY_ID = os.getenv('S3_ACCESS_KEY')
 AWS_SECRET_ACCESS_KEY = os.getenv('S3_SECRET_KEY')
 AWS_STORAGE_BUCKET_NAME = os.getenv('S3_BUCKET_NAME')
