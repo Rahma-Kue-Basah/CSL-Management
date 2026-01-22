@@ -11,8 +11,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import Image from "next/image";
-import Link from "next/link";
 import { useResetPassword } from "@/hooks/use-reset-password";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
@@ -39,17 +37,10 @@ export function ResetPasswordForm({ uid, token, className, ...props }) {
       {...props}
     >
       <FieldGroup>
-        <div className="flex flex-col items-start gap-2 text-left">
-          <Link href="/" className="flex w-full justify-center">
-            <Image
-              src="/logo/stem-name 2.png"
-              alt="CSL USE Logo"
-              width={220}
-              height={24}
-            />
-          </Link>
+        <div className="flex flex-col items-center text-center gap-2">
+          <h1 className="text-2xl font-semibold">Buat Password Baru</h1>
           <div>
-            <p className="text-muted-foreground text-sm my-2">
+            <p className="text-muted-foreground text-sm">
               Buat password baru untuk akun Anda
             </p>
           </div>

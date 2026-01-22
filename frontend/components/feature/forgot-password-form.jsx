@@ -10,7 +10,6 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import Image from "next/image";
 import Link from "next/link";
 import { useForgotPassword } from "@/hooks/use-forgot-password";
 import { Loader2 } from "lucide-react";
@@ -32,17 +31,10 @@ export function ForgotPasswordForm({ className, ...props }) {
       {...props}
     >
       <FieldGroup>
-        <div className="flex flex-col items-start gap-2 text-left">
-          <Link href="/" className="flex w-full justify-center">
-            <Image
-              src="/logo/stem-name 2.png"
-              alt="CSL USE Logo"
-              width={220}
-              height={24}
-            />
-          </Link>
+        <div className="flex flex-col items-center text-center gap-2">
+          <h1 className="text-2xl font-semibold">Lupa Password</h1>
           <div>
-            <p className="text-muted-foreground text-sm my-2">
+            <p className="text-muted-foreground text-sm">
               Masukkan email untuk menerima link reset password
             </p>
           </div>

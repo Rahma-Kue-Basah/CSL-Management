@@ -1,21 +1,9 @@
+import Image from "next/image";
 import Link from "next/link";
 
 export default function AuthLayout({ children }) {
   return (
-    <div className="relative grid min-h-svh lg:grid-cols-2 font-sans">
-      <div className="flex flex-col gap-6 p-6 md:p-10">
-        <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-sm rounded-3xl border border-white/70 bg-white/80 p-6 backdrop-blur">
-            {children}
-          </div>
-        </div>
-        <footer className="text-center text-xs text-slate-500">
-          2026 ©
-          <Link href="/" className="ml-1">
-            CSL STEM Prasetiya Mulya
-          </Link>
-        </footer>
-      </div>
+    <div className="relative grid min-h-svh lg:grid-cols-[2fr_3fr] font-sans">
       <div className="relative hidden overflow-hidden lg:block">
         <div className="absolute inset-0 bg-[url('/images/building.jpeg')] bg-cover bg-center" />
         {/* <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(124,26,25,0.72)_0%,_rgba(124,26,25,0.45)_55%,_rgba(124,26,25,0.2)_100%)]" /> */}
@@ -31,6 +19,28 @@ export default function AuthLayout({ children }) {
             Aman, cepat, dan terintegrasi dengan layanan kampus.
           </p>
         </div>
+      </div>
+      <div className="flex flex-col gap-6 p-6 md:p-10">
+        <Link href="/">
+          <Image
+            src="/logo/stem-name 2.png"
+            alt="CSL USE Logo"
+            width={220}
+            height={24}
+          />
+        </Link>
+
+        <div className="flex flex-1 items-center justify-center">
+          <div className="w-full max-w-md rounded-3xl border border-white/70 bg-white/80 p-6 backdrop-blur">
+            {children}
+          </div>
+        </div>
+        <footer className="text-center text-xs text-slate-500">
+          2026 ©
+          <Link href="/" className="ml-1">
+            CSL STEM Prasetiya Mulya
+          </Link>
+        </footer>
       </div>
     </div>
   );

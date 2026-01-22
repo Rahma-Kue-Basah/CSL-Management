@@ -34,17 +34,10 @@ export function LoginForm({ className, ...props }) {
       {...props}
     >
       <FieldGroup>
-        <div className="flex flex-col items-start gap-2 text-left">
-          <Link href="/" className="flex w-full justify-center">
-            <Image
-              src="/logo/stem-name 2.png"
-              alt="CSL USE Logo"
-              width={220}
-              height={24}
-            />
-          </Link>
+        <div className="flex flex-col items-center text-center gap-2">
+          <h1 className="text-2xl font-semibold">Login ke akun Anda</h1>
           <div>
-            <p className="text-muted-foreground text-sm my-4">
+            <p className="text-muted-foreground text-sm">
               Enter your email below to login to your account
             </p>
           </div>
@@ -67,12 +60,6 @@ export function LoginForm({ className, ...props }) {
         <Field>
           <div className="flex items-center">
             <FieldLabel htmlFor="password">Password</FieldLabel>
-            <Link
-              href="/forgot-password"
-              className="ml-auto text-sm underline-offset-4 hover:underline"
-            >
-              Forgot your password?
-            </Link>
           </div>
           <div className="relative">
             <Input
@@ -96,6 +83,14 @@ export function LoginForm({ className, ...props }) {
                 <Eye className="h-5 w-5" />
               )}
             </button>
+          </div>
+          <div className="flex">
+            <Link
+              href="/forgot-password"
+              className="ml-auto text-muted-foreground text-xs"
+            >
+              Forgot your password?
+            </Link>
           </div>
         </Field>
 

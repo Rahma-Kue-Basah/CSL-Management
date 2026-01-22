@@ -10,7 +10,6 @@ import {
   FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { API_AUTH_LOGIN_GOOGLE } from "@/constants/api";
@@ -44,17 +43,10 @@ export function SignupGuestForm({ className, ...props }) {
       {...props}
     >
       <FieldGroup>
-        <div className="flex flex-col items-start gap-2 text-left">
-          <Link href="/" className="flex w-full justify-center">
-            <Image
-              src="/logo/stem-name 2.png"
-              alt="CSL USE Logo"
-              width={220}
-              height={24}
-            />
-          </Link>
+        <div className="flex flex-col items-center text-center gap-2">
+          <h1 className="text-2xl font-semibold">Selamat datang di CSL USE!</h1>
           <div>
-            <p className="text-muted-foreground text-sm my-4">
+            <p className="text-muted-foreground text-sm">
               Create your account to get started <i>as Guest</i>
             </p>
           </div>
