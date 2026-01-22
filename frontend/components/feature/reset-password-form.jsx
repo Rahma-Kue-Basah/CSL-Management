@@ -39,19 +39,20 @@ export function ResetPasswordForm({ uid, token, className, ...props }) {
       {...props}
     >
       <FieldGroup>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <Link href="/" className="flex items-center">
+        <div className="flex flex-col items-start gap-2 text-left">
+          <Link href="/" className="flex w-full justify-center">
             <Image
               src="/logo/stem-name 2.png"
               alt="CSL USE Logo"
               width={220}
               height={24}
-              style={{ width: "auto", height: "auto" }}
             />
           </Link>
-          <p className="text-muted-foreground text-sm py-4">
-            Buat password baru untuk akun Anda
-          </p>
+          <div>
+            <p className="text-muted-foreground text-sm my-2">
+              Buat password baru untuk akun Anda
+            </p>
+          </div>
         </div>
 
         <Field>

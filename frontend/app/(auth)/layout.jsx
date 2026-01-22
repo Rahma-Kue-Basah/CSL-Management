@@ -2,24 +2,35 @@ import Link from "next/link";
 
 export default function AuthLayout({ children }) {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2 font-sans">
-      <div className="flex flex-col gap-4 p-6 md:p-10">
+    <div className="relative grid min-h-svh lg:grid-cols-2 font-sans">
+      <div className="flex flex-col gap-6 p-6 md:p-10">
         <div className="flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xs">{children}</div>
+          <div className="w-full max-w-sm rounded-3xl border border-white/70 bg-white/80 p-6 backdrop-blur">
+            {children}
+          </div>
         </div>
-        <footer className="text-center text-xs text-muted-foreground">
-          2026 © 
-          <Link href="/" className="hover:underline ml-1">
-          CSL STEM Prasetiya Mulya
+        <footer className="text-center text-xs text-slate-500">
+          2026 ©
+          <Link href="/" className="ml-1">
+            CSL STEM Prasetiya Mulya
           </Link>
         </footer>
       </div>
-      <div className="bg-red-800 relative hidden lg:block">
-        {/* <img
-          src="/placeholder.svg"
-          alt="Image"
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-        /> */}
+      <div className="relative hidden overflow-hidden lg:block">
+        <div className="absolute inset-0 bg-[url('/images/building.jpeg')] bg-cover bg-center" />
+        {/* <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(124,26,25,0.72)_0%,_rgba(124,26,25,0.45)_55%,_rgba(124,26,25,0.2)_100%)]" /> */}
+        <div className="absolute inset-0 bg-red-500/60" />
+        <div className="absolute left-12 top-16 max-w-xs text-white">
+          <p className="text-sm uppercase tracking-[0.35em] text-white/70">
+            CSL USE
+          </p>
+          <h2 className="mt-4 text-3xl font-semibold leading-tight">
+            Satu akun untuk akses laboratorium, riset, dan komunitas.
+          </h2>
+          <p className="mt-4 text-sm text-white/70">
+            Aman, cepat, dan terintegrasi dengan layanan kampus.
+          </p>
+        </div>
       </div>
     </div>
   );

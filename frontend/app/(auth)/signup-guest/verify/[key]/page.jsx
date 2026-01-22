@@ -46,19 +46,20 @@ export default function VerifyEmailPage() {
   return (
     <div className="flex flex-col gap-6">
       <FieldGroup>
-        <div className="flex flex-col items-center gap-1 text-center">
-          <Link href="/" className="flex items-center">
+        <div className="flex flex-col items-start gap-2 text-left">
+          <Link href="/" className="flex w-full justify-center">
             <Image
               src="/logo/stem-name 2.png"
               alt="CSL USE Logo"
-              width={260}
+              width={220}
               height={24}
-              style={{ width: "auto", height: "auto" }}
             />
           </Link>
-          <p className="text-muted-foreground text-sm py-4">
-            Verify your email to continue
-          </p> 
+          <div>
+            <p className="text-muted-foreground text-sm my-4">
+              Verify your email to continue
+            </p>
+          </div>
         </div>
 
         {status === "verifying" && (
