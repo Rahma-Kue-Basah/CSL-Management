@@ -37,7 +37,7 @@ export function ResetPasswordForm({ uid, token, className, ...props }) {
       {...props}
     >
       <FieldGroup>
-        <div className="flex flex-col items-center text-center gap-2">
+        <div className="flex flex-col items-center text-center gap-2 mb-4">
           <h1 className="text-2xl font-semibold">Buat Password Baru</h1>
           <div>
             <p className="text-muted-foreground text-sm">

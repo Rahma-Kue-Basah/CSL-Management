@@ -43,7 +43,7 @@ export function SignupGuestForm({ className, ...props }) {
       {...props}
     >
       <FieldGroup>
-        <div className="flex flex-col items-center text-center gap-2">
+        <div className="flex flex-col items-center text-center gap-2 mb-4">
           <h1 className="text-2xl font-semibold">Selamat datang di CSL USE!</h1>
           <div>
             <p className="text-muted-foreground text-sm">

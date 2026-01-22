@@ -49,11 +49,11 @@
 :root {
   --radius: 0.625rem;
   --background: oklch(1 0 0);
-  --foreground: oklch(0.1410 0.0050 285.8230);
+  --foreground: oklch(0.3200 0.0060 285.8850);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.1410 0.0050 285.8230);
+  --card-foreground: oklch(0.3200 0.0060 285.8850);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.1410 0.0050 285.8230);
+  --popover-foreground: oklch(0.3200 0.0060 285.8850);
   --primary: #e30614;
   --primary-foreground: oklch(0.9710 0.0130 17.3800);
   --secondary: oklch(0.9670 0.0010 286.3750);
@@ -73,7 +73,7 @@
   --chart-4: oklch(0.8280 0.1890 84.4290);
   --chart-5: oklch(0.7690 0.1880 70.0800);
   --sidebar: oklch(0.9850 0 0);
-  --sidebar-foreground: oklch(0.1410 0.0050 285.8230);
+  --sidebar-foreground: oklch(0.3200 0.0060 285.8850);
   --sidebar-primary: oklch(0.6370 0.2370 25.3310);
   --sidebar-primary-foreground: oklch(0.9710 0.0130 17.3800);
   --sidebar-accent: oklch(0.9670 0.0010 286.3750);

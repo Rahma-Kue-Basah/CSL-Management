@@ -3,8 +3,8 @@ import Link from "next/link";
 
 export default function AuthLayout({ children }) {
   return (
-    <div className="relative grid min-h-svh lg:grid-cols-[2fr_3fr] font-sans">
-      <div className="relative hidden overflow-hidden lg:block">
+    <div className="relative grid h-svh overflow-hidden lg:grid-cols-[2fr_3fr] font-sans">
+      <div className="relative hidden overflow-hidden lg:block lg:h-svh">
         <div className="absolute inset-0 bg-[url('/images/building.jpeg')] bg-cover bg-center" />
         {/* <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(124,26,25,0.72)_0%,_rgba(124,26,25,0.45)_55%,_rgba(124,26,25,0.2)_100%)]" /> */}
         <div className="absolute inset-0 bg-red-500/60" />
@@ -20,7 +20,7 @@ export default function AuthLayout({ children }) {
           </p>
         </div>
       </div>
-      <div className="flex flex-col gap-6 p-6 md:p-10">
+      <div className="flex flex-col gap-6 p-6 md:p-10 lg:overflow-y-auto">
         <Link href="/">
           <Image
             src="/logo/stem-name 2.png"
@@ -35,7 +35,7 @@ export default function AuthLayout({ children }) {
             {children}
           </div>
         </div>
-        <footer className="text-center text-xs text-slate-500">
+        <footer className="text-center text-sm text-muted-foreground">
           2026 ©
           <Link href="/" className="ml-1">
             CSL STEM Prasetiya Mulya
