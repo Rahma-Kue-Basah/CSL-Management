@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { API_AUTH_LOGIN, API_AUTH_PROFILE } from "@/constants/api";
+import {
+  API_AUTH_LOGIN,
+  API_AUTH_USER_PROFILE,
+} from "@/constants/api";
 import Cookies from "js-cookie";
 
 export function useLogin() {
@@ -69,17 +72,35 @@ export function useLogin() {
         }
 
         try {
-          const profileResponse = await fetch(API_AUTH_PROFILE, {
+          const accessToken =
+            Cookies.get("access_token") ||
+            Cookies.get("access") ||
+            data.access_token ||
+            data.access;
+
+          const profileResponse = await fetch(API_AUTH_USER_PROFILE, {
             credentials: "include",
+            headers: accessToken
+              ? {
+                  Authorization: `Bearer ${accessToken}`,
+                }
+              : {},
           });
+
           if (profileResponse.ok) {
             const profileData = await profileResponse.json();
             const hasAccessToken = Boolean(
               Cookies.get("access_token") || Cookies.get("access"),
             );
             const nextProfile = {
+              id: profileData.id,
               name: profileData.full_name || profileData.username || "User",
               email: profileData.email || "",
+              role: profileData.role ?? null,
+              department: profileData.department ?? null,
+              batch: profileData.batch ?? null,
+              id_number: profileData.id_number ?? null,
+              user_type: profileData.user_type ?? null,
               canResetPassword: hasAccessToken,
             };
             window.localStorage.setItem("profile", JSON.stringify(nextProfile));

@@ -8,14 +8,27 @@ export function useLogout() {
 
   const handleLogout = async () => {
     try {
+      const accessToken =
+        Cookies.get("access_token") ||
+        Cookies.get("access") ||
+        (typeof window !== "undefined"
+          ? window.localStorage.getItem("access_token")
+          : null);
+
       await fetch(API_AUTH_LOGOUT, {
         method: "GET",
         credentials: "include",
+        headers: accessToken
+          ? {
+              Authorization: `Bearer ${accessToken}`,
+            }
+          : {},
       });
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
       Cookies.remove("access_token");
+      Cookies.remove("accessToken");
       Cookies.remove("refresh_token");
       Cookies.remove("access");
       Cookies.remove("refresh");
@@ -35,4 +48,3 @@ export function useLogout() {
     handleLogout,
   };
 }
-

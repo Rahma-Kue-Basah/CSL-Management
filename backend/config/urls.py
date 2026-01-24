@@ -19,7 +19,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularSwaggerView, SpectacularAPIView
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
+    path('admin-csl/', admin.site.urls),
     path('api/auth/', include('csluse_auth.urls')),
     path('api/', include('csluse.urls')),
     

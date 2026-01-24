@@ -6,13 +6,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useResetPassword } from "@/hooks/use-reset-password";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { AlertMessage } from "@/components/ui/alert-message";
 
 export function ResetPasswordForm({ uid, token, className, ...props }) {
   const router = useRouter();
@@ -104,17 +104,15 @@ export function ResetPasswordForm({ uid, token, className, ...props }) {
 
         {status === "error" && (
           <Field>
-            <FieldDescription className="text-red-600 border border-red-200 bg-red-50 rounded-md px-3 py-2">
-              {errorMessage}
-            </FieldDescription>
+            <AlertMessage variant="error">{errorMessage}</AlertMessage>
           </Field>
         )}
 
         {status === "success" && (
           <Field>
-            <FieldDescription className="text-green-600 border border-green-200 bg-green-50 rounded-md px-3 py-2">
+            <AlertMessage variant="success">
               Password berhasil direset. Mengarahkan ke login...
-            </FieldDescription>
+            </AlertMessage>
           </Field>
         )}
 

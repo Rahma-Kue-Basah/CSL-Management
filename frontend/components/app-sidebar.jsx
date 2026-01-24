@@ -26,6 +26,7 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import Image from "next/image";
+import Link from "next/link";
 
 const data = {
   navMain: [
@@ -124,7 +125,7 @@ export function AppSidebar({ ...props }) {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <a href="/dashboard" className="flex items-center gap-2">
+              <Link href="/dashboard" className="flex items-center gap-2">
                 <Image
                   src="/logo/stem-name 2.png"
                   alt="STEM Logo"
@@ -141,8 +142,7 @@ export function AppSidebar({ ...props }) {
                   style={{ width: "auto", height: "auto" }}
                   className="hidden rounded-full group-data-[collapsible=icon]:block"
                 />
-                
-              </a>
+              </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

@@ -112,11 +112,11 @@ REST_AUTH = {
     'TOKEN_MODEL': None,
     'JWT_AUTH_COOKIE': 'access',
     'JWT_AUTH_REFRESH_COOKIE': 'refresh',
-    'JWT_AUTH_COOKIE_DOMAIN': os.getenv('JWT_AUTH_COOKIE_DOMAIN'),
+    'JWT_AUTH_COOKIE_DOMAIN': None if DEBUG else os.getenv('JWT_AUTH_COOKIE_DOMAIN'),
 
-    'JWT_AUTH_SECURE': True,
+    'JWT_AUTH_SECURE': not DEBUG,  # disable Secure flag in local dev so cookies work on http://localhost
     'JWT_AUTH_HTTPONLY': True,
-    'JWT_AUTH_SAMESITE': "None",
+    'JWT_AUTH_SAMESITE': "None" if not DEBUG else "Lax",
 
     'LOGIN_SERIALIZER': 'csluse_auth.serializers.CustomLoginSerializer',
     'REGISTER_SERIALIZER': 'csluse_auth.serializers.CustomRegisterSerializer',
@@ -202,6 +202,8 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     'https://csluse-stg.azizrahmad.com',
     'https://csluse-api.azizrahmad.com',
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
 ]
 
 

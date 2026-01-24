@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
+import { ChevronsUpDown, LogOut, Settings, UserRound, Bell } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -16,6 +16,8 @@ import {
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { useLoadProfile } from "@/hooks/use-load-profile";
 import { useLogout } from "@/hooks/use-logout";
+import { ProfileDrawer } from "@/components/profile-drawer";
+import { NotificationDrawer } from "@/components/notification-drawer";
 
 export function NavUser({ user }) {
   const { isMobile } = useSidebar();
@@ -69,6 +71,26 @@ export function NavUser({ user }) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
+            <ProfileDrawer user={user}>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                }}
+              >
+                <UserRound />
+                View Profile
+              </DropdownMenuItem>
+            </ProfileDrawer>
+            <NotificationDrawer>
+              <DropdownMenuItem
+                onSelect={(event) => {
+                  event.preventDefault();
+                }}
+              >
+                <Bell />
+                Notifications
+              </DropdownMenuItem>
+            </NotificationDrawer>
             {profile.canResetPassword && (
               <DropdownMenuGroup>
                 <DropdownMenuItem

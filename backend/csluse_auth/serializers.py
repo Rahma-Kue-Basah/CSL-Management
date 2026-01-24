@@ -117,9 +117,25 @@ class CustomRegisterSerializer(RegisterSerializer):
 
 
 class ProfileSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
 
     class Meta:
         model = Profile
-        fields = ("email", "full_name")
-        read_only_fields = ("email", )
+        fields = (
+            "id",
+            "email",
+            "full_name",
+            "role",
+            "batch",
+            "department",
+            "id_number",
+            "user_type",
+        )
+        read_only_fields = ("id", "email")
+
+
+class EmailVerificationStatusSerializer(serializers.Serializer):
+    """Serializer to validate email status checks."""
+
+    email = serializers.EmailField()

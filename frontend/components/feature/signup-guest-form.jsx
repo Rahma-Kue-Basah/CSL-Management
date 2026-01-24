@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
   FieldSeparator,
@@ -16,6 +15,7 @@ import { API_AUTH_LOGIN_GOOGLE } from "@/constants/api";
 import { useSignupGuest } from "@/hooks/use-signup-guest";
 import { useState, useEffect } from "react";
 import { CheckCircle2, Eye, EyeOff, Loader2 } from "lucide-react";
+import { AlertMessage } from "@/components/ui/alert-message";
 
 export function SignupGuestForm({ className, ...props }) {
   const { formData, status, errorMessage, handleChange, handleSubmit } =
@@ -151,20 +151,15 @@ export function SignupGuestForm({ className, ...props }) {
 
         {status === "success" && successOpen && (
           <Field>
-            <FieldDescription className="flex items-center gap-2 text-green-700 border border-green-200 bg-green-50 rounded-md px-3 py-2">
-              <CheckCircle2 className="h-5 w-5" />
-              <span>
-                Berhasil registrasi. Silakan cek email Anda untuk verifikasi.
-              </span>
-            </FieldDescription>
+            <AlertMessage variant="success">
+              Berhasil registrasi. Silakan cek email Anda untuk verifikasi.
+            </AlertMessage>
           </Field>
         )}
 
         {status === "error" && (
           <Field>
-            <FieldDescription className="text-red-600 border border-red-200 bg-red-50 rounded-md px-3 py-2">
-              {errorMessage}
-            </FieldDescription>
+            <AlertMessage variant="error">{errorMessage}</AlertMessage>
           </Field>
         )}
 

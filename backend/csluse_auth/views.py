@@ -12,13 +12,13 @@ from allauth.socialaccount.providers.oauth2.client import OAuth2Error
 from allauth.socialaccount.providers.oauth2.views import OAuth2CallbackView
 from dj_rest_auth.jwt_auth import set_jwt_cookies
 from dj_rest_auth.utils import jwt_encode
-from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView
 
-from .models import Profile
-from .serializers import ProfileSerializer
 from allauth.account.models import EmailAddress
+
+from .serializers import EmailVerificationStatusSerializer
 
 
 class GoogleOAuth2CallbackView(OAuth2CallbackView):
@@ -78,30 +78,14 @@ class GoogleOAuth2CallbackView(OAuth2CallbackView):
 google_oauth2_callback = GoogleOAuth2CallbackView.adapter_view(GoogleOAuth2Adapter)
 
 
-class ProfileView(GenericAPIView):
-    serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        profile, _ = Profile.objects.get_or_create(user=request.user)
-        serializer = ProfileSerializer(profile)
-        return Response(serializer.data)
-
-    def patch(self, request):
-        profile, _ = Profile.objects.get_or_create(user=request.user)
-        serializer = ProfileSerializer(profile, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
-
-
 class EmailVerificationStatusView(GenericAPIView):
     permission_classes = [AllowAny]
+    serializer_class = EmailVerificationStatusSerializer
 
     def post(self, request):
-        email = (request.data.get("email") or "").strip().lower()
-        if not email:
-            return Response({"detail": "Email required."}, status=400)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].lower()
 
         address = EmailAddress.objects.filter(email__iexact=email).first()
         if not address:
