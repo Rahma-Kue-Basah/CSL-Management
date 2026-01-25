@@ -135,6 +135,19 @@ class ProfileSerializer(serializers.ModelSerializer):
         read_only_fields = ("id", "email")
 
 
+class UserWithProfileSerializer(serializers.ModelSerializer):
+    profile = ProfileSerializer(read_only=True, allow_null=True)
+    is_verified = serializers.BooleanField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            "email",
+            "is_verified",
+            "profile",
+        )
+
+
 class EmailVerificationStatusSerializer(serializers.Serializer):
     """Serializer to validate email status checks."""
 
