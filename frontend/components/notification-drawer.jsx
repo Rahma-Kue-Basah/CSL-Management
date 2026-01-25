@@ -70,7 +70,7 @@ export function NotificationDrawer({ children }) {
       </DrawerTrigger>
       <DrawerContent
         data-full-mobile
-        className="data-[vaul-drawer-direction=right]:max-w-md drawer-full-mobile"
+        className="font-sans data-[vaul-drawer-direction=right]:max-w-md drawer-full-mobile"
         overlayClassName="backdrop-blur-xs"
       >
         <DrawerHeader className="mt-12 items-start">

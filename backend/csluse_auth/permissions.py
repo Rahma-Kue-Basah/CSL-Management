@@ -60,6 +60,8 @@ STUDENT = 'Student'
 LECTURER = 'Lecturer'
 ADMINISTRATOR = 'Administrator'
 SUPER_ADMINISTRATOR = 'SuperAdministrator'
+STAFF = 'Staff'
+OTHER = 'Other'
 
 # All roles list
 ALL_ROLES = [
@@ -67,6 +69,8 @@ ALL_ROLES = [
     LECTURER,
     ADMINISTRATOR,
     SUPER_ADMINISTRATOR,
+    STAFF,
+    OTHER,
 ]
 
 
@@ -87,7 +91,7 @@ def get_user_role(user):
     user_groups = user.groups.values_list('name', flat=True)
     
     # Check in order of hierarchy (highest to lowest)
-    for role in [SUPER_ADMINISTRATOR, ADMINISTRATOR, LECTURER, STUDENT]:
+    for role in [SUPER_ADMINISTRATOR, ADMINISTRATOR, LECTURER, STUDENT, STAFF, OTHER]:
         if role in user_groups:
             return role
     
@@ -129,6 +133,16 @@ def is_administrator(user):
 def is_super_administrator(user):
     """Check if user is a SuperAdministrator."""
     return has_role(user, SUPER_ADMINISTRATOR)
+
+
+def is_staff_role(user):
+    """Check if user is Staff."""
+    return has_role(user, STAFF)
+
+
+def is_other_role(user):
+    """Check if user is Other."""
+    return has_role(user, OTHER)
 
 
 def assign_role(user, role):
@@ -224,3 +238,17 @@ class IsSuperAdministratorOnly(permissions.BasePermission):
     
     def has_permission(self, request, view):
         return is_super_administrator(request.user)
+
+
+class IsStaff(permissions.BasePermission):
+    """Permission class to check if user is Staff."""
+
+    def has_permission(self, request, view):
+        return is_staff_role(request.user)
+
+
+class IsOther(permissions.BasePermission):
+    """Permission class to check if user is Other."""
+
+    def has_permission(self, request, view):
+        return is_other_role(request.user)

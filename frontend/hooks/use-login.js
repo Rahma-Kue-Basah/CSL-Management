@@ -5,6 +5,7 @@ import {
   API_AUTH_USER_PROFILE,
 } from "@/constants/api";
 import Cookies from "js-cookie";
+import { authFetch, setAccessTokens, setRefreshToken } from "@/lib/auth-fetch";
 
 export function useLogin() {
   const router = useRouter();
@@ -45,21 +46,11 @@ export function useLogin() {
 
         // Simpan token ke cookies
         if (data.access_token || data.access) {
-          const accessToken = data.access_token || data.access;
-          Cookies.set("access_token", accessToken, {
-            expires: 1, // 1 day
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-          });
+          setAccessTokens(data.access_token || data.access);
         }
 
         if (data.refresh_token || data.refresh) {
-          const refreshToken = data.refresh_token || data.refresh;
-          Cookies.set("refresh_token", refreshToken, {
-            expires: 7, // 7 days
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "lax",
-          });
+          setRefreshToken(data.refresh_token || data.refresh);
         }
 
         // Simpan user info jika ada
@@ -72,19 +63,8 @@ export function useLogin() {
         }
 
         try {
-          const accessToken =
-            Cookies.get("access_token") ||
-            Cookies.get("access") ||
-            data.access_token ||
-            data.access;
-
-          const profileResponse = await fetch(API_AUTH_USER_PROFILE, {
+          const profileResponse = await authFetch(API_AUTH_USER_PROFILE, {
             credentials: "include",
-            headers: accessToken
-              ? {
-                  Authorization: `Bearer ${accessToken}`,
-                }
-              : {},
           });
 
           if (profileResponse.ok) {

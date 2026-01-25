@@ -120,7 +120,7 @@ const data = {
 
 export function AppSidebar({ ...props }) {
   return (
-    <Sidebar variant="inset" collapsible="icon" {...props}>
+    <Sidebar variant="inset" collapsible="icon" className="font-sans" {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>

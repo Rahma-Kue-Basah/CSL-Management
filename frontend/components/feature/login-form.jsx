@@ -4,9 +4,9 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
+  FieldDescription,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import Image from "next/image";
@@ -15,6 +15,7 @@ import { useLogin } from "@/hooks/use-login";
 import { useState, useEffect } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { AlertMessage } from "@/components/ui/alert-message";
 
 export function LoginForm({ className, ...props }) {
   const { formData, status, errorMessage, handleChange, handleSubmit } =
@@ -48,7 +49,7 @@ export function LoginForm({ className, ...props }) {
           <Input
             id="username"
             name="username"
-            type="text"
+            type="email"
             placeholder="nim@student.prasetyamulya.ac.id"
             className="placeholder:text-muted-foreground/50"
             required
@@ -96,9 +97,9 @@ export function LoginForm({ className, ...props }) {
 
         {status === "error" && (
           <Field>
-            <FieldDescription className="text-red-600 border border-red-200 bg-red-50 rounded-md px-3 py-2">
+            <AlertMessage variant="error">
               {errorMessage}
-            </FieldDescription>
+            </AlertMessage>
           </Field>
         )}
 

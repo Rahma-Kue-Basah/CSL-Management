@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Cookies from "js-cookie";
 import { API_AUTH_USER_PROFILE_DETAIL } from "@/constants/api";
+import { authFetch } from "@/lib/auth-fetch";
 
 export function useUpdateProfile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -13,26 +14,42 @@ export function useUpdateProfile() {
       throw new Error("Profile ID is missing");
     }
 
+    // Skip request if nothing changed
+    const normalizedCurrent = {
+      full_name: currentProfile.name || "",
+      department: currentProfile.department || null,
+      batch: currentProfile.batch || null,
+      id_number: currentProfile.id_number || null,
+    };
+    const normalizedPayload = {
+      full_name: payload.full_name || "",
+      department: payload.department || null,
+      batch: payload.batch || null,
+      id_number: payload.id_number || null,
+    };
+
+    const noChange = Object.keys(normalizedPayload).every(
+      (key) => normalizedPayload[key] === normalizedCurrent[key],
+    );
+
+    if (noChange) {
+      setMessage("Tidak ada perubahan");
+      return currentProfile;
+    }
+
     setIsSubmitting(true);
     setMessage("");
 
     try {
-      const accessToken =
-        Cookies.get("access_token") ||
-        Cookies.get("access") ||
-        (typeof window !== "undefined"
-          ? window.localStorage.getItem("access_token")
-          : null);
-
-      const response = await fetch(API_AUTH_USER_PROFILE_DETAIL(profileId), {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      const response = await authFetch(
+        API_AUTH_USER_PROFILE_DETAIL(profileId),
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
         },
-        credentials: "include",
-        body: JSON.stringify(payload),
-      });
+      );
 
       if (!response.ok) {
         throw new Error(`Update failed (${response.status})`);

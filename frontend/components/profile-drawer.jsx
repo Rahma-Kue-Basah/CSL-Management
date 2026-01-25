@@ -20,6 +20,8 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { useUpdateProfile } from "@/hooks/use-update-profile";
 import { AlertMessage } from "@/components/ui/alert-message";
+import { ChangePasswordDrawer } from "@/components/change-password-drawer";
+import { Lock } from "lucide-react";
 
 function InfoRow({
   icon: Icon,
@@ -38,7 +40,7 @@ function InfoRow({
     <div className="flex items-start gap-3 rounded-md border border-border/60 px-3 py-2">
       <Icon className="mt-0.5 size-4 text-muted-foreground" />
       <div className="flex-1 space-y-1">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">{label}</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{label}</p>
         {showSelect ? (
           <select
             name={name}
@@ -190,6 +192,7 @@ export function ProfileDrawer({ user, children }) {
       <DrawerContent
         data-full-mobile
         className={[
+          "font-sans",
           "data-[vaul-drawer-direction=right]:max-w-md",
           isMobile ? "drawer-full-mobile" : "",
         ].join(" ")}
@@ -270,13 +273,31 @@ export function ProfileDrawer({ user, children }) {
 
           <div className="flex items-center justify-between">
             <p className="text-sm font-semibold">Edit Profile</p>
-            <Button
-              size="sm"
-              variant={isEditing ? "secondary" : "outline"}
-              onClick={() => setIsEditing((v) => !v)}
-            >
-              {isEditing ? "Cancel" : "Edit"}
-            </Button>
+            <div className="flex gap-2">
+              {isEditing && (
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => setIsEditing(false)}
+                >
+                  Cancel
+                </Button>
+              )}
+              <Button
+                size="sm"
+                variant={isEditing ? "default" : "outline"}
+                onClick={() => {
+                  if (isEditing) {
+                    handleSubmit(new Event("submit"));
+                  } else {
+                    setIsEditing(true);
+                  }
+                }}
+                disabled={isSubmitting}
+              >
+                {isEditing ? (isSubmitting ? "Saving..." : "Save") : "Edit"}
+              </Button>
+            </div>
           </div>
 
           {message && (
@@ -284,14 +305,17 @@ export function ProfileDrawer({ user, children }) {
               {message}
             </AlertMessage>
           )}
-          {isEditing && (
-            <Button onClick={handleSubmit} className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? "Saving..." : "Save"}
-            </Button>
-          )}
         </div>
 
         <DrawerFooter>
+          {viewProfile.canResetPassword && (
+            <ChangePasswordDrawer>
+              <Button variant="outline" className="w-full">
+                <Lock className="mr-2 h-4 w-4" />
+                Ganti Password
+              </Button>
+            </ChangePasswordDrawer>
+          )}
           <DrawerClose asChild>
             <Button variant="secondary">Close</Button>
           </DrawerClose>

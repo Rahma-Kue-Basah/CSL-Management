@@ -4,6 +4,7 @@ import Cookies from "js-cookie";
 import {
   API_AUTH_USER_PROFILE,
 } from "@/constants/api";
+import { authFetch } from "@/lib/auth-fetch";
 
 export function useLoadProfile(user) {
   const hasFetchedRef = useRef(false);
@@ -89,14 +90,12 @@ export function useLoadProfile(user) {
 
     const loadProfile = async () => {
       try {
-        const response = await fetch(API_AUTH_USER_PROFILE, {
-          credentials: "include",
-          headers: accessToken
-            ? {
-                Authorization: `Bearer ${accessToken}`,
-              }
-            : {},
-        });
+        const response = await authFetch(
+          API_AUTH_USER_PROFILE,
+          {
+            credentials: "include",
+          },
+        );
         if (!response.ok) return;
         const profileData = await response.json();
 

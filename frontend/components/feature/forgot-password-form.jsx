@@ -5,14 +5,15 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
   Field,
-  FieldDescription,
   FieldGroup,
   FieldLabel,
+  FieldDescription,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useForgotPassword } from "@/hooks/use-forgot-password";
 import { Loader2 } from "lucide-react";
+import { AlertMessage } from "@/components/ui/alert-message";
 
 export function ForgotPasswordForm({ className, ...props }) {
   const { email, status, errorMessage, handleChange, handleSubmit } =
@@ -56,17 +57,17 @@ export function ForgotPasswordForm({ className, ...props }) {
 
         {status === "error" && (
           <Field>
-            <FieldDescription className="text-red-600 border border-red-200 bg-red-50 rounded-md px-3 py-2">
+            <AlertMessage variant="error">
               {errorMessage}
-            </FieldDescription>
+            </AlertMessage>
           </Field>
         )}
 
         {status === "success" && (
           <Field>
-            <FieldDescription className="text-green-600 border border-green-200 bg-green-50 rounded-md px-3 py-2">
+            <AlertMessage variant="success">
               Jika email terdaftar, link reset password akan dikirim. Cek inbox atau spam.
-            </FieldDescription>
+            </AlertMessage>
           </Field>
         )}
 
