@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -62,7 +62,7 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-export default function UserPage() {
+function UserPageContent() {
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const pageSize = 20;
@@ -534,6 +534,14 @@ export default function UserPage() {
         onSave={handleProfileSave}
       />
     </section>
+  );
+}
+
+export default function UserPage() {
+  return (
+    <Suspense fallback={<div className="py-6 text-sm text-muted-foreground">Memuat...</div>}>
+      <UserPageContent />
+    </Suspense>
   );
 }
 
