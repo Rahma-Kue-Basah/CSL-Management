@@ -3,12 +3,15 @@ from django.db import models
 from django.db.models import Exists, OuterRef
 from allauth.account.models import EmailAddress
 from rest_framework import viewsets
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from .models import Profile
 from .serializers import ProfileSerializer, UserWithProfileSerializer
+from .permissions import SUPER_ADMINISTRATOR, has_role
 from csluse.viewsets import DefaultPagination
+from .permissions import IsAdministratorOrAbove
 
 User = get_user_model()
 
@@ -29,12 +32,13 @@ class ProfileViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
-class UserWithProfileViewSet(viewsets.ReadOnlyModelViewSet):
+class UserWithProfileViewSet(viewsets.ModelViewSet):
 
     serializer_class = UserWithProfileSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsAdministratorOrAbove]
     queryset = User.objects.select_related("profile").all()
     pagination_class = DefaultPagination
+    http_method_names = ["get", "delete"]
 
     def get_queryset(self):
         """Enable lightweight filtering and search over user profiles."""
@@ -70,3 +74,13 @@ class UserWithProfileViewSet(viewsets.ReadOnlyModelViewSet):
             )
 
         return qs
+
+    def destroy(self, request, *args, **kwargs):
+        target = self.get_object()
+
+        if has_role(target, SUPER_ADMINISTRATOR) and not has_role(
+            request.user, SUPER_ADMINISTRATOR
+        ):
+            raise PermissionDenied("Tidak bisa menghapus SuperAdministrator.")
+
+        return super().destroy(request, *args, **kwargs)

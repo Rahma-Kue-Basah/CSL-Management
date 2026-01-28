@@ -30,6 +30,12 @@ export default function DashboardLayout({ children }) {
     return url.startsWith("/") ? url : `/${url.replace(/^\/+/, "")}`;
   };
 
+  const subpageLabels = {
+    "/user/form": "Tambah User",
+    "/user/new": "Tambah User",
+    "/user/form-bulk": "Bulk Upload",
+  };
+
   let trail = null;
   for (const item of NAV_DATA.navMain) {
     const itemUrl = normalizeUrl(item.url);
@@ -42,6 +48,10 @@ export default function DashboardLayout({ children }) {
             { label: item.title, href: null },
             { label: sub.title, href: subUrl },
           ];
+          const subLabel = subpageLabels[currentPath];
+          if (subLabel && currentPath !== subUrl) {
+            trail.push({ label: subLabel, href: currentPath });
+          }
           break;
         }
       }

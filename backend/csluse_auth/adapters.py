@@ -26,6 +26,8 @@ class CustomAccountAdapter(DefaultAccountAdapter):
         """
         Override to use frontend URL in confirmation email
         """
+        if request is not None and getattr(request, "_skip_email_confirmation", False):
+            return
         activate_url = self.get_email_confirmation_url(request, emailconfirmation)
         backend_url = request.build_absolute_uri("/") if request else ""
         ctx = {

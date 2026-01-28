@@ -9,6 +9,17 @@ from allauth.account.models import EmailAddress
 
 from .models import Profile
 
+ADMIN_ROLE_GROUPS = {"Administrator", "SuperAdministrator"}
+
+
+def _can_assign_profile_fields(request):
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
+        return False
+    if getattr(user, "is_superuser", False):
+        return True
+    return user.groups.filter(name__in=ADMIN_ROLE_GROUPS).exists()
+
 User = get_user_model()
 
 
@@ -89,6 +100,27 @@ def _generate_unique_username(base):
 
 class CustomRegisterSerializer(RegisterSerializer):
     full_name = serializers.CharField(write_only=True)
+    role = serializers.ChoiceField(
+        choices=[choice[0] for choice in Profile.ROLE_CHOICES],
+        required=False,
+        allow_null=True,
+    )
+    department = serializers.ChoiceField(
+        choices=[choice[0] for choice in Profile.DEPARTMENT_CHOICE],
+        required=False,
+        allow_null=True,
+    )
+    batch = serializers.ChoiceField(
+        choices=[choice[0] for choice in Profile.BATCH_CHOICES],
+        required=False,
+        allow_null=True,
+    )
+    id_number = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    user_type = serializers.ChoiceField(
+        choices=[choice[0] for choice in Profile.USER_TYPE_CHOICES],
+        required=False,
+        allow_null=True,
+    )
 
     def get_cleaned_data(self):
         data = super().get_cleaned_data()
@@ -101,6 +133,9 @@ class CustomRegisterSerializer(RegisterSerializer):
         return data
 
     def save(self, request):
+        if _can_assign_profile_fields(request):
+            setattr(request, "_skip_email_confirmation", True)
+
         user = super().save(request)
         full_name = self.get_cleaned_data().get("full_name")
         defaults = {
@@ -109,10 +144,41 @@ class CustomRegisterSerializer(RegisterSerializer):
         if full_name:
             defaults["full_name"] = full_name
 
+        if _can_assign_profile_fields(request):
+            role = self.validated_data.get("role")
+            department = self.validated_data.get("department")
+            batch = self.validated_data.get("batch")
+            id_number = self.validated_data.get("id_number")
+            user_type = self.validated_data.get("user_type")
+
+            if role:
+                defaults["role"] = role
+            if department:
+                defaults["department"] = department
+            if batch:
+                defaults["batch"] = batch
+            if id_number:
+                defaults["id_number"] = id_number
+            if user_type:
+                defaults["user_type"] = user_type
+
         Profile.objects.update_or_create(
             user=user,
             defaults=defaults,
         )
+
+        if _can_assign_profile_fields(request):
+            email = user.email
+            if email:
+                email_address, _ = EmailAddress.objects.get_or_create(
+                    user=user,
+                    email=email,
+                    defaults={"verified": True, "primary": True},
+                )
+                if not email_address.verified or not email_address.primary:
+                    email_address.verified = True
+                    email_address.primary = True
+                    email_address.save(update_fields=["verified", "primary"])
         return user
 
 
@@ -142,6 +208,7 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = (
+            "id",
             "email",
             "is_verified",
             "profile",

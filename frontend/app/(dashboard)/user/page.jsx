@@ -2,9 +2,26 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -26,9 +43,16 @@ import {
   CheckCircle2,
   XCircle,
   Filter,
+  Plus,
+  FilePlus,
+  Trash2,
 } from "lucide-react";
 
 import { useUsers } from "@/hooks/use-users";
+import { useLoadProfile } from "@/hooks/use-load-profile";
+import { isPrivilegedRole, ROLE_FILTER_OPTIONS } from "@/constants/roles";
+import { useDeleteUser } from "@/hooks/use-delete-user";
+import { toast } from "sonner";
 import {
   Pagination,
   PaginationContent,
@@ -51,8 +75,12 @@ export default function UserPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
   const [sortBy, setSortBy] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
+  const { profile } = useLoadProfile();
+  const isPrivileged = isPrivilegedRole(profile?.role);
+  const { deleteUser, isDeleting } = useDeleteUser();
   const { users, setUsers, totalCount, isLoading } = useUsers(page, pageSize, {
     ...filters,
     search: debouncedSearch,
@@ -87,6 +115,24 @@ export default function UserPage() {
   const handleView = (user) => {
     setSelectedUser(user);
     setDetailOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteCandidate?.id) return;
+    const result = await deleteUser(deleteCandidate.id);
+    if (!result.ok) {
+      toast.error(result.message || "Gagal menghapus user.");
+      return;
+    }
+    setUsers((prev) =>
+      prev.filter((item) => item.id !== deleteCandidate.id),
+    );
+    if (selectedUser?.id === deleteCandidate.id) {
+      setSelectedUser(null);
+      setDetailOpen(false);
+    }
+    setDeleteCandidate(null);
+    toast.success("User berhasil dihapus.");
   };
 
   const sortedUsers = useMemo(() => {
@@ -136,6 +182,26 @@ export default function UserPage() {
             Total {totalUsers} user terdaftar.
           </p>
         </div>
+        {isPrivileged ? (
+          <div className="flex items-center gap-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/user/form-bulk" aria-label="Bulk upload">
+                    <FilePlus className="h-4 w-4" />
+                  </Link>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom">Bulk Upload</TooltipContent>
+            </Tooltip>
+            <Button asChild size="sm" className="gap-2">
+              <Link href="/user/form">
+                <Plus className="h-4 w-4" />
+                Tambah User
+              </Link>
+            </Button>
+          </div>
+        ) : null}
       </div>
 
       <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
@@ -188,7 +254,7 @@ export default function UserPage() {
                   Nama <ArrowUp className="h-4 w-4" />
                 </button>
               </TableHead>
-              <TableHead>
+              {/* <TableHead>
                 <button
                   type="button"
                   onClick={() => toggleSort("batch")}
@@ -198,10 +264,10 @@ export default function UserPage() {
                 </button>
               </TableHead>
               <TableHead>Department</TableHead>
-              <TableHead>ID Number</TableHead>
+              <TableHead>ID Number</TableHead> */}
               <TableHead>Email</TableHead>
               <TableHead>Role</TableHead>
-              <TableHead>Verified</TableHead>
+              <TableHead className="text-center">Verified</TableHead>
               <TableHead>User Type</TableHead>
               <TableHead className="text-center sticky right-0 bg-card z-10">
                 Aksi
@@ -212,7 +278,7 @@ export default function UserPage() {
             {isLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={7}
                   className="py-6 text-center text-muted-foreground"
                 >
                   <Image
@@ -234,19 +300,21 @@ export default function UserPage() {
                     </div>
                   </TableCell>
                   <TableCell>{user.name}</TableCell>
-                  <TableCell>{user.batch}</TableCell>
+                  {/* <TableCell>{user.batch}</TableCell>
                   <TableCell>{user.department}</TableCell>
-                  <TableCell>{user.idNumber}</TableCell>
+                  <TableCell>{user.idNumber}</TableCell> */}
                   <TableCell className="text-muted-foreground">
                     {user.email}
                   </TableCell>
                   <TableCell>{user.role}</TableCell>
-                  <TableCell className="flex items-center justify-center">
-                    {user.isVerified ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                    ) : (
-                      <XCircle className="h-4 w-4 text-destructive" />
-                    )}
+                  <TableCell className="text-center align-middle">
+                    <div className="flex justify-center">
+                      {user.isVerified ? (
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                      ) : (
+                        <XCircle className="h-4 w-4 text-red-600" />
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell>
                     <span
@@ -259,11 +327,12 @@ export default function UserPage() {
                       {user.userType}
                     </span>
                   </TableCell>
-                  <TableCell className="flex justify-end gap-2 sticky right-0 bg-card">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
+                  <TableCell className="sticky right-0 bg-card">
+                    <div className="flex justify-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
                         if (selectedUser?.uid === user.uid && detailOpen) {
                           setDetailOpen(false);
                           setSelectedUser(null);
@@ -278,13 +347,46 @@ export default function UserPage() {
                         <Eye size={16} />
                       )}
                     </Button>
+                      {isPrivileged ? (
+                        <AlertDialog
+                          open={deleteCandidate?.id === user.id}
+                          onOpenChange={(open) =>
+                            setDeleteCandidate(open ? user : null)
+                          }
+                        >
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" disabled={isDeleting}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Hapus user?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tindakan ini tidak bisa dibatalkan. User{" "}
+                              <span className="font-semibold">
+                                {user.name || user.email}
+                              </span>{" "}
+                              akan dihapus permanen.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete}>
+                              Hapus
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={9}
+                  colSpan={7}
                   className="py-6 text-center text-muted-foreground"
                 >
                   Tidak ada user terdaftar.
@@ -319,7 +421,9 @@ export default function UserPage() {
                 setPage((p) => (p < totalPages ? p + 1 : p));
               }}
               className={
-                page >= totalPages || isLoading ? "pointer-events-none opacity-50" : ""
+                page >= totalPages || isLoading
+                  ? "pointer-events-none opacity-50"
+                  : ""
               }
             />
           </PaginationItem>
@@ -366,7 +470,7 @@ export default function UserPage() {
                     <InfoRow
                       icon={IdCard}
                       label="ID Number"
-                      value={selectedUser.id}
+                      value={selectedUser.idNumber}
                     />
                     <InfoRow
                       icon={UserCircle}
@@ -383,20 +487,20 @@ export default function UserPage() {
                       label="Department"
                       value={selectedUser.department}
                     />
-                  <InfoRow
-                    icon={MailIcon}
-                    label="Email"
-                    value={
-                      <span className="inline-flex items-center gap-1">
-                        {selectedUser.email}
-                        {selectedUser?.isVerified ? (
-                          <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                        ) : (
-                          <XCircle className="h-4 w-4 text-destructive" />
-                        )}
-                      </span>
-                    }
-                  />
+                    <InfoRow
+                      icon={MailIcon}
+                      label="Email"
+                      value={
+                        <span className="inline-flex items-center gap-1">
+                          {selectedUser.email}
+                          {selectedUser?.isVerified ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <XCircle className="h-4 w-4 text-red-600" />
+                          )}
+                        </span>
+                      }
+                    />
                     <InfoRow
                       icon={Shield}
                       label="Role"
@@ -441,7 +545,7 @@ const DEPARTMENTS = [
   "Energy Business and Technology",
 ];
 
-const ROLES = ["Student", "Lecturer", "Admin", "Staff", "Other"];
+const ROLES = ROLE_FILTER_OPTIONS;
 const BATCHES = [
   "2020",
   "2021",

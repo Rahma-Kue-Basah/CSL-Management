@@ -35,7 +35,8 @@ export function useUsers(page, pageSize = 20, filters = {}) {
         const mapped = results.map((item) => {
           const email = item.email || item.profile?.email || "-";
           return {
-            uid: email,
+            id: item.id,
+            uid: item.id || email,
             idNumber: item.profile?.id_number || "-",
             name: item.profile?.full_name || item.username || "-",
             email,

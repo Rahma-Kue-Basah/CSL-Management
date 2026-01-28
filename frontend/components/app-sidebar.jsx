@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/sidebar";
 import Image from "next/image";
 import Link from "next/link";
+import { useLoadProfile } from "@/hooks/use-load-profile";
+import { isPrivilegedRole } from "@/constants/roles";
 
 export const NAV_DATA = {
   navMain: [
@@ -49,6 +51,12 @@ export const NAV_DATA = {
 };
 
 export function AppSidebar({ ...props }) {
+  const { profile } = useLoadProfile();
+  const isPrivileged = isPrivilegedRole(profile?.role);
+  const navItems = NAV_DATA.navMain.filter(
+    (item) => item.title !== "Admin" || isPrivileged,
+  );
+
   return (
     <Sidebar
       variant="inset"
@@ -83,7 +91,7 @@ export function AppSidebar({ ...props }) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={NAV_DATA.navMain} />
+        <NavMain items={navItems} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser />

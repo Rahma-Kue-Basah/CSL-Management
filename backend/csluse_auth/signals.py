@@ -19,7 +19,7 @@ def create_profile_for_new_user(sender, instance, created, **kwargs):
         user=instance,
         defaults={
             **({"full_name": full_name} if full_name else {}),
-            "user_type": "external",
+            "user_type": "EXTERNAL",
         },
     )
     
