@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
@@ -30,15 +31,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { UserDetailCollapsible } from "@/components/modal/user-detail-collapsible";
 import {
   Eye,
   X,
-  UserCircle,
-  Shield,
-  IdCard,
-  MailIcon,
-  Info,
   ArrowUp,
   CheckCircle2,
   XCircle,
@@ -46,12 +42,17 @@ import {
   Plus,
   FilePlus,
   Trash2,
+  Pencil,
 } from "lucide-react";
 
 import { useUsers } from "@/hooks/use-users";
 import { useLoadProfile } from "@/hooks/use-load-profile";
-import { isPrivilegedRole, ROLE_FILTER_OPTIONS } from "@/constants/roles";
+import { isPrivilegedRole, ROLE_FILTER_OPTIONS, ROLE_OPTIONS } from "@/constants/roles";
+import { USER_TYPE_OPTIONS, USER_TYPE_VALUES } from "@/constants/user-types";
+import { DEPARTMENT_FILTER_OPTIONS, DEPARTMENT_OPTIONS } from "@/constants/departments";
+import { BATCH_OPTIONS } from "@/constants/batches";
 import { useDeleteUser } from "@/hooks/use-delete-user";
+import { useUserProfileEditor } from "@/hooks/use-user-profile-editor";
 import { toast } from "sonner";
 import {
   Pagination,
@@ -62,6 +63,7 @@ import {
 } from "@/components/ui/pagination";
 
 export default function UserPage() {
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const pageSize = 20;
   const [search, setSearch] = useState("");
@@ -81,10 +83,61 @@ export default function UserPage() {
   const { profile } = useLoadProfile();
   const isPrivileged = isPrivilegedRole(profile?.role);
   const { deleteUser, isDeleting } = useDeleteUser();
+  const roleParam = searchParams.get("role");
+  const lastRoleParamRef = useRef(null);
+  const isRoleScoped = !!roleParam;
   const { users, setUsers, totalCount, isLoading } = useUsers(page, pageSize, {
     ...filters,
     search: debouncedSearch,
   });
+  const {
+    editForm,
+    isEditingProfile,
+    detailMode,
+    isUpdating,
+    message,
+    setMessage,
+    setDetailMode,
+    setIsEditingProfile,
+    onChange: handleProfileChange,
+    onCancel: handleProfileCancel,
+    onSave: handleProfileSave,
+    enterEditMode,
+    enterViewMode,
+  } = useUserProfileEditor({
+    selectedUser,
+    setUsers,
+    setSelectedUser,
+  });
+  const roleOptions = ROLE_OPTIONS.filter((option) => option.value);
+
+  useEffect(() => {
+    if (roleParam) {
+      lastRoleParamRef.current = roleParam;
+      setFilters((prev) => ({ ...prev, role: roleParam }));
+      setFilterOpen(false);
+      setPage(1);
+      return;
+    }
+
+    if (lastRoleParamRef.current) {
+      lastRoleParamRef.current = null;
+      resetFilterState();
+      setFilterOpen(false);
+    }
+  }, [roleParam]);
+
+  const resetFilterState = () => {
+    setSearch("");
+    setDebouncedSearch("");
+    setFilters({
+      department: "",
+      role: "",
+      batch: "",
+      user_type: "",
+    });
+    setPage(1);
+  };
 
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(search), 1000);
@@ -112,7 +165,8 @@ export default function UserPage() {
     }
   }, [users, selectedUser]);
 
-  const handleView = (user) => {
+  const handleView = (user, mode = "view") => {
+    setDetailMode(mode);
     setSelectedUser(user);
     setDetailOpen(true);
   };
@@ -134,6 +188,7 @@ export default function UserPage() {
     setDeleteCandidate(null);
     toast.success("User berhasil dihapus.");
   };
+
 
   const sortedUsers = useMemo(() => {
     const sorted = [...users];
@@ -177,12 +232,14 @@ export default function UserPage() {
     <section className="space-y-4">
       <div className="flex items-baseline justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">User</h1>
+          <h1 className="text-2xl font-semibold">
+            {isRoleScoped ? `User ${roleParam}` : "User"}
+          </h1>
           <p className="text-sm text-muted-foreground">
             Total {totalUsers} user terdaftar.
           </p>
         </div>
-        {isPrivileged ? (
+        {isPrivileged && !isRoleScoped ? (
           <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -204,41 +261,52 @@ export default function UserPage() {
         ) : null}
       </div>
 
-      <Collapsible open={filterOpen} onOpenChange={setFilterOpen}>
-        <div className="rounded-lg border bg-card">
-          <div className="flex items-center justify-between px-3 py-2">
-            <p className="text-sm font-medium">Filter</p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setFilterOpen((v) => !v)}
-              className="h-8 gap-2"
-            >
-              {filterOpen ? (
-                <X className="h-4 w-4" />
-              ) : (
-                <Filter className="h-4 w-4" />
-              )}
-              <span className="sr-only">
-                {filterOpen ? "Sembunyikan filter" : "Tampilkan filter"}
-              </span>
-            </Button>
+      {!isRoleScoped ? (
+        <Collapsible
+          open={filterOpen}
+          onOpenChange={(open) => {
+            if (!open) resetFilterState();
+            setFilterOpen(open);
+          }}
+        >
+          <div className="rounded-lg border bg-card">
+            <div className="flex items-center justify-between px-3 py-2">
+              <p className="text-sm font-medium">Filter</p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (filterOpen) resetFilterState();
+                  setFilterOpen((v) => !v);
+                }}
+                className="h-8 gap-2"
+              >
+                {filterOpen ? (
+                  <X className="h-4 w-4" />
+                ) : (
+                  <Filter className="h-4 w-4" />
+                )}
+                <span className="sr-only">
+                  {filterOpen ? "Sembunyikan filter" : "Tampilkan filter"}
+                </span>
+              </Button>
+            </div>
+            <CollapsibleContent className="border-t px-3 pb-3 pt-2">
+              <FilterBar
+                search={search}
+                onSearchChange={setSearch}
+                filters={filters}
+                onFiltersChange={(next) => {
+                  setFilters(next);
+                  setPage(1);
+                }}
+                onSearchSubmit={() => setPage(1)}
+              />
+            </CollapsibleContent>
           </div>
-          <CollapsibleContent className="border-t px-3 pb-3 pt-2">
-            <FilterBar
-              search={search}
-              onSearchChange={setSearch}
-              filters={filters}
-              onFiltersChange={(next) => {
-                setFilters(next);
-                setPage(1);
-              }}
-              onSearchSubmit={() => setPage(1)}
-            />
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
+        </Collapsible>
+      ) : null}
 
       <div className="rounded-lg border bg-card">
         <Table>
@@ -319,7 +387,7 @@ export default function UserPage() {
                   <TableCell>
                     <span
                       className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                        user.userType === "INTERNAL"
+                        user.userType === USER_TYPE_VALUES.INTERNAL
                           ? "bg-emerald-500/10 text-emerald-600"
                           : "bg-sky-500/10 text-sky-700"
                       }`}
@@ -333,20 +401,33 @@ export default function UserPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                        if (selectedUser?.uid === user.uid && detailOpen) {
-                          setDetailOpen(false);
-                          setSelectedUser(null);
-                        } else {
-                          handleView(user);
-                        }
-                      }}
-                    >
-                      {selectedUser?.uid === user.uid && detailOpen ? (
-                        <X size={16} />
-                      ) : (
+                          if (selectedUser?.uid === user.uid && detailOpen) {
+                            setDetailOpen(false);
+                            setSelectedUser(null);
+                            enterViewMode();
+                          } else {
+                            handleView(user, "view");
+                          }
+                        }}
+                      >
                         <Eye size={16} />
-                      )}
-                    </Button>
+                      </Button>
+                      {isPrivileged ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            if (selectedUser?.uid === user.uid && detailOpen) {
+                              enterEditMode();
+                              setDetailOpen(true);
+                            } else {
+                              handleView(user, "edit");
+                            }
+                          }}
+                        >
+                          <Pencil size={16} />
+                        </Button>
+                      ) : null}
                       {isPrivileged ? (
                         <AlertDialog
                           open={deleteCandidate?.id === user.id}
@@ -430,135 +511,33 @@ export default function UserPage() {
         </PaginationContent>
       </Pagination>
 
-      <Collapsible
+      <UserDetailCollapsible
         open={detailOpen}
-        onOpenChange={setDetailOpen}
-        className="fixed right-4 top-20 z-40 w-[420px] max-w-[95vw] md:right-40 data-[state=closed]:-translate-y-[300%] data-[state=open]:translate-y-0 data-[state=closed]:pointer-events-none transition-transform duration-300 ease-out"
-      >
-        <div className="rounded-lg border bg-card shadow-lg ring-1 ring-black/5">
-          <div className="flex items-center justify-between px-4 py-3">
-            <p className="text-sm font-medium">Detail User</p>
-            {detailOpen ? (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setDetailOpen(false)}
-              >
-                <X size={16} />
-              </Button>
-            ) : null}
-          </div>
-
-          <CollapsibleContent asChild>
-            <div className="border-t px-4 py-4 max-h-[65vh] overflow-y-auto space-y-4">
-              {selectedUser ? (
-                <>
-                  <div className="flex flex-col items-center text-center space-y-2">
-                    <Avatar className="h-12 w-12 rounded-xl">
-                      <AvatarFallback className="rounded-xl text-sm font-semibold">
-                        {initials(selectedUser)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-base font-semibold">
-                        {selectedUser.name || "—"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <InfoRow
-                      icon={IdCard}
-                      label="ID Number"
-                      value={selectedUser.idNumber}
-                    />
-                    <InfoRow
-                      icon={UserCircle}
-                      label="Nama"
-                      value={selectedUser.name}
-                    />
-                    <InfoRow
-                      icon={Info}
-                      label="Batch"
-                      value={selectedUser.batch}
-                    />
-                    <InfoRow
-                      icon={Shield}
-                      label="Department"
-                      value={selectedUser.department}
-                    />
-                    <InfoRow
-                      icon={MailIcon}
-                      label="Email"
-                      value={
-                        <span className="inline-flex items-center gap-1">
-                          {selectedUser.email}
-                          {selectedUser?.isVerified ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-600" />
-                          ) : (
-                            <XCircle className="h-4 w-4 text-red-600" />
-                          )}
-                        </span>
-                      }
-                    />
-                    <InfoRow
-                      icon={Shield}
-                      label="Role"
-                      value={selectedUser.role}
-                    />
-                    <InfoRow
-                      icon={Shield}
-                      label="User Type"
-                      value={
-                        <span
-                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                            selectedUser.userType === "INTERNAL"
-                              ? "bg-emerald-500/10 text-emerald-600"
-                              : "bg-sky-500/10 text-sky-700"
-                          }`}
-                        >
-                          {selectedUser.userType}
-                        </span>
-                      }
-                    />
-                  </div>
-                </>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Klik &quot;View Detail&quot; untuk melihat informasi.
-                </p>
-              )}
-            </div>
-          </CollapsibleContent>
-        </div>
-      </Collapsible>
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) enterViewMode();
+        }}
+        selectedUser={selectedUser}
+        initials={initials}
+        editForm={editForm}
+        isPrivileged={isPrivileged}
+        isEditing={isEditingProfile}
+        isUpdating={isUpdating}
+        message={message}
+        roleOptions={roleOptions}
+        userTypeOptions={USER_TYPE_OPTIONS}
+        departmentOptions={DEPARTMENT_OPTIONS}
+        batchOptions={BATCH_OPTIONS}
+        onChange={handleProfileChange}
+        onEditStart={enterEditMode}
+        onCancel={handleProfileCancel}
+        onSave={handleProfileSave}
+      />
     </section>
   );
 }
 
-const DEPARTMENTS = [
-  "Digital Business Technology",
-  "Artificial Inteligence and Robotic",
-  "Business Mathematics",
-  "Food Business Technology",
-  "Product Design and Innovation",
-  "Energy Business and Technology",
-];
-
 const ROLES = ROLE_FILTER_OPTIONS;
-const BATCHES = [
-  "2020",
-  "2021",
-  "2022",
-  "2023",
-  "2024",
-  "2025",
-  "2026",
-  "2027",
-  "2028",
-];
-const USER_TYPES = ["INTERNAL", "EXTERNAL"];
-
 function FilterBar({
   search,
   onSearchChange,
@@ -595,7 +574,7 @@ function FilterBar({
         <SelectField
           label="Department"
           value={filters.department}
-          options={DEPARTMENTS}
+          options={DEPARTMENT_FILTER_OPTIONS}
           onChange={(value) => handleChange("department", value)}
         />
         <SelectField
@@ -607,13 +586,13 @@ function FilterBar({
         <SelectField
           label="Batch"
           value={filters.batch}
-          options={BATCHES}
+          options={BATCH_OPTIONS}
           onChange={(value) => handleChange("batch", value)}
         />
         <SelectField
           label="User Type"
           value={filters.user_type}
-          options={USER_TYPES}
+          options={USER_TYPE_OPTIONS}
           onChange={(value) => handleChange("user_type", value)}
         />
       </form>
@@ -633,28 +612,18 @@ function SelectField({ label, value, options, onChange }) {
         className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm outline-none focus:border-primary"
       >
         <option value="">Semua</option>
-        {options.map((opt) => (
-          <option key={opt} value={opt}>
-            {opt}
-          </option>
-        ))}
+        {options.map((opt) =>
+          typeof opt === "string" ? (
+            <option key={opt} value={opt}>
+              {opt}
+            </option>
+          ) : (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ),
+        )}
       </select>
-    </div>
-  );
-}
-
-function InfoRow({ icon: Icon, label, value }) {
-  return (
-    <div className="flex items-start gap-3 rounded-md border border-border/60 px-3 py-2">
-      <Icon className="mt-0.5 size-4 text-muted-foreground" />
-      <div className="flex-1 min-w-0 space-y-1">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-          {label}
-        </p>
-        <div className="text-sm font-medium break-words whitespace-pre-wrap leading-snug">
-          {value || "—"}
-        </div>
-      </div>
     </div>
   );
 }

@@ -22,7 +22,11 @@ const API_AUTH_TOKEN_VERIFY = `${API_AUTH_BASE}/token/verify/`;
 const API_AUTH_USER = `${API_AUTH_BASE}/user/`;
 const API_AUTH_USER_PROFILE = `${API_AUTH_BASE}/user/profile/`;
 const API_AUTH_USER_PROFILE_DETAIL = (id) => `${API_AUTH_USER_PROFILE}${id}/`;
-const API_AUTH_USERS = `${API_AUTH_BASE}/users/`;
+
+// REGION: Admin Profile API Endpoints
+const API_AUTH_ADMIN_PROFILE = `${API_AUTH_BASE}/admin/profile/`;
+const API_AUTH_ADMIN_PROFILE_DETAIL = (id) => `${API_AUTH_ADMIN_PROFILE}${id}/`;
+const API_AUTH_USERS = `${API_AUTH_BASE}/admin/users/`;
 
 // REGION: Bookings API Endpoints
 const API_BOOKINGS = `${API_BASE_URL}/api/bookings/`;
@@ -69,6 +73,8 @@ export {
   API_AUTH_USER,
   API_AUTH_USER_PROFILE,
   API_AUTH_USER_PROFILE_DETAIL,
+  API_AUTH_ADMIN_PROFILE,
+  API_AUTH_ADMIN_PROFILE_DETAIL,
   API_AUTH_USERS,
   API_AUTH_TOKEN_REFRESH,
   API_AUTH_TOKEN_VERIFY,

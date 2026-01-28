@@ -5,20 +5,7 @@ import { useState } from "react";
 import { API_AUTH_REGISTER } from "@/constants/api";
 import { authFetch } from "@/lib/auth-fetch";
 import { normalizeRoleInput } from "@/constants/roles";
-
-const USER_TYPE_MAP = {
-  internal: "INTERNAL",
-  external: "EXTERNAL",
-};
-
-function normalizeUserType(value) {
-  if (!value) return "";
-  const raw = String(value).trim();
-  const lower = raw.toLowerCase();
-  if (USER_TYPE_MAP[lower]) return USER_TYPE_MAP[lower];
-  const upper = raw.toUpperCase();
-  return Object.values(USER_TYPE_MAP).includes(upper) ? upper : "";
-}
+import { normalizeUserType } from "@/constants/user-types";
 
 function parseCreateUserError(data) {
   if (!data || typeof data !== "object") return "Gagal (data tidak valid)";

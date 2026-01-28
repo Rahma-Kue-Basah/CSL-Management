@@ -24,6 +24,12 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { useBulkCreateUsers } from "@/hooks/use-bulk-create-users";
+import { ROLE_OPTIONS } from "@/constants/roles";
+import {
+  USER_TYPE_SELECT_OPTIONS,
+  USER_TYPE_VALUES,
+} from "@/constants/user-types";
+import { toast } from "sonner";
 
 const HEADER_MAP = {
   "nama lengkap": "full_name",
@@ -53,7 +59,7 @@ function buildTemplateWorkbook() {
       "aziz@student.prasetiyamulya.ac.id",
       "Password123",
       "STUDENT",
-      "EXTERNAL",
+      USER_TYPE_VALUES.EXTERNAL,
     ],
   ];
   const sheet = XLSX.utils.aoa_to_sheet([headers, ...sample]);
@@ -160,7 +166,23 @@ export default function BulkUserFormPage() {
     }
 
     setErrorMessage("");
-    await createUsers(validRows, setResults);
+    const result = await createUsers(validRows, setResults);
+    if (!result?.length) return;
+    const success = result.filter((row) => row.status === "success").length;
+    const error = result.filter((row) => row.status === "error").length;
+    if (error) {
+      toast.error(`Selesai: ${success} sukses, ${error} gagal.`);
+    } else {
+      toast.success(`Semua selesai: ${success} user ditambahkan.`);
+    }
+  };
+
+  const handleReset = () => {
+    setRows([]);
+    setResults([]);
+    setFileName("");
+    setErrorMessage("");
+    setEditingIndex(null);
   };
 
   const updateRow = (rowIndex, key, value) => {
@@ -181,6 +203,9 @@ export default function BulkUserFormPage() {
     const error = results.filter((r) => r.status === "error").length;
     return { success, error, total: results.length };
   }, [results]);
+  const isFinished = summary.total && summary.total === validRows.length;
+  const isAllFailed =
+    isFinished && summary.success === 0 && summary.error === summary.total;
 
   return (
     <section className="space-y-4">
@@ -224,7 +249,9 @@ export default function BulkUserFormPage() {
             {fileName ? "Ganti file" : "Klik untuk memilih file"}
           </p>
           <p className="text-xs text-muted-foreground">
-            {fileName ? `File terpilih: ${fileName}` : "Mendukung .xlsx, .xls, .csv"}
+            {fileName
+              ? `File terpilih: ${fileName}`
+              : "Mendukung .xlsx, .xls, .csv"}
           </p>
         </label>
 
@@ -276,27 +303,32 @@ export default function BulkUserFormPage() {
               ) : null}
             </div>
           </div>
-          <div className="overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[70px]">Baris</TableHead>
-                  <TableHead>Nama</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Password</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Tipe</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Aksi</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((row) => {
-                  const result = results.find((r) => r.index === row.index);
-                  const isValid = row.full_name && row.email && row.password;
-                  const isEditing = editingIndex === row.index;
-                  return (
-                    <TableRow key={`${row.email}-${row.index}`}>
+          {!isAllFailed ? (
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[70px]">Baris</TableHead>
+                    <TableHead>Nama</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Password</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Tipe</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">
+                      {!summary.total || summary.total !== validRows.length
+                        ? "Aksi"
+                        : ""}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rows.map((row) => {
+                    const result = results.find((r) => r.index === row.index);
+                    const isValid = row.full_name && row.email && row.password;
+                    const isEditing = editingIndex === row.index;
+                    return (
+                      <TableRow key={`${row.email}-${row.index}`}>
                       <TableCell className="text-xs text-muted-foreground">
                         {row.index}
                       </TableCell>
@@ -342,102 +374,135 @@ export default function BulkUserFormPage() {
                       </TableCell>
                       <TableCell>
                         {isEditing ? (
-                          <input
-                            value={row.role}
+                          <select
+                            value={row.role || ""}
                             onChange={(e) =>
                               updateRow(row.index, "role", e.target.value)
                             }
                             className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
-                            placeholder="STUDENT/LECTURER/ADMIN"
-                          />
+                          >
+                            {ROLE_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
                           row.role || "-"
                         )}
                       </TableCell>
                       <TableCell>
                         {isEditing ? (
-                          <input
-                            value={row.user_type}
+                          <select
+                            value={row.user_type || ""}
                             onChange={(e) =>
                               updateRow(row.index, "user_type", e.target.value)
                             }
                             className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
-                            placeholder="INTERNAL/EXTERNAL"
-                          />
+                          >
+                            {USER_TYPE_SELECT_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
                         ) : (
                           row.user_type || "-"
                         )}
                       </TableCell>
                       <TableCell>
-                        {!isValid && (
-                          <span
-                            className="inline-flex items-center text-red-600"
-                            title="Data kurang"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </span>
-                        )}
-                        {isValid && !result && (
-                          <span
-                            className="inline-flex items-center text-muted-foreground"
-                            title="Siap"
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                          </span>
-                        )}
-                        {result?.status === "success" && (
-                          <span
-                            className="inline-flex items-center text-green-600"
-                            title="Sukses"
-                          >
-                            <CheckCircle2 className="h-4 w-4" />
-                          </span>
-                        )}
-                        {result?.status === "error" && (
-                          <span
-                            className="inline-flex items-center text-red-600"
-                            title={result.message}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setEditingIndex(isEditing ? null : row.index)
-                            }
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeRow(row.index)}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
+                        <div className="space-y-1">
+                          {!isValid && (
+                            <span
+                              className="inline-flex items-center text-red-600"
+                              title="Data kurang"
+                            >
+                              <XCircle className="h-4 w-4" />
+                            </span>
+                          )}
+                          {isValid && !result && (
+                            <span
+                              className="inline-flex items-center text-muted-foreground"
+                              title="Siap"
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                            </span>
+                          )}
+                          {result?.status === "success" && (
+                            <span
+                              className="inline-flex items-center text-green-600"
+                              title="Sukses"
+                            >
+                              <CheckCircle2 className="h-4 w-4" />
+                            </span>
+                          )}
+                          {result?.status === "error" && (
+                            <>
+                              {/* <span
+                                className="inline-flex items-center text-red-600"
+                                title={result.message}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </span> */}
+                              <p className="text-xs text-red-600 break-words">
+                                {result.message || "Gagal"}
+                              </p>
+                            </>
+                          )}
                         </div>
                       </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-          {!isUploading && summary.total && summary.total === validRows.length ? (
+                      <TableCell className="text-right">
+                        {!isFinished ? (
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setEditingIndex(isEditing ? null : row.index)
+                              }
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => removeRow(row.index)}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        ) : null}
+                      </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          ) : null}
+          {isFinished ? (
             <div className="mt-4">
-              <AlertMessage variant="success" dismissible={false}>
+              <AlertMessage
+                variant={summary.success ? "success" : "destructive"}
+                dismissible={false}
+              >
                 Proses selesai. Sukses: {summary.success} · Gagal:{" "}
-                {summary.error}.{" "}
-                <Link href="/user" className="underline">
-                  Lihat daftar user
-                </Link>
+                {summary.error}. <br />
+                {summary.success ? (
+                  <Link href="/user" className="underline">
+                    Lihat daftar user
+                  </Link>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="underline"
+                  >
+                    Coba lagi
+                  </button>
+                )}
               </AlertMessage>
             </div>
           ) : null}

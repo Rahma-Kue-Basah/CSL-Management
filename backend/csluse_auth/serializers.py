@@ -1,4 +1,6 @@
 import re
+import secrets
+import string
 
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from dj_rest_auth.serializers import LoginSerializer as BaseLoginSerializer
@@ -86,19 +88,38 @@ class CustomLoginSerializer(BaseLoginSerializer):
 def _generate_unique_username(base):
     sanitized = re.sub(r"[^a-zA-Z0-9_]+", "", base).lower()
     username = sanitized or "user"
+    max_length = User._meta.get_field("username").max_length
+
+    if len(username) > max_length:
+        username = username[:max_length]
 
     if not User.objects.filter(username=username).exists():
         return username
 
-    suffix = 1
-    while True:
-        candidate = f"{username}{suffix}"
+    alphabet = string.ascii_lowercase + string.digits
+
+    def build_candidate(base_value, suffix_value):
+        base_limit = max_length - len(suffix_value)
+        trimmed = base_value[:base_limit] if base_limit > 0 else ""
+        return f"{trimmed}{suffix_value}" or "user"
+
+    for _ in range(20):
+        suffix = "_" + "".join(secrets.choice(alphabet) for _ in range(4))
+        candidate = build_candidate(username, suffix)
         if not User.objects.filter(username=candidate).exists():
             return candidate
-        suffix += 1
+
+    suffix_counter = 1
+    while True:
+        suffix = f"_{suffix_counter}"
+        candidate = build_candidate(username, suffix)
+        if not User.objects.filter(username=candidate).exists():
+            return candidate
+        suffix_counter += 1
 
 
 class CustomRegisterSerializer(RegisterSerializer):
+    username = serializers.CharField(required=False, allow_blank=True)
     full_name = serializers.CharField(write_only=True)
     role = serializers.ChoiceField(
         choices=[choice[0] for choice in Profile.ROLE_CHOICES],
@@ -122,13 +143,21 @@ class CustomRegisterSerializer(RegisterSerializer):
         allow_null=True,
     )
 
+    def validate_username(self, username):
+        # Allow duplicates here; we will auto-generate a unique username later.
+        return username
+
+    def validate(self, data):
+        data = super().validate(data)
+        email = data.get("email") or self.initial_data.get("email") or ""
+        base = email.split("@")[0] if email else "user"
+        data["username"] = _generate_unique_username(base)
+        return data
+
     def get_cleaned_data(self):
         data = super().get_cleaned_data()
         full_name = self.validated_data.get("full_name", "").strip()
-        email = data.get("email") or self.validated_data.get("email") or ""
-        base = email.split("@")[0] if email else "user"
-
-        data["username"] = _generate_unique_username(base)
+        data["username"] = self.validated_data.get("username") or data.get("username")
         data["full_name"] = full_name
         return data
 

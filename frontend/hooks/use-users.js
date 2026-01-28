@@ -37,6 +37,7 @@ export function useUsers(page, pageSize = 20, filters = {}) {
           return {
             id: item.id,
             uid: item.id || email,
+            profileId: item.profile?.id || null,
             idNumber: item.profile?.id_number || "-",
             name: item.profile?.full_name || item.username || "-",
             email,

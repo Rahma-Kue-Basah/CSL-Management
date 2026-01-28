@@ -22,6 +22,9 @@ import { useUpdateProfile } from "@/hooks/use-update-profile";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { ChangePasswordDrawer } from "@/components/change-password-drawer";
 import { Lock } from "lucide-react";
+import { USER_TYPE_OPTIONS } from "@/constants/user-types";
+import { DEPARTMENT_OPTIONS } from "@/constants/departments";
+import { BATCH_OPTIONS } from "@/constants/batches";
 
 function InfoRow({
   icon: Icon,
@@ -87,16 +90,6 @@ export function ProfileDrawer({ user, children }) {
   const [isEditing, setIsEditing] = useState(false);
   const { updateProfile, isSubmitting, message, setMessage } = useUpdateProfile();
 
-  const departmentOptions = [
-    { value: "DIGITAL BUSINESS TECHNOLOGY", label: "Digital Business Technology" },
-    { value: "ARTIFICIAL INTELIGENCE AND ROBOTIC", label: "Artificial Inteligence and Robotic" },
-    { value: "BUSINESS MATHEMATICS", label: "Business Mathematics" },
-    { value: "FOOD BUSINESS TECHNOLOGY", label: "Food Business Technology" },
-    { value: "PRODUCT DESIGN AND INNOVATION", label: "Product Design and Innovation" },
-    { value: "ENERGY BUSINESS AND TECHNOLOGY", label: "Energy Business and Technology" },
-  ];
-
-  const batchOptions = ["2020","2021","2022","2023","2024","2025","2026","2027","2028"];
   const roleOptions = [
     { value: "ADMIN", label: "Admin" },
     { value: "LECTURER", label: "Lecturer" },
@@ -104,10 +97,7 @@ export function ProfileDrawer({ user, children }) {
     { value: "STAFF", label: "Staff" },
     { value: "OTHER", label: "Other" },
   ];
-  const userTypeOptions = [
-    { value: "INTERNAL", label: "Internal" },
-    { value: "EXTERNAL", label: "External" },
-  ];
+  const userTypeOptions = USER_TYPE_OPTIONS;
 
   const toTitle = (text) =>
     text
@@ -227,7 +217,7 @@ export function ProfileDrawer({ user, children }) {
             name="department"
             onChange={handleChange}
             type="select"
-            options={departmentOptions}
+            options={DEPARTMENT_OPTIONS}
           />
           <InfoRow
             icon={GraduationCap}
@@ -238,7 +228,7 @@ export function ProfileDrawer({ user, children }) {
             name="batch"
             onChange={handleChange}
             type="select"
-            options={batchOptions}
+            options={BATCH_OPTIONS}
           />
           <InfoRow
             icon={IdCard}

@@ -1,25 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import Cookies from "js-cookie";
-import { API_AUTH_USER_PROFILE_DETAIL } from "@/constants/api";
+
+import { API_AUTH_ADMIN_PROFILE_DETAIL } from "@/constants/api";
 import { authFetch } from "@/lib/auth-fetch";
 
-export function useUpdateProfile() {
+export function useUpdateUserProfile() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState("");
 
-  const updateProfile = async (
-    profileId,
-    payload,
-    currentProfile = {},
-    options = {},
-  ) => {
+  const updateUserProfile = async (profileId, payload, currentProfile = {}) => {
     if (!profileId) {
       throw new Error("Profile ID is missing");
     }
 
-    // Skip request if nothing changed
     const normalizedCurrent = {
       full_name: currentProfile.name || "",
       department: currentProfile.department || null,
@@ -51,7 +45,7 @@ export function useUpdateProfile() {
 
     try {
       const response = await authFetch(
-        API_AUTH_USER_PROFILE_DETAIL(profileId),
+        API_AUTH_ADMIN_PROFILE_DETAIL(profileId),
         {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -77,10 +71,6 @@ export function useUpdateProfile() {
         user_type: updated.user_type || currentProfile?.user_type,
       };
 
-      if (typeof window !== "undefined" && !options.skipLocalProfileUpdate) {
-        window.localStorage.setItem("profile", JSON.stringify(nextProfile));
-      }
-
       setMessage("Profile updated");
       return nextProfile;
     } catch (err) {
@@ -91,7 +81,7 @@ export function useUpdateProfile() {
     }
   };
 
-  return { updateProfile, isSubmitting, message, setMessage };
+  return { updateUserProfile, isSubmitting, message, setMessage };
 }
 
-export default useUpdateProfile;
+export default useUpdateUserProfile;

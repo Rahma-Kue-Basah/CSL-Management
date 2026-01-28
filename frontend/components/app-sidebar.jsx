@@ -17,7 +17,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { useLoadProfile } from "@/hooks/use-load-profile";
-import { isPrivilegedRole } from "@/constants/roles";
+import { isPrivilegedRole, ROLE_LABELS, ROLE_VALUES } from "@/constants/roles";
 
 export const NAV_DATA = {
   navMain: [
@@ -44,6 +44,28 @@ export const NAV_DATA = {
         {
           title: "User",
           url: "/user",
+          items: [
+            {
+              title: ROLE_LABELS[ROLE_VALUES.STUDENT],
+              url: `/user?role=${ROLE_LABELS[ROLE_VALUES.STUDENT]}`,
+            },
+            {
+              title: ROLE_LABELS[ROLE_VALUES.LECTURER],
+              url: `/user?role=${ROLE_LABELS[ROLE_VALUES.LECTURER]}`,
+            },
+            {
+              title: ROLE_LABELS[ROLE_VALUES.STAFF],
+              url: `/user?role=${ROLE_LABELS[ROLE_VALUES.STAFF]}`,
+            },
+            {
+              title: ROLE_LABELS[ROLE_VALUES.ADMIN],
+              url: `/user?role=${ROLE_LABELS[ROLE_VALUES.ADMIN]}`,
+            },
+            {
+              title: ROLE_LABELS[ROLE_VALUES.OTHER],
+              url: `/user?role=${ROLE_LABELS[ROLE_VALUES.OTHER]}`,
+            },
+          ],
         },
       ],
     },

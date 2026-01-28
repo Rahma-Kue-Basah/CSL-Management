@@ -84,3 +84,10 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Tidak bisa menghapus SuperAdministrator.")
 
         return super().destroy(request, *args, **kwargs)
+
+
+class AdminProfileViewSet(viewsets.ModelViewSet):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated, IsAdministratorOrAbove]
+    queryset = Profile.objects.select_related("user").all()
+    http_method_names = ["get", "patch"]

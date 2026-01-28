@@ -6,30 +6,10 @@ import { Eye, EyeOff, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ROLE_OPTIONS } from "@/constants/roles";
+import { DEPARTMENT_VALUES } from "@/constants/departments";
+import { BATCH_VALUES } from "@/constants/batches";
+import { USER_TYPE_SELECT_OPTIONS } from "@/constants/user-types";
 import { useCreateUser } from "@/hooks/use-create-user";
-
-const DEPARTMENTS = [
-  "DIGITAL BUSINESS TECHNOLOGY",
-  "ARTIFICIAL INTELIGENCE AND ROBOTIC",
-  "BUSINESS MATHEMATICS",
-  "FOOD BUSINESS TECHNOLOGY",
-  "PRODUCT DESIGN AND INNOVATION",
-  "ENERGY BUSINESS AND TECHNOLOGY",
-];
-
-const BATCHES = [
-  "2020",
-  "2021",
-  "2022",
-  "2023",
-  "2024",
-  "2025",
-  "2026",
-  "2027",
-  "2028",
-];
-
-const USER_TYPES = ["INTERNAL", "EXTERNAL"];
 
 export default function NewUserPage() {
   const router = useRouter();
@@ -175,10 +155,9 @@ export default function NewUserPage() {
                 onChange={handleChange}
                 className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
               >
-                <option value="">Pilih tipe</option>
-                {USER_TYPES.map((opt) => (
-                  <option key={opt} value={opt}>
-                    {opt}
+                {USER_TYPE_SELECT_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
                   </option>
                 ))}
               </select>
@@ -225,7 +204,7 @@ export default function NewUserPage() {
                     className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
                   >
                     <option value="">Pilih department</option>
-                    {DEPARTMENTS.map((opt) => (
+                    {DEPARTMENT_VALUES.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
                       </option>
@@ -241,7 +220,7 @@ export default function NewUserPage() {
                     className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
                   >
                     <option value="">Pilih batch</option>
-                    {BATCHES.map((opt) => (
+                    {BATCH_VALUES.map((opt) => (
                       <option key={opt} value={opt}>
                         {opt}
                       </option>
