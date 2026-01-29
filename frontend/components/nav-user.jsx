@@ -31,14 +31,14 @@ export function NavUser({ user }) {
           <DropdownMenuTrigger asChild>
             <SidebarMenuButton
               size="lg"
-              className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+              className="text-[15px] rounded-xl data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarFallback className="rounded-lg">
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
+              <div className="grid flex-1 text-left text-[15px] leading-tight">
                 <span className="truncate font-medium">{profile.name}</span>
                 {/* <span className="truncate text-xs">{profile.email}</span> */}
               </div>
@@ -52,15 +52,15 @@ export function NavUser({ user }) {
             sideOffset={4}
           >
             <DropdownMenuLabel className="p-0 font-normal">
-              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+              <div className="flex items-center gap-2 px-1 py-1.5 text-left text-[15px]">
                 <Avatar className="h-8 w-8 rounded-lg">
                   <AvatarFallback className="rounded-lg">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-sm leading-tight">
+                <div className="grid flex-1 text-left text-[15px] leading-tight">
                   <span className="truncate font-medium">{profile.name}</span>
-                  <span className="truncate text-xs">{profile.email}</span>
+                  <span className="truncate text-[15px]">{profile.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

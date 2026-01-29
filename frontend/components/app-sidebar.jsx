@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Layers, LayoutGrid, User } from "lucide-react";
+import { Calendar, ClipboardList, Layers, LayoutGrid, User, Wrench } from "lucide-react";
 
 import { NavMain } from "@/components/nav-main";
 import { NavUser } from "@/components/nav-user";
@@ -25,6 +25,31 @@ export const NAV_DATA = {
       title: "Dashboard",
       url: "/dashboard",
       icon: LayoutGrid,
+    },
+    {
+      title: "Peminjaman Lab",
+      url: "/peminjaman-lab",
+      icon: ClipboardList,
+      alwaysOpen: true,
+      items: [
+        { title: "Ajukan Peminjaman", url: "/peminjaman-lab/ajukan" },
+        { title: "List Peminjaman", url: "/peminjaman-lab" },
+      ],
+    },
+    {
+      title: "Peminjaman Alat Lab",
+      url: "/peminjaman-alat",
+      icon: Wrench,
+      alwaysOpen: true,
+      items: [
+        { title: "Ajukan Peminjaman", url: "/peminjaman-alat/ajukan" },
+        { title: "List Peminjaman", url: "/peminjaman-alat" },
+      ],
+    },
+    {
+      title: "Jadwal Lab",
+      url: "/schedule",
+      icon: Calendar,
     },
     {
       title: "Inventory",
@@ -86,16 +111,16 @@ export function AppSidebar({ ...props }) {
       className="font-sans"
       {...props}
     >
-      <SidebarHeader>
+      <SidebarHeader className="border-b border-sidebar-border/60 bg-[linear-gradient(135deg,rgba(227,6,20,0.10),rgba(227,6,20,0)_70%)]">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
+            <SidebarMenuButton size="lg" asChild className="h-16 py-3 overflow-visible rounded-xl">
               <Link href="/dashboard" className="flex items-center gap-2">
                 <Image
                   src="/logo/stem-name 2.png"
                   alt="STEM Logo"
-                  width={100}
-                  height={40}
+                  width={140}
+                  height={50}
                   style={{ width: "auto", height: "auto" }}
                   className="rounded-full group-data-[collapsible=icon]:hidden"
                 />
@@ -112,10 +137,10 @@ export function AppSidebar({ ...props }) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="px-1">
         <NavMain items={navItems} />
       </SidebarContent>
-      <SidebarFooter>
+      <SidebarFooter className="border-t border-sidebar-border/60 bg-sidebar/80 backdrop-blur-sm">
         <NavUser />
       </SidebarFooter>
     </Sidebar>

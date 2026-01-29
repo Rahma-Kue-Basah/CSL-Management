@@ -25,8 +25,10 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel>Dashboard</SidebarGroupLabel>
-      <SidebarMenu>
+      <SidebarGroupLabel className="text-[14px] uppercase tracking-wide text-sidebar-foreground/70">
+        CSL USE
+      </SidebarGroupLabel>
+      <SidebarMenu className="gap-1">
         {items.map((item) => {
           const hasChildren = item.items?.length;
           const alwaysOpen = item.alwaysOpen && hasChildren;
@@ -41,17 +43,19 @@ export function NavMain({
               <SidebarMenuButton
                 tooltip={item.title}
                 asChild={!!(item.url && item.url !== "#")}
-                className={!item.url || item.url === "#" ? "cursor-default" : ""}
+                className={`text-[14px] transition-all duration-200 hover:translate-x-0.5 ${
+                  !item.url || item.url === "#" ? "cursor-default" : ""
+                }`}
               >
                 {item.url && item.url !== "#" ? (
                   <Link href={item.url}>
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </Link>
-                ) : (
+                      <span className="text-[14px]">{item.title}</span>
+                    </Link>
+                  ) : (
                   <div className="flex items-center gap-2">
                     <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span className="text-[14px]">{item.title}</span>
                   </div>
                 )}
               </SidebarMenuButton>
@@ -65,39 +69,39 @@ export function NavMain({
                       </SidebarMenuAction>
                     </CollapsibleTrigger>
                   )}
-                  <CollapsibleContent>
-                    <SidebarMenuSub>
+                  <CollapsibleContent className="overflow-hidden data-[state=closed]:animate-[sidebar-accordion-up_0.2s_ease-out] data-[state=open]:animate-[sidebar-accordion-down_0.2s_ease-out]">
+                    <SidebarMenuSub className="mt-1 border-l border-sidebar-border/70 pl-2">
                       {item.items?.map((subItem) => {
                         const hasGrandChildren = subItem.items?.length;
                         if (!hasGrandChildren) {
                           return (
-                            <SidebarMenuSubItem key={subItem.title}>
-                              <SidebarMenuSubButton asChild>
-                                <Link href={subItem.url}>
-                                  <span>{subItem.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          );
-                        }
-
-                        return (
                           <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild>
+                            <SidebarMenuSubButton asChild className="text-[14px]">
                               <Link href={subItem.url}>
                                 <span>{subItem.title}</span>
                               </Link>
                             </SidebarMenuSubButton>
-                            <SidebarMenuSub className="ml-3 mt-1">
-                              {subItem.items?.map((grandItem) => (
-                                <SidebarMenuSubItem key={grandItem.title}>
-                                  <SidebarMenuSubButton asChild>
-                                    <Link href={grandItem.url}>
-                                      <span>{grandItem.title}</span>
-                                    </Link>
-                                  </SidebarMenuSubButton>
-                                </SidebarMenuSubItem>
-                              ))}
+                          </SidebarMenuSubItem>
+                        );
+                      }
+
+                      return (
+                        <SidebarMenuSubItem key={subItem.title}>
+                          <SidebarMenuSubButton asChild className="text-[14px]">
+                            <Link href={subItem.url}>
+                              <span>{subItem.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                          <SidebarMenuSub className="ml-3 mt-1">
+                            {subItem.items?.map((grandItem) => (
+                              <SidebarMenuSubItem key={grandItem.title}>
+                                <SidebarMenuSubButton asChild className="text-[14px]">
+                                  <Link href={grandItem.url}>
+                                    <span>{grandItem.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
                             </SidebarMenuSub>
                           </SidebarMenuSubItem>
                         );

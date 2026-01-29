@@ -5,7 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { CheckCircle2, X, XCircle } from "lucide-react";
-import { IdCard, Info, MailIcon, Shield, UserCircle } from "lucide-react";
+import {
+  BadgeCheck,
+  Building2,
+  GraduationCap,
+  IdCard,
+  MailIcon,
+  User,
+  UserCircle,
+} from "lucide-react";
 
 function InfoRow({
   icon: Icon,
@@ -139,7 +147,7 @@ export function UserDetailCollapsible({
                     onChange={onChange}
                   />
                   <InfoRow
-                    icon={Info}
+                    icon={GraduationCap}
                     label="Batch"
                     value={editForm.batch}
                     editable={isPrivileged}
@@ -150,7 +158,7 @@ export function UserDetailCollapsible({
                     options={batchOptions}
                   />
                   <InfoRow
-                    icon={Shield}
+                    icon={Building2}
                     label="Department"
                     value={editForm.department}
                     editable={isPrivileged}
@@ -175,7 +183,7 @@ export function UserDetailCollapsible({
                     }
                   />
                   <InfoRow
-                    icon={Shield}
+                    icon={BadgeCheck}
                     label="Role"
                     value={editForm.role}
                     editable={isPrivileged}
@@ -186,7 +194,7 @@ export function UserDetailCollapsible({
                     options={roleOptions}
                   />
                   <InfoRow
-                    icon={Shield}
+                    icon={User}
                     label="User Type"
                     value={editForm.user_type}
                     editable={isPrivileged}
