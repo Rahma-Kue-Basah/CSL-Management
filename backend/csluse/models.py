@@ -33,7 +33,7 @@ class Room(BaseModel):
     capacity = models.PositiveIntegerField()
     description = models.CharField(max_length=2000, blank=True, null=True)
     number = models.CharField(max_length=4)
-    floor = models.CharField(max_length=4)
+    floor = models.PositiveIntegerField()
     pic = models.ForeignKey(
         Profile,
         on_delete=models.SET_NULL,
@@ -197,4 +197,23 @@ class Borrow(BaseModel):
         return f"Borrow of {self.equipment.name} by {self.requested_by.user.email} - Status: {self.status}"
 
 
+class Notification(BaseModel):
+    recipient = models.ForeignKey(
+        Profile,
+        on_delete=models.CASCADE,
+        related_name='notifications',
+    )
+    title = models.CharField(max_length=255)
 
+    CATEGORY_CHOICES = [
+        ('approved', 'Approved'),
+        ('rejected', 'Rejected'),
+        ('reminder', 'Reminder'),
+        ('general', 'General'),
+    ]
+
+    category = models.CharField(max_length=255, choices=CATEGORY_CHOICES, default='general')
+    message = models.CharField(max_length=2000)
+
+    def __str__(self):
+        return f"Notification for {self.recipient.user.email} - {self.title}"

@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .models import Image, Booking, Borrow
+from .models import Image, Booking, Borrow, Room
 
 
 @receiver(post_delete, sender=Image)
@@ -45,6 +45,16 @@ def validate_booking(sender, instance, **kwargs):
             f"Quantity {qty} melebihi stok {eq.quantity} untuk {eq.name}."
         )
 
+    # approved_by must be room PIC or Admin (when set)
+    if instance.approved_by_id:
+        approver_role = instance.approved_by.role or ""
+        if approver_role != "ADMIN":
+            room_pic_id = instance.room.pic_id
+            if not room_pic_id or instance.approved_by_id != room_pic_id:
+                raise ValidationError(
+                    "Approver harus PIC ruangan terkait atau Admin."
+                )
+
 @receiver(pre_save, sender=Borrow)
 def validate_borrow(sender, instance, **kwargs):
     """
@@ -72,3 +82,29 @@ def validate_borrow(sender, instance, **kwargs):
         raise ValidationError("Cannot modify a borrow whose start time has passed.")
     if instance.end_time and instance.end_time <= now:
         raise ValidationError("Cannot modify a borrow whose end time has passed.")
+
+    # approved_by must be equipment room PIC or Admin (when set)
+    if instance.approved_by_id:
+        approver_role = instance.approved_by.role or ""
+        if approver_role != "ADMIN":
+            room_pic_id = instance.equipment.room_id and instance.equipment.room.pic_id
+            if not room_pic_id or instance.approved_by_id != room_pic_id:
+                raise ValidationError(
+                    "Approver harus PIC ruangan dari equipment terkait atau Admin."
+                )
+
+
+@receiver(pre_save, sender=Room)
+def validate_room(sender, instance, **kwargs):
+    """
+    Ensure Room.pic is a Profile with role Staff, Lecturer, or Admin.
+    """
+    if not instance.pic_id:
+        return
+
+    allowed_roles = {"STAFF", "LECTURER", "ADMIN"}
+    pic_role = instance.pic.role or ""
+    if pic_role not in allowed_roles:
+        raise ValidationError(
+            "PIC harus user dengan role Staff, Lecturer, atau Admin."
+        )

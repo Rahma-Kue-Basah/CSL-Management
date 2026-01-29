@@ -211,7 +211,6 @@ export default function BulkUserFormPage() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">Bulk Upload User</h1>
           <p className="text-sm text-muted-foreground">
             Upload file Excel dengan kolom: nama lengkap, email, password, role,
             dan tipe.

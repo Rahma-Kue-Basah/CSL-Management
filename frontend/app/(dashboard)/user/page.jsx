@@ -232,9 +232,6 @@ function UserPageContent() {
     <section className="space-y-4">
       <div className="flex items-baseline justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">
-            {isRoleScoped ? `User ${roleParam}` : "User"}
-          </h1>
           <p className="text-sm text-muted-foreground">
             Total {totalUsers} user terdaftar.
           </p>
@@ -309,11 +306,11 @@ function UserPageContent() {
       ) : null}
 
       <div className="rounded-lg border bg-card">
-        <Table>
+        <Table className="table-fixed">
           <TableHeader>
             <TableRow>
               <TableHead className="w-[80px]"></TableHead>
-              <TableHead>
+              <TableHead className="w-[180px]">
                 <button
                   type="button"
                   onClick={() => toggleSort("name")}
@@ -333,11 +330,11 @@ function UserPageContent() {
               </TableHead>
               <TableHead>Department</TableHead>
               <TableHead>ID Number</TableHead> */}
-              <TableHead>Email</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead className="text-center">Verified</TableHead>
-              <TableHead>User Type</TableHead>
-              <TableHead className="text-center sticky right-0 bg-card z-10">
+              <TableHead className="w-[220px]">Email</TableHead>
+              <TableHead className="w-[120px]">Role</TableHead>
+              <TableHead className="w-[120px] text-center">Verified</TableHead>
+              <TableHead className="w-[140px]">User Type</TableHead>
+              <TableHead className="w-[160px] text-center sticky right-0 bg-card z-10">
                 Aksi
               </TableHead>
             </TableRow>
@@ -367,14 +364,14 @@ function UserPageContent() {
                       {initials(user)}
                     </div>
                   </TableCell>
-                  <TableCell>{user.name}</TableCell>
+                  <TableCell className="truncate">{user.name}</TableCell>
                   {/* <TableCell>{user.batch}</TableCell>
                   <TableCell>{user.department}</TableCell>
                   <TableCell>{user.idNumber}</TableCell> */}
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-muted-foreground truncate">
                     {user.email}
                   </TableCell>
-                  <TableCell>{user.role}</TableCell>
+                  <TableCell className="truncate">{user.role}</TableCell>
                   <TableCell className="text-center align-middle">
                     <div className="flex justify-center">
                       {user.isVerified ? (
@@ -566,7 +563,7 @@ function FilterBar({
           onSearchSubmit();
         }}
       >
-        <div className="flex flex-col gap-0.5 w-[230px]">
+        <div className="flex flex-col gap-0.5 w-full sm:w-[230px] min-w-0">
           <label className="text-xs font-medium leading-none mb-2 text-foreground">
             Cari
           </label>
@@ -610,7 +607,7 @@ function FilterBar({
 
 function SelectField({ label, value, options, onChange }) {
   return (
-    <div className="flex flex-col gap-0.5 w-[230px]">
+    <div className="flex flex-col gap-0.5 w-full sm:w-[230px] min-w-0">
       <label className="text-xs font-medium mb-2 leading-none text-foreground">
         {label}
       </label>

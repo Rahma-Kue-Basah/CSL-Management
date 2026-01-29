@@ -90,8 +90,8 @@ def get_user_role(user):
     
     user_groups = user.groups.values_list('name', flat=True)
     
-    # Check in order of hierarchy (highest to lowest)
-    for role in [SUPER_ADMINISTRATOR, ADMINISTRATOR, LECTURER, STUDENT, STAFF, OTHER]:
+    # Check in order of hierarchy (lowest to highest)
+    for role in [OTHER, STUDENT, LECTURER, STAFF, ADMINISTRATOR, SUPER_ADMINISTRATOR]:
         if role in user_groups:
             return role
     
@@ -171,6 +171,12 @@ def assign_role(user, role):
 
 # Permission Classes for Django REST Framework
 
+class IsOther(permissions.BasePermission):
+    """Permission class to check if user is Other."""
+
+    def has_permission(self, request, view):
+        return is_other_role(request.user)
+
 class IsStudent(permissions.BasePermission):
     """
     Permission class to check if user is a Student.
@@ -178,7 +184,6 @@ class IsStudent(permissions.BasePermission):
     
     def has_permission(self, request, view):
         return is_student(request.user)
-
 
 class IsLecturer(permissions.BasePermission):
     """
@@ -188,7 +193,12 @@ class IsLecturer(permissions.BasePermission):
     def has_permission(self, request, view):
         return is_lecturer(request.user)
 
+class IsStaff(permissions.BasePermission):
+    """Permission class to check if user is Staff."""
 
+    def has_permission(self, request, view):
+        return is_staff_role(request.user)
+    
 class IsAdministrator(permissions.BasePermission):
     """
     Permission class to check if user is an Administrator.
@@ -216,7 +226,18 @@ class IsLecturerOrAbove(permissions.BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        return has_role(user, LECTURER) or has_role(user, ADMINISTRATOR) or has_role(user, SUPER_ADMINISTRATOR)
+        return has_role(user, LECTURER) or has_role(user, STAFF) or has_role(user, ADMINISTRATOR) or has_role(user, SUPER_ADMINISTRATOR)
+    
+class IsStaffOrAbove(permissions.BasePermission):
+    """
+    Permission class to check if user is Staff or above (incl. Administrator, SuperAdministrator).
+    """
+
+    def has_permission(self, request, view):
+        user = request.user
+        if not user or not user.is_authenticated:
+            return False
+        return has_role(user, STAFF) or has_role(user, ADMINISTRATOR) or has_role(user, SUPER_ADMINISTRATOR)
 
 
 class IsAdministratorOrAbove(permissions.BasePermission):
@@ -238,17 +259,3 @@ class IsSuperAdministratorOnly(permissions.BasePermission):
     
     def has_permission(self, request, view):
         return is_super_administrator(request.user)
-
-
-class IsStaff(permissions.BasePermission):
-    """Permission class to check if user is Staff."""
-
-    def has_permission(self, request, view):
-        return is_staff_role(request.user)
-
-
-class IsOther(permissions.BasePermission):
-    """Permission class to check if user is Other."""
-
-    def has_permission(self, request, view):
-        return is_other_role(request.user)

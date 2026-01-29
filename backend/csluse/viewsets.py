@@ -20,6 +20,7 @@ from .serializers import (
     BookingSerializer,
     BorrowSerializer,
 )
+from csluse_auth.permissions import IsStaffOrAbove
 
 
 class DefaultPagination(PageNumberPagination):
@@ -35,11 +36,17 @@ class ImageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser]
 
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        return super().get_permissions()
+
     def perform_create(self, serializer):
         uploaded_image = self.request.FILES.get('image')
         name = os.path.basename(uploaded_image.name) if uploaded_image else ''
         instance = serializer.save(
-            created_by=self.request.user if self.request.user.is_authenticated else None,
+            created_by=getattr(self.request.user, 'profile', None)
+            if self.request.user.is_authenticated else None,
             name=name,
         )
         if instance.image and not instance.url:
@@ -48,20 +55,21 @@ class ImageViewSet(viewsets.ModelViewSet):
 
 
 class RoomViewSet(viewsets.ModelViewSet):
-    queryset = Room.objects.all().order_by('-created_at')
+    queryset = Room.objects.select_related('pic', 'image').order_by('-created_at')
     serializer_class = RoomSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        return super().get_permissions()
 
     @extend_schema(
         parameters=[
             OpenApiParameter("pic", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="PIC of the room"),
             OpenApiParameter("pic_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="Alias for pic"),
             OpenApiParameter("floor", OpenApiTypes.STR, OpenApiParameter.QUERY),
-            OpenApiParameter("capacity_min", OpenApiTypes.INT, OpenApiParameter.QUERY),
-            OpenApiParameter("capacity_max", OpenApiTypes.INT, OpenApiParameter.QUERY),
-            OpenApiParameter("created_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
-            OpenApiParameter("created_before", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
         ]
     )
     def list(self, request, *args, **kwargs):
@@ -71,24 +79,13 @@ class RoomViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         pic_id = self.request.query_params.get('pic') or self.request.query_params.get('pic_id')
         floor = self.request.query_params.get('floor')
-        capacity_min = self.request.query_params.get('capacity_min')
-        capacity_max = self.request.query_params.get('capacity_max')
-        created_after = self.request.query_params.get('created_after')
-        created_before = self.request.query_params.get('created_before')
 
         # Filter params: pic, floor, capacity range, created range
         if pic_id:
             qs = qs.filter(pic_id=pic_id)
         if floor:
             qs = qs.filter(floor=floor)
-        if capacity_min:
-            qs = qs.filter(capacity__gte=capacity_min)
-        if capacity_max:
-            qs = qs.filter(capacity__lte=capacity_max)
-        if created_after:
-            qs = qs.filter(created_at__gte=created_after)
-        if created_before:
-            qs = qs.filter(created_at__lte=created_before)
+
         return qs
 
     @action(detail=True, methods=['get'])
@@ -131,10 +128,19 @@ class RoomViewSet(viewsets.ModelViewSet):
 
 
 class EquipmentViewSet(viewsets.ModelViewSet):
-    queryset = Equipment.objects.select_related('room', 'image').order_by('-created_at')
+    queryset = (
+        Equipment.objects
+        .select_related('room', 'room__pic', 'room__image', 'image')
+        .order_by('-created_at')
+    )
     serializer_class = EquipmentSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        return super().get_permissions()
 
     @extend_schema(
         parameters=[
@@ -144,8 +150,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             OpenApiParameter("pic", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="PIC of the room"),
             OpenApiParameter("pic_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="Alias for pic"),
             OpenApiParameter("is_moveable", OpenApiTypes.BOOL, OpenApiParameter.QUERY),
-            OpenApiParameter("created_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
-            OpenApiParameter("created_before", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
         ]
     )
     def list(self, request, *args, **kwargs):
@@ -158,8 +162,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         room_id = self.request.query_params.get('room')
         pic_id = self.request.query_params.get('pic') or self.request.query_params.get('pic_id')
         is_moveable = self.request.query_params.get('is_moveable')
-        created_after = self.request.query_params.get('created_after')
-        created_before = self.request.query_params.get('created_before')
+
 
         # Filter params: status, category, room, pic, is_moveable, created range
         if status_param:
@@ -175,10 +178,6 @@ class EquipmentViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(is_moveable=True)
             elif str(is_moveable).lower() in ['false', '0', 'no']:
                 qs = qs.filter(is_moveable=False)
-        if created_after:
-            qs = qs.filter(created_at__gte=created_after)
-        if created_before:
-            qs = qs.filter(created_at__lte=created_before)
         return qs
 
     @action(detail=True, methods=['get'])

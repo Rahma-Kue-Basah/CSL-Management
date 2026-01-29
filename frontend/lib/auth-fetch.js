@@ -1,12 +1,12 @@
 "use client";
 
-import Cookies from "js-cookie";
 import { API_AUTH_TOKEN_REFRESH } from "@/constants/api";
+import { getCookieValue, setCookieValue, removeCookieValue } from "@/lib/cookies";
 
 function setAccessTokens(accessToken) {
   if (!accessToken) return;
-  Cookies.set("access_token", accessToken, { sameSite: "lax" });
-  Cookies.set("access", accessToken, { sameSite: "lax" });
+  setCookieValue("access_token", accessToken, { sameSite: "lax" });
+  setCookieValue("access", accessToken, { sameSite: "lax" });
   if (typeof window !== "undefined") {
     window.localStorage.setItem("access_token", accessToken);
   }
@@ -14,18 +14,18 @@ function setAccessTokens(accessToken) {
 
 function setRefreshToken(refreshToken) {
   if (!refreshToken) return;
-  Cookies.set("refresh_token", refreshToken, { sameSite: "lax" });
-  Cookies.set("refresh", refreshToken, { sameSite: "lax" });
+  setCookieValue("refresh_token", refreshToken, { sameSite: "lax" });
+  setCookieValue("refresh", refreshToken, { sameSite: "lax" });
   if (typeof window !== "undefined") {
     window.localStorage.setItem("refresh_token", refreshToken);
   }
 }
 
 function clearTokens() {
-  Cookies.remove("access_token");
-  Cookies.remove("access");
-  Cookies.remove("refresh_token");
-  Cookies.remove("refresh");
+  removeCookieValue("access_token");
+  removeCookieValue("access");
+  removeCookieValue("refresh_token");
+  removeCookieValue("refresh");
   if (typeof window !== "undefined") {
     window.localStorage.clear();
   }
@@ -33,8 +33,8 @@ function clearTokens() {
 
 function getAccessToken() {
   return (
-    Cookies.get("access_token") ||
-    Cookies.get("access") ||
+    getCookieValue("access_token") ||
+    getCookieValue("access") ||
     (typeof window !== "undefined"
       ? window.localStorage.getItem("access_token")
       : null)
@@ -43,8 +43,8 @@ function getAccessToken() {
 
 function getRefreshToken() {
   return (
-    Cookies.get("refresh_token") ||
-    Cookies.get("refresh") ||
+    getCookieValue("refresh_token") ||
+    getCookieValue("refresh") ||
     (typeof window !== "undefined"
       ? window.localStorage.getItem("refresh_token")
       : null)

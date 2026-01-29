@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronsUpDown, LogOut, UserRound, Bell } from "lucide-react";
+import { LogOut, UserRound, Bell } from "lucide-react";
 import { useSidebar } from "@/components/ui/sidebar";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -38,16 +38,15 @@ export function NavUser({ user }) {
                   {initials}
                 </AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-[15px] leading-tight">
+              <div className="grid flex-1 text-left text-[14px] leading-tight">
                 <span className="truncate font-medium">{profile.name}</span>
                 {/* <span className="truncate text-xs">{profile.email}</span> */}
               </div>
-              <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
-            className="w-(--radix-dropdown-menu-trigger-width) min-w-64 rounded-lg"
-            side={isMobile ? "bottom" : "right"}
+            className="w-(--radix-dropdown-menu-trigger-width) min-w-68 rounded-lg"
+            side={isMobile ? "bottom" : "top"}
             align="end"
             sideOffset={4}
           >
@@ -58,9 +57,9 @@ export function NavUser({ user }) {
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <div className="grid flex-1 text-left text-[15px] leading-tight">
+                <div className="grid flex-1 text-left text-[14px] leading-tight">
                   <span className="truncate font-medium">{profile.name}</span>
-                  <span className="truncate text-[15px]">{profile.email}</span>
+                  <span className="truncate text-[12px]">{profile.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>

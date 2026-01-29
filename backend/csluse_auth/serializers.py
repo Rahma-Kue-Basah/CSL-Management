@@ -244,6 +244,22 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
         )
 
 
+class PicUserSerializer(serializers.ModelSerializer):
+    profile_id = serializers.UUIDField(source="profile.id", read_only=True)
+    full_name = serializers.CharField(source="profile.full_name", read_only=True)
+    role = serializers.CharField(source="profile.role", read_only=True)
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "email",
+            "profile_id",
+            "full_name",
+            "role",
+        )
+
+
 class EmailVerificationStatusSerializer(serializers.Serializer):
     """Serializer to validate email status checks."""
 

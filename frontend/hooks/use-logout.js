@@ -1,5 +1,5 @@
 import { useRouter } from "next/navigation";
-import Cookies from "js-cookie";
+import { removeCookieValue } from "@/lib/cookies";
 
 import { API_AUTH_LOGOUT } from "@/constants/api";
 import { authFetch } from "@/lib/auth-fetch";
@@ -16,12 +16,12 @@ export function useLogout() {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      Cookies.remove("access_token");
-      Cookies.remove("accessToken");
-      Cookies.remove("refresh_token");
-      Cookies.remove("access");
-      Cookies.remove("refresh");
-      Cookies.remove("user");
+      removeCookieValue("access_token");
+      removeCookieValue("accessToken");
+      removeCookieValue("refresh_token");
+      removeCookieValue("access");
+      removeCookieValue("refresh");
+      removeCookieValue("user");
       try {
         if (typeof window !== "undefined") {
           window.localStorage.clear();

@@ -23,6 +23,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { getCookieValue, setCookieValue } from "@/lib/cookies"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -56,7 +57,11 @@ function SidebarProvider({
 
   // This is the internal state of the sidebar.
   // We use openProp and setOpenProp for control from outside the component.
-  const [_open, _setOpen] = React.useState(defaultOpen)
+  const [_open, _setOpen] = React.useState(() => {
+    const cookieValue = getCookieValue(SIDEBAR_COOKIE_NAME)
+    if (cookieValue === null) return defaultOpen
+    return cookieValue === "true"
+  })
   const open = openProp ?? _open
   const setOpen = React.useCallback((value) => {
     const openState = typeof value === "function" ? value(open) : value
@@ -66,8 +71,7 @@ function SidebarProvider({
       _setOpen(openState)
     }
 
-    // This sets the cookie to keep the sidebar state.
-    document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`
+    // Cookie sync happens in effect.
   }, [setOpenProp, open])
 
   // Helper to toggle the sidebar.
@@ -104,6 +108,15 @@ function SidebarProvider({
     setOpenMobile,
     toggleSidebar,
   }), [state, open, setOpen, isMobile, openMobile, setOpenMobile, toggleSidebar])
+
+  React.useEffect(() => {
+    if (isMobile) return
+    setCookieValue(SIDEBAR_COOKIE_NAME, String(open), {
+      path: "/",
+      maxAge: SIDEBAR_COOKIE_MAX_AGE,
+      sameSite: "lax",
+    })
+  }, [open, isMobile])
 
   return (
     <SidebarContext.Provider value={contextValue}>

@@ -4,8 +4,8 @@ import {
   API_AUTH_LOGIN,
   API_AUTH_USER_PROFILE,
 } from "@/constants/api";
-import Cookies from "js-cookie";
 import { authFetch, setAccessTokens, setRefreshToken } from "@/lib/auth-fetch";
+import { getCookieValue, setCookieValue } from "@/lib/cookies";
 
 export function useLogin() {
   const router = useRouter();
@@ -55,7 +55,7 @@ export function useLogin() {
 
         // Simpan user info jika ada
         if (data.user) {
-          Cookies.set("user", JSON.stringify(data.user), {
+          setCookieValue("user", JSON.stringify(data.user), {
             expires: 1,
             secure: process.env.NODE_ENV === "production",
             sameSite: "lax",
@@ -70,7 +70,7 @@ export function useLogin() {
           if (profileResponse.ok) {
             const profileData = await profileResponse.json();
             const hasAccessToken = Boolean(
-              Cookies.get("access_token") || Cookies.get("access"),
+              getCookieValue("access_token") || getCookieValue("access"),
             );
             const nextProfile = {
               id: profileData.id,

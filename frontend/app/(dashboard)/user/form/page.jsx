@@ -83,7 +83,6 @@ export default function NewUserPage() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <div className="mx-auto text-center">
-          <h1 className="text-2xl font-semibold">Tambah User</h1>
           <p className="text-sm text-muted-foreground">
             Buat akun baru untuk student, lecturer, atau role lainnya.
           </p>

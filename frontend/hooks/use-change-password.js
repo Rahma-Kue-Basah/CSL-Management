@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Cookies from "js-cookie";
 import { API_AUTH_PASSWORD_CHANGE } from "@/constants/api";
+import { getCookieValue } from "@/lib/cookies";
 
 export function useChangePassword() {
   const [form, setForm] = useState({
@@ -29,8 +29,8 @@ export function useChangePassword() {
     setStatus("submitting");
     try {
       const accessToken =
-        Cookies.get("access_token") ||
-        Cookies.get("access") ||
+        getCookieValue("access_token") ||
+        getCookieValue("access") ||
         (typeof window !== "undefined"
           ? window.localStorage.getItem("access_token")
           : null);

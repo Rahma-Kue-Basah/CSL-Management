@@ -41,6 +41,16 @@ const ROLE_MAP = {
   other: ROLE_VALUES.OTHER,
 };
 
+const ROLE_PRIORITY = {
+  [ROLE_VALUES.OTHER]: 0,
+  [ROLE_VALUES.STUDENT]: 1,
+  [ROLE_VALUES.LECTURER]: 2,
+  [ROLE_VALUES.STAFF]: 3,
+  [ROLE_VALUES.ADMIN]: 4,
+  [ROLE_VALUES.SUPER_ADMINISTRATOR]: 5,
+  [ROLE_VALUES.SUPERADMINISTRATOR]: 5,
+};
+
 function normalizeRoleInput(value) {
   if (!value) return "";
   const raw = String(value).trim();
@@ -60,12 +70,25 @@ function isPrivilegedRole(role) {
   );
 }
 
+function getRolePriority(role) {
+  if (!role) return -1;
+  const normalized = String(role).toUpperCase();
+  return ROLE_PRIORITY[normalized] ?? -1;
+}
+
+function isStaffOrAboveRole(role) {
+  return getRolePriority(role) >= ROLE_PRIORITY[ROLE_VALUES.STAFF];
+}
+
 export {
   ROLE_VALUES,
   ROLE_LABELS,
   ROLE_OPTIONS,
   ROLE_FILTER_OPTIONS,
   ROLE_MAP,
+  ROLE_PRIORITY,
   normalizeRoleInput,
   isPrivilegedRole,
+  getRolePriority,
+  isStaffOrAboveRole,
 };

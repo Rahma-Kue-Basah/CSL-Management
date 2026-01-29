@@ -3,6 +3,7 @@ from rest_framework import serializers
 from typing import Optional
 
 from .models import Image, Room, Equipment, Booking, Borrow
+from csluse_auth.serializers import ProfileSerializer
 
 class ImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(write_only=True)
@@ -11,11 +12,13 @@ class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
         fields = [
+            'id',
             'image',
             'name',
             'url',
         ]
         read_only_fields = [
+            'id',
             'name',
             'url',
         ]
@@ -27,15 +30,44 @@ class ImageSerializer(serializers.ModelSerializer):
 
 
 class RoomSerializer(serializers.ModelSerializer):
+    pic_detail = ProfileSerializer(source="pic", read_only=True)
+    image_detail = ImageSerializer(source="image", read_only=True)
+
     class Meta:
         model = Room
-        fields = '__all__'
+        fields = [
+            "id",
+            "name",
+            "capacity",
+            "description",
+            "number",
+            "floor",
+            "pic",
+            "image",
+            "pic_detail",
+            "image_detail",
+        ]
 
 
 class EquipmentSerializer(serializers.ModelSerializer):
+    image_detail = ImageSerializer(source="image", read_only=True)
+    room_detail = RoomSerializer(source="room", read_only=True)
+
     class Meta:
         model = Equipment
-        fields = '__all__'
+        fields = [
+            "id",
+            "name",
+            "description",
+            "quantity",
+            "status",
+            "category",
+            "image",
+            "image_detail",
+            "room",
+            "room_detail",
+            "is_moveable",
+        ]
 
 
 class BookingSerializer(serializers.ModelSerializer):

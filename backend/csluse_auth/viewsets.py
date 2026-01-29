@@ -8,8 +8,8 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 
 from .models import Profile
-from .serializers import ProfileSerializer, UserWithProfileSerializer
-from .permissions import SUPER_ADMINISTRATOR, has_role
+from .serializers import ProfileSerializer, UserWithProfileSerializer, PicUserSerializer
+from .permissions import SUPER_ADMINISTRATOR, has_role, IsStaffOrAbove
 from csluse.viewsets import DefaultPagination
 from .permissions import IsAdministratorOrAbove
 
@@ -84,6 +84,19 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Tidak bisa menghapus SuperAdministrator.")
 
         return super().destroy(request, *args, **kwargs)
+
+
+class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = PicUserSerializer
+    permission_classes = [IsAuthenticated, IsStaffOrAbove]
+    http_method_names = ["get"]
+
+    def get_queryset(self):
+        return (
+            User.objects
+            .select_related("profile")
+            .filter(profile__role__in=["STAFF", "LECTURER", "ADMIN"])
+        )
 
 
 class AdminProfileViewSet(viewsets.ModelViewSet):

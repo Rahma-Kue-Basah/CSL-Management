@@ -1,24 +1,24 @@
-import Cookies from "js-cookie";
+import { getCookieValue, removeCookieValue } from "@/lib/cookies";
 
 /**
  * Get access token from cookies
  */
 export function getAccessToken() {
-  return Cookies.get("access_token");
+  return getCookieValue("access_token");
 }
 
 /**
  * Get refresh token from cookies
  */
 export function getRefreshToken() {
-  return Cookies.get("refresh_token");
+  return getCookieValue("refresh_token");
 }
 
 /**
  * Get user info from cookies
  */
 export function getUser() {
-  const userStr = Cookies.get("user");
+  const userStr = getCookieValue("user");
   if (!userStr) return null;
 
   try {
@@ -39,9 +39,9 @@ export function isAuthenticated() {
  * Clear all auth cookies
  */
 export function clearAuthCookies() {
-  Cookies.remove("access_token");
-  Cookies.remove("refresh_token");
-  Cookies.remove("user");
+  removeCookieValue("access_token");
+  removeCookieValue("refresh_token");
+  removeCookieValue("user");
 }
 
 /**

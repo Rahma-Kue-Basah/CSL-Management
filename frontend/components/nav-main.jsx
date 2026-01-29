@@ -28,7 +28,7 @@ export function NavMain({
       <SidebarGroupLabel className="text-[14px] uppercase tracking-wide text-sidebar-foreground/70">
         CSL USE
       </SidebarGroupLabel>
-      <SidebarMenu className="gap-1">
+      <SidebarMenu className="gap-0">
         {items.map((item) => {
           const hasChildren = item.items?.length;
           const alwaysOpen = item.alwaysOpen && hasChildren;
@@ -38,6 +38,7 @@ export function NavMain({
             asChild
             defaultOpen={item.isActive || alwaysOpen}
             open={alwaysOpen ? true : undefined}
+            className="mt-3"
           >
             <SidebarMenuItem>
               <SidebarMenuButton

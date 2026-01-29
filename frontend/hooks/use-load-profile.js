@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import Cookies from "js-cookie";
+import { getCookieValue } from "@/lib/cookies";
 
 import {
   API_AUTH_USER_PROFILE,
@@ -28,7 +28,7 @@ export function useLoadProfile(user) {
       if (cached) {
         const parsed = JSON.parse(cached);
         const hasAccessToken = Boolean(
-          Cookies.get("access_token") || Cookies.get("access"),
+          getCookieValue("access_token") || getCookieValue("access"),
         );
         return {
           id: parsed.id,
@@ -62,8 +62,8 @@ export function useLoadProfile(user) {
     if (hasFetchedRef.current) return;
 
     const accessToken =
-      Cookies.get("access_token") ||
-      Cookies.get("access") ||
+      getCookieValue("access_token") ||
+      getCookieValue("access") ||
       (typeof window !== "undefined" ? window.localStorage.getItem("access_token") : null);
 
     let cachedProfile = null;
@@ -100,7 +100,7 @@ export function useLoadProfile(user) {
         const profileData = await response.json();
 
         const hasAccessToken = Boolean(
-          Cookies.get("access_token") || Cookies.get("access"),
+          getCookieValue("access_token") || getCookieValue("access"),
         );
         const nextProfile = {
           id: profileData.id,

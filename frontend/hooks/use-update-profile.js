@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import Cookies from "js-cookie";
 import { API_AUTH_USER_PROFILE_DETAIL } from "@/constants/api";
 import { authFetch } from "@/lib/auth-fetch";
 
