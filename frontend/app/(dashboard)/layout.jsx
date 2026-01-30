@@ -96,9 +96,9 @@ function DashboardShell({ crumbs, children }) {
             </div>
           </div>
         </header>
-        <div className="flex flex-1 min-w-0 flex-col py-16">
+        <div className="flex flex-1 min-w-0 flex-col pt-16 bg-[#F2F3F7]">
           <div className="bg-card">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between bg-[#0048B4] text-background">
               <div className="flex min-w-0 items-center gap-2 py-4 px-2">
                 <Button
                   type="text"
@@ -111,14 +111,14 @@ function DashboardShell({ crumbs, children }) {
                 <h1 className="truncate text-lg font-semibold">{pageTitle}</h1>
               </div>
             </div>
-            <div className="bg-sidebar px-3 py-3 md:px-4 md:py-4">
+            <div className="bg-[#F2F3F7] min-h-[65vh] px-3 py-3 md:px-4 md:py-4">
               <div className="bg-background p-4 md:p-6 min-w-0 overflow-x-hidden">
                 {children}
               </div>
             </div>
           </div>
         </div>
-        <footer className="px-4 pb-4 text-center text-xs text-muted-foreground bg-background ">
+        <footer className="px-4 pt-12 pb-24 text-center text-xs text-muted-foreground bg-[#282829] ">
           2026 ©
           <Link href="/" className="ml-1">
             CSL STEM Prasetiya Mulya

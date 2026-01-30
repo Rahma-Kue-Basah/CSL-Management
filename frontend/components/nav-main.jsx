@@ -25,8 +25,8 @@ export function NavMain({
 }) {
   return (
     <SidebarGroup>
-      <SidebarGroupLabel className="text-[14px] uppercase tracking-wide text-sidebar-foreground/70">
-        CSL USE
+      <SidebarGroupLabel className="text-[14px] tracking-wide text-sidebar-foreground/70">
+        CSL Management
       </SidebarGroupLabel>
       <SidebarMenu className="gap-0">
         {items.map((item) => {
