@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { Suspense } from "react";
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -129,7 +129,7 @@ function DashboardShell({ crumbs, children }) {
   );
 }
 
-export default function DashboardLayout({ children }) {
+function DashboardLayoutContent({ children }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const parts = (pathname || "").split("/").filter(Boolean);
@@ -263,5 +263,13 @@ export default function DashboardLayout({ children }) {
       <AppSidebar />
       <DashboardShell crumbs={crumbs}>{children}</DashboardShell>
     </SidebarProvider>
+  );
+}
+
+export default function DashboardLayout({ children }) {
+  return (
+    <Suspense fallback={null}>
+      <DashboardLayoutContent>{children}</DashboardLayoutContent>
+    </Suspense>
   );
 }
