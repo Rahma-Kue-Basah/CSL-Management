@@ -1,6 +1,32 @@
-from django.db import models
+from django.db import models, transaction
 import uuid
 from csluse_auth.models import Profile
+from django.utils import timezone
+
+PURPOSE_CHOICES = [
+    ('class', 'Class'),
+    ('lab_work', 'Lab Work'),
+    ('research', 'Research'),
+    ('other', 'Other'),
+]
+
+
+def _next_code(model_cls, prefix, yymm):
+    base = f"{prefix}{yymm}-"
+    last = (
+        model_cls.objects.select_for_update()
+        .filter(code__startswith=base)
+        .order_by("-code")
+        .first()
+    )
+    if last and last.code:
+        try:
+            last_seq = int(last.code.split("-")[-1])
+        except (ValueError, IndexError):
+            last_seq = 0
+    else:
+        last_seq = 0
+    return f"{base}{last_seq + 1:03d}"
 
 class BaseModel(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
@@ -98,6 +124,7 @@ class Equipment(BaseModel):
 
 
 class Booking(BaseModel):
+    code = models.CharField(max_length=12, unique=True, editable=False, null=True)
     requested_by = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
@@ -120,7 +147,11 @@ class Booking(BaseModel):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
 
-    purpose = models.CharField(max_length=2000, blank=True, null=True)
+    purpose = models.CharField(
+        max_length=20,
+        choices=PURPOSE_CHOICES,
+        default='other',
+    )
     note = models.CharField(max_length=2000, blank=True, null=True)
 
     STATUS_CHOICES = [
@@ -141,10 +172,19 @@ class Booking(BaseModel):
         related_name='approved_bookings',
     )
 
+    def save(self, *args, **kwargs):
+        if not self.code:
+            now = timezone.localtime(timezone.now())
+            yymm = now.strftime("%y%m")
+            with transaction.atomic():
+                self.code = _next_code(Booking, "BR", yymm)
+        return super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Booking by {self.requested_by.user.email} for {self.room.name} - Status: {self.status}"
+        return f"{self.code} - {self.requested_by.user.email} - {self.room.name} - {self.status}"
 
 class Borrow(BaseModel):
+    code = models.CharField(max_length=12, unique=True, editable=False, null=True)
     requested_by = models.ForeignKey(
         Profile,
         on_delete=models.CASCADE,
@@ -159,13 +199,6 @@ class Borrow(BaseModel):
     start_time = models.DateTimeField()
     end_time = models.DateTimeField(blank=True, null=True)
     end_time_actual = models.DateTimeField(blank=True, null=True)
-
-    PURPOSE_CHOICES = [
-        ('class', 'Class'),
-        ('lab_work', 'Lab Work'),
-        ('research', 'Research'),
-        ('other', 'Other'),
-    ]
 
     quantity = models.PositiveIntegerField(default=1)
 
@@ -193,8 +226,16 @@ class Borrow(BaseModel):
         related_name='approved_borrows',
     )
 
+    def save(self, *args, **kwargs):
+        if not self.code:
+            now = timezone.localtime(timezone.now())
+            yymm = now.strftime("%y%m")
+            with transaction.atomic():
+                self.code = _next_code(Borrow, "BE", yymm)
+        return super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Borrow of {self.equipment.name} by {self.requested_by.user.email} - Status: {self.status}"
+        return f"{self.code} - {self.equipment.name} - {self.requested_by.user.email} - {self.status}"
 
 
 class Notification(BaseModel):

@@ -24,11 +24,9 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { useBulkCreateUsers } from "@/hooks/use-bulk-create-users";
-import { ROLE_OPTIONS } from "@/constants/roles";
-import {
-  USER_TYPE_SELECT_OPTIONS,
-  USER_TYPE_VALUES,
-} from "@/constants/user-types";
+import { ROLE_OPTIONS, normalizeRoleInput } from "@/constants/roles";
+import { USER_TYPE_VALUES } from "@/constants/user-types";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 const HEADER_MAP = {
@@ -39,9 +37,6 @@ const HEADER_MAP = {
   email: "email",
   password: "password",
   role: "role",
-  tipe: "user_type",
-  "user type": "user_type",
-  "tipe user": "user_type",
 };
 
 function normalizeHeader(value) {
@@ -51,15 +46,16 @@ function normalizeHeader(value) {
     .replace(/\s+/g, " ");
 }
 
-function buildTemplateWorkbook() {
-  const headers = ["nama lengkap", "email", "password", "role", "tipe"];
+function buildTemplateWorkbook(roleParam) {
+  const headers = roleParam
+    ? ["nama lengkap", "email", "password"]
+    : ["nama lengkap", "email", "password", "role"];
   const sample = [
     [
       "Aziz Rahmad",
       "aziz@student.prasetiyamulya.ac.id",
       "Password123",
-      "STUDENT",
-      USER_TYPE_VALUES.EXTERNAL,
+      ...(roleParam ? [] : ["STUDENT"]),
     ],
   ];
   const sheet = XLSX.utils.aoa_to_sheet([headers, ...sample]);
@@ -69,6 +65,10 @@ function buildTemplateWorkbook() {
 }
 
 export default function BulkUserFormPage() {
+  const searchParams = useSearchParams();
+  const roleParam = searchParams?.get("role") || "";
+  const normalizedRoleParam = normalizeRoleInput(roleParam);
+  const hasRoleScope = Boolean(normalizedRoleParam);
   const [rows, setRows] = useState([]);
   const [fileName, setFileName] = useState("");
   const { createUsers, isSubmitting: isUploading } = useBulkCreateUsers();
@@ -125,9 +125,8 @@ export default function BulkUserFormPage() {
           const email = row[headerIndexes.email] || "";
           const password = row[headerIndexes.password] || "";
           const role = row[headerIndexes.role];
-          const userType = row[headerIndexes.user_type];
 
-          if (!fullName && !email && !password && !role && !userType) {
+          if (!fullName && !email && !password && !role) {
             return null;
           }
 
@@ -136,8 +135,8 @@ export default function BulkUserFormPage() {
             full_name: String(fullName || "").trim(),
             email: String(email || "").trim(),
             password: String(password || ""),
-            role,
-            user_type: userType,
+            role: normalizedRoleParam || role,
+            user_type: USER_TYPE_VALUES.INTERNAL,
           };
         })
         .filter(Boolean);
@@ -155,7 +154,7 @@ export default function BulkUserFormPage() {
   };
 
   const handleDownloadTemplate = () => {
-    const workbook = buildTemplateWorkbook();
+  const workbook = buildTemplateWorkbook(hasRoleScope ? roleParam : "");
     XLSX.writeFile(workbook, "template-bulk-user.xlsx");
   };
 
@@ -212,8 +211,8 @@ export default function BulkUserFormPage() {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted-foreground">
-            Upload file Excel dengan kolom: nama lengkap, email, password, role,
-            dan tipe.
+            Upload file Excel dengan kolom: nama lengkap, email, password
+            {hasRoleScope ? "." : ", dan role."}
           </p>
         </div>
       </div>
@@ -223,7 +222,8 @@ export default function BulkUserFormPage() {
           <div>
             <p className="text-sm font-semibold">Upload File Excel</p>
             <p className="text-xs text-muted-foreground">
-              Format kolom: nama lengkap, email, password, role, tipe.
+              Format kolom: nama lengkap, email, password
+              {hasRoleScope ? "." : ", role."}
             </p>
           </div>
           <Button
@@ -311,8 +311,7 @@ export default function BulkUserFormPage() {
                     <TableHead>Nama</TableHead>
                     <TableHead>Email</TableHead>
                     <TableHead>Password</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Tipe</TableHead>
+                    {!hasRoleScope ? <TableHead>Role</TableHead> : null}
                     <TableHead>Status</TableHead>
                     <TableHead className="text-right">
                       {!summary.total || summary.total !== validRows.length
@@ -371,44 +370,27 @@ export default function BulkUserFormPage() {
                           row.password || "-"
                         )}
                       </TableCell>
-                      <TableCell>
-                        {isEditing ? (
-                          <select
-                            value={row.role || ""}
-                            onChange={(e) =>
-                              updateRow(row.index, "role", e.target.value)
-                            }
-                            className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
-                          >
-                            {ROLE_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          row.role || "-"
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {isEditing ? (
-                          <select
-                            value={row.user_type || ""}
-                            onChange={(e) =>
-                              updateRow(row.index, "user_type", e.target.value)
-                            }
-                            className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
-                          >
-                            {USER_TYPE_SELECT_OPTIONS.map((option) => (
-                              <option key={option.value} value={option.value}>
-                                {option.label}
-                              </option>
-                            ))}
-                          </select>
-                        ) : (
-                          row.user_type || "-"
-                        )}
-                      </TableCell>
+                      {!hasRoleScope ? (
+                        <TableCell>
+                          {isEditing ? (
+                            <select
+                              value={row.role || ""}
+                              onChange={(e) =>
+                                updateRow(row.index, "role", e.target.value)
+                              }
+                              className="h-8 w-full rounded-md border border-border bg-background px-2 text-sm"
+                            >
+                              {ROLE_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            row.role || "-"
+                          )}
+                        </TableCell>
+                      ) : null}
                       <TableCell>
                         <div className="space-y-1">
                           {!isValid && (
@@ -490,7 +472,14 @@ export default function BulkUserFormPage() {
                 Proses selesai. Sukses: {summary.success} · Gagal:{" "}
                 {summary.error}. <br />
                 {summary.success ? (
-                  <Link href="/user" className="underline">
+                  <Link
+                    href={
+                      hasRoleScope
+                        ? `/user?role=${encodeURIComponent(roleParam)}`
+                        : "/user"
+                    }
+                    className="underline"
+                  >
                     Lihat daftar user
                   </Link>
                 ) : (

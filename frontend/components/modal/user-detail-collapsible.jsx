@@ -11,7 +11,6 @@ import {
   GraduationCap,
   IdCard,
   MailIcon,
-  User,
   UserCircle,
 } from "lucide-react";
 
@@ -86,7 +85,6 @@ export function UserDetailCollapsible({
   isUpdating,
   message,
   roleOptions,
-  userTypeOptions,
   departmentOptions,
   batchOptions,
   onChange,
@@ -192,17 +190,6 @@ export function UserDetailCollapsible({
                     onChange={onChange}
                     type="select"
                     options={roleOptions}
-                  />
-                  <InfoRow
-                    icon={User}
-                    label="User Type"
-                    value={editForm.user_type}
-                    editable={isPrivileged}
-                    editing={isEditing}
-                    name="user_type"
-                    onChange={onChange}
-                    type="select"
-                    options={userTypeOptions}
                   />
                 </div>
 

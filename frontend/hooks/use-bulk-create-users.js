@@ -5,7 +5,7 @@ import { useState } from "react";
 import { API_AUTH_REGISTER } from "@/constants/api";
 import { authFetch } from "@/lib/auth-fetch";
 import { normalizeRoleInput } from "@/constants/roles";
-import { normalizeUserType } from "@/constants/user-types";
+import { USER_TYPE_VALUES } from "@/constants/user-types";
 
 function parseCreateUserError(data) {
   if (!data || typeof data !== "object") return "Gagal (data tidak valid)";
@@ -33,9 +33,8 @@ export function useBulkCreateUsers() {
       };
 
       const normalizedRole = normalizeRoleInput(row.role);
-      const normalizedUserType = normalizeUserType(row.user_type);
       if (normalizedRole) payload.role = normalizedRole;
-      if (normalizedUserType) payload.user_type = normalizedUserType;
+      payload.user_type = USER_TYPE_VALUES.INTERNAL;
 
       try {
         const response = await authFetch(API_AUTH_REGISTER, {

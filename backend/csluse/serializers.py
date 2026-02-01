@@ -71,14 +71,23 @@ class EquipmentSerializer(serializers.ModelSerializer):
 
 
 class BookingSerializer(serializers.ModelSerializer):
+    requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
+    approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
+    room_detail = RoomSerializer(source="room", read_only=True)
+    equipment_detail = EquipmentSerializer(source="equipment", read_only=True)
+
     class Meta:
         model = Booking
         fields = '__all__'
-        read_only_fields = ['requested_by']
+        read_only_fields = ['requested_by', 'code']
 
 
 class BorrowSerializer(serializers.ModelSerializer):
+    requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
+    approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
+    equipment_detail = EquipmentSerializer(source="equipment", read_only=True)
+
     class Meta:
         model = Borrow
         fields = '__all__'
-        read_only_fields = ['requested_by']
+        read_only_fields = ['requested_by', 'code']

@@ -4,7 +4,6 @@ import * as React from "react";
 import {
   Calendar,
   ClipboardList,
-  Layers,
   LayoutGrid,
   User,
   Wrench,
@@ -45,7 +44,7 @@ export const NAV_DATA = {
       alwaysOpen: true,
       items: [
         // { title: "Ajukan Booking", url: "/room-booking/form" },
-        { title: "Booking Saya", url: "/my-booking-request" },
+        { title: "Booking Saya", url: "/my-bookings-request" },
       ],
     },
     {
@@ -60,24 +59,26 @@ export const NAV_DATA = {
     },
     
     {
-      title: "Inventory",
-      url: null,
-      icon: Layers,
-      alwaysOpen: true,
-      items: [
-        { title: "Room", url: "/room" },
-        { title: "Equipment", url: "/equipment" },
-      ],
-    },
-    {
       title: "Admin",
       url: null,
       icon: User,
       items: [
         {
-          title: "User",
-          url: "/user",
+          title: "Inventory",
+          url: null,
           items: [
+            { title: "Room", url: "/room" },
+            { title: "Equipment", url: "/equipment" },
+          ],
+        },
+        {
+          title: "User",
+          url: null,
+          items: [
+            {
+              title: "All",
+              url: "/user",
+            },
             {
               title: ROLE_LABELS[ROLE_VALUES.STUDENT],
               url: `/user?role=${ROLE_LABELS[ROLE_VALUES.STUDENT]}`,

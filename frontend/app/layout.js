@@ -1,4 +1,4 @@
-import { Poppins, Inter } from "next/font/google";
+import { Poppins, Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "@/styles/globals.css";
 // import "antd/dist/reset.css";
 import { Toaster } from "@/components/ui/sonner";

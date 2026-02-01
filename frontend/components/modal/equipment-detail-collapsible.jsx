@@ -3,15 +3,13 @@
 import { useEffect, useMemo } from "react";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { AlertMessage } from "@/components/ui/alert-message";
 import { X } from "lucide-react";
 import {
-  Building2,
+  ClipboardList,
   Hash,
   Layers,
-  Users,
-  UserCircle,
-  Clock,
+  Package,
+  Wrench,
   Image as ImageIcon,
   FileText,
 } from "lucide-react";
@@ -76,10 +74,10 @@ function InfoRow({
   );
 }
 
-export function RoomDetailCollapsible({
+export function EquipmentDetailCollapsible({
   open,
   onOpenChange,
-  selectedRoom,
+  selectedEquipment,
   editForm,
   isEditing,
   isUpdating,
@@ -88,10 +86,11 @@ export function RoomDetailCollapsible({
   onSave,
   onChange,
   onImageChange,
-  picOptions = [],
-  message,
+  roomOptions,
+  categoryOptions,
+  moveableOptions,
 }) {
-  const imageUrl = selectedRoom?.imageDetail?.url || "";
+  const imageUrl = selectedEquipment?.imageDetail?.url || "";
   const previewUrl = useMemo(() => {
     if (editForm?.imageFile) {
       return URL.createObjectURL(editForm.imageFile);
@@ -103,11 +102,9 @@ export function RoomDetailCollapsible({
     if (!previewUrl) return;
     return () => URL.revokeObjectURL(previewUrl);
   }, [previewUrl]);
-  const picName =
-    selectedRoom?.picDetail?.full_name ||
-    selectedRoom?.picDetail?.email ||
-    selectedRoom?.pic ||
-    "";
+  const roomLabel =
+    selectedEquipment?.roomDetail?.name || selectedEquipment?.room || "";
+  const moveableLabel = selectedEquipment?.isMoveable ? "Ya" : "Tidak";
 
   return (
     <Collapsible
@@ -117,7 +114,7 @@ export function RoomDetailCollapsible({
     >
       <div className="rounded-lg border bg-card shadow-lg ring-1 ring-black/5">
         <div className="flex items-center justify-between px-4 py-3">
-          <p className="text-sm font-medium">Detail Ruangan</p>
+          <p className="text-sm font-medium">Detail Equipment</p>
           {open ? (
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>
               <X size={16} />
@@ -127,17 +124,17 @@ export function RoomDetailCollapsible({
 
         <CollapsibleContent asChild>
           <div className="border-t px-4 py-4 max-h-[65vh] overflow-y-auto space-y-4">
-            {selectedRoom ? (
+            {selectedEquipment ? (
               <>
                 <div className="space-y-2">
                   <p className="text-base font-semibold">
-                    {selectedRoom.name || "—"}
+                    {selectedEquipment.name || "—"}
                   </p>
                   {(isEditing && previewUrl) || imageUrl ? (
                     <div className="relative overflow-hidden rounded-lg border bg-muted">
                       <img
                         src={isEditing && previewUrl ? previewUrl : imageUrl}
-                        alt={selectedRoom.name || "Room image"}
+                        alt={selectedEquipment.name || "Equipment image"}
                         className="h-40 w-full object-cover"
                       />
                       {isEditing ? (
@@ -168,9 +165,9 @@ export function RoomDetailCollapsible({
 
                 <div className="space-y-3">
                   <InfoRow
-                    icon={Building2}
-                    label="Nama Ruangan"
-                    value={isEditing ? editForm.name : selectedRoom.name}
+                    icon={ClipboardList}
+                    label="Nama"
+                    value={isEditing ? editForm.name : selectedEquipment.name}
                     editable
                     editing={isEditing}
                     name="name"
@@ -178,46 +175,58 @@ export function RoomDetailCollapsible({
                   />
                   <InfoRow
                     icon={Hash}
-                    label="Nomor Ruangan"
-                    value={isEditing ? editForm.number : selectedRoom.number}
+                    label="Jumlah"
+                    value={isEditing ? editForm.quantity : selectedEquipment.quantity}
                     editable
                     editing={isEditing}
-                    name="number"
+                    name="quantity"
                     onChange={onChange}
                   />
                   <InfoRow
                     icon={Layers}
-                    label="Lantai"
-                    value={isEditing ? editForm.floor : selectedRoom.floor}
+                    label="Kategori"
+                    value={
+                      isEditing
+                        ? editForm.category
+                        : selectedEquipment.category
+                    }
                     editable
                     editing={isEditing}
-                    name="floor"
-                    onChange={onChange}
-                  />
-                  <InfoRow
-                    icon={Users}
-                    label="Kapasitas"
-                    value={isEditing ? editForm.capacity : selectedRoom.capacity}
-                    editable
-                    editing={isEditing}
-                    name="capacity"
-                    onChange={onChange}
-                  />
-                  <InfoRow
-                    icon={UserCircle}
-                    label="PIC"
-                    value={isEditing ? editForm.picId : picName}
-                    editable
-                    editing={isEditing}
-                    name="picId"
+                    name="category"
                     onChange={onChange}
                     type="select"
-                    options={picOptions}
+                    options={categoryOptions}
+                  />
+                  <InfoRow
+                    icon={Package}
+                    label="Ruangan"
+                    value={isEditing ? editForm.roomId : roomLabel}
+                    editable
+                    editing={isEditing}
+                    name="roomId"
+                    onChange={onChange}
+                    type="select"
+                    options={roomOptions}
+                  />
+                  <InfoRow
+                    icon={Wrench}
+                    label="Moveable"
+                    value={isEditing ? editForm.isMoveable : moveableLabel}
+                    editable
+                    editing={isEditing}
+                    name="isMoveable"
+                    onChange={onChange}
+                    type="select"
+                    options={moveableOptions}
                   />
                   <InfoRow
                     icon={FileText}
                     label="Deskripsi"
-                    value={isEditing ? editForm.description : selectedRoom.description}
+                    value={
+                      isEditing
+                        ? editForm.description
+                        : selectedEquipment.description
+                    }
                     editable
                     editing={isEditing}
                     name="description"
@@ -226,7 +235,7 @@ export function RoomDetailCollapsible({
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
-                  <p className="text-sm font-semibold">Edit Ruangan</p>
+                  <p className="text-sm font-semibold">Edit Equipment</p>
                   <div className="flex gap-2">
                     {isEditing ? (
                       <Button size="sm" variant="secondary" onClick={onCancel}>
@@ -253,22 +262,10 @@ export function RoomDetailCollapsible({
                     </Button>
                   </div>
                 </div>
-
-                {message ? (
-                  <AlertMessage
-                    variant={
-                      message.toLowerCase().includes("gagal")
-                        ? "destructive"
-                        : "default"
-                    }
-                  >
-                    {message}
-                  </AlertMessage>
-                ) : null}
               </>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Klik &quot;View Detail&quot; untuk melihat informasi.
+                Klik "View Detail" untuk melihat informasi.
               </p>
             )}
           </div>
@@ -278,4 +275,4 @@ export function RoomDetailCollapsible({
   );
 }
 
-export default RoomDetailCollapsible;
+export default EquipmentDetailCollapsible;

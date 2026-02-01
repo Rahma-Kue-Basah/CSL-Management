@@ -76,33 +76,54 @@ export function NavMain({
                         const hasGrandChildren = subItem.items?.length;
                         if (!hasGrandChildren) {
                           return (
-                          <SidebarMenuSubItem key={subItem.title}>
-                            <SidebarMenuSubButton asChild className="text-[14px]">
-                              <Link href={subItem.url}>
-                                <span>{subItem.title}</span>
-                              </Link>
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        );
-                      }
-
-                      return (
-                        <SidebarMenuSubItem key={subItem.title}>
-                          <SidebarMenuSubButton asChild className="text-[14px]">
-                            <Link href={subItem.url}>
-                              <span>{subItem.title}</span>
-                            </Link>
-                          </SidebarMenuSubButton>
-                          <SidebarMenuSub className="ml-3 mt-1">
-                            {subItem.items?.map((grandItem) => (
-                              <SidebarMenuSubItem key={grandItem.title}>
-                                <SidebarMenuSubButton asChild className="text-[14px]">
-                                  <Link href={grandItem.url}>
-                                    <span>{grandItem.title}</span>
+                            <SidebarMenuSubItem key={subItem.title}>
+                              <SidebarMenuSubButton
+                                asChild={!!(subItem.url && subItem.url !== "#")}
+                                className="text-[14px]"
+                              >
+                                {subItem.url && subItem.url !== "#" ? (
+                                  <Link href={subItem.url}>
+                                    <span>{subItem.title}</span>
                                   </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
+                                ) : (
+                                  <span>{subItem.title}</span>
+                                )}
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          );
+                        }
+
+                        return (
+                          <SidebarMenuSubItem key={subItem.title}>
+                            <SidebarMenuSubButton
+                              asChild={!!(subItem.url && subItem.url !== "#")}
+                              className="text-[14px]"
+                            >
+                              {subItem.url && subItem.url !== "#" ? (
+                                <Link href={subItem.url}>
+                                  <span>{subItem.title}</span>
+                                </Link>
+                              ) : (
+                                <span>{subItem.title}</span>
+                              )}
+                            </SidebarMenuSubButton>
+                            <SidebarMenuSub className="ml-3 mt-1">
+                              {subItem.items?.map((grandItem) => (
+                                <SidebarMenuSubItem key={grandItem.title}>
+                                  <SidebarMenuSubButton
+                                    asChild={!!(grandItem.url && grandItem.url !== "#")}
+                                    className="text-[14px]"
+                                  >
+                                    {grandItem.url && grandItem.url !== "#" ? (
+                                      <Link href={grandItem.url}>
+                                        <span>{grandItem.title}</span>
+                                      </Link>
+                                    ) : (
+                                      <span>{grandItem.title}</span>
+                                    )}
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
                             </SidebarMenuSub>
                           </SidebarMenuSubItem>
                         );

@@ -88,6 +88,28 @@ class RoomViewSet(viewsets.ModelViewSet):
 
         return qs
 
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_image = instance.image
+        new_instance = serializer.save()
+
+        if old_image and (new_instance.image is None or old_image.id != new_instance.image.id):
+            try:
+                if old_image.image:
+                    old_image.image.delete(save=False)
+            finally:
+                old_image.delete()
+
+    def perform_destroy(self, instance):
+        image = instance.image
+        super().perform_destroy(instance)
+        if image:
+            try:
+                if image.image:
+                    image.image.delete(save=False)
+            finally:
+                image.delete()
+
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):
         room = self.get_object()
@@ -179,6 +201,28 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             elif str(is_moveable).lower() in ['false', '0', 'no']:
                 qs = qs.filter(is_moveable=False)
         return qs
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        old_image = instance.image
+        new_instance = serializer.save()
+
+        if old_image and (new_instance.image is None or old_image.id != new_instance.image.id):
+            try:
+                if old_image.image:
+                    old_image.image.delete(save=False)
+            finally:
+                old_image.delete()
+
+    def perform_destroy(self, instance):
+        image = instance.image
+        super().perform_destroy(instance)
+        if image:
+            try:
+                if image.image:
+                    image.image.delete(save=False)
+            finally:
+                image.delete()
 
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):

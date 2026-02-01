@@ -2,7 +2,7 @@
 import React from "react";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, LogOut } from "lucide-react";
 
 import { AppSidebar, NAV_DATA } from "@/components/app-sidebar";
@@ -58,7 +58,7 @@ function DashboardShell({ crumbs, children }) {
                   {crumbs.map((crumb, idx) => {
                     const isLast = idx === crumbs.length - 1;
                     return (
-                      <React.Fragment key={crumb.href}>
+                      <React.Fragment key={`${crumb.href ?? "crumb"}-${idx}`}>
                         {idx > 0 && (
                           <BreadcrumbSeparator className="mx-1 inline-block" />
                         )}
@@ -118,12 +118,12 @@ function DashboardShell({ crumbs, children }) {
             </div>
           </div>
         </div>
-        <footer className="px-4 pt-12 pb-24 text-center text-xs text-muted-foreground bg-[#282829] ">
+        {/* <footer className="px-4 pt-12 pb-24 text-center text-xs text-muted-foreground bg-[#282829] ">
           2026 ©
           <Link href="/" className="ml-1">
             CSL STEM Prasetiya Mulya
           </Link>
-        </footer>
+        </footer> */}
       </SidebarInset>
     </div>
   );
@@ -131,8 +131,10 @@ function DashboardShell({ crumbs, children }) {
 
 export default function DashboardLayout({ children }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const parts = (pathname || "").split("/").filter(Boolean);
   const currentPath = `/${parts.join("/")}`;
+  const roleParam = searchParams?.get("role")?.trim();
 
   const normalizeUrl = (url) => {
     if (!url || url === "#") return null;
@@ -144,9 +146,12 @@ export default function DashboardLayout({ children }) {
     "/user/new": "Tambah User",
     "/user/form-bulk": "Bulk Upload",
     "/equipment/form": "Tambah Equipment",
+    "/equipment/form-bulk": "Bulk Upload",
     "/room/form": "Tambah Ruangan",
     "/room/form-bulk": "Bulk Upload",
     "/booking/form": "Buat Booking",
+    "/my-bookings-request/form": "Ajukan Booking",
+    "/my-borrows-request/form": "Ajukan Peminjaman",
   };
 
   let trail = null;
@@ -155,6 +160,24 @@ export default function DashboardLayout({ children }) {
     if (item.items) {
       for (const sub of item.items) {
         const subUrl = normalizeUrl(sub.url);
+        if (sub.items?.length) {
+          for (const grand of sub.items) {
+            const grandUrl = normalizeUrl(grand.url);
+            if (!grandUrl) continue;
+            if (currentPath === grandUrl || currentPath.startsWith(`${grandUrl}/`)) {
+              trail = [
+                { label: item.title, href: null },
+                { label: sub.title, href: null },
+                { label: grand.title, href: grandUrl },
+              ];
+              if (grandUrl === "/user" && roleParam) {
+                trail.push({ label: roleParam, href: currentPath });
+              }
+              break;
+            }
+          }
+          if (trail) break;
+        }
         if (!subUrl) continue;
         if (currentPath === subUrl || currentPath.startsWith(`${subUrl}/`)) {
           trail = [
@@ -164,6 +187,14 @@ export default function DashboardLayout({ children }) {
           const subLabel = subpageLabels[currentPath];
           if (subLabel && currentPath !== subUrl) {
             trail.push({ label: subLabel, href: currentPath });
+          } else if (currentPath.startsWith("/equipment/form/")) {
+            trail.push({ label: "Ubah Equipment", href: currentPath });
+          } else if (currentPath.startsWith("/room/form/")) {
+            trail.push({ label: "Ubah Ruangan", href: currentPath });
+          } else if (currentPath.startsWith("/my-bookings-request/form/")) {
+            trail.push({ label: "Ubah Booking", href: currentPath });
+          } else if (currentPath.startsWith("/my-borrows-request/form/")) {
+            trail.push({ label: "Ubah Peminjaman", href: currentPath });
           }
           break;
         }
@@ -187,7 +218,42 @@ export default function DashboardLayout({ children }) {
     })),
   ];
 
-  const crumbs = trail ?? defaultTrail;
+  let crumbs = trail ?? defaultTrail;
+
+  // Normalize breadcrumb for user pages with role scope.
+  if (currentPath.startsWith("/user")) {
+    if (roleParam) {
+      const roleLabel = roleParam;
+      crumbs = [
+        { label: "Admin", href: null },
+        { label: "User", href: null },
+        { label: roleLabel, href: "/user" },
+      ];
+      if (currentPath === "/user/form") {
+        crumbs.push({ label: `Tambah ${roleLabel}`, href: currentPath });
+      } else if (currentPath === "/user/form-bulk") {
+        crumbs.push({ label: `Bulk Upload ${roleLabel}`, href: currentPath });
+      }
+    } else if (currentPath === "/user") {
+      crumbs = [
+        { label: "Admin", href: null },
+        { label: "User", href: null },
+        { label: "All", href: "/user" },
+      ];
+    } else if (currentPath === "/user/form" || currentPath === "/user/new") {
+      crumbs = [
+        { label: "Admin", href: null },
+        { label: "User", href: null },
+        { label: "Tambah User", href: currentPath },
+      ];
+    } else if (currentPath === "/user/form-bulk") {
+      crumbs = [
+        { label: "Admin", href: null },
+        { label: "User", href: null },
+        { label: "Bulk Upload", href: currentPath },
+      ];
+    }
+  }
 
   return (
     <SidebarProvider

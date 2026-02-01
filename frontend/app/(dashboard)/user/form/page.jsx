@@ -1,27 +1,29 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ROLE_OPTIONS } from "@/constants/roles";
+import { ROLE_OPTIONS, normalizeRoleInput } from "@/constants/roles";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { BATCH_VALUES } from "@/constants/batches";
-import { USER_TYPE_SELECT_OPTIONS } from "@/constants/user-types";
+import { USER_TYPE_VALUES } from "@/constants/user-types";
 import { useCreateUser } from "@/hooks/use-create-user";
 
 export default function NewUserPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const roleParam = searchParams?.get("role") || "";
+  const normalizedRoleParam = normalizeRoleInput(roleParam);
   const [formData, setFormData] = useState({
     fullName: "",
     email: "",
     password: "",
-    role: "",
+    role: normalizedRoleParam,
     department: "",
     batch: "",
     idNumber: "",
-    userType: "",
   });
   const { createUser, isSubmitting, errorMessage, setErrorMessage } =
     useCreateUser();
@@ -65,12 +67,14 @@ export default function NewUserPage() {
       if (formData.batch) payload.batch = formData.batch;
       if (formData.idNumber) payload.id_number = formData.idNumber;
     }
-    if (formData.userType) payload.user_type = formData.userType;
+    payload.user_type = USER_TYPE_VALUES.INTERNAL;
 
     try {
       const result = await createUser(payload);
       if (result.ok) {
-        router.push("/user");
+        router.push(
+          roleParam ? `/user?role=${encodeURIComponent(roleParam)}` : "/user",
+        );
         return;
       }
     } catch (error) {
@@ -146,21 +150,6 @@ export default function NewUserPage() {
                 </button>
               </div>
             </div>
-            <div className="space-y-1">
-              <label className="text-xs font-medium">User Type</label>
-              <select
-                name="userType"
-                value={formData.userType}
-                onChange={handleChange}
-                className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
-              >
-                {USER_TYPE_SELECT_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
           </div>
 
             <div className="grid gap-4">
@@ -171,6 +160,7 @@ export default function NewUserPage() {
                 value={formData.role}
                 onChange={handleChange}
                 className="h-9 w-full rounded-md border border-border bg-background px-3 text-sm"
+                disabled={!!normalizedRoleParam}
               >
                 {ROLE_OPTIONS.map((option) => (
                   <option

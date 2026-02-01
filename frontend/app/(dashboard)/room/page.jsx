@@ -22,6 +22,7 @@ import { useRooms } from "@/hooks/use-rooms";
 import { RoomDetailCollapsible } from "@/components/modal/room-detail-collapsible";
 import { usePicUsers } from "@/hooks/use-pic-users";
 import { useDeleteRoom } from "@/hooks/use-delete-room";
+import { useRoomActions } from "@/hooks/use-room-actions";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -62,8 +63,26 @@ export default function RoomPage() {
   );
   const [deleteCandidate, setDeleteCandidate] = useState(null);
   const { deleteRoom, isDeleting } = useDeleteRoom();
+  const {
+    updateRoom,
+    isSubmitting: isUpdating,
+    errorMessage,
+    setErrorMessage,
+  } = useRoomActions();
   const [detailOpen, setDetailOpen] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    capacity: "",
+    description: "",
+    number: "",
+    floor: "",
+    picId: "",
+    imageId: null,
+    imageFile: null,
+  });
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
   const handleView = (room) => {
     if (selectedRoom?.id === room.id && detailOpen) {
@@ -73,6 +92,108 @@ export default function RoomPage() {
     }
     setSelectedRoom(room);
     setDetailOpen(true);
+    setIsEditing(false);
+    setEditForm({
+      name: room.name || "",
+      capacity: room.capacity?.toString() || "",
+      description: room.description || "",
+      number: room.number || "",
+      floor: room.floor?.toString() || "",
+      picId: room.pic || "",
+      imageId: room.image || null,
+      imageFile: null,
+    });
+  };
+
+  const handleEdit = (room) => {
+    setSelectedRoom(room);
+    setDetailOpen(true);
+    setIsEditing(true);
+    setEditForm({
+      name: room.name || "",
+      capacity: room.capacity?.toString() || "",
+      description: room.description || "",
+      number: room.number || "",
+      floor: room.floor?.toString() || "",
+      picId: room.pic || "",
+      imageId: room.image || null,
+      imageFile: null,
+    });
+  };
+
+  const handleEditChange = (event) => {
+    const { name, value } = event.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    if (file && file.size > MAX_IMAGE_SIZE) {
+      setErrorMessage("Ukuran gambar maksimal 5MB.");
+      return;
+    }
+    setEditForm((prev) => ({ ...prev, imageFile: file }));
+  };
+
+  const handleEditSave = async () => {
+    if (!selectedRoom?.id) return;
+    setErrorMessage("");
+
+    if (!editForm.name.trim()) {
+      setErrorMessage("Nama ruangan wajib diisi.");
+      return;
+    }
+    if (!editForm.capacity || Number(editForm.capacity) <= 0) {
+      setErrorMessage("Kapasitas harus lebih dari 0.");
+      return;
+    }
+    if (!editForm.number.trim()) {
+      setErrorMessage("Nomor ruangan wajib diisi.");
+      return;
+    }
+    if (!editForm.floor || Number(editForm.floor) <= 0) {
+      setErrorMessage("Lantai harus lebih dari 0.");
+      return;
+    }
+
+    const result = await updateRoom(selectedRoom.id, editForm);
+    if (result.ok) {
+      setRooms((prev) =>
+        prev.map((item) =>
+          item.id === selectedRoom.id
+            ? {
+                ...item,
+                name: editForm.name,
+                capacity: Number(editForm.capacity),
+                description: editForm.description,
+                number: editForm.number,
+                floor: Number(editForm.floor),
+                pic: editForm.picId || null,
+              }
+            : item,
+        ),
+      );
+      setSelectedRoom((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: editForm.name,
+              capacity: Number(editForm.capacity),
+              description: editForm.description,
+              number: editForm.number,
+              floor: Number(editForm.floor),
+              pic: editForm.picId || null,
+            }
+          : prev,
+      );
+      setIsEditing(false);
+      toast.success("Ruangan berhasil diperbarui.");
+      if (editForm.imageFile) {
+        window.location.reload();
+      }
+    } else {
+      toast.error(result.message || "Gagal memperbarui ruangan.");
+    }
   };
 
   const handleDelete = async () => {
@@ -111,6 +232,15 @@ export default function RoomPage() {
       );
     });
   }, [rooms, debouncedSearch]);
+
+  const picOptions = useMemo(
+    () =>
+      picUsers.map((user) => ({
+        value: user.profileId,
+        label: `${user.name} (${user.role})`,
+      })),
+    [picUsers],
+  );
 
   const resetFilterState = () => {
     setFilters({
@@ -254,7 +384,11 @@ export default function RoomPage() {
                       >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(room)}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
                       <AlertDialog
@@ -341,9 +475,23 @@ export default function RoomPage() {
         open={detailOpen}
         onOpenChange={(open) => {
           setDetailOpen(open);
-          if (!open) setSelectedRoom(null);
+          if (!open) {
+            setSelectedRoom(null);
+            setIsEditing(false);
+            setErrorMessage("");
+          }
         }}
         selectedRoom={selectedRoom}
+        editForm={editForm}
+        isEditing={isEditing}
+        isUpdating={isUpdating}
+        onEditStart={() => setIsEditing(true)}
+        onCancel={() => setIsEditing(false)}
+        onSave={handleEditSave}
+        onChange={handleEditChange}
+        onImageChange={handleImageChange}
+        picOptions={picOptions}
+        message={errorMessage}
       />
     </section>
   );

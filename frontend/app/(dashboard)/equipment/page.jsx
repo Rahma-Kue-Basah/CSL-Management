@@ -4,7 +4,7 @@ import Link from "next/link";
 import NextImage from "next/image";
 import { Image as AntImage } from "antd";
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Pencil, Filter, X, Plus } from "lucide-react";
+import { Eye, Pencil, Filter, X, Plus, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent } from "@/components/ui/collapsible";
@@ -17,6 +17,21 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useEquipments } from "@/hooks/use-equipments";
+import { useEquipmentActions } from "@/hooks/use-equipment-actions";
+import { useRoomOptions } from "@/hooks/use-room-options";
+import { EquipmentDetailCollapsible } from "@/components/modal/equipment-detail-collapsible";
+import { useDeleteEquipment } from "@/hooks/use-delete-equipment";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Pagination,
   PaginationContent,
@@ -31,6 +46,7 @@ import {
 } from "@/constants/equipments";
 import { useLoadProfile } from "@/hooks/use-load-profile";
 import { isStaffOrAboveRole } from "@/constants/roles";
+import { toast } from "sonner";
 
 const STATUS_STYLES = {
   available: "bg-emerald-500/10 text-emerald-600",
@@ -56,11 +72,33 @@ export default function EquipmentPage() {
     is_moveable: "",
   });
   const [filterOpen, setFilterOpen] = useState(false);
-  const { equipments, totalCount, isLoading, error } = useEquipments(
-    page,
-    pageSize,
-    filters,
-  );
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [selectedEquipment, setSelectedEquipment] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "",
+    quantity: "",
+    category: "",
+    roomId: "",
+    isMoveable: "true",
+    description: "",
+    imageId: null,
+    imageFile: null,
+  });
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+  const { rooms } = useRoomOptions();
+  const { updateEquipment, isSubmitting: isUpdating } =
+    useEquipmentActions();
+  const [deleteCandidate, setDeleteCandidate] = useState(null);
+  const { deleteEquipment, isDeleting } = useDeleteEquipment();
+  const {
+    equipments,
+    setEquipments,
+    totalCount,
+    setTotalCount,
+    isLoading,
+    error,
+  } = useEquipments(page, pageSize, filters);
 
   useEffect(() => {
     const handle = setTimeout(() => setDebouncedSearch(search), 500);
@@ -82,6 +120,11 @@ export default function EquipmentPage() {
     });
   }, [equipments, debouncedSearch]);
 
+  const roomOptions = useMemo(
+    () => rooms.map((room) => ({ value: room.id, label: room.label })),
+    [rooms],
+  );
+
   const resetFilterState = () => {
     setFilters({
       status: "",
@@ -89,6 +132,138 @@ export default function EquipmentPage() {
       is_moveable: "",
     });
     setPage(1);
+  };
+
+  const handleView = (item) => {
+    if (selectedEquipment?.id === item.id && detailOpen) {
+      setDetailOpen(false);
+      setSelectedEquipment(null);
+      return;
+    }
+    setSelectedEquipment(item);
+    setDetailOpen(true);
+    setIsEditing(false);
+    setEditForm({
+      name: item.name || "",
+      quantity: item.quantity?.toString() || "",
+      category: item.category || "",
+      roomId: item.room || "",
+      isMoveable: String(Boolean(item.isMoveable)),
+      description: item.description || "",
+      imageId: item.imageDetail?.id || null,
+      imageFile: null,
+    });
+  };
+
+  const handleEdit = (item) => {
+    setSelectedEquipment(item);
+    setDetailOpen(true);
+    setIsEditing(true);
+    setEditForm({
+      name: item.name || "",
+      quantity: item.quantity?.toString() || "",
+      category: item.category || "",
+      roomId: item.room || "",
+      isMoveable: String(Boolean(item.isMoveable)),
+      description: item.description || "",
+      imageId: item.imageDetail?.id || null,
+      imageFile: null,
+    });
+  };
+
+  const handleEditChange = (event) => {
+    const { name, value } = event.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageChange = (event) => {
+    const file = event.target.files?.[0] || null;
+    if (file && file.size > MAX_IMAGE_SIZE) {
+      toast.error("Ukuran gambar maksimal 5MB.");
+      return;
+    }
+    setEditForm((prev) => ({ ...prev, imageFile: file }));
+  };
+
+  const handleEditSave = async () => {
+    if (!selectedEquipment?.id) return;
+    if (!editForm.name.trim()) {
+      toast.error("Nama equipment wajib diisi.");
+      return;
+    }
+    if (!editForm.quantity || Number(editForm.quantity) <= 0) {
+      toast.error("Jumlah harus lebih dari 0.");
+      return;
+    }
+    if (!editForm.category) {
+      toast.error("Kategori wajib dipilih.");
+      return;
+    }
+    if (!editForm.roomId) {
+      toast.error("Ruangan wajib dipilih.");
+      return;
+    }
+
+    const payload = {
+      ...editForm,
+      isMoveable: editForm.isMoveable === "true",
+    };
+
+    const result = await updateEquipment(selectedEquipment.id, payload);
+    if (result.ok) {
+      toast.success("Equipment berhasil diperbarui.");
+      setEquipments((prev) =>
+        prev.map((item) =>
+          item.id === selectedEquipment.id
+            ? {
+                ...item,
+                name: editForm.name,
+                quantity: Number(editForm.quantity),
+                category: editForm.category,
+                room: editForm.roomId,
+                isMoveable: editForm.isMoveable === "true",
+                description: editForm.description,
+              }
+            : item,
+        ),
+      );
+      setSelectedEquipment((prev) =>
+        prev
+          ? {
+              ...prev,
+              name: editForm.name,
+              quantity: Number(editForm.quantity),
+              category: editForm.category,
+              room: editForm.roomId,
+              isMoveable: editForm.isMoveable === "true",
+              description: editForm.description,
+            }
+          : prev,
+      );
+      setIsEditing(false);
+      if (editForm.imageFile) {
+        window.location.reload();
+      }
+    } else {
+      toast.error(result.message || "Gagal memperbarui equipment.");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteCandidate?.id) return;
+    const result = await deleteEquipment(deleteCandidate.id);
+    if (!result.ok) {
+      toast.error(result.message || "Gagal menghapus equipment.");
+      return;
+    }
+    setEquipments((prev) =>
+      prev.filter((item) => item.id !== deleteCandidate.id),
+    );
+    setTotalCount((prev) =>
+      typeof prev === "number" ? Math.max(0, prev - 1) : prev,
+    );
+    setDeleteCandidate(null);
+    toast.success("Equipment berhasil dihapus.");
   };
 
   const totalPages = Math.max(
@@ -222,12 +397,50 @@ export default function EquipmentPage() {
                   </TableCell>
                   <TableCell className="text-center sticky right-0 bg-card">
                     <div className="flex justify-center gap-2">
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleView(item)}
+                      >
                         <Eye className="h-4 w-4" />
                       </Button>
-                      <Button variant="outline" size="sm">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEdit(item)}
+                      >
                         <Pencil className="h-4 w-4" />
                       </Button>
+                      <AlertDialog
+                        open={deleteCandidate?.id === item.id}
+                        onOpenChange={(open) =>
+                          setDeleteCandidate(open ? item : null)
+                        }
+                      >
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline" size="sm" disabled={isDeleting}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Hapus equipment?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Tindakan ini tidak bisa dibatalkan. Equipment{" "}
+                              <span className="font-semibold">
+                                {item.name}
+                              </span>{" "}
+                              akan dihapus permanen.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Batal</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleDelete}>
+                              Hapus
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -279,6 +492,28 @@ export default function EquipmentPage() {
           </PaginationItem>
         </PaginationContent>
       </Pagination>
+      <EquipmentDetailCollapsible
+        open={detailOpen}
+        onOpenChange={(open) => {
+          setDetailOpen(open);
+          if (!open) {
+            setSelectedEquipment(null);
+            setIsEditing(false);
+          }
+        }}
+        selectedEquipment={selectedEquipment}
+        editForm={editForm}
+        isEditing={isEditing}
+        isUpdating={isUpdating}
+        onEditStart={() => setIsEditing(true)}
+        onCancel={() => setIsEditing(false)}
+        onSave={handleEditSave}
+        onChange={handleEditChange}
+        onImageChange={handleImageChange}
+        roomOptions={roomOptions}
+        categoryOptions={EQUIPMENT_CATEGORY_OPTIONS}
+        moveableOptions={MOVEABLE_OPTIONS}
+      />
     </section>
   );
 }

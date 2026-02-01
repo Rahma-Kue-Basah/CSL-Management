@@ -48,7 +48,7 @@ import {
 import { useUsers } from "@/hooks/use-users";
 import { useLoadProfile } from "@/hooks/use-load-profile";
 import { isPrivilegedRole, ROLE_FILTER_OPTIONS, ROLE_OPTIONS } from "@/constants/roles";
-import { USER_TYPE_OPTIONS, USER_TYPE_VALUES } from "@/constants/user-types";
+import { USER_TYPE_VALUES } from "@/constants/user-types";
 import { DEPARTMENT_FILTER_OPTIONS, DEPARTMENT_OPTIONS } from "@/constants/departments";
 import { BATCH_OPTIONS } from "@/constants/batches";
 import { useDeleteUser } from "@/hooks/use-delete-user";
@@ -72,7 +72,6 @@ function UserPageContent() {
     department: "",
     role: "",
     batch: "",
-    user_type: "",
   });
   const [filterOpen, setFilterOpen] = useState(false);
   const [detailOpen, setDetailOpen] = useState(false);
@@ -134,7 +133,6 @@ function UserPageContent() {
       department: "",
       role: "",
       batch: "",
-      user_type: "",
     });
     setPage(1);
   };
@@ -151,7 +149,6 @@ function UserPageContent() {
     filters.department,
     filters.role,
     filters.batch,
-    filters.user_type,
   ]);
 
   useEffect(() => {
@@ -227,6 +224,7 @@ function UserPageContent() {
     () => Math.max(1, Math.ceil((totalCount || users.length) / pageSize)),
     [totalCount, users.length],
   );
+  const columnCount = isRoleScoped ? 6 : 7;
 
   return (
     <section className="space-y-4">
@@ -236,12 +234,19 @@ function UserPageContent() {
             Total {totalUsers} user terdaftar.
           </p>
         </div>
-        {isPrivileged && !isRoleScoped ? (
+        {isPrivileged ? (
           <div className="flex items-center gap-2">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button asChild variant="outline" size="sm">
-                  <Link href="/user/form-bulk" aria-label="Bulk upload">
+                  <Link
+                    href={
+                      roleParam
+                        ? `/user/form-bulk?role=${encodeURIComponent(roleParam)}`
+                        : "/user/form-bulk"
+                    }
+                    aria-label="Bulk upload"
+                  >
                     <FilePlus className="h-4 w-4" />
                   </Link>
                 </Button>
@@ -249,7 +254,13 @@ function UserPageContent() {
               <TooltipContent side="bottom">Bulk Upload</TooltipContent>
             </Tooltip>
             <Button asChild size="sm" className="gap-2">
-              <Link href="/user/form">
+              <Link
+                href={
+                  roleParam
+                    ? `/user/form?role=${encodeURIComponent(roleParam)}`
+                    : "/user/form"
+                }
+              >
                 <Plus className="h-4 w-4" />
                 Tambah User
               </Link>
@@ -331,7 +342,9 @@ function UserPageContent() {
               <TableHead>Department</TableHead>
               <TableHead>ID Number</TableHead> */}
               <TableHead className="w-[220px]">Email</TableHead>
-              <TableHead className="w-[120px]">Role</TableHead>
+              {!isRoleScoped ? (
+                <TableHead className="w-[120px]">Role</TableHead>
+              ) : null}
               <TableHead className="w-[120px] text-center">Verified</TableHead>
               <TableHead className="w-[140px]">User Type</TableHead>
               <TableHead className="w-[160px] text-center sticky right-0 bg-card z-10">
@@ -343,7 +356,7 @@ function UserPageContent() {
             {isLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={columnCount}
                   className="py-6 text-center text-muted-foreground"
                 >
                   <Image
@@ -371,7 +384,9 @@ function UserPageContent() {
                   <TableCell className="text-muted-foreground truncate">
                     {user.email}
                   </TableCell>
-                  <TableCell className="truncate">{user.role}</TableCell>
+                  {!isRoleScoped ? (
+                    <TableCell className="truncate">{user.role}</TableCell>
+                  ) : null}
                   <TableCell className="text-center align-middle">
                     <div className="flex justify-center">
                       {user.isVerified ? (
@@ -464,7 +479,7 @@ function UserPageContent() {
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={7}
+                  colSpan={columnCount}
                   className="py-6 text-center text-muted-foreground"
                 >
                   Tidak ada user terdaftar.
@@ -522,7 +537,6 @@ function UserPageContent() {
         isUpdating={isUpdating}
         message={message}
         roleOptions={roleOptions}
-        userTypeOptions={USER_TYPE_OPTIONS}
         departmentOptions={DEPARTMENT_OPTIONS}
         batchOptions={BATCH_OPTIONS}
         onChange={handleProfileChange}
@@ -593,12 +607,6 @@ function FilterBar({
           value={filters.batch}
           options={BATCH_OPTIONS}
           onChange={(value) => handleChange("batch", value)}
-        />
-        <SelectField
-          label="User Type"
-          value={filters.user_type}
-          options={USER_TYPE_OPTIONS}
-          onChange={(value) => handleChange("user_type", value)}
         />
       </form>
     </div>

@@ -1,6 +1,17 @@
 import { NextResponse } from "next/server";
 
-const PROTECTED_PATHS = ["/dashboard"];
+const PROTECTED_PATHS = [
+  "/dashboard",
+  "/user",
+  "/schedule",
+  "/room-booking",
+  "/my-bookings-request",
+  "/inventory",
+  "/room",
+  "/equipment",
+  "/equipment-borrow",
+  "/my-borrows-request",
+];
 
 function isProtectedPath(pathname) {
   return PROTECTED_PATHS.some((path) => pathname.startsWith(path));
@@ -26,5 +37,16 @@ export function proxy(request) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/user/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/user/:path*",
+    "/schedule/:path*",
+    "/room-booking/:path*",
+    "/my-bookings-request/:path*",
+    "/inventory/:path*",
+    "/room/:path*",
+    "/equipment/:path*",
+    "/equipment-borrow/:path*",
+    "/my-borrows-request/:path*",
+  ],
 };

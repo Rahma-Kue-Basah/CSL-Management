@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { User, BadgeCheck, Building2, IdCard, UserCircle, GraduationCap } from "lucide-react";
+import { BadgeCheck, Building2, IdCard, UserCircle, GraduationCap } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Drawer,
@@ -22,7 +22,6 @@ import { useUpdateProfile } from "@/hooks/use-update-profile";
 import { AlertMessage } from "@/components/ui/alert-message";
 import { ChangePasswordDrawer } from "@/components/change-password-drawer";
 import { Lock } from "lucide-react";
-import { USER_TYPE_OPTIONS } from "@/constants/user-types";
 import { DEPARTMENT_OPTIONS } from "@/constants/departments";
 import { BATCH_OPTIONS } from "@/constants/batches";
 
@@ -97,7 +96,6 @@ export function ProfileDrawer({ user, children }) {
     { value: "STAFF", label: "Staff" },
     { value: "OTHER", label: "Other" },
   ];
-  const userTypeOptions = USER_TYPE_OPTIONS;
 
   const toTitle = (text) =>
     text
@@ -238,16 +236,6 @@ export function ProfileDrawer({ user, children }) {
             editing={isEditing}
             name="id_number"
             onChange={handleChange}
-          />
-          <InfoRow
-            icon={User}
-            label="User Type"
-            value={viewProfile.user_type}
-            editable
-            editing={false}
-            name="user_type"
-            type="select"
-            options={userTypeOptions}
           />
           <InfoRow
             icon={BadgeCheck}
