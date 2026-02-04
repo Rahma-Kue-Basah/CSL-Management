@@ -9,8 +9,8 @@ import {
   Wrench,
 } from "lucide-react";
 
-import { NavMain } from "@/components/nav-main";
-import { NavUser } from "@/components/nav-user";
+import { NavMain } from "@/components/layout/nav-main";
+import { NavUser } from "@/components/layout/nav-user";
 import {
   Sidebar,
   SidebarContent,
@@ -57,7 +57,7 @@ export const NAV_DATA = {
         { title: "Peminjaman Saya", url: "/my-borrows-request" },
       ],
     },
-    
+
     {
       title: "Admin",
       url: null,
@@ -128,7 +128,10 @@ export function AppSidebar({ ...props }) {
               asChild
               className="h-full py-0 overflow-visible rounded-xl"
             >
-              <Link href="/dashboard" className="flex h-full w-full items-center justify-start gap-2">
+              <Link
+                href="/dashboard"
+                className="flex h-full w-full items-center justify-start gap-2"
+              >
                 <Image
                   src="/logo/stem-name 2.png"
                   alt="STEM Logo"

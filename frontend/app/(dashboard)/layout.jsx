@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft, LogOut } from "lucide-react";
 
-import { AppSidebar, NAV_DATA } from "@/components/app-sidebar";
+import { AppSidebar, NAV_DATA } from "@/components/layout/app-sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -22,7 +22,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { NavUser } from "@/components/nav-user";
+import { NavUser } from "@/components/layout/nav-user";
 import { useLogout } from "@/hooks/use-logout";
 
 function DashboardShell({ crumbs, children }) {
@@ -164,7 +164,10 @@ function DashboardLayoutContent({ children }) {
           for (const grand of sub.items) {
             const grandUrl = normalizeUrl(grand.url);
             if (!grandUrl) continue;
-            if (currentPath === grandUrl || currentPath.startsWith(`${grandUrl}/`)) {
+            if (
+              currentPath === grandUrl ||
+              currentPath.startsWith(`${grandUrl}/`)
+            ) {
               trail = [
                 { label: item.title, href: null },
                 { label: sub.title, href: null },

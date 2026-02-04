@@ -5,9 +5,9 @@ export default function AuthLayout({ children }) {
   return (
     <div className="relative grid h-svh overflow-hidden lg:grid-cols-[2fr_3fr] font-sans">
       <div className="relative hidden overflow-hidden lg:block lg:h-svh">
-        <div className="absolute inset-0 bg-[url('/images/building.jpeg')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-[url('/images/stem-building-2.png')] bg-cover bg-center" />
         {/* <div className="absolute inset-0 bg-[linear-gradient(120deg,_rgba(124,26,25,0.72)_0%,_rgba(124,26,25,0.45)_55%,_rgba(124,26,25,0.2)_100%)]" /> */}
-        <div className="absolute inset-0 bg-red-500/60" />
+        <div className="absolute inset-0 bg-red-500/80" />
         <div className="absolute left-12 top-16 max-w-xs text-white">
           <p className="text-sm uppercase tracking-[0.35em] text-white/70">
             CSL USE

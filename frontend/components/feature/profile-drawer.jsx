@@ -20,7 +20,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Input } from "@/components/ui/input";
 import { useUpdateProfile } from "@/hooks/use-update-profile";
 import { AlertMessage } from "@/components/ui/alert-message";
-import { ChangePasswordDrawer } from "@/components/change-password-drawer";
+import { ChangePasswordDrawer } from "@/components/feature/change-password-drawer";
 import { Lock } from "lucide-react";
 import { DEPARTMENT_OPTIONS } from "@/constants/departments";
 import { BATCH_OPTIONS } from "@/constants/batches";

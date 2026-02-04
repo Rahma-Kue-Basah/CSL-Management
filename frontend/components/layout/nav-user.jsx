@@ -16,8 +16,8 @@ import {
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "@/components/ui/sidebar";
 import { useLoadProfile } from "@/hooks/use-load-profile";
 import { useLogout } from "@/hooks/use-logout";
-import { ProfileDrawer } from "@/components/profile-drawer";
-import { NotificationDrawer } from "@/components/notification-drawer";
+import { ProfileDrawer } from "@/components/feature/profile-drawer";
+import { NotificationDrawer } from "@/components/feature/notification-drawer";
 
 export function NavUser({ user }) {
   const { isMobile } = useSidebar();
