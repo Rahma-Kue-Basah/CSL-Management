@@ -34,6 +34,7 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = [
     "localhost",
     'csluse-stg.azizrahmad.com',
+    'csl-management.azizrahmad.com',
     'csluse-api.azizrahmad.com',
     "3.27.77.155",
     "127.0.0.1",
@@ -182,7 +183,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'https://csluse-stg.azizrahmad.com',
     'https://csluse-api.azizrahmad.com',
-]
+    'https://csl-management.azizrahmad.com',
+]   
 
 CORS_ALLOW_CREDENTIALS = True
 
@@ -202,6 +204,7 @@ CORS_ALLOW_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     'https://csluse-stg.azizrahmad.com',
     'https://csluse-api.azizrahmad.com',
+    'https://csl-management.azizrahmad.com',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ]
