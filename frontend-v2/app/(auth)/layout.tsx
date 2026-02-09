@@ -14,7 +14,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
         <div className="absolute inset-0 bg-red-500/80" />
         <div className="absolute left-12 top-16 max-w-xs text-white">
           <p className="text-sm uppercase tracking-[0.35em] text-white/70">
-            CSL USE
+            CSL Management
           </p>
           <h2 className="mt-4 text-3xl font-semibold leading-tight">
             Satu akun untuk akses laboratorium, riset, dan komunitas.

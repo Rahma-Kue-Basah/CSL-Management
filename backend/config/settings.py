@@ -16,11 +16,9 @@ from datetime import timedelta
 from dotenv import load_dotenv
 import dj_database_url
 
-
-load_dotenv()
-
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -154,7 +152,6 @@ ACCOUNT_LOGOUT_ON_GET = True
 ACCOUNT_LOGOUT_METHODS = ['GET', 'POST']
 
 # Session and Cookie Configuration
-
 
 
 SESSION_COOKIE_DOMAIN = ".azizrahmad.com"

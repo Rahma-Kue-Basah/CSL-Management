@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "@/styles/globals.css";
 
-const inter = Inter({
+const inter = Plus_Jakarta_Sans({
   variable: "--font-inter",
   subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "CSL Management System",
+  title: "CSL Management | Universitas  Prasetiya Mulya",
   description: "Collaborative STEM Laboratory",
 };
 
