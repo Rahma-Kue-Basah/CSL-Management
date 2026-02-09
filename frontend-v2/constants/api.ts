@@ -1,5 +1,5 @@
 const API_BASE_URL: string =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/";
+  (process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000").replace(/\/+$/, "");
 
 // REGION: Auth API Endpoints
 const API_AUTH_BASE = `${API_BASE_URL}/api/auth`;

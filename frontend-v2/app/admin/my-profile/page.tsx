@@ -305,7 +305,7 @@ export default function AdminMyProfilePage() {
           </div>
           {!showPasswordForm ? (
             <div className="mt-3 space-y-3">
-              <p className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600">
+              <p className="rounded-md bg-white text-sm text-slate-600">
                 Ubah password akun Anda secara berkala untuk menjaga keamanan.
               </p>
               <Button type="button" className="w-full" onClick={() => setShowPasswordForm(true)}>
@@ -313,7 +313,7 @@ export default function AdminMyProfilePage() {
               </Button>
             </div>
           ) : (
-            <form className="mt-3 space-y-3 rounded-md border border-slate-200 bg-white p-3" onSubmit={handlePasswordSubmit}>
+            <form className="mt-3 space-y-3 rounded-md bg-white" onSubmit={handlePasswordSubmit}>
               <div className="space-y-1">
                 <label htmlFor="currentPassword" className="text-xs font-medium text-slate-600">
                   Password Lama

@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Building2,
   CalendarCheck2,
   Clock3,
-  Loader2,
   Package,
   ShieldUser,
   Sparkles,
@@ -16,8 +16,12 @@ import {
 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { Skeleton } from "@/components/ui/skeleton";
 import { API_AUTH_ADMIN_DASHBOARD_KPIS } from "@/constants/api";
-import { useAdminActions, type AdminAction } from "@/hooks/admin/use-admin-actions";
+import {
+  useAdminActions,
+  type AdminAction,
+} from "@/hooks/admin/use-admin-actions";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { authFetch } from "@/lib/auth";
 
@@ -47,7 +51,8 @@ function formatActionLabel(action: AdminAction["action"]) {
 }
 
 function getActionBadgeClass(action: AdminAction["action"]) {
-  if (action === "create") return "border-emerald-200 bg-emerald-100 text-emerald-800";
+  if (action === "create")
+    return "border-emerald-200 bg-emerald-100 text-emerald-800";
   if (action === "update") return "border-sky-200 bg-sky-100 text-sky-800";
   if (action === "delete") return "border-rose-200 bg-rose-100 text-rose-800";
   return "border-slate-200 bg-slate-100 text-slate-700";
@@ -74,35 +79,82 @@ function formatTime(value: string) {
   }).format(date);
 }
 
-function ActionList({ title, actions }: { title: string; actions: AdminAction[] }) {
+function formatActionDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function formatActionClock(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZoneName: "short",
+  }).format(date);
+}
+
+function ActionList({
+  title,
+  actions,
+}: {
+  title: string;
+  actions: AdminAction[];
+}) {
   return (
     <div className="rounded-xl mb-16 border bg-linear-to-b from-white to-slate-50 p-3">
       <h2 className="mb-3 text-sm font-semibold text-slate-900">{title}</h2>
       {actions.length ? (
         <div className="space-y-2">
           {actions.map((item, index) => (
-            <div key={item.id} className="relative overflow-hidden rounded-lg border bg-white p-3">
-              <span className={`absolute inset-y-0 left-0 w-1 ${getActionAccentClass(item.action)}`} />
+            <div
+              key={item.id}
+              className="relative overflow-hidden rounded-lg border bg-white p-3"
+            >
+              <span
+                className={`absolute inset-y-0 left-0 w-1 ${getActionAccentClass(item.action)}`}
+              />
               <div className="ml-2">
                 <div className="flex items-start justify-between gap-3">
-                  <p className="line-clamp-2 text-sm font-semibold text-slate-900">{item.object_repr || "-"}</p>
-                  <span className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getActionBadgeClass(item.action)}`}>
-                    {formatActionLabel(item.action)}
-                  </span>
+                  <p className="line-clamp-2 text-sm font-semibold text-slate-900">
+                    {item.object_repr || "-"}
+                  </p>
+                  <div className="flex shrink-0 flex-col items-end gap-1">
+                    <span
+                      className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${getActionBadgeClass(item.action)}`}
+                    >
+                      {formatActionLabel(item.action)}
+                    </span>
+                    {/* <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      <CalendarCheck2 className="h-3 w-3 text-slate-500" />
+                      {formatActionDate(item.action_time)}
+                      <Clock3 className="h-3 w-3 text-slate-500" />
+                      {formatActionClock(item.action_time)}
+                    </span> */}
+                  </div>
                 </div>
 
                 <div className="mt-2 grid gap-1 text-xs text-slate-600">
-                  <p className="flex items-center gap-2">
-                    <ShieldUser className="h-3.5 w-3.5 text-slate-500" />
-                    <span className="truncate">{item.actor || "-"}</span>
+                  <p className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1">
+                      <ShieldUser className="h-3.5 w-3.5 text-slate-500" />
+                      <span className="truncate">{item.actor || "-"}</span>
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <CalendarCheck2 className="h-3 w-3 text-slate-500" />
+                      {formatActionDate(item.action_time)} {", "}
+                      {formatActionClock(item.action_time)}
+                    </span>
                   </p>
                   <p className="flex items-center gap-2">
                     <Waypoints className="h-3.5 w-3.5 text-slate-500" />
                     <span className="truncate">{item.target || "-"}</span>
-                  </p>
-                  <p className="flex items-center gap-2">
-                    <Clock3 className="h-3.5 w-3.5 text-slate-500" />
-                    <span>{formatTime(item.action_time)}</span>
                   </p>
                 </div>
 
@@ -112,7 +164,9 @@ function ActionList({ title, actions }: { title: string; actions: AdminAction[] 
                   </p>
                 ) : null}
               </div>
-              {index < actions.length - 1 ? <div className="mt-3 border-b border-dashed border-slate-200" /> : null}
+              {index < actions.length - 1 ? (
+                <div className="mt-3 border-b border-dashed border-slate-200" />
+              ) : null}
             </div>
           ))}
         </div>
@@ -167,8 +221,14 @@ export default function Page() {
           totalUseRequest: 0,
         });
       } catch (loadError) {
-        if (loadError instanceof DOMException && loadError.name === "AbortError") return;
-        setKpisError(loadError instanceof Error ? loadError.message : "Terjadi kesalahan.");
+        if (
+          loadError instanceof DOMException &&
+          loadError.name === "AbortError"
+        )
+          return;
+        setKpisError(
+          loadError instanceof Error ? loadError.message : "Terjadi kesalahan.",
+        );
       } finally {
         if (isAborted || controller.signal.aborted) return;
         setIsLoadingKpis(false);
@@ -183,15 +243,13 @@ export default function Page() {
     };
   }, []);
 
-  const lastLoginText = profile.last_login ? formatTime(profile.last_login) : "-";
+  const lastLoginText = profile.last_login
+    ? formatTime(profile.last_login)
+    : "-";
   const displayName = profile.name || "User";
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin" />
-      </div>
-    );
+    return <HomePageSkeleton />;
   }
 
   return (
@@ -199,7 +257,15 @@ export default function Page() {
       <AdminPageHeader
         title={`Selamat datang, ${displayName}!`}
         description={`Last login: ${lastLoginText}`}
-        icon={<User className="h-5 w-5 text-sky-200" />}
+        icon={
+          <Link
+            href="/admin/my-profile"
+            aria-label="Buka profil saya"
+            className="inline-flex h-full w-full items-center justify-center rounded-full"
+          >
+            <User className="h-5 w-5 text-sky-200" />
+          </Link>
+        }
       />
 
       {kpisError ? (
@@ -209,13 +275,41 @@ export default function Page() {
       ) : null}
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        <KpiCard label="Pengguna" value={isLoadingKpis ? "-" : String(kpis.totalUsers)} tone="users" />
-        <KpiCard label="Ruangan" value={isLoadingKpis ? "-" : String(kpis.totalRooms)} tone="rooms" />
-        <KpiCard label="Peralatan" value={isLoadingKpis ? "-" : String(kpis.totalEquipments)} tone="equipments" />
-        <KpiCard label="Booking Request" value={isLoadingKpis ? "-" : String(kpis.totalBookings)} tone="bookings" />
-        <KpiCard label="Borrow Request" value={isLoadingKpis ? "-" : String(kpis.totalBorrows)} tone="borrows" />
-        <KpiCard label="Use Request" value={isLoadingKpis ? "-" : String(kpis.totalUseRequest)} tone="useRequest" />
-        <KpiCard label="Pengujian Request" value={isLoadingKpis ? "-" : String(kpis.totalPengujian)} tone="pengujian" />
+        <KpiCard
+          label="Pengguna"
+          value={isLoadingKpis ? "0" : String(kpis.totalUsers)}
+          tone="users"
+        />
+        <KpiCard
+          label="Ruangan"
+          value={isLoadingKpis ? "0" : String(kpis.totalRooms)}
+          tone="rooms"
+        />
+        <KpiCard
+          label="Peralatan"
+          value={isLoadingKpis ? "0" : String(kpis.totalEquipments)}
+          tone="equipments"
+        />
+        <KpiCard
+          label="Booking Request"
+          value={isLoadingKpis ? "0" : String(kpis.totalBookings)}
+          tone="bookings"
+        />
+        <KpiCard
+          label="Borrow Request"
+          value={isLoadingKpis ? "0" : String(kpis.totalBorrows)}
+          tone="borrows"
+        />
+        <KpiCard
+          label="Use Request"
+          value={isLoadingKpis ? "0" : String(kpis.totalUseRequest)}
+          tone="useRequest"
+        />
+        <KpiCard
+          label="Pengujian Request"
+          value={isLoadingKpis ? "0" : String(kpis.totalPengujian)}
+          tone="pengujian"
+        />
       </div>
 
       {error ? (
@@ -232,6 +326,69 @@ export default function Page() {
   );
 }
 
+function HomePageSkeleton() {
+  return (
+    <section className="space-y-4 px-4">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-5 py-4">
+        <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10 blur-xl" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div className="min-w-0 space-y-2">
+            <Skeleton className="h-3 w-20 bg-white/20" />
+            <Skeleton className="h-8 w-56 bg-white/20" />
+            <Skeleton className="mt-3 h-4 w-44 bg-white/20" />
+          </div>
+          <Skeleton className="h-10 w-10 rounded-full bg-white/20" />
+        </div>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+        {Array.from({ length: 7 }).map((_, index) => (
+          <div
+            key={`kpi-skeleton-${index}`}
+            className="relative overflow-hidden rounded-lg border bg-white p-4"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <Skeleton className="h-3 w-24" />
+              <Skeleton className="h-7 w-7 rounded-lg" />
+            </div>
+            <Skeleton className="mt-3 h-8 w-14" />
+          </div>
+        ))}
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <ActionListSkeleton />
+        <ActionListSkeleton />
+      </div>
+    </section>
+  );
+}
+
+function ActionListSkeleton() {
+  return (
+    <div className="mb-16 rounded-xl border bg-linear-to-b from-white to-slate-50 p-3">
+      <Skeleton className="mb-3 h-5 w-28" />
+      <div className="space-y-2">
+        {Array.from({ length: 3 }).map((_, index) => (
+          <div
+            key={`action-skeleton-${index}`}
+            className="overflow-hidden rounded-lg border bg-white p-3"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-5 w-16 rounded-full" />
+            </div>
+            <div className="mt-2 space-y-2">
+              <Skeleton className="h-3 w-44" />
+              <Skeleton className="h-3 w-36" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 type KpiTone =
   | "users"
   | "rooms"
@@ -242,13 +399,17 @@ type KpiTone =
   | "useRequest";
 
 function getKpiToneClass(tone: KpiTone) {
-  if (tone === "users") return "border-sky-200 from-sky-50 to-sky-100/40";
-  if (tone === "rooms") return "border-emerald-200 from-emerald-50 to-emerald-100/40";
-  if (tone === "equipments") return "border-violet-200 from-violet-50 to-violet-100/40";
-  if (tone === "bookings") return "border-amber-200 from-amber-50 to-amber-100/40";
-  if (tone === "borrows") return "border-rose-200 from-rose-50 to-rose-100/40";
-  if (tone === "pengujian") return "border-cyan-200 from-cyan-50 to-cyan-100/40";
-  return "border-indigo-200 from-indigo-50 to-indigo-100/40";
+  if (tone === "users") return "border-sky-300 from-sky-100 to-sky-200/80";
+  if (tone === "rooms")
+    return "border-emerald-300 from-emerald-100 to-emerald-200/80";
+  if (tone === "equipments")
+    return "border-violet-300 from-violet-100 to-violet-200/80";
+  if (tone === "bookings")
+    return "border-amber-300 from-amber-100 to-amber-200/80";
+  if (tone === "borrows") return "border-rose-300 from-rose-100 to-rose-200/80";
+  if (tone === "pengujian")
+    return "border-cyan-300 from-cyan-100 to-cyan-200/80";
+  return "border-indigo-300 from-indigo-100 to-indigo-200/80";
 }
 
 function getKpiValueToneClass(tone: KpiTone) {
@@ -281,18 +442,72 @@ function getKpiIconToneClass(tone: KpiTone) {
   return "bg-indigo-100 text-indigo-700";
 }
 
-function KpiCard({ label, value, tone }: { label: string; value: string; tone: KpiTone }) {
+function KpiCard({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone: KpiTone;
+}) {
   const Icon = getKpiIcon(tone);
+  const [animatedValue, setAnimatedValue] = useState(0);
+  const target = Number(value);
+  const isNumericValue = Number.isFinite(target);
+
+  useEffect(() => {
+    if (!isNumericValue) return;
+
+    const safeTarget = Math.max(0, Math.floor(target));
+    if (safeTarget === 0) {
+      setAnimatedValue(0);
+      return;
+    }
+
+    const duration = 800;
+    const startTime = performance.now();
+    let frameId = 0;
+
+    const tick = (now: number) => {
+      const progress = Math.min((now - startTime) / duration, 1);
+      const eased = 1 - (1 - progress) * (1 - progress);
+      setAnimatedValue(Math.round(safeTarget * eased));
+      if (progress < 1) {
+        frameId = requestAnimationFrame(tick);
+      }
+    };
+
+    setAnimatedValue(0);
+    frameId = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(frameId);
+  }, [isNumericValue, target]);
+
+  const displayValue = isNumericValue
+    ? new Intl.NumberFormat("id-ID").format(animatedValue)
+    : value;
+
   return (
-    <div className={`relative overflow-hidden rounded-lg border bg-gradient-to-br p-4 ${getKpiToneClass(tone)}`}>
+    <div
+      className={`relative overflow-hidden rounded-lg border bg-linear-to-br p-4 ${getKpiToneClass(tone)}`}
+    >
       <div className="pointer-events-none absolute -right-6 -top-6 h-16 w-16 rounded-full bg-white/40 blur-lg" />
       <div className="relative flex items-start justify-between gap-3">
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">{label}</p>
-        <span className={`inline-flex rounded-lg p-1.5 ${getKpiIconToneClass(tone)}`}>
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-600">
+          {label}
+        </p>
+        <span
+          className={`inline-flex rounded-lg p-1.5 ${getKpiIconToneClass(tone)}`}
+        >
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p className={`relative mt-3 text-3xl font-bold leading-none ${getKpiValueToneClass(tone)}`}>{value}</p>
+      <p
+        className={`relative mt-3 text-3xl font-bold leading-none ${getKpiValueToneClass(tone)}`}
+      >
+        {displayValue}
+      </p>
     </div>
   );
 }

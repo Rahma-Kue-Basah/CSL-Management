@@ -123,7 +123,18 @@ class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
         return (
             User.objects
             .select_related("profile")
-            .filter(profile__role__in=["Staff", "Lecturer", "Admin"])
+            .filter(
+                models.Q(profile__role__iregex=r"^(staff|lecturer|admin)$")
+                | models.Q(
+                    groups__name__in=[
+                        "Staff",
+                        "Lecturer",
+                        "Administrator",
+                    ]
+                )
+            )
+            .exclude(groups__name="SuperAdministrator")
+            .distinct()
         )
 
     @action(detail=False, methods=["get"], url_path="dropdown")

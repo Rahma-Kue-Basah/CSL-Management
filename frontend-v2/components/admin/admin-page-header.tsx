@@ -35,7 +35,7 @@ export function AdminPageHeader({
         <div className="flex shrink-0 items-center gap-2">
           {actions ? <div className="hidden sm:flex sm:items-center sm:gap-2">{actions}</div> : null}
           {showCornerIcon ? (
-            <div className="rounded-full bg-white/10 p-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10">
               {icon ?? <Sparkles className="h-5 w-5 text-sky-200" />}
             </div>
           ) : null}

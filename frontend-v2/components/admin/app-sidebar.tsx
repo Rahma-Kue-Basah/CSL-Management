@@ -99,12 +99,12 @@ export function AppSidebar() {
     { label: "Guest", href: "/admin/user-management/guest" },
   ];
   const profileItems = [
-    { label: "Profile", href: "/admin/profile/profile" },
+    { label: "Profile Singkat", href: "/admin/profile/profile" },
     { label: "Struktur Organisasi", href: "/admin/profile/struktur-organisasi" },
     { label: "Fasilitas", href: "/admin/profile/fasilitas" },
   ];
   const informationItems = [
-    { label: "Informasi", href: "/admin/informasi/informasi" },
+    { label: "Pengumuman", href: "/admin/informasi/pengumuman" },
     { label: "Jadwal", href: "/admin/informasi/jadwal" },
   ];
 
@@ -169,7 +169,7 @@ export function AppSidebar() {
     <Sidebar
       variant="inset"
       collapsible="icon"
-      className="border-r border-sidebar-border bg-slate-900 p-0 [--sidebar:rgb(15_23_42)] [--sidebar-foreground:#F8FAFC] [--sidebar-accent:rgb(15_23_42)] [--sidebar-accent-foreground:#FFFFFF] [--sidebar-border:rgb(30_41_59)]"
+      className="border-r border-sidebar-border bg-slate-900 p-0 [--sidebar:rgb(15_23_42)] [--sidebar-foreground:#F8FAFC] [--sidebar-accent:rgb(24_34_53)] [--sidebar-accent-foreground:#FFFFFF] [--sidebar-border:rgb(51_65_85)]"
     >
       <SidebarHeader className="relative h-16 flex-row! items-center! justify-start! gap-0! !p-0 border-b border-sidebar-border/60 px-2">
         <SidebarMenu className="flex h-full w-full items-center justify-start px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">

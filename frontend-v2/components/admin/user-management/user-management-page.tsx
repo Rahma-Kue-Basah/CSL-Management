@@ -536,7 +536,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
         </div>
 
         {!isMobile && isActionOpen ? (
-          <aside className="sticky top-4 hidden w-full max-w-[380px] shrink-0 rounded border bg-card shadow-xs lg:block">
+          <aside className="sticky top-0 hidden self-start w-full max-w-[380px] shrink-0 rounded border bg-card shadow-xs lg:block">
             <ActionPanelContent
               key={activeAction === "detail" ? `detail-${String(selectedUser?.uid ?? "")}` : activeAction ?? "none"}
               action={activeAction}
@@ -1224,9 +1224,15 @@ function DetailUserPanel({
 
 function PanelHeader({ title, onClose }: { title: string; onClose: () => void }) {
   return (
-    <div className="mb-2 flex items-start justify-between gap-2">
+    <div className="-mx-4 -mt-4 mb-4 flex items-center justify-between gap-2 rounded-t-md bg-slate-900 px-4 py-3 text-white">
       <h3 className="text-base font-semibold">{title}</h3>
-      <Button type="button" variant="ghost" size="icon-sm" onClick={onClose}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="text-slate-100 hover:bg-white/15 hover:text-white"
+        onClick={onClose}
+      >
         <X className="h-4 w-4" />
       </Button>
     </div>

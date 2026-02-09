@@ -31,7 +31,7 @@ class ImageSerializer(serializers.ModelSerializer):
 
 class RoomSerializer(serializers.ModelSerializer):
     pic_detail = RoomPicDetailSerializer(source="pic", read_only=True)
-    # image_detail = ImageSerializer(source="image", read_only=True)
+    image_detail = ImageSerializer(source="image", read_only=True)
 
     class Meta:
         model = Room
@@ -45,7 +45,7 @@ class RoomSerializer(serializers.ModelSerializer):
             "pic",
             "image",
             "pic_detail",
-            # "image_detail",
+            "image_detail",
         ]
 
 
@@ -59,7 +59,7 @@ class RoomDropdownSerializer(serializers.ModelSerializer):
 
 
 class EquipmentSerializer(serializers.ModelSerializer):
-    # image_detail = ImageSerializer(source="image", read_only=True)
+    image_detail = ImageSerializer(source="image", read_only=True)
     room_detail = RoomSerializer(source="room", read_only=True)
 
     class Meta:
@@ -72,7 +72,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
             "status",
             "category",
             "image",
-            # "image_detail",
+            "image_detail",
             "room",
             "room_detail",
             "is_moveable",

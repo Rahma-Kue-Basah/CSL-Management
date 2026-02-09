@@ -8,19 +8,25 @@ import { authFetch } from "@/lib/auth";
 type ApiPicUser = {
   id?: string | number | null;
   name?: string | null;
+  role?: string | null;
 };
 
 export type PicUser = {
   id: string;
   name: string;
+  role: string | null;
 };
 
 function mapPicUser(user: ApiPicUser): PicUser | null {
   if (!user.id) return null;
 
+  const role = user.role ? String(user.role) : null;
+  const baseName = String(user.name ?? "-");
+
   return {
     id: String(user.id),
-    name: String(user.name ?? "-"),
+    name: role ? `${baseName} (${role})` : baseName,
+    role,
   };
 }
 

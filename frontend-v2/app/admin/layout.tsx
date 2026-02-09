@@ -88,7 +88,7 @@ export default function AdminLayout({
                 >
                   <Link href="/dashboard">
                     <CircleArrowOutUpRightIcon className="h-4 w-4" />
-                    Back to Dashboard
+                    <span className="ml-1 hidden md:block">Back to Dashboard</span>
                   </Link>
                 </Button>
               </div>

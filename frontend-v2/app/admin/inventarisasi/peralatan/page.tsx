@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { Eye, Loader2, Plus, Trash2, X } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -25,11 +31,14 @@ import {
   EQUIPMENT_STATUS_OPTIONS,
   MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
-import { API_EQUIPMENT_DETAIL } from "@/constants/api";
+import { API_BASE_URL, API_EQUIPMENT_DETAIL } from "@/constants/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCreateEquipment } from "@/hooks/equipments/use-create-equipment";
 import { useDeleteEquipment } from "@/hooks/equipments/use-delete-equipment";
-import { useEquipments, type EquipmentRow } from "@/hooks/equipments/use-equipments";
+import {
+  useEquipments,
+  type EquipmentRow,
+} from "@/hooks/equipments/use-equipments";
 import { useUpdateEquipment } from "@/hooks/equipments/use-update-equipment";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { authFetch } from "@/lib/auth";
@@ -65,6 +74,13 @@ function formatStatus(value: string) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : "-";
 }
 
+function resolveAssetUrl(value: string | null | undefined) {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/")) return `${API_BASE_URL}${value}`;
+  return `${API_BASE_URL}/${value}`;
+}
+
 export default function AdminEquipmentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -76,11 +92,15 @@ export default function AdminEquipmentsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [activeAction, setActiveAction] = useState<ActionType | null>(null);
-  const [selectedEquipment, setSelectedEquipment] = useState<EquipmentRow | null>(null);
-  const [deleteCandidate, setDeleteCandidate] = useState<EquipmentRow | null>(null);
+  const [selectedEquipment, setSelectedEquipment] =
+    useState<EquipmentRow | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<EquipmentRow | null>(
+    null,
+  );
   const isMobile = useIsMobile();
   const isActionOpen = Boolean(activeAction);
-  const { rooms: filterRooms, isLoading: isLoadingFilterRooms } = useRoomOptions();
+  const { rooms: filterRooms, isLoading: isLoadingFilterRooms } =
+    useRoomOptions();
   const {
     deleteEquipment,
     isDeleting,
@@ -93,18 +113,19 @@ export default function AdminEquipmentsPage() {
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const { equipments, totalCount, isLoading, hasLoadedOnce, error } = useEquipments(
-    page,
-    PAGE_SIZE,
-    {
-      search: debouncedSearch,
-      status,
-      category,
-      room,
-      is_moveable: moveable,
-    },
-    reloadKey,
-  );
+  const { equipments, totalCount, isLoading, hasLoadedOnce, error } =
+    useEquipments(
+      page,
+      PAGE_SIZE,
+      {
+        search: debouncedSearch,
+        status,
+        category,
+        room,
+        is_moveable: moveable,
+      },
+      reloadKey,
+    );
 
   const totalEquipments = totalCount || equipments.length;
   const totalPages = useMemo(
@@ -163,7 +184,11 @@ export default function AdminEquipmentsPage() {
             }
           />
 
-          <InventoryFilterCard open={filterOpen} onToggle={() => setFilterOpen((prev) => !prev)} onReset={resetFilters}>
+          <InventoryFilterCard
+            open={filterOpen}
+            onToggle={() => setFilterOpen((prev) => !prev)}
+            onReset={resetFilters}
+          >
             <form
               className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5"
               onSubmit={(event) => {
@@ -172,7 +197,9 @@ export default function AdminEquipmentsPage() {
               }}
             >
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">Cari</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                  Cari
+                </label>
                 <Input
                   type="search"
                   value={search}
@@ -213,7 +240,9 @@ export default function AdminEquipmentsPage() {
                 }}
               />
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">Ruangan</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                  Ruangan
+                </label>
                 <select
                   value={room}
                   onChange={(event) => {
@@ -223,7 +252,11 @@ export default function AdminEquipmentsPage() {
                   className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
                   disabled={isLoadingFilterRooms}
                 >
-                  <option value="">{isLoadingFilterRooms ? "Memuat ruangan..." : "Semua ruangan"}</option>
+                  <option value="">
+                    {isLoadingFilterRooms
+                      ? "Memuat ruangan..."
+                      : "Semua ruangan"}
+                  </option>
                   {filterRooms.map((roomItem) => (
                     <option key={roomItem.id} value={roomItem.id}>
                       {roomItem.label}
@@ -244,13 +277,27 @@ export default function AdminEquipmentsPage() {
             <table className="w-full min-w-[960px] table-fixed">
               <thead className="border-b border-slate-800 bg-slate-900">
                 <tr className="text-left text-sm">
-                  <th className="w-[180px] px-3 py-3 font-medium text-slate-50">Nama</th>
-                  <th className="w-[140px] px-3 py-3 font-medium text-slate-50">Kategori</th>
-                  <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Status</th>
-                  <th className="w-[90px] px-3 py-3 font-medium text-slate-50">Jumlah</th>
-                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">Ruangan</th>
-                  <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Moveable</th>
-                  <th className="sticky right-0 z-10 relative w-[130px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">Aksi</th>
+                  <th className="w-[180px] px-3 py-3 font-medium text-slate-50">
+                    Nama
+                  </th>
+                  <th className="w-[140px] px-3 py-3 font-medium text-slate-50">
+                    Kategori
+                  </th>
+                  <th className="w-[120px] px-3 py-3 font-medium text-slate-50">
+                    Status
+                  </th>
+                  <th className="w-[90px] px-3 py-3 font-medium text-slate-50">
+                    Jumlah
+                  </th>
+                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
+                    Ruangan
+                  </th>
+                  <th className="w-[120px] px-3 py-3 font-medium text-slate-50">
+                    Moveable
+                  </th>
+                  <th className="sticky right-0 z-10 relative w-[130px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -264,17 +311,28 @@ export default function AdminEquipmentsPage() {
                   </tr>
                 ) : equipments.length ? (
                   equipments.map((item) => (
-                    <tr key={String(item.id)} className="border-b last:border-b-0">
-                      <td className="truncate px-3 py-2 font-medium">{item.name}</td>
+                    <tr
+                      key={String(item.id)}
+                      className="border-b last:border-b-0"
+                    >
+                      <td className="truncate px-3 py-2 font-medium">
+                        {item.name}
+                      </td>
                       <td className="truncate px-3 py-2">{item.category}</td>
                       <td className="px-3 py-2">
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${STATUS_STYLES[item.status] || "bg-muted text-muted-foreground"}`}>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${STATUS_STYLES[item.status] || "bg-muted text-muted-foreground"}`}
+                        >
                           {formatStatus(item.status)}
                         </span>
                       </td>
                       <td className="px-3 py-2">{item.quantity}</td>
-                      <td className="truncate px-3 py-2 text-muted-foreground">{item.roomName}</td>
-                      <td className="px-3 py-2">{item.isMoveable ? "Ya" : "Tidak"}</td>
+                      <td className="truncate px-3 py-2 text-muted-foreground">
+                        {item.roomName}
+                      </td>
+                      <td className="px-3 py-2">
+                        {item.isMoveable ? "Ya" : "Tidak"}
+                      </td>
                       <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                         <div className="flex justify-center gap-2">
                           <Button
@@ -294,23 +352,36 @@ export default function AdminEquipmentsPage() {
                                 setDeleteCandidate(item);
                                 return;
                               }
-                              if (deleteCandidate?.id === item.id) setDeleteCandidate(null);
+                              if (deleteCandidate?.id === item.id)
+                                setDeleteCandidate(null);
                             }}
                           >
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="icon-sm" disabled={isDeleting}>
+                              <Button
+                                variant="outline"
+                                size="icon-sm"
+                                disabled={isDeleting}
+                              >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent size="sm">
                               <AlertDialogHeader className="place-items-start text-left">
-                                <AlertDialogTitle>Hapus peralatan?</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Hapus peralatan?
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Peralatan <span className="font-semibold">{item.name}</span> akan dihapus.
+                                  Peralatan{" "}
+                                  <span className="font-semibold">
+                                    {item.name}
+                                  </span>{" "}
+                                  akan dihapus.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter className="sm:justify-start">
-                                <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
+                                <AlertDialogCancel disabled={isDeleting}>
+                                  Batal
+                                </AlertDialogCancel>
                                 <AlertDialogAction
                                   variant="destructive"
                                   disabled={isDeleting}
@@ -329,7 +400,10 @@ export default function AdminEquipmentsPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
+                    <td
+                      colSpan={7}
+                      className="px-3 py-6 text-center text-muted-foreground"
+                    >
                       Tidak ada data peralatan.
                     </td>
                   </tr>
@@ -338,11 +412,16 @@ export default function AdminEquipmentsPage() {
             </table>
           </div>
 
-          <InventoryPagination page={page} totalPages={totalPages} isLoading={isLoading} onPageChange={setPage} />
+          <InventoryPagination
+            page={page}
+            totalPages={totalPages}
+            isLoading={isLoading}
+            onPageChange={setPage}
+          />
         </div>
 
         {!isMobile && isActionOpen ? (
-          <aside className="sticky top-4 hidden w-full max-w-[380px] shrink-0 rounded border bg-card shadow-xs lg:block">
+          <aside className="sticky top-0 hidden self-start w-full max-w-[380px] shrink-0 rounded border bg-card shadow-xs lg:block">
             <ActionPanelContent
               action={activeAction}
               selectedEquipment={selectedEquipment}
@@ -363,7 +442,11 @@ export default function AdminEquipmentsPage() {
           if (!open) setActiveAction(null);
         }}
       >
-        <SheetContent side="right" showCloseButton={false} className="w-[92vw] p-0 sm:max-w-md">
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="w-[92vw] p-0 sm:max-w-md"
+        >
           <ActionPanelContent
             action={activeAction}
             selectedEquipment={selectedEquipment}
@@ -426,7 +509,10 @@ type CreateEquipmentPanelProps = {
   onCreated: () => void;
 };
 
-function CreateEquipmentPanel({ onClose, onCreated }: CreateEquipmentPanelProps) {
+function CreateEquipmentPanel({
+  onClose,
+  onCreated,
+}: CreateEquipmentPanelProps) {
   const [formData, setFormData] = useState({
     name: "",
     quantity: "",
@@ -436,17 +522,29 @@ function CreateEquipmentPanel({ onClose, onCreated }: CreateEquipmentPanelProps)
     description: "",
     imageFile: null as File | null,
   });
-  const { rooms, isLoading: isLoadingRooms, error: roomError } = useRoomOptions();
-  const { createEquipment, isSubmitting, errorMessage, setErrorMessage } = useCreateEquipment();
+  const {
+    rooms,
+    isLoading: isLoadingRooms,
+    error: roomError,
+  } = useRoomOptions();
+  const { createEquipment, isSubmitting, errorMessage, setErrorMessage } =
+    useCreateEquipment();
 
-  const previewUrl = useMemo(() => (formData.imageFile ? URL.createObjectURL(formData.imageFile) : ""), [formData.imageFile]);
+  const previewUrl = useMemo(
+    () => (formData.imageFile ? URL.createObjectURL(formData.imageFile) : ""),
+    [formData.imageFile],
+  );
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
     };
   }, [previewUrl]);
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    event: ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -465,8 +563,10 @@ function CreateEquipmentPanel({ onClose, onCreated }: CreateEquipmentPanelProps)
     event.preventDefault();
     setErrorMessage("");
 
-    if (!formData.name.trim()) return setErrorMessage("Nama peralatan wajib diisi.");
-    if (!formData.quantity || Number(formData.quantity) <= 0) return setErrorMessage("Jumlah harus lebih dari 0.");
+    if (!formData.name.trim())
+      return setErrorMessage("Nama peralatan wajib diisi.");
+    if (!formData.quantity || Number(formData.quantity) <= 0)
+      return setErrorMessage("Jumlah harus lebih dari 0.");
     if (!formData.category) return setErrorMessage("Kategori wajib dipilih.");
     if (!formData.roomId) return setErrorMessage("Ruangan wajib dipilih.");
 
@@ -491,13 +591,22 @@ function CreateEquipmentPanel({ onClose, onCreated }: CreateEquipmentPanelProps)
       <PanelHeader title="Tambah Peralatan" onClose={onClose} />
 
       <form className="space-y-4" onSubmit={handleSubmit}>
-        <DetailField label="Nama" value={formData.name} editable onChange={(value) => setFormData((prev) => ({ ...prev, name: value }))} />
+        <DetailField
+          label="Nama"
+          value={formData.name}
+          editable
+          onChange={(value) =>
+            setFormData((prev) => ({ ...prev, name: value }))
+          }
+        />
         <DetailField
           label="Jumlah"
           value={formData.quantity}
           editable
           type="number"
-          onChange={(value) => setFormData((prev) => ({ ...prev, quantity: value }))}
+          onChange={(value) =>
+            setFormData((prev) => ({ ...prev, quantity: value }))
+          }
         />
 
         <SelectDetailField
@@ -505,7 +614,9 @@ function CreateEquipmentPanel({ onClose, onCreated }: CreateEquipmentPanelProps)
           value={formData.category}
           editable
           options={EQUIPMENT_CATEGORY_OPTIONS}
-          onChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+          onChange={(value) =>
+            setFormData((prev) => ({ ...prev, category: value }))
+          }
           placeholder="Pilih kategori"
         />
 
@@ -514,18 +625,24 @@ function CreateEquipmentPanel({ onClose, onCreated }: CreateEquipmentPanelProps)
           value={formData.roomId}
           editable
           options={rooms.map((room) => ({ value: room.id, label: room.label }))}
-          onChange={(value) => setFormData((prev) => ({ ...prev, roomId: value }))}
+          onChange={(value) =>
+            setFormData((prev) => ({ ...prev, roomId: value }))
+          }
           placeholder={isLoadingRooms ? "Memuat ruangan..." : "Pilih ruangan"}
           disabled={isLoadingRooms}
         />
-        {roomError ? <p className="text-xs text-destructive">{roomError}</p> : null}
+        {roomError ? (
+          <p className="text-xs text-destructive">{roomError}</p>
+        ) : null}
 
         <SelectDetailField
           label="Moveable"
           value={formData.isMoveable}
           editable
           options={MOVEABLE_OPTIONS}
-          onChange={(value) => setFormData((prev) => ({ ...prev, isMoveable: value }))}
+          onChange={(value) =>
+            setFormData((prev) => ({ ...prev, isMoveable: value }))
+          }
           placeholder="Pilih status"
         />
 
@@ -545,23 +662,43 @@ function CreateEquipmentPanel({ onClose, onCreated }: CreateEquipmentPanelProps)
           <p className="text-xs font-medium text-muted-foreground">Gambar</p>
           <label className="group flex cursor-pointer items-center justify-between gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm hover:border-primary/50">
             <span className="truncate text-muted-foreground">
-              {formData.imageFile ? formData.imageFile.name : "Pilih gambar (opsional)"}
+              {formData.imageFile
+                ? formData.imageFile.name
+                : "Pilih gambar (opsional)"}
             </span>
-            <span className="shrink-0 text-xs font-medium">Upload</span>
-            <input type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
+            {/* <span className="shrink-0 text-xs font-medium">Upload</span> */}
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={handleFileChange}
+            />
+            {formData.imageFile ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Hapus gambar yang diunggah"
+                className="rounded-full text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, imageFile: null }))
+                }
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            ) : null}
           </label>
-          {formData.imageFile ? (
-            <Button type="button" variant="ghost" size="sm" onClick={() => setFormData((prev) => ({ ...prev, imageFile: null }))}>
-              Hapus
-            </Button>
-          ) : null}
         </div>
 
         {previewUrl ? (
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Preview Gambar</p>
+            {/* <p className="text-xs font-medium text-muted-foreground">Gambar</p> */}
             <div className="overflow-hidden rounded-lg border bg-muted">
-              <img src={previewUrl} alt="Preview peralatan" className="h-56 w-full object-cover" />
+              <img
+                src={previewUrl}
+                alt="Preview peralatan"
+                className="h-56 w-full object-cover"
+              />
             </div>
           </div>
         ) : null}
@@ -602,7 +739,9 @@ function DetailEquipmentPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [isLoadingDetail, setIsLoadingDetail] = useState(false);
   const [detailError, setDetailError] = useState("");
-  const [detailItem, setDetailItem] = useState<EquipmentDetailData | null>(null);
+  const [detailItem, setDetailItem] = useState<EquipmentDetailData | null>(
+    null,
+  );
   const [formData, setFormData] = useState({
     name: "",
     quantity: "",
@@ -613,15 +752,26 @@ function DetailEquipmentPanel({
     imageId: null as string | number | null,
     imageFile: null as File | null,
   });
-  const { rooms, isLoading: isLoadingRooms, error: roomError } = useRoomOptions();
-  const { updateEquipment, isSubmitting, errorMessage: updateErrorMessage, setErrorMessage: setUpdateErrorMessage } =
-    useUpdateEquipment();
+  const {
+    rooms,
+    isLoading: isLoadingRooms,
+    error: roomError,
+  } = useRoomOptions();
+  const {
+    updateEquipment,
+    isSubmitting,
+    errorMessage: updateErrorMessage,
+    setErrorMessage: setUpdateErrorMessage,
+  } = useUpdateEquipment();
 
   const roomOptions = useMemo(
     () => rooms.map((room) => ({ value: room.id, label: room.label })),
     [rooms],
   );
-  const previewUrl = useMemo(() => (formData.imageFile ? URL.createObjectURL(formData.imageFile) : ""), [formData.imageFile]);
+  const previewUrl = useMemo(
+    () => (formData.imageFile ? URL.createObjectURL(formData.imageFile) : ""),
+    [formData.imageFile],
+  );
   useEffect(() => {
     return () => {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
@@ -652,7 +802,10 @@ function DetailEquipmentPanel({
           method: "GET",
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error(`Gagal memuat detail peralatan (${response.status}).`);
+        if (!response.ok)
+          throw new Error(
+            `Gagal memuat detail peralatan (${response.status}).`,
+          );
 
         const data = (await response.json()) as {
           id?: string | number | null;
@@ -679,7 +832,7 @@ function DetailEquipmentPanel({
           isMoveable: Boolean(data.is_moveable ?? item.isMoveable),
           description: String(data.description ?? ""),
           imageId: data.image ?? null,
-          imageUrl: String(data.image_detail?.url ?? ""),
+          imageUrl: resolveAssetUrl(data.image_detail?.url ?? ""),
         };
 
         setDetailItem(nextDetail);
@@ -694,8 +847,13 @@ function DetailEquipmentPanel({
           imageFile: null,
         });
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setDetailError(error instanceof Error ? error.message : "Terjadi kesalahan saat memuat detail.");
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+        setDetailError(
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat memuat detail.",
+        );
         setDetailItem({
           id: item.id,
           name: item.name,
@@ -721,7 +879,15 @@ function DetailEquipmentPanel({
       isAborted = true;
       controller.abort();
     };
-  }, [item?.id, item?.name, item?.quantity, item?.category, item?.status, item?.roomName, item?.isMoveable]);
+  }, [
+    item?.id,
+    item?.name,
+    item?.quantity,
+    item?.category,
+    item?.status,
+    item?.roomName,
+    item?.isMoveable,
+  ]);
 
   const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0] || null;
@@ -737,10 +903,14 @@ function DetailEquipmentPanel({
     if (!detailItem) return;
     setUpdateErrorMessage("");
 
-    if (!formData.name.trim()) return setUpdateErrorMessage("Nama peralatan wajib diisi.");
-    if (!formData.quantity || Number(formData.quantity) <= 0) return setUpdateErrorMessage("Jumlah harus lebih dari 0.");
-    if (!formData.category) return setUpdateErrorMessage("Kategori wajib dipilih.");
-    if (!formData.roomId) return setUpdateErrorMessage("Ruangan wajib dipilih.");
+    if (!formData.name.trim())
+      return setUpdateErrorMessage("Nama peralatan wajib diisi.");
+    if (!formData.quantity || Number(formData.quantity) <= 0)
+      return setUpdateErrorMessage("Jumlah harus lebih dari 0.");
+    if (!formData.category)
+      return setUpdateErrorMessage("Kategori wajib dipilih.");
+    if (!formData.roomId)
+      return setUpdateErrorMessage("Ruangan wajib dipilih.");
 
     const result = await updateEquipment(detailItem.id, {
       name: formData.name,
@@ -771,12 +941,18 @@ function DetailEquipmentPanel({
             quantity: formData.quantity,
             category: formData.category,
             roomId: formData.roomId,
-            roomName:
-              String(responseData?.room_detail?.name ?? roomOptions.find((opt) => opt.value === formData.roomId)?.label ?? prev.roomName),
+            roomName: String(
+              responseData?.room_detail?.name ??
+                roomOptions.find((opt) => opt.value === formData.roomId)
+                  ?.label ??
+                prev.roomName,
+            ),
             isMoveable: formData.isMoveable === "true",
             description: formData.description.trim(),
             imageId: responseData?.image ?? prev.imageId,
-            imageUrl: String(responseData?.image_detail?.url ?? prev.imageUrl),
+            imageUrl: resolveAssetUrl(
+              responseData?.image_detail?.url ?? prev.imageUrl,
+            ),
           }
         : prev,
     );
@@ -790,7 +966,9 @@ function DetailEquipmentPanel({
     return (
       <div className="max-h-[calc(100svh-7rem)] overflow-y-auto p-4">
         <PanelHeader title="Detail Peralatan" onClose={onClose} />
-        <p className="text-sm text-muted-foreground">Pilih peralatan untuk melihat detail.</p>
+        <p className="text-sm text-muted-foreground">
+          Pilih peralatan untuk melihat detail.
+        </p>
       </div>
     );
   }
@@ -817,69 +995,114 @@ function DetailEquipmentPanel({
             label="Nama"
             value={isEditing ? formData.name : detailItem.name}
             editable={isEditing}
-            onChange={(value) => setFormData((prev) => ({ ...prev, name: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, name: value }))
+            }
           />
           <DetailField
             label="Jumlah"
             value={isEditing ? formData.quantity : detailItem.quantity}
             editable={isEditing}
             type="number"
-            onChange={(value) => setFormData((prev) => ({ ...prev, quantity: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, quantity: value }))
+            }
           />
           <SelectDetailField
             label="Kategori"
             value={isEditing ? formData.category : detailItem.category}
             editable={isEditing}
             options={EQUIPMENT_CATEGORY_OPTIONS}
-            onChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, category: value }))
+            }
           />
           <SelectDetailField
             label="Ruangan"
             value={isEditing ? formData.roomId : detailItem.roomName}
             editable={isEditing}
             options={roomOptions}
-            onChange={(value) => setFormData((prev) => ({ ...prev, roomId: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, roomId: value }))
+            }
             placeholder={isLoadingRooms ? "Memuat ruangan..." : "Pilih ruangan"}
             disabled={isLoadingRooms}
           />
-          {roomError ? <p className="text-xs text-destructive">{roomError}</p> : null}
+          {roomError ? (
+            <p className="text-xs text-destructive">{roomError}</p>
+          ) : null}
           <SelectDetailField
             label="Moveable"
-            value={isEditing ? formData.isMoveable : detailItem.isMoveable ? "Ya" : "Tidak"}
+            value={
+              isEditing
+                ? formData.isMoveable
+                : detailItem.isMoveable
+                  ? "Ya"
+                  : "Tidak"
+            }
             editable={isEditing}
             options={MOVEABLE_OPTIONS}
-            onChange={(value) => setFormData((prev) => ({ ...prev, isMoveable: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, isMoveable: value }))
+            }
           />
           <DetailField label="Status" value={formatStatus(detailItem.status)} />
 
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Deskripsi</p>
+            <p className="text-xs font-medium text-muted-foreground">
+              Deskripsi
+            </p>
             {isEditing ? (
               <textarea
                 name="description"
                 value={formData.description}
-                onChange={(event) => setFormData((prev) => ({ ...prev, description: event.target.value }))}
+                onChange={(event) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    description: event.target.value,
+                  }))
+                }
                 rows={3}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             ) : (
-              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">{detailItem.description || "-"}</div>
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                {detailItem.description || "-"}
+              </div>
             )}
           </div>
 
           {isEditing ? (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Gambar</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Gambar
+              </p>
               <label className="group flex cursor-pointer items-center justify-between gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm hover:border-primary/50">
                 <span className="truncate text-muted-foreground">
-                  {formData.imageFile ? formData.imageFile.name : "Pilih gambar (opsional)"}
+                  {formData.imageFile
+                    ? formData.imageFile.name
+                    : "Pilih gambar (opsional)"}
                 </span>
                 <span className="shrink-0 text-xs font-medium">Upload</span>
-                <input type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handleFileChange}
+                />
               </label>
               {formData.imageFile ? (
-                <Button type="button" variant="ghost" size="sm" onClick={() => setFormData((prev) => ({ ...prev, imageFile: null }))}>
-                  Hapus
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Hapus gambar yang diunggah"
+                  className="rounded-full text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, imageFile: null }))
+                  }
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               ) : null}
             </div>
@@ -887,9 +1110,15 @@ function DetailEquipmentPanel({
 
           {previewUrl || detailItem.imageUrl ? (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Preview Gambar</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Gambar
+              </p>
               <div className="overflow-hidden rounded-lg border bg-muted">
-                <img src={previewUrl || detailItem.imageUrl} alt="Preview peralatan" className="h-56 w-full object-cover" />
+                <img
+                  src={previewUrl || detailItem.imageUrl}
+                  alt="Preview peralatan"
+                  className="h-56 w-full object-cover"
+                />
               </div>
             </div>
           ) : null}
@@ -953,7 +1182,12 @@ function DetailEquipmentPanel({
 
       <AlertDialog open={confirmDeleteOpen} onOpenChange={setConfirmDeleteOpen}>
         <AlertDialogTrigger asChild>
-          <Button type="button" variant="destructive" className="w-full" disabled={isDeleting || isSubmitting || !detailItem}>
+          <Button
+            type="button"
+            variant="destructive"
+            className="w-full"
+            disabled={isDeleting || isSubmitting || !detailItem}
+          >
             {isDeleting ? "Menghapus..." : "Hapus Peralatan"}
           </Button>
         </AlertDialogTrigger>
@@ -961,7 +1195,11 @@ function DetailEquipmentPanel({
           <AlertDialogHeader className="place-items-start text-left">
             <AlertDialogTitle>Hapus peralatan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Peralatan <span className="font-semibold">{detailItem?.name ?? item.name}</span> akan dihapus.
+              Peralatan{" "}
+              <span className="font-semibold">
+                {detailItem?.name ?? item.name}
+              </span>{" "}
+              akan dihapus.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-start">
@@ -982,11 +1220,23 @@ function DetailEquipmentPanel({
   );
 }
 
-function PanelHeader({ title, onClose }: { title: string; onClose: () => void }) {
+function PanelHeader({
+  title,
+  onClose,
+}: {
+  title: string;
+  onClose: () => void;
+}) {
   return (
-    <div className="mb-2 flex items-start justify-between gap-2">
+    <div className="-mx-4 -mt-4 mb-4 flex items-center justify-between gap-2 rounded-t-md bg-slate-900 px-4 py-3 text-white">
       <h3 className="text-base font-semibold">{title}</h3>
-      <Button type="button" variant="ghost" size="icon-sm" onClick={onClose}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="text-slate-100 hover:bg-white/15 hover:text-white"
+        onClick={onClose}
+      >
         <X className="h-4 w-4" />
       </Button>
     </div>
@@ -1003,7 +1253,9 @@ type SelectFieldProps = {
 function SelectField({ label, value, options, onChange }: SelectFieldProps) {
   return (
     <div className="min-w-0">
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">{label}</label>
+      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+        {label}
+      </label>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -1037,9 +1289,15 @@ function DetailField({
     <div className="space-y-1">
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       {editable ? (
-        <Input type={type} value={value} onChange={(event) => onChange?.(event.target.value)} />
+        <Input
+          type={type}
+          value={value}
+          onChange={(event) => onChange?.(event.target.value)}
+        />
       ) : (
-        <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">{value || "-"}</div>
+        <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+          {value || "-"}
+        </div>
       )}
     </div>
   );
@@ -1075,7 +1333,9 @@ function SelectDetailField({
         className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
         disabled={disabled}
       >
-        <option value="">{placeholder || `Pilih ${label.toLowerCase()}`}</option>
+        <option value="">
+          {placeholder || `Pilih ${label.toLowerCase()}`}
+        </option>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
             {option.label}

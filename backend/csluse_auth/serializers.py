@@ -314,12 +314,14 @@ class PicUserSerializer(serializers.ModelSerializer):
 class PicUserDropdownSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="profile.id", read_only=True)
     name = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = (
             "id",
             "name",
+            "role",
         )
 
     def get_name(self, obj):
@@ -327,6 +329,21 @@ class PicUserDropdownSerializer(serializers.ModelSerializer):
         if full_name:
             return full_name
         return obj.email
+
+    def get_role(self, obj):
+        profile_role = getattr(getattr(obj, "profile", None), "role", None)
+        if profile_role:
+            return profile_role
+
+        if obj.groups.filter(name="SuperAdministrator").exists():
+            return "SuperAdministrator"
+        if obj.groups.filter(name="Administrator").exists():
+            return "Administrator"
+        if obj.groups.filter(name="Staff").exists():
+            return "Staff"
+        if obj.groups.filter(name="Lecturer").exists():
+            return "Lecturer"
+        return None
 
 
 class EmailVerificationStatusSerializer(serializers.Serializer):

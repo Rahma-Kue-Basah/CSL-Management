@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { Eye, Loader2, Plus, Trash2, X } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -20,7 +26,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
-import { API_ROOM_DETAIL } from "@/constants/api";
+import { API_BASE_URL, API_ROOM_DETAIL } from "@/constants/api";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useCreateRoom } from "@/hooks/rooms/use-create-room";
 import { useDeleteRoom } from "@/hooks/rooms/use-delete-room";
@@ -33,6 +39,13 @@ const PAGE_SIZE = 10;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 type ActionType = "create" | "detail";
+
+function resolveAssetUrl(value: string | null | undefined) {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/")) return `${API_BASE_URL}${value}`;
+  return `${API_BASE_URL}/${value}`;
+}
 
 export default function AdminRoomsPage() {
   const [page, setPage] = useState(1);
@@ -47,9 +60,14 @@ export default function AdminRoomsPage() {
   const [deleteCandidate, setDeleteCandidate] = useState<RoomRow | null>(null);
   const isMobile = useIsMobile();
   const isActionOpen = Boolean(activeAction);
-  const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } = usePicUsers();
-  const { deleteRoom, isDeleting, errorMessage: deleteErrorMessage, setErrorMessage: setDeleteErrorMessage } =
-    useDeleteRoom();
+  const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } =
+    usePicUsers();
+  const {
+    deleteRoom,
+    isDeleting,
+    errorMessage: deleteErrorMessage,
+    setErrorMessage: setDeleteErrorMessage,
+  } = useDeleteRoom();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
@@ -123,7 +141,11 @@ export default function AdminRoomsPage() {
             }
           />
 
-          <InventoryFilterCard open={filterOpen} onToggle={() => setFilterOpen((prev) => !prev)} onReset={resetFilters}>
+          <InventoryFilterCard
+            open={filterOpen}
+            onToggle={() => setFilterOpen((prev) => !prev)}
+            onReset={resetFilters}
+          >
             <form
               className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
               onSubmit={(event) => {
@@ -132,7 +154,9 @@ export default function AdminRoomsPage() {
               }}
             >
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">Cari</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                  Cari
+                </label>
                 <Input
                   type="search"
                   value={search}
@@ -145,7 +169,9 @@ export default function AdminRoomsPage() {
                 />
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">Lantai</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                  Lantai
+                </label>
                 <Input
                   type="number"
                   value={floor}
@@ -158,7 +184,9 @@ export default function AdminRoomsPage() {
                 />
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">PIC</label>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                  PIC
+                </label>
                 <select
                   value={pic}
                   onChange={(event) => {
@@ -168,7 +196,9 @@ export default function AdminRoomsPage() {
                   className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
                   disabled={isLoadingFilterPics}
                 >
-                  <option value="">{isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}</option>
+                  <option value="">
+                    {isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}
+                  </option>
                   {filterPicUsers.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name}
@@ -189,13 +219,27 @@ export default function AdminRoomsPage() {
             <table className="w-full min-w-[900px] table-fixed">
               <thead className="border-b border-slate-800 bg-slate-900">
                 <tr className="text-left text-sm">
-                  <th className="w-[180px] px-3 py-3 font-medium text-slate-50">Nama</th>
-                  <th className="w-[120px] px-3 py-3 font-medium text-slate-50">No. Ruang</th>
-                  <th className="w-[90px] px-3 py-3 font-medium text-slate-50">Lantai</th>
-                  <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Kapasitas</th>
-                  <th className="w-[220px] px-3 py-3 font-medium text-slate-50">Deskripsi</th>
-                  <th className="w-[220px] px-3 py-3 font-medium text-slate-50">PIC</th>
-                  <th className="sticky right-0 z-10 relative w-[130px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">Aksi</th>
+                  <th className="w-[180px] px-3 py-3 font-medium text-slate-50">
+                    Nama
+                  </th>
+                  <th className="w-[120px] px-3 py-3 font-medium text-slate-50">
+                    No. Ruang
+                  </th>
+                  <th className="w-[90px] px-3 py-3 font-medium text-slate-50">
+                    Lantai
+                  </th>
+                  <th className="w-[120px] px-3 py-3 font-medium text-slate-50">
+                    Kapasitas
+                  </th>
+                  <th className="w-[220px] px-3 py-3 font-medium text-slate-50">
+                    Deskripsi
+                  </th>
+                  <th className="w-[220px] px-3 py-3 font-medium text-slate-50">
+                    PIC
+                  </th>
+                  <th className="sticky right-0 z-10 relative w-[130px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="text-sm">
@@ -209,13 +253,20 @@ export default function AdminRoomsPage() {
                   </tr>
                 ) : rooms.length ? (
                   rooms.map((room) => (
-                    <tr key={String(room.id)} className="border-b last:border-b-0">
-                      <td className="truncate px-3 py-2 font-medium">{room.name}</td>
+                    <tr
+                      key={String(room.id)}
+                      className="border-b last:border-b-0"
+                    >
+                      <td className="truncate px-3 py-2 font-medium">
+                        {room.name}
+                      </td>
                       <td className="truncate px-3 py-2">{room.number}</td>
                       <td className="px-3 py-2">{room.floor}</td>
                       <td className="px-3 py-2">{room.capacity}</td>
                       <td className="px-3 py-2">{room.description || "-"}</td>
-                      <td className="truncate px-3 py-2 text-muted-foreground">{room.picName}</td>
+                      <td className="truncate px-3 py-2 text-muted-foreground">
+                        {room.picName}
+                      </td>
                       <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                         <div className="flex justify-center gap-2">
                           <Button
@@ -235,23 +286,36 @@ export default function AdminRoomsPage() {
                                 setDeleteCandidate(room);
                                 return;
                               }
-                              if (deleteCandidate?.id === room.id) setDeleteCandidate(null);
+                              if (deleteCandidate?.id === room.id)
+                                setDeleteCandidate(null);
                             }}
                           >
                             <AlertDialogTrigger asChild>
-                              <Button variant="outline" size="icon-sm" disabled={isDeleting}>
+                              <Button
+                                variant="outline"
+                                size="icon-sm"
+                                disabled={isDeleting}
+                              >
                                 <Trash2 className="h-4 w-4 text-destructive" />
                               </Button>
                             </AlertDialogTrigger>
                             <AlertDialogContent size="sm">
                               <AlertDialogHeader className="place-items-start text-left">
-                                <AlertDialogTitle>Hapus ruangan?</AlertDialogTitle>
+                                <AlertDialogTitle>
+                                  Hapus ruangan?
+                                </AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Ruangan <span className="font-semibold">{room.name}</span> akan dihapus.
+                                  Ruangan{" "}
+                                  <span className="font-semibold">
+                                    {room.name}
+                                  </span>{" "}
+                                  akan dihapus.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter className="sm:justify-start">
-                                <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
+                                <AlertDialogCancel disabled={isDeleting}>
+                                  Batal
+                                </AlertDialogCancel>
                                 <AlertDialogAction
                                   variant="destructive"
                                   disabled={isDeleting}
@@ -270,7 +334,10 @@ export default function AdminRoomsPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
+                    <td
+                      colSpan={7}
+                      className="px-3 py-6 text-center text-muted-foreground"
+                    >
                       Tidak ada data ruangan.
                     </td>
                   </tr>
@@ -279,11 +346,16 @@ export default function AdminRoomsPage() {
             </table>
           </div>
 
-          <InventoryPagination page={page} totalPages={totalPages} isLoading={isLoading} onPageChange={setPage} />
+          <InventoryPagination
+            page={page}
+            totalPages={totalPages}
+            isLoading={isLoading}
+            onPageChange={setPage}
+          />
         </div>
 
         {!isMobile && isActionOpen ? (
-          <aside className="sticky top-4 hidden w-full max-w-[380px] shrink-0 rounded border bg-card shadow-xs lg:block">
+          <aside className="sticky top-0 hidden self-start w-full max-w-[380px] shrink-0 rounded border bg-card shadow-xs lg:block">
             <ActionPanelContent
               action={activeAction}
               selectedRoom={selectedRoom}
@@ -304,7 +376,11 @@ export default function AdminRoomsPage() {
           if (!open) setActiveAction(null);
         }}
       >
-        <SheetContent side="right" showCloseButton={false} className="w-[92vw] p-0 sm:max-w-md">
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="w-[92vw] p-0 sm:max-w-md"
+        >
           <ActionPanelContent
             action={activeAction}
             selectedRoom={selectedRoom}
@@ -377,12 +453,28 @@ function CreateRoomPanel({ onClose, onCreated }: CreateRoomPanelProps) {
     imageFile: null as File | null,
   });
   const { picUsers, isLoading: isLoadingPics, error: picError } = usePicUsers();
-  const { createRoom, isSubmitting, errorMessage, setErrorMessage } = useCreateRoom();
+  const { createRoom, isSubmitting, errorMessage, setErrorMessage } =
+    useCreateRoom();
 
-  const picOptions = useMemo(() => picUsers.map((user) => ({ value: user.id, label: user.name })), [picUsers]);
+  const picOptions = useMemo(
+    () => picUsers.map((user) => ({ value: user.id, label: user.name })),
+    [picUsers],
+  );
+  const previewUrl = useMemo(
+    () => (formData.imageFile ? URL.createObjectURL(formData.imageFile) : ""),
+    [formData.imageFile],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
 
   const handleChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+    event: ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
   ) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -403,9 +495,12 @@ function CreateRoomPanel({ onClose, onCreated }: CreateRoomPanelProps) {
     event.preventDefault();
     setErrorMessage("");
 
-    if (!formData.name.trim()) return setErrorMessage("Nama ruangan wajib diisi.");
-    if (!formData.number.trim()) return setErrorMessage("Nomor ruangan wajib diisi.");
-    if (!formData.floor || Number(formData.floor) <= 0) return setErrorMessage("Lantai harus lebih dari 0.");
+    if (!formData.name.trim())
+      return setErrorMessage("Nama ruangan wajib diisi.");
+    if (!formData.number.trim())
+      return setErrorMessage("Nomor ruangan wajib diisi.");
+    if (!formData.floor || Number(formData.floor) <= 0)
+      return setErrorMessage("Lantai harus lebih dari 0.");
     if (!formData.capacity || Number(formData.capacity) <= 0) {
       return setErrorMessage("Kapasitas harus lebih dari 0.");
     }
@@ -489,14 +584,18 @@ function CreateRoomPanel({ onClose, onCreated }: CreateRoomPanelProps) {
               className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
               disabled={isLoadingPics}
             >
-              <option value="">{isLoadingPics ? "Memuat PIC..." : "Pilih PIC"}</option>
+              <option value="">
+                {isLoadingPics ? "Memuat PIC..." : "Pilih PIC"}
+              </option>
               {picOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
               ))}
             </select>
-            {picError ? <p className="text-xs text-destructive">{picError}</p> : null}
+            {picError ? (
+              <p className="text-xs text-destructive">{picError}</p>
+            ) : null}
           </div>
         </div>
 
@@ -516,22 +615,42 @@ function CreateRoomPanel({ onClose, onCreated }: CreateRoomPanelProps) {
           <label className="text-xs font-medium">Gambar Ruangan</label>
           <label className="group flex cursor-pointer items-center justify-between gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm hover:border-primary/50">
             <span className="truncate text-muted-foreground">
-              {formData.imageFile ? formData.imageFile.name : "Pilih gambar (opsional)"}
+              {formData.imageFile
+                ? formData.imageFile.name
+                : "Pilih gambar (opsional)"}
             </span>
-            <span className="shrink-0 text-xs font-medium">Upload</span>
-            <input type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
+            {/* <span className="shrink-0 text-xs font-medium">Upload</span> */}
+            <input
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={handleFileChange}
+            />
+            {formData.imageFile ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Hapus gambar yang diunggah"
+                className="rounded-full text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                onClick={() =>
+                  setFormData((prev) => ({ ...prev, imageFile: null }))
+                }
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            ) : null}
           </label>
-          {formData.imageFile ? (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => setFormData((prev) => ({ ...prev, imageFile: null }))}
-            >
-              Hapus gambar
-            </Button>
-          ) : null}
         </div>
+
+        {previewUrl ? (
+          <div className="space-y-1">
+            {/* <p className="text-xs font-medium text-muted-foreground">Preview Gambar</p> */}
+            <div className="overflow-hidden rounded-lg border bg-muted">
+              <img src={previewUrl} alt="Preview ruangan" className="h-56 w-full object-cover" />
+            </div>
+          </div>
+        ) : null}
 
         {errorMessage ? (
           <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -593,11 +712,22 @@ function DetailRoomPanel({
     imageId: null as string | number | null,
     imageFile: null as File | null,
   });
-  const { picUsers, isLoading: isLoadingPics, error: picError } = usePicUsers(isEditing);
-  const { updateRoom, isSubmitting, errorMessage: updateErrorMessage, setErrorMessage: setUpdateErrorMessage } =
-    useUpdateRoom();
+  const {
+    picUsers,
+    isLoading: isLoadingPics,
+    error: picError,
+  } = usePicUsers(isEditing);
+  const {
+    updateRoom,
+    isSubmitting,
+    errorMessage: updateErrorMessage,
+    setErrorMessage: setUpdateErrorMessage,
+  } = useUpdateRoom();
 
-  const picOptions = useMemo(() => picUsers.map((user) => ({ value: user.id, label: user.name })), [picUsers]);
+  const picOptions = useMemo(
+    () => picUsers.map((user) => ({ value: user.id, label: user.name })),
+    [picUsers],
+  );
   const selectedPreviewUrl = useMemo(
     () => (formData.imageFile ? URL.createObjectURL(formData.imageFile) : ""),
     [formData.imageFile],
@@ -633,7 +763,8 @@ function DetailRoomPanel({
           method: "GET",
           signal: controller.signal,
         });
-        if (!response.ok) throw new Error(`Gagal memuat detail ruangan (${response.status}).`);
+        if (!response.ok)
+          throw new Error(`Gagal memuat detail ruangan (${response.status}).`);
 
         const data = (await response.json()) as {
           id?: string | number | null;
@@ -643,7 +774,10 @@ function DetailRoomPanel({
           capacity?: string | number | null;
           description?: string | null;
           pic?: string | number | null;
-          pic_detail?: { full_name?: string | null; email?: string | null } | null;
+          pic_detail?: {
+            full_name?: string | null;
+            email?: string | null;
+          } | null;
           image?: string | number | null;
           image_detail?: { url?: string | null } | null;
         };
@@ -656,9 +790,14 @@ function DetailRoomPanel({
           capacity: String(data.capacity ?? room.capacity),
           description: String(data.description ?? room.description ?? ""),
           picId: String(data.pic ?? ""),
-          picName: String(data.pic_detail?.full_name ?? data.pic_detail?.email ?? room.picName ?? "-"),
+          picName: String(
+            data.pic_detail?.full_name ??
+              data.pic_detail?.email ??
+              room.picName ??
+              "-",
+          ),
           imageId: data.image ?? null,
-          imageUrl: String(data.image_detail?.url ?? ""),
+          imageUrl: resolveAssetUrl(data.image_detail?.url ?? ""),
         };
 
         setDetailRoom(nextDetail);
@@ -673,8 +812,13 @@ function DetailRoomPanel({
           imageFile: null,
         });
       } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
-        setDetailError(error instanceof Error ? error.message : "Terjadi kesalahan saat memuat detail.");
+        if (error instanceof DOMException && error.name === "AbortError")
+          return;
+        setDetailError(
+          error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat memuat detail.",
+        );
         setDetailRoom({
           id: room.id,
           name: room.name,
@@ -699,9 +843,21 @@ function DetailRoomPanel({
       isAborted = true;
       controller.abort();
     };
-  }, [room?.id, room?.name, room?.number, room?.floor, room?.capacity, room?.description, room?.picName]);
+  }, [
+    room?.id,
+    room?.name,
+    room?.number,
+    room?.floor,
+    room?.capacity,
+    room?.description,
+    room?.picName,
+  ]);
 
-  const handleChange = (event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    event: ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >,
+  ) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
@@ -720,9 +876,12 @@ function DetailRoomPanel({
     if (!detailRoom) return;
     setUpdateErrorMessage("");
 
-    if (!formData.name.trim()) return setUpdateErrorMessage("Nama ruangan wajib diisi.");
-    if (!formData.number.trim()) return setUpdateErrorMessage("Nomor ruangan wajib diisi.");
-    if (!formData.floor || Number(formData.floor) <= 0) return setUpdateErrorMessage("Lantai harus lebih dari 0.");
+    if (!formData.name.trim())
+      return setUpdateErrorMessage("Nama ruangan wajib diisi.");
+    if (!formData.number.trim())
+      return setUpdateErrorMessage("Nomor ruangan wajib diisi.");
+    if (!formData.floor || Number(formData.floor) <= 0)
+      return setUpdateErrorMessage("Lantai harus lebih dari 0.");
     if (!formData.capacity || Number(formData.capacity) <= 0) {
       return setUpdateErrorMessage("Kapasitas harus lebih dari 0.");
     }
@@ -744,7 +903,10 @@ function DetailRoomPanel({
       | {
           image?: string | number | null;
           image_detail?: { url?: string | null } | null;
-          pic_detail?: { full_name?: string | null; email?: string | null } | null;
+          pic_detail?: {
+            full_name?: string | null;
+            email?: string | null;
+          } | null;
         }
       | undefined;
 
@@ -761,11 +923,14 @@ function DetailRoomPanel({
             picName: String(
               responseData?.pic_detail?.full_name ??
                 responseData?.pic_detail?.email ??
-                picOptions.find((option) => option.value === formData.picId)?.label ??
+                picOptions.find((option) => option.value === formData.picId)
+                  ?.label ??
                 (formData.picId ? prev.picName : "-"),
             ),
             imageId: responseData?.image ?? prev.imageId,
-            imageUrl: String(responseData?.image_detail?.url ?? prev.imageUrl ?? ""),
+            imageUrl: resolveAssetUrl(
+              responseData?.image_detail?.url ?? prev.imageUrl ?? "",
+            ),
           }
         : prev,
     );
@@ -778,7 +943,9 @@ function DetailRoomPanel({
     return (
       <div className="max-h-[calc(100svh-7rem)] overflow-y-auto p-4">
         <PanelHeader title="Detail Ruangan" onClose={onClose} />
-        <p className="text-sm text-muted-foreground">Pilih ruangan untuk melihat detail.</p>
+        <p className="text-sm text-muted-foreground">
+          Pilih ruangan untuk melihat detail.
+        </p>
       </div>
     );
   }
@@ -805,27 +972,35 @@ function DetailRoomPanel({
             label="Nama Ruangan"
             value={isEditing ? formData.name : detailRoom.name}
             editable={isEditing}
-            onChange={(value) => setFormData((prev) => ({ ...prev, name: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, name: value }))
+            }
           />
           <DetailField
             label="Nomor Ruangan"
             value={isEditing ? formData.number : detailRoom.number}
             editable={isEditing}
-            onChange={(value) => setFormData((prev) => ({ ...prev, number: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, number: value }))
+            }
           />
           <DetailField
             label="Lantai"
             value={isEditing ? formData.floor : detailRoom.floor}
             editable={isEditing}
             type="number"
-            onChange={(value) => setFormData((prev) => ({ ...prev, floor: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, floor: value }))
+            }
           />
           <DetailField
             label="Kapasitas"
             value={isEditing ? formData.capacity : detailRoom.capacity}
             editable={isEditing}
             type="number"
-            onChange={(value) => setFormData((prev) => ({ ...prev, capacity: value }))}
+            onChange={(value) =>
+              setFormData((prev) => ({ ...prev, capacity: value }))
+            }
           />
           <div className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground">PIC</p>
@@ -837,7 +1012,9 @@ function DetailRoomPanel({
                 className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
                 disabled={isLoadingPics}
               >
-                <option value="">{isLoadingPics ? "Memuat PIC..." : "Pilih PIC"}</option>
+                <option value="">
+                  {isLoadingPics ? "Memuat PIC..." : "Pilih PIC"}
+                </option>
                 {picOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
@@ -845,12 +1022,18 @@ function DetailRoomPanel({
                 ))}
               </select>
             ) : (
-              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">{detailRoom.picName || "-"}</div>
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                {detailRoom.picName || "-"}
+              </div>
             )}
-            {picError ? <p className="text-xs text-destructive">{picError}</p> : null}
+            {picError ? (
+              <p className="text-xs text-destructive">{picError}</p>
+            ) : null}
           </div>
           <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">Deskripsi</p>
+            <p className="text-xs font-medium text-muted-foreground">
+              Deskripsi
+            </p>
             {isEditing ? (
               <textarea
                 name="description"
@@ -860,34 +1043,51 @@ function DetailRoomPanel({
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
             ) : (
-              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">{detailRoom.description || "-"}</div>
+              <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+                {detailRoom.description || "-"}
+              </div>
             )}
           </div>
           {isEditing ? (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Gambar Ruangan</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Gambar Ruangan
+              </p>
               <label className="group flex cursor-pointer items-center justify-between gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm hover:border-primary/50">
                 <span className="truncate text-muted-foreground">
-                  {formData.imageFile ? formData.imageFile.name : "Pilih gambar (opsional)"}
+                  {formData.imageFile
+                    ? formData.imageFile.name
+                    : "Pilih gambar (opsional)"}
                 </span>
                 <span className="shrink-0 text-xs font-medium">Upload</span>
-                <input type="file" accept="image/*" className="sr-only" onChange={handleFileChange} />
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="sr-only"
+                  onChange={handleFileChange}
+                />
               </label>
               {formData.imageFile ? (
                 <Button
                   type="button"
                   variant="ghost"
-                  size="sm"
-                  onClick={() => setFormData((prev) => ({ ...prev, imageFile: null }))}
+                  size="icon-sm"
+                  aria-label="Hapus gambar yang diunggah"
+                  className="rounded-full text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                  onClick={() =>
+                    setFormData((prev) => ({ ...prev, imageFile: null }))
+                  }
                 >
-                  Hapus
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               ) : null}
             </div>
           ) : null}
           {selectedPreviewUrl || detailRoom.imageUrl ? (
             <div className="space-y-1">
-              <p className="text-xs font-medium text-muted-foreground">Gambar</p>
+              <p className="text-xs font-medium text-muted-foreground">
+                Gambar
+              </p>
               <div className="overflow-hidden rounded-lg border bg-muted">
                 <img
                   src={selectedPreviewUrl || detailRoom.imageUrl}
@@ -970,7 +1170,11 @@ function DetailRoomPanel({
           <AlertDialogHeader className="place-items-start text-left">
             <AlertDialogTitle>Hapus ruangan?</AlertDialogTitle>
             <AlertDialogDescription>
-              Ruangan <span className="font-semibold">{detailRoom?.name ?? room.name}</span> akan dihapus.
+              Ruangan{" "}
+              <span className="font-semibold">
+                {detailRoom?.name ?? room.name}
+              </span>{" "}
+              akan dihapus.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="sm:justify-start">
@@ -991,11 +1195,23 @@ function DetailRoomPanel({
   );
 }
 
-function PanelHeader({ title, onClose }: { title: string; onClose: () => void }) {
+function PanelHeader({
+  title,
+  onClose,
+}: {
+  title: string;
+  onClose: () => void;
+}) {
   return (
-    <div className="mb-2 flex items-start justify-between gap-2">
+    <div className="-mx-4 -mt-4 mb-4 flex items-center justify-between gap-2 rounded-t-md bg-slate-900 px-4 py-3 text-white">
       <h3 className="text-base font-semibold">{title}</h3>
-      <Button type="button" variant="ghost" size="icon-sm" onClick={onClose}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon-sm"
+        className="text-slate-100 hover:bg-white/15 hover:text-white"
+        onClick={onClose}
+      >
         <X className="h-4 w-4" />
       </Button>
     </div>
@@ -1025,7 +1241,9 @@ function DetailField({
           onChange={(event) => onChange?.(event.target.value)}
         />
       ) : (
-        <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">{value}</div>
+        <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
+          {value}
+        </div>
       )}
     </div>
   );
