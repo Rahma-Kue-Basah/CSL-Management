@@ -1,16 +1,29 @@
 from django.contrib.auth import get_user_model
+from django.contrib.admin.models import CHANGE, DELETION
+from django.contrib.admin.models import LogEntry
 from django.db import models
 from django.db.models import Exists, OuterRef
 from allauth.account.models import EmailAddress
 from rest_framework import viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
 
 from .models import Profile
-from .serializers import ProfileSerializer, UserWithProfileSerializer, PicUserSerializer
+from .audit import log_admin_action
+from .serializers import (
+    ProfileSerializer,
+    UserWithProfileSerializer,
+    PicUserSerializer,
+    PicUserDropdownSerializer,
+    AdminActionSerializer,
+    AdminDashboardKpisSerializer,
+)
 from .permissions import SUPER_ADMINISTRATOR, has_role, IsStaffOrAbove
 from csluse.viewsets import DefaultPagination
+from csluse.models import Room, Equipment, Booking, Borrow
 from .permissions import IsAdministratorOrAbove
 
 User = get_user_model()
@@ -30,6 +43,15 @@ class ProfileViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         serializer = self.get_serializer(self.get_object())
         return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            CHANGE,
+            "Updated own profile via CSL Admin (my profile).",
+        )
 
 
 class UserWithProfileViewSet(viewsets.ModelViewSet):
@@ -83,6 +105,12 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
         ):
             raise PermissionDenied("Tidak bisa menghapus SuperAdministrator.")
 
+        log_admin_action(
+            request.user,
+            target,
+            DELETION,
+            "Deleted user via CSL Admin (user management).",
+        )
         return super().destroy(request, *args, **kwargs)
 
 
@@ -95,8 +123,14 @@ class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
         return (
             User.objects
             .select_related("profile")
-            .filter(profile__role__in=["STAFF", "LECTURER", "ADMIN"])
+            .filter(profile__role__in=["Staff", "Lecturer", "Admin"])
         )
+
+    @action(detail=False, methods=["get"], url_path="dropdown")
+    def dropdown(self, request):
+        queryset = self.get_queryset().order_by("profile__full_name", "email")
+        serializer = PicUserDropdownSerializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class AdminProfileViewSet(viewsets.ModelViewSet):
@@ -104,3 +138,55 @@ class AdminProfileViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsAdministratorOrAbove]
     queryset = Profile.objects.select_related("user").all()
     http_method_names = ["get", "patch"]
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            CHANGE,
+            "Updated profile via CSL Admin (profile management).",
+        )
+
+
+class AdminActionViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = AdminActionSerializer
+    permission_classes = [IsAuthenticated, IsAdministratorOrAbove]
+    http_method_names = ["get"]
+
+    def get_queryset(self):
+        return (
+            LogEntry.objects
+            .select_related("user", "content_type")
+            .order_by("-action_time")
+        )
+
+    @action(detail=False, methods=["get"], url_path="recent")
+    def recent(self, request):
+        queryset = self.get_queryset()[:10]
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"], url_path="my")
+    def my(self, request):
+        queryset = self.get_queryset().filter(user=request.user)[:10]
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+class AdminDashboardViewSet(viewsets.ReadOnlyModelViewSet):
+    permission_classes = [IsAuthenticated, IsAdministratorOrAbove]
+    http_method_names = ["get"]
+    queryset = Profile.objects.none()
+
+    @extend_schema(responses=AdminDashboardKpisSerializer)
+    @action(detail=False, methods=["get"], url_path="kpis")
+    def kpis(self, request):
+        data = {
+            "total_users": User.objects.count(),
+            "total_rooms": Room.objects.count(),
+            "total_equipments": Equipment.objects.count(),
+            "total_bookings": Booking.objects.count(),
+            "total_borrows": Borrow.objects.count(),
+        }
+        return Response(data)

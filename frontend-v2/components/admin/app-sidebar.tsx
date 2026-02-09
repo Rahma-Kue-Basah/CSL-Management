@@ -24,9 +24,11 @@ import {
   ChevronDown,
   FileText,
   History,
+  Info,
   LayoutDashboard,
   Package,
   Search,
+  User,
   Users,
 } from "lucide-react";
 import { NavUser } from "./nav-user";
@@ -36,8 +38,10 @@ export function AppSidebar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenus, setOpenMenus] = useState({
     document: false,
+    information: true,
     inventory: false,
-    record: true,
+    profile: true,
+    record: false,
     user: false,
   });
   const menuButtonClass = (isSelected = false) =>
@@ -45,7 +49,9 @@ export function AppSidebar() {
       ? "text-sidebar-foreground group-data-[collapsible=icon]:mx-auto"
       : "text-sidebar-foreground/65 hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto";
 
-  const toggleMenu = (menu: "document" | "inventory" | "record" | "user") => {
+  const toggleMenu = (
+    menu: "document" | "information" | "inventory" | "profile" | "record" | "user",
+  ) => {
     setOpenMenus((prev) => ({
       ...prev,
       [menu]: !prev[menu],
@@ -92,6 +98,15 @@ export function AppSidebar() {
     { label: "Staff", href: "/admin/user-management/staff" },
     { label: "Guest", href: "/admin/user-management/guest" },
   ];
+  const profileItems = [
+    { label: "Profile", href: "/admin/profile/profile" },
+    { label: "Struktur Organisasi", href: "/admin/profile/struktur-organisasi" },
+    { label: "Fasilitas", href: "/admin/profile/fasilitas" },
+  ];
+  const informationItems = [
+    { label: "Informasi", href: "/admin/informasi/informasi" },
+    { label: "Jadwal", href: "/admin/informasi/jadwal" },
+  ];
 
   const filteredDocumentItems = documentItems.filter((item) =>
     matchesSearch(item.label),
@@ -101,6 +116,10 @@ export function AppSidebar() {
     matchesSearch(item.label),
   );
   const filteredUserItems = userItems.filter((item) => matchesSearch(item.label));
+  const filteredProfileItems = profileItems.filter((item) => matchesSearch(item.label));
+  const filteredInformationItems = informationItems.filter((item) =>
+    matchesSearch(item.label),
+  );
 
   const showHome = matchesSearch("home");
   const showDocument = matchesSearch("dokumen") || filteredDocumentItems.length > 0;
@@ -109,6 +128,10 @@ export function AppSidebar() {
     matchesSearch("inventarisasi") || filteredInventoryItems.length > 0;
   const showUser =
     matchesSearch("user management") || matchesSearch("user") || filteredUserItems.length > 0;
+  const showProfile =
+    matchesSearch("profile") || filteredProfileItems.length > 0;
+  const showInformation =
+    matchesSearch("informasi") || filteredInformationItems.length > 0;
 
   const isHomeActive = pathname === "/admin" || pathname === "/admin/home";
   const isDocumentActive = documentItems.some((item) => isPathActive(item.href));
@@ -117,22 +140,36 @@ export function AppSidebar() {
     isPathActive(item.href),
   );
   const isUserActive = userItems.some((item) => isPathActive(item.href));
+  const isProfileActive = profileItems.some((item) => isPathActive(item.href));
+  const isInformationActive = informationItems.some((item) =>
+    isPathActive(item.href),
+  );
 
   useEffect(() => {
     setOpenMenus((prev) => ({
       ...prev,
-      document: isDocumentActive,
-      record: isRecordActive,
-      inventory: isInventoryActive,
-      user: isUserActive,
+      // Preserve manual/default opened state, and auto-open when route is active.
+      document: prev.document || isDocumentActive,
+      record: prev.record || isRecordActive,
+      inventory: prev.inventory || isInventoryActive,
+      user: prev.user || isUserActive,
+      profile: prev.profile || isProfileActive,
+      information: prev.information || isInformationActive,
     }));
-  }, [isDocumentActive, isRecordActive, isInventoryActive, isUserActive]);
+  }, [
+    isDocumentActive,
+    isRecordActive,
+    isInventoryActive,
+    isUserActive,
+    isProfileActive,
+    isInformationActive,
+  ]);
 
   return (
     <Sidebar
       variant="inset"
       collapsible="icon"
-      className="dark border-r border-sidebar-border p-0 [--sidebar:#1C1A1A] [--sidebar-foreground:#F3F4F6] [--sidebar-accent:#2A2828] [--sidebar-accent-foreground:#FFFFFF] [--sidebar-border:#343232]"
+      className="border-r border-sidebar-border bg-slate-900 p-0 [--sidebar:rgb(15_23_42)] [--sidebar-foreground:#F8FAFC] [--sidebar-accent:rgb(15_23_42)] [--sidebar-accent-foreground:#FFFFFF] [--sidebar-border:rgb(30_41_59)]"
     >
       <SidebarHeader className="relative h-16 flex-row! items-center! justify-start! gap-0! !p-0 border-b border-sidebar-border/60 px-2">
         <SidebarMenu className="flex h-full w-full items-center justify-start px-2 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0">
@@ -201,6 +238,86 @@ export function AppSidebar() {
                       <span className="text-sm">Home</span>
                     </Link>
                   </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
+
+              {showProfile && (
+                <SidebarMenuItem className="mt-2">
+                  <SidebarMenuButton
+                    onClick={() => toggleMenu("profile")}
+                    tooltip="Profile"
+                    className={menuButtonClass(isProfileActive)}
+                    isActive={isProfileActive}
+                  >
+                    <User />
+                    <span className="text-sm">Profile</span>
+                    <ChevronDown
+                      className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${
+                        openMenus.profile || (hasSearch && filteredProfileItems.length > 0)
+                          ? "rotate-180"
+                          : ""
+                      }`}
+                    />
+                  </SidebarMenuButton>
+                  {(openMenus.profile || (hasSearch && filteredProfileItems.length > 0)) && (
+                    <SidebarMenuSub>
+                      {filteredProfileItems.map((item) => (
+                        <SidebarMenuSubItem key={item.href}>
+                          <SidebarMenuSubButton
+                            href={item.href}
+                            isActive={isPathActive(item.href)}
+                            className={
+                              isPathActive(item.href)
+                                ? "text-sidebar-foreground"
+                                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
+                            }
+                          >
+                            <span className="text-sm">{item.label}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  )}
+                </SidebarMenuItem>
+              )}
+
+              {showInformation && (
+                <SidebarMenuItem className="mt-2">
+                  <SidebarMenuButton
+                    onClick={() => toggleMenu("information")}
+                    tooltip="Informasi"
+                    className={menuButtonClass(isInformationActive)}
+                    isActive={isInformationActive}
+                  >
+                    <Info />
+                    <span className="text-sm">Informasi</span>
+                    <ChevronDown
+                      className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${
+                        openMenus.information || (hasSearch && filteredInformationItems.length > 0)
+                          ? "rotate-180"
+                          : ""
+                      }`}
+                    />
+                  </SidebarMenuButton>
+                  {(openMenus.information || (hasSearch && filteredInformationItems.length > 0)) && (
+                    <SidebarMenuSub>
+                      {filteredInformationItems.map((item) => (
+                        <SidebarMenuSubItem key={item.href}>
+                          <SidebarMenuSubButton
+                            href={item.href}
+                            isActive={isPathActive(item.href)}
+                            className={
+                              isPathActive(item.href)
+                                ? "text-sidebar-foreground"
+                                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
+                            }
+                          >
+                            <span className="text-sm">{item.label}</span>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      ))}
+                    </SidebarMenuSub>
+                  )}
                 </SidebarMenuItem>
               )}
 

@@ -8,6 +8,7 @@ import { authFetch } from "@/lib/auth";
 export type EquipmentFilters = {
   status?: string;
   category?: string;
+  room?: string;
   is_moveable?: string;
   search?: string;
 };
@@ -50,7 +51,7 @@ function mapEquipment(item: ApiEquipment): EquipmentRow {
   };
 }
 
-export function useEquipments(page: number, pageSize = 10, filters: EquipmentFilters = {}) {
+export function useEquipments(page: number, pageSize = 10, filters: EquipmentFilters = {}, reloadKey = 0) {
   const [equipments, setEquipments] = useState<EquipmentRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -70,6 +71,7 @@ export function useEquipments(page: number, pageSize = 10, filters: EquipmentFil
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
         if (filters.category) url.searchParams.set("category", filters.category);
+        if (filters.room) url.searchParams.set("room", filters.room);
         if (filters.is_moveable !== undefined && filters.is_moveable !== "") {
           url.searchParams.set("is_moveable", filters.is_moveable);
         }
@@ -107,7 +109,7 @@ export function useEquipments(page: number, pageSize = 10, filters: EquipmentFil
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, filters.category, filters.is_moveable, filters.search]);
+  }, [page, pageSize, filters.status, filters.category, filters.room, filters.is_moveable, filters.search, reloadKey]);
 
   return {
     equipments,

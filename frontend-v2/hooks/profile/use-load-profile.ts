@@ -11,6 +11,7 @@ export type ProfileUserInput = {
   id?: ProfileId | null;
   name?: string | null;
   email?: string | null;
+  last_login?: string | null;
   role?: string | null;
   department?: string | null;
   batch?: Batch | null;
@@ -22,6 +23,7 @@ export type UserProfile = {
   id?: ProfileId | null;
   name: string;
   email: string;
+  last_login?: string | null;
   role?: string | null;
   department?: string | null;
   batch?: Batch | null;
@@ -54,6 +56,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
         id: user?.id,
         name: user?.name || "User",
         email: user?.email || "",
+        last_login: user?.last_login || null,
         role: user?.role,
         department: user?.department,
         batch: user?.batch,
@@ -77,6 +80,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
           id: asProfileId(parsed.id) ?? user?.id,
           name: asString(parsed.name) ?? user?.name ?? "User",
           email: asString(parsed.email) ?? user?.email ?? "",
+          last_login: asString(parsed.last_login) ?? user?.last_login ?? null,
           role: asString(parsed.role) ?? user?.role,
           department: asString(parsed.department) ?? user?.department,
           batch: asBatch(parsed.batch) ?? user?.batch,
@@ -115,6 +119,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
               id: asProfileId(parsed.id),
               name: asString(parsed.name) ?? undefined,
               email: asString(parsed.email) ?? undefined,
+              last_login: asString(parsed.last_login),
               role: asString(parsed.role),
               department: asString(parsed.department),
               batch: asBatch(parsed.batch),
@@ -132,14 +137,12 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
       }
     }
 
-    // If cached profile exists, use it and skip network fetch to prevent repeated GETs.
+    // Use cached profile for fast initial render, then refresh from API.
     if (cachedProfile) {
       setProfile((prev) => ({
         ...prev,
         ...cachedProfile,
       }));
-      hasFetchedRef.current = true;
-      return;
     }
 
     const loadProfile = async () => {
@@ -164,6 +167,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
             asString(profileData.username) ??
             "User",
           email: asString(profileData.email) ?? "",
+          last_login: asString(profileData.last_login) ?? null,
           role: asString(profileData.role) ?? null,
           department: asString(profileData.department) ?? null,
           batch: asBatch(profileData.batch) ?? null,

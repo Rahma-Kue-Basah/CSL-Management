@@ -3,6 +3,7 @@ const API_BASE_URL: string =
 
 // REGION: Auth API Endpoints
 const API_AUTH_BASE = `${API_BASE_URL}/api/auth`;
+const API_ADMIN_BASE = `${API_BASE_URL}/api/admin`;
 
 const API_AUTH_LOGIN = `${API_AUTH_BASE}/login/`;
 const API_AUTH_LOGOUT = `${API_AUTH_BASE}/logout/`;
@@ -24,11 +25,17 @@ const API_AUTH_USER_PROFILE_DETAIL = (id: string | number) =>
   `${API_AUTH_USER_PROFILE}${id}/`;
 
 // REGION: Admin Profile API Endpoints
-const API_AUTH_ADMIN_PROFILE = `${API_AUTH_BASE}/admin/profile/`;
+const API_AUTH_ADMIN_PROFILE = `${API_ADMIN_BASE}/profile/`;
 const API_AUTH_ADMIN_PROFILE_DETAIL = (id: string | number) =>
   `${API_AUTH_ADMIN_PROFILE}${id}/`;
-const API_AUTH_USERS = `${API_AUTH_BASE}/admin/users/`;
-const API_AUTH_PIC_USERS = `${API_AUTH_BASE}/pic-users/`;
+const API_AUTH_USERS = `${API_ADMIN_BASE}/users/`;
+const API_AUTH_PIC_USERS = `${API_ADMIN_BASE}/pic-users/`;
+const API_AUTH_PIC_USERS_DROPDOWN = `${API_AUTH_PIC_USERS}dropdown/`;
+const API_AUTH_ADMIN_ACTIONS = `${API_ADMIN_BASE}/actions/`;
+const API_AUTH_ADMIN_ACTIONS_RECENT = `${API_AUTH_ADMIN_ACTIONS}recent/`;
+const API_AUTH_ADMIN_ACTIONS_MY = `${API_AUTH_ADMIN_ACTIONS}my/`;
+const API_AUTH_ADMIN_DASHBOARD = `${API_ADMIN_BASE}/dashboard/`;
+const API_AUTH_ADMIN_DASHBOARD_KPIS = `${API_AUTH_ADMIN_DASHBOARD}kpis/`;
 
 // REGION: Bookings API Endpoints
 const API_BOOKINGS = `${API_BASE_URL}/api/bookings/`;
@@ -63,6 +70,7 @@ const API_IMAGE_DETAIL = (id: string | number) => `${API_IMAGES}${id}/`;
 
 // REGION: Rooms API Endpoints
 const API_ROOMS = `${API_BASE_URL}/api/rooms/`;
+const API_ROOMS_DROPDOWN = `${API_ROOMS}dropdown/`;
 const API_ROOM_DETAIL = (id: string | number) => `${API_ROOMS}${id}/`;
 const API_ROOM_AVAILABILITY = (id: string | number) =>
   `${API_ROOMS}${id}/availability/`;
@@ -70,6 +78,7 @@ const API_ROOM_AVAILABILITY = (id: string | number) =>
 export {
   API_BASE_URL,
   API_AUTH_BASE,
+  API_ADMIN_BASE,
   API_AUTH_LOGIN,
   API_AUTH_LOGOUT,
   API_AUTH_LOGIN_GOOGLE,
@@ -87,6 +96,12 @@ export {
   API_AUTH_ADMIN_PROFILE_DETAIL,
   API_AUTH_USERS,
   API_AUTH_PIC_USERS,
+  API_AUTH_PIC_USERS_DROPDOWN,
+  API_AUTH_ADMIN_ACTIONS,
+  API_AUTH_ADMIN_ACTIONS_RECENT,
+  API_AUTH_ADMIN_ACTIONS_MY,
+  API_AUTH_ADMIN_DASHBOARD,
+  API_AUTH_ADMIN_DASHBOARD_KPIS,
   API_AUTH_TOKEN_REFRESH,
   API_AUTH_TOKEN_VERIFY,
   API_BOOKINGS,
@@ -106,6 +121,7 @@ export {
   API_IMAGES,
   API_IMAGE_DETAIL,
   API_ROOMS,
+  API_ROOMS_DROPDOWN,
   API_ROOM_DETAIL,
   API_ROOM_AVAILABILITY,
 };

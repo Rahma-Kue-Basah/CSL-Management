@@ -35,7 +35,7 @@ def sync_profile_role_to_group(sender, instance, **kwargs):
     if not role_value:
         return
 
-    # Map Profile role (stored uppercase) to Group name (title-case)
+    # Map Profile role to Group name (title-case).
     role_map = {
         "ADMIN": "Administrator",
         "LECTURER": "Lecturer",
@@ -43,7 +43,7 @@ def sync_profile_role_to_group(sender, instance, **kwargs):
         "STAFF": "Staff",
         "OTHER": "Other",
     }
-    group_name = role_map.get(role_value)
+    group_name = role_map.get(str(role_value).upper())
     if not group_name or group_name not in ALL_ROLES:
         return
 

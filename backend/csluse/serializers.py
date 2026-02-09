@@ -3,7 +3,7 @@ from rest_framework import serializers
 from typing import Optional
 
 from .models import Image, Room, Equipment, Booking, Borrow
-from csluse_auth.serializers import ProfileSerializer
+from csluse_auth.serializers import ProfileSerializer, RoomPicDetailSerializer
 
 class ImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(write_only=True)
@@ -30,8 +30,8 @@ class ImageSerializer(serializers.ModelSerializer):
 
 
 class RoomSerializer(serializers.ModelSerializer):
-    pic_detail = ProfileSerializer(source="pic", read_only=True)
-    image_detail = ImageSerializer(source="image", read_only=True)
+    pic_detail = RoomPicDetailSerializer(source="pic", read_only=True)
+    # image_detail = ImageSerializer(source="image", read_only=True)
 
     class Meta:
         model = Room
@@ -45,12 +45,21 @@ class RoomSerializer(serializers.ModelSerializer):
             "pic",
             "image",
             "pic_detail",
-            "image_detail",
+            # "image_detail",
+        ]
+
+
+class RoomDropdownSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Room
+        fields = [
+            "id",
+            "name",
         ]
 
 
 class EquipmentSerializer(serializers.ModelSerializer):
-    image_detail = ImageSerializer(source="image", read_only=True)
+    # image_detail = ImageSerializer(source="image", read_only=True)
     room_detail = RoomSerializer(source="room", read_only=True)
 
     class Meta:
@@ -63,7 +72,7 @@ class EquipmentSerializer(serializers.ModelSerializer):
             "status",
             "category",
             "image",
-            "image_detail",
+            # "image_detail",
             "room",
             "room_detail",
             "is_moveable",

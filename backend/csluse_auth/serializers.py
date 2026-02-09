@@ -2,6 +2,7 @@ import re
 import secrets
 import string
 
+from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from dj_rest_auth.serializers import LoginSerializer as BaseLoginSerializer
 from rest_framework import serializers
@@ -9,9 +10,17 @@ from django.contrib.auth import get_user_model
 from allauth.account.models import EmailAddress
 
 
+from .audit import log_admin_action
 from .models import Profile
 
 ADMIN_ROLE_GROUPS = {"Administrator", "SuperAdministrator"}
+ROLE_NORMALIZATION_MAP = {
+    "STUDENT": "Student",
+    "LECTURER": "Lecturer",
+    "ADMIN": "Admin",
+    "STAFF": "Staff",
+    "OTHER": "Other",
+}
 
 
 def _can_assign_profile_fields(request):
@@ -121,11 +130,7 @@ def _generate_unique_username(base):
 class CustomRegisterSerializer(RegisterSerializer):
     username = serializers.CharField(required=False, allow_blank=True)
     full_name = serializers.CharField(write_only=True)
-    role = serializers.ChoiceField(
-        choices=[choice[0] for choice in Profile.ROLE_CHOICES],
-        required=False,
-        allow_null=True,
-    )
+    role = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     department = serializers.ChoiceField(
         choices=[choice[0] for choice in Profile.DEPARTMENT_CHOICE],
         required=False,
@@ -146,6 +151,17 @@ class CustomRegisterSerializer(RegisterSerializer):
     def validate_username(self, username):
         # Allow duplicates here; we will auto-generate a unique username later.
         return username
+
+    def validate_role(self, value):
+        if value is None or value == "":
+            return value
+        normalized = ROLE_NORMALIZATION_MAP.get(str(value).upper())
+        if normalized:
+            return normalized
+        valid_roles = {choice[0] for choice in Profile.ROLE_CHOICES}
+        if value not in valid_roles:
+            raise serializers.ValidationError("Role tidak valid.")
+        return value
 
     def validate(self, data):
         data = super().validate(data)
@@ -195,6 +211,12 @@ class CustomRegisterSerializer(RegisterSerializer):
             user=user,
             defaults=defaults,
         )
+        log_admin_action(
+            request.user,
+            user,
+            ADDITION,
+            "Created user via CSL Admin (registration).",
+        )
 
         if _can_assign_profile_fields(request):
             email = user.email
@@ -214,12 +236,15 @@ class CustomRegisterSerializer(RegisterSerializer):
 class ProfileSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
+    last_login = serializers.DateTimeField(source="user.last_login", read_only=True)
+    role = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = Profile
         fields = (
             "id",
             "email",
+            "last_login",
             "full_name",
             "role",
             "batch",
@@ -228,6 +253,32 @@ class ProfileSerializer(serializers.ModelSerializer):
             "user_type",
         )
         read_only_fields = ("id", "email")
+
+    def validate_role(self, value):
+        if value is None or value == "":
+            return None if value == "" else value
+        normalized = ROLE_NORMALIZATION_MAP.get(str(value).upper())
+        if normalized:
+            return normalized
+        valid_roles = {choice[0] for choice in Profile.ROLE_CHOICES}
+        if value not in valid_roles:
+            raise serializers.ValidationError("Role tidak valid.")
+        return value
+
+
+class RoomPicDetailSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(read_only=True)
+    # email = serializers.EmailField(source="user.email", read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = (
+            "id",
+            # "email",
+            "full_name",
+            # "role",
+        )
+        read_only_fields = ("id",)
 
 
 class UserWithProfileSerializer(serializers.ModelSerializer):
@@ -260,7 +311,69 @@ class PicUserSerializer(serializers.ModelSerializer):
         )
 
 
+class PicUserDropdownSerializer(serializers.ModelSerializer):
+    id = serializers.UUIDField(source="profile.id", read_only=True)
+    name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = (
+            "id",
+            "name",
+        )
+
+    def get_name(self, obj):
+        full_name = getattr(getattr(obj, "profile", None), "full_name", None)
+        if full_name:
+            return full_name
+        return obj.email
+
+
 class EmailVerificationStatusSerializer(serializers.Serializer):
     """Serializer to validate email status checks."""
 
     email = serializers.EmailField()
+
+
+class AdminActionSerializer(serializers.ModelSerializer):
+    action = serializers.SerializerMethodField()
+    actor = serializers.SerializerMethodField()
+    target = serializers.SerializerMethodField()
+
+    class Meta:
+        model = LogEntry
+        fields = (
+            "id",
+            "action_time",
+            "action",
+            "actor",
+            "target",
+            "object_id",
+            "object_repr",
+            "change_message",
+        )
+
+    def get_action(self, obj):
+        action_map = {
+            ADDITION: "create",
+            CHANGE: "update",
+            DELETION: "delete",
+        }
+        return action_map.get(obj.action_flag, "unknown")
+
+    def get_actor(self, obj):
+        email = getattr(obj.user, "email", "") or ""
+        return email or getattr(obj.user, "username", "") or "system"
+
+    def get_target(self, obj):
+        if obj.content_type_id:
+            return f"{obj.content_type.app_label}.{obj.content_type.model}"
+        return "unknown"
+
+
+class AdminDashboardKpisSerializer(serializers.Serializer):
+    total_users = serializers.IntegerField()
+    total_rooms = serializers.IntegerField()
+    total_equipments = serializers.IntegerField()
+    total_bookings = serializers.IntegerField()
+    total_borrows = serializers.IntegerField()

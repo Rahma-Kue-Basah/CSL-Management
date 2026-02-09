@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import * as XLSX from "xlsx";
 
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -216,33 +217,38 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
     <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
       <div className="flex min-w-0 items-start gap-4">
         <div className="min-w-0 flex-1 space-y-4">
-          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div className="min-w-0">
-              <h1 className="text-xl font-semibold">User Management</h1>
-              <p className="text-sm text-muted-foreground">
-                Total {totalUsers} user terdaftar.
-              </p>
-            </div>
-            {canManageUsers ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setActiveAction("bulk")}
-                >
-                  <FileUp className="h-4 w-4" />
-                </Button>
-                <Button type="button" size="sm" onClick={() => setActiveAction("create")}> 
-                  <Plus className="h-4 w-4" />
-                  Buat User
-                </Button>
-              </div>
-            ) : null}
-          </div>
+          <AdminPageHeader
+            title="User Management"
+            description={`Total ${totalUsers} user terdaftar.`}
+            icon={<UserPlus className="h-5 w-5 text-sky-200" />}
+            actions={
+              canManageUsers ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+                    onClick={() => setActiveAction("bulk")}
+                  >
+                    <FileUp className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-white text-slate-900 hover:bg-slate-100"
+                    onClick={() => setActiveAction("create")}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Buat User
+                  </Button>
+                </>
+              ) : null
+            }
+          />
 
           {!isRoleScoped ? (
-            <div className="w-full min-w-0 rounded border border-sky-200/70 bg-sky-50 shadow-xs">
+            <div className="w-full min-w-0 rounded border border-slate-300/70 bg-slate-100 shadow-xs">
               <div
                 className="flex cursor-pointer items-center justify-between px-4 py-3"
                 onClick={() => setFilterOpen((prev) => !prev)}
@@ -256,17 +262,17 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                 }}
               >
                 <div className="flex items-center gap-2">
-                  <div className="rounded-lg bg-white/80 p-2 text-sky-700 shadow-xs">
+                  <div className="rounded-lg bg-white/90 p-2 text-slate-700 shadow-xs">
                     <SlidersHorizontal className="h-4 w-4" />
                   </div>
-                  <p className="text-sm font-semibold text-sky-900">Filter User</p>
+                  <p className="text-sm font-semibold text-slate-900">Filter User</p>
                 </div>
                 {filterOpen ? (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-8 gap-2 border-sky-300 bg-white/85 text-sky-900 hover:bg-white"
+                    className="h-8 gap-2 border-slate-300 bg-white/90 text-slate-900 hover:bg-white"
                     onClick={(event) => {
                       event.stopPropagation();
                       resetFilters();
@@ -280,7 +286,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
               </div>
 
               {filterOpen ? (
-                <div className="border-t border-sky-200/70 px-4 pb-4 pt-3">
+                <div className="border-t border-slate-300/70 px-4 pb-4 pt-3">
                   <form
                     className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
                     onSubmit={(event) => {
@@ -289,14 +295,14 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                     }}
                   >
                     <div className="min-w-0">
-                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-sky-900/90">
+                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
                         Cari
                       </label>
                       <Input
                         type="search"
                         value={search}
                         placeholder="Nama, email, atau ID"
-                        className="border-sky-200 bg-white shadow-xs focus-visible:border-sky-400 focus-visible:ring-sky-200"
+                        className="border-slate-300 bg-white shadow-xs focus-visible:border-slate-500 focus-visible:ring-slate-200"
                         onChange={(event) => {
                           setSearch(event.target.value);
                           setPage(1);
@@ -343,21 +349,21 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
             </div>
           ) : null}
 
-          <div className="w-full max-w-full overflow-x-auto rounded border border-sky-100 bg-card">
+          <div className="w-full max-w-full overflow-x-auto rounded border border-slate-200 bg-card">
             <table className="w-full min-w-[760px] table-fixed">
-              <thead className="border-b border-sky-100 bg-sky-50">
+              <thead className="border-b border-slate-800 bg-slate-900">
                 <tr className="text-left text-sm">
                   <th className="w-[72px] px-3 py-3 font-medium" />
-                  <th className="w-[180px] px-3 py-3 font-medium text-sky-900">Nama</th>
-                  <th className="w-[240px] px-3 py-3 font-medium text-sky-900">Email</th>
+                  <th className="w-[180px] px-3 py-3 font-medium text-slate-50">Nama</th>
+                  <th className="w-[240px] px-3 py-3 font-medium text-slate-50">Email</th>
                   {!isRoleScoped ? (
-                    <th className="w-[120px] px-3 py-3 font-medium text-sky-900">Role</th>
+                    <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Role</th>
                   ) : null}
-                  <th className="w-[120px] px-3 py-3 text-center font-medium text-sky-900">
+                  <th className="w-[120px] px-3 py-3 text-center font-medium text-slate-50">
                     Verified
                   </th>
-                  <th className="w-[140px] px-3 py-3 font-medium text-sky-900">User Type</th>
-                  <th className="sticky right-0 z-10 relative w-[120px] bg-sky-50 px-3 py-3 text-center font-medium text-sky-900 shadow-[-6px_0_10px_-10px_rgba(2,132,199,0.2)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-sky-100">
+                  <th className="w-[140px] px-3 py-3 font-medium text-slate-50">User Type</th>
+                  <th className="sticky right-0 z-10 relative w-[120px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.35)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
                     Aksi
                   </th>
                 </tr>
@@ -400,7 +406,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                           {user.userType}
                         </span>
                       </td>
-                      <td className="sticky right-0 z-10 relative bg-card px-3 py-2 shadow-[-6px_0_10px_-10px_rgba(2,132,199,0.15)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-sky-100">
+                      <td className="sticky right-0 z-10 relative bg-card px-3 py-2 shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.18)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                         <div className="flex justify-center gap-2">
                           <Button
                             variant="outline"
@@ -584,13 +590,13 @@ type SelectFieldProps = {
 function SelectField({ label, value, options, onChange }: SelectFieldProps) {
   return (
     <div className="min-w-0">
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-sky-900/90">
+      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
         {label}
       </label>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-md border border-sky-200 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-400 focus-visible:ring-[3px] focus-visible:ring-sky-200"
+        className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
       >
         <option value="">Semua</option>
         {options.map((opt) => (

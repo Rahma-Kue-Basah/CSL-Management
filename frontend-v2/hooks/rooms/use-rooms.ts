@@ -7,6 +7,7 @@ import { authFetch } from "@/lib/auth";
 
 export type RoomFilters = {
   floor?: string;
+  pic?: string;
   search?: string;
 };
 
@@ -50,7 +51,7 @@ function mapRoom(room: ApiRoom): RoomRow {
   };
 }
 
-export function useRooms(page: number, pageSize = 10, filters: RoomFilters = {}) {
+export function useRooms(page: number, pageSize = 10, filters: RoomFilters = {}, reloadKey = 0) {
   const [rooms, setRooms] = useState<RoomRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -69,6 +70,7 @@ export function useRooms(page: number, pageSize = 10, filters: RoomFilters = {})
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.floor) url.searchParams.set("floor", filters.floor);
+        if (filters.pic) url.searchParams.set("pic", filters.pic);
         if (filters.search) url.searchParams.set("search", filters.search);
 
         const response = await authFetch(url.toString(), {
@@ -103,7 +105,7 @@ export function useRooms(page: number, pageSize = 10, filters: RoomFilters = {})
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.floor, filters.search]);
+  }, [page, pageSize, filters.floor, filters.pic, filters.search, reloadKey]);
 
   return { rooms, setRooms, totalCount, setTotalCount, isLoading, hasLoadedOnce, error, setError };
 }

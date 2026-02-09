@@ -25,11 +25,11 @@ class Profile(BaseModel):
     ]
 
     ROLE_CHOICES = [
-        ('STUDENT', 'Student'),
-        ('LECTURER', 'Lecturer'),
-        ('ADMIN', 'Admin'),
-        ('STAFF', 'Staff'),
-        ('OTHER', 'Other'),
+        ('Student', 'Student'),
+        ('Lecturer', 'Lecturer'),
+        ('Admin', 'Admin'),
+        ('Staff', 'Staff'),
+        ('Other', 'Other'),
     ]
 
     DEPARTMENT_CHOICE = [

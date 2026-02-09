@@ -21,6 +21,7 @@ from drf_spectacular.views import SpectacularSwaggerView, SpectacularAPIView
 urlpatterns = [
     path('admin-csl/', admin.site.urls),
     path('api/auth/', include('csluse_auth.urls')),
+    path('api/admin/', include('csluse_auth.admin_urls')),
     path('api/', include('csluse.urls')),
     
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),

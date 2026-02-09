@@ -47,7 +47,7 @@ def validate_booking(sender, instance, **kwargs):
 
     # approved_by must be room PIC or Admin (when set)
     if instance.approved_by_id:
-        approver_role = instance.approved_by.role or ""
+        approver_role = str(instance.approved_by.role or "").upper()
         if approver_role != "ADMIN":
             room_pic_id = instance.room.pic_id
             if not room_pic_id or instance.approved_by_id != room_pic_id:
@@ -85,7 +85,7 @@ def validate_borrow(sender, instance, **kwargs):
 
     # approved_by must be equipment room PIC or Admin (when set)
     if instance.approved_by_id:
-        approver_role = instance.approved_by.role or ""
+        approver_role = str(instance.approved_by.role or "").upper()
         if approver_role != "ADMIN":
             room_pic_id = instance.equipment.room_id and instance.equipment.room.pic_id
             if not room_pic_id or instance.approved_by_id != room_pic_id:
@@ -103,7 +103,7 @@ def validate_room(sender, instance, **kwargs):
         return
 
     allowed_roles = {"STAFF", "LECTURER", "ADMIN"}
-    pic_role = instance.pic.role or ""
+    pic_role = str(instance.pic.role or "").upper()
     if pic_role not in allowed_roles:
         raise ValidationError(
             "PIC harus user dengan role Staff, Lecturer, atau Admin."

@@ -1,6 +1,7 @@
 import os
 from datetime import datetime
 
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from django.db.models import Q
@@ -16,10 +17,12 @@ from .models import Image, Room, Equipment, Booking, Borrow
 from .serializers import (
     ImageSerializer,
     RoomSerializer,
+    RoomDropdownSerializer,
     EquipmentSerializer,
     BookingSerializer,
     BorrowSerializer,
 )
+from csluse_auth.audit import log_admin_action
 from csluse_auth.permissions import IsStaffOrAbove
 
 
@@ -92,6 +95,12 @@ class RoomViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         old_image = instance.image
         new_instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            new_instance,
+            CHANGE,
+            "Updated room via CSL Admin (inventory).",
+        )
 
         if old_image and (new_instance.image is None or old_image.id != new_instance.image.id):
             try:
@@ -100,7 +109,22 @@ class RoomViewSet(viewsets.ModelViewSet):
             finally:
                 old_image.delete()
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            ADDITION,
+            "Created room via CSL Admin (inventory).",
+        )
+
     def perform_destroy(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted room via CSL Admin (inventory).",
+        )
         image = instance.image
         super().perform_destroy(instance)
         if image:
@@ -109,6 +133,12 @@ class RoomViewSet(viewsets.ModelViewSet):
                     image.image.delete(save=False)
             finally:
                 image.delete()
+
+    @action(detail=False, methods=['get'], url_path='dropdown')
+    def dropdown(self, request):
+        queryset = self.get_queryset().order_by('name')
+        serializer = RoomDropdownSerializer(queryset, many=True)
+        return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):
@@ -206,6 +236,12 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         old_image = instance.image
         new_instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            new_instance,
+            CHANGE,
+            "Updated equipment via CSL Admin (inventory).",
+        )
 
         if old_image and (new_instance.image is None or old_image.id != new_instance.image.id):
             try:
@@ -214,7 +250,22 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             finally:
                 old_image.delete()
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            ADDITION,
+            "Created equipment via CSL Admin (inventory).",
+        )
+
     def perform_destroy(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted equipment via CSL Admin (inventory).",
+        )
         image = instance.image
         super().perform_destroy(instance)
         if image:
