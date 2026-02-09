@@ -1,5 +1,10 @@
+import { Suspense } from "react";
 import UserManagementPage from "@/components/admin/user-management/user-management-page";
 
 export default function UserManagementLecturerPage() {
-  return <UserManagementPage forcedRole="LECTURER" />;
+  return (
+    <Suspense fallback={null}>
+      <UserManagementPage forcedRole="LECTURER" />
+    </Suspense>
+  );
 }
