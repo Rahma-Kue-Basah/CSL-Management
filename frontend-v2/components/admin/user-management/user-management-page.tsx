@@ -658,10 +658,11 @@ type CreateUserPanelProps = {
 };
 
 function CreateUserPanel({ roleParam, onClose, onCreated }: CreateUserPanelProps) {
-  const normalizedRoleParam =
-    roleParam && ROLE_FILTER_OPTIONS.includes(roleParam.toUpperCase())
-      ? roleParam.toUpperCase()
-      : "";
+  const normalizedRoleParam = (() => {
+    if (!roleParam) return "";
+    const upperRole = roleParam.toUpperCase();
+    return (ROLE_FILTER_OPTIONS as readonly string[]).includes(upperRole) ? upperRole : "";
+  })();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     fullName: "",
@@ -891,7 +892,7 @@ function BulkCreatePanel({ roleParam, onClose, onCompleted }: BulkCreatePanelPro
       });
 
       const rows = bodyRows
-        .map((row, index) => {
+        .map((row, index): BulkRow | null => {
           const full_name = String(row[headerIndexes.full_name ?? -1] || "").trim();
           const email = String(row[headerIndexes.email ?? -1] || "").trim();
           const password = String(row[headerIndexes.password ?? -1] || "").trim();
@@ -904,9 +905,9 @@ function BulkCreatePanel({ roleParam, onClose, onCompleted }: BulkCreatePanelPro
             password,
             role: normalizedRoleParam || role,
             user_type: USER_TYPE_VALUES.INTERNAL,
-          } satisfies BulkRow;
+          };
         })
-        .filter((row): row is BulkRow => Boolean(row))
+        .filter((row): row is BulkRow => row !== null)
         .filter((row) => row.full_name && row.email && row.password);
 
       setPreviewRows(rows);

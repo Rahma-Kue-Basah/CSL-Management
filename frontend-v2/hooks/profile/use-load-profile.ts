@@ -158,20 +158,17 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
           getCookieValue("access_token") || getCookieValue("access"),
         );
         const nextProfile: UserProfile = {
-          id: asProfileId(profileData.id) ?? cachedProfile?.id ?? null,
+          id: asProfileId(profileData.id) ?? null,
           name:
             asString(profileData.full_name) ??
             asString(profileData.username) ??
             "User",
           email: asString(profileData.email) ?? "",
-          role: asString(profileData.role) ?? cachedProfile?.role ?? null,
-          department:
-            asString(profileData.department) ?? cachedProfile?.department ?? null,
-          batch: asBatch(profileData.batch) ?? cachedProfile?.batch ?? null,
-          id_number:
-            asString(profileData.id_number) ?? cachedProfile?.id_number ?? null,
-          user_type:
-            asString(profileData.user_type) ?? cachedProfile?.user_type ?? null,
+          role: asString(profileData.role) ?? null,
+          department: asString(profileData.department) ?? null,
+          batch: asBatch(profileData.batch) ?? null,
+          id_number: asString(profileData.id_number) ?? null,
+          user_type: asString(profileData.user_type) ?? null,
           canResetPassword: hasAccessToken,
         };
         setProfile(nextProfile);

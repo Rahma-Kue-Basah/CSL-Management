@@ -180,7 +180,7 @@ export default function AdminEquipmentsPage() {
                       <Button variant="outline" size="icon-sm" disabled>
                         <Eye className="h-4 w-4" />
                       </Button>
-                    </div>
+                    </div> 
                   </td>
                 </tr>
               ))
