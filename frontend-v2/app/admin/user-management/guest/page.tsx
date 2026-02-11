@@ -4,7 +4,7 @@ import UserManagementPage from "@/components/admin/user-management/user-manageme
 export default function UserManagementGuestPage() {
   return (
     <Suspense fallback={null}>
-      <UserManagementPage forcedRole="OTHER" />
+      <UserManagementPage forcedRole="Guest" />
     </Suspense>
   );
 }

@@ -7,7 +7,11 @@ import {
 
 const PROTECTED_PREFIXES = ["/dashboard", "/admin"] as const;
 const ACCESS_COOKIE_KEYS = ["access", "access_token"] as const;
-const ADMIN_ROLE = "ADMIN";
+const ADMIN_ROLES = new Set([
+  "ADMIN",
+  "SUPERADMINISTRATOR",
+  "SUPER_ADMINISTRATOR",
+]);
 
 function isProtectedPath(pathname: string): boolean {
   return PROTECTED_PREFIXES.some(
@@ -31,6 +35,12 @@ function getUserRole(request: NextRequest): string | undefined {
   if (typeof user?.role === "string") return user.role;
 
   return undefined;
+}
+
+function hasAdminAccess(request: NextRequest): boolean {
+  const role = getUserRole(request);
+  if (!role) return false;
+  return ADMIN_ROLES.has(String(role).trim().toUpperCase());
 }
 
 function buildLoginRedirectUrl(request: NextRequest): URL {
@@ -59,7 +69,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (getAccessToken(request)) {
-    if (isAdminPath(pathname) && getUserRole(request) !== ADMIN_ROLE) {
+    if (isAdminPath(pathname) && !hasAdminAccess(request)) {
       return NextResponse.redirect(buildUnauthorizedRedirectUrl(request));
     }
     return NextResponse.next();

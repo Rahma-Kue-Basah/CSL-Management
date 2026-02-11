@@ -8,7 +8,7 @@ from csluse_auth.permissions import ALL_ROLES
 
 
 class Command(BaseCommand):
-    help = 'Create role groups (Student, Lecturer, Administrator, SuperAdministrator)'
+    help = 'Create role groups (Guest, Student, Lecturer, Staff, Administrator, SuperAdministrator)'
 
     def handle(self, *args, **options):
         created_count = 0

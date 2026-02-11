@@ -19,7 +19,8 @@ ROLE_NORMALIZATION_MAP = {
     "LECTURER": "Lecturer",
     "ADMIN": "Admin",
     "STAFF": "Staff",
-    "OTHER": "Other",
+    "GUEST": "Guest",
+    "OTHER": "Guest",
 }
 
 
@@ -178,18 +179,20 @@ class CustomRegisterSerializer(RegisterSerializer):
         return data
 
     def save(self, request):
-        if _can_assign_profile_fields(request):
+        can_assign_profile_fields = _can_assign_profile_fields(request)
+        if can_assign_profile_fields:
             setattr(request, "_skip_email_confirmation", True)
 
         user = super().save(request)
         full_name = self.get_cleaned_data().get("full_name")
         defaults = {
-            "user_type": "external",
+            "user_type": "EXTERNAL",
+            "role": "Guest",
         }
         if full_name:
             defaults["full_name"] = full_name
 
-        if _can_assign_profile_fields(request):
+        if can_assign_profile_fields:
             role = self.validated_data.get("role")
             department = self.validated_data.get("department")
             batch = self.validated_data.get("batch")
@@ -218,7 +221,7 @@ class CustomRegisterSerializer(RegisterSerializer):
             "Created user via CSL Admin (registration).",
         )
 
-        if _can_assign_profile_fields(request):
+        if can_assign_profile_fields:
             email = user.email
             if email:
                 email_address, _ = EmailAddress.objects.get_or_create(

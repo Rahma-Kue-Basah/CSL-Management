@@ -130,3 +130,68 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .admin-calendar .fc {
+    --fc-border-color: var(--border);
+    --fc-button-bg-color: var(--card);
+    --fc-button-border-color: var(--input);
+    --fc-button-text-color: var(--foreground);
+    --fc-button-hover-bg-color: color-mix(in oklab, var(--accent), white 20%);
+    --fc-button-hover-border-color: var(--border);
+    --fc-button-active-bg-color: var(--primary);
+    --fc-button-active-border-color: var(--primary);
+    --fc-button-active-text-color: var(--primary-foreground);
+    --fc-page-bg-color: transparent;
+    --fc-neutral-bg-color: color-mix(in oklab, var(--muted), white 40%);
+    --fc-today-bg-color: color-mix(in oklab, var(--primary), white 92%);
+    --fc-event-border-color: var(--primary);
+    --fc-event-bg-color: var(--primary);
+    --fc-event-text-color: var(--primary-foreground);
+    color: var(--foreground);
+  }
+
+  .admin-calendar .fc .fc-toolbar-title {
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  .admin-calendar .fc .fc-button {
+    height: 2.25rem;
+    border-radius: var(--radius-md);
+    box-shadow: none;
+    font-weight: 500;
+    text-transform: capitalize;
+  }
+
+  .admin-calendar .fc .fc-toolbar.fc-header-toolbar {
+    margin-bottom: 0.9rem;
+  }
+
+  .admin-calendar .fc .fc-col-header-cell-cushion,
+  .admin-calendar .fc .fc-daygrid-day-number {
+    color: var(--foreground);
+    font-weight: 500;
+  }
+
+  .admin-calendar .fc .fc-daygrid-day-frame {
+    transition: background-color 150ms ease;
+    aspect-ratio: 1 / 1;
+    min-height: 110px;
+    vertical-align: top;
+  }
+
+  .admin-calendar .fc .fc-daygrid-day:hover .fc-daygrid-day-frame {
+    background: color-mix(in oklab, var(--accent), white 18%);
+  }
+
+  .admin-calendar .fc .fc-event {
+    border-radius: calc(var(--radius-md) - 2px);
+    border-width: 0;
+    padding: 0 4px;
+  }
+
+  .admin-calendar .fc .fc-timegrid-now-indicator-line {
+    border-color: var(--primary);
+  }
+}

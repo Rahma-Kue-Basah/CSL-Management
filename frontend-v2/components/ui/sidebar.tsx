@@ -189,7 +189,7 @@ function Sidebar({
           data-slot="sidebar"
           data-mobile="true"
           className={cn(
-            "bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden",
+            "bg-sidebar text-sidebar-foreground w-(--sidebar-width) p-0 [&>button]:hidden [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]",
             className,
           )}
           style={

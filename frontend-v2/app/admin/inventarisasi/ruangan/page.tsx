@@ -161,7 +161,7 @@ export default function AdminRoomsPage() {
                   type="search"
                   value={search}
                   placeholder="Nama ruangan atau nomor"
-                  className="border-slate-300 bg-white shadow-xs focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                   onChange={(event) => {
                     setSearch(event.target.value);
                     setPage(1);
@@ -176,7 +176,7 @@ export default function AdminRoomsPage() {
                   type="number"
                   value={floor}
                   placeholder="Semua"
-                  className="border-slate-300 bg-white shadow-xs focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                   onChange={(event) => {
                     setFloor(event.target.value);
                     setPage(1);
@@ -193,7 +193,7 @@ export default function AdminRoomsPage() {
                     setPic(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
+                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
                   disabled={isLoadingFilterPics}
                 >
                   <option value="">
@@ -379,7 +379,7 @@ export default function AdminRoomsPage() {
         <SheetContent
           side="right"
           showCloseButton={false}
-          className="w-[92vw] p-0 sm:max-w-md"
+          className="w-[92vw] p-0 sm:max-w-md [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]"
         >
           <ActionPanelContent
             action={activeAction}

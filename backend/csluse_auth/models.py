@@ -29,7 +29,7 @@ class Profile(BaseModel):
         ('Lecturer', 'Lecturer'),
         ('Admin', 'Admin'),
         ('Staff', 'Staff'),
-        ('Other', 'Other'),
+        ('Guest', 'Guest'),
     ]
 
     DEPARTMENT_CHOICE = [

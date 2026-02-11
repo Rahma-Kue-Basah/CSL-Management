@@ -108,7 +108,7 @@ function ActionList({
   actions: AdminAction[];
 }) {
   return (
-    <div className="rounded-xl mb-16 border bg-linear-to-b from-white to-slate-50 p-3">
+    <div className="rounded-xl border bg-linear-to-b from-white to-slate-50 p-3">
       <h2 className="mb-3 text-sm font-semibold text-slate-900">{title}</h2>
       {actions.length ? (
         <div className="space-y-2">
@@ -274,7 +274,7 @@ export default function Page() {
         </div>
       ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 xl:grid-cols-7">
         <KpiCard
           label="Pengguna"
           value={isLoadingKpis ? "0" : String(kpis.totalUsers)}
@@ -329,7 +329,7 @@ export default function Page() {
 function HomePageSkeleton() {
   return (
     <section className="space-y-4 px-4">
-      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 px-5 py-4">
+      <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-[#0052C7] via-[#0048B4] to-[#003C99] px-5 py-4">
         <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-white/10 blur-xl" />
         <div className="relative flex items-start justify-between gap-4">
           <div className="min-w-0 space-y-2">

@@ -46,6 +46,8 @@ import { DEPARTMENT_VALUES } from "@/constants/departments";
 import {
   ROLE_FILTER_OPTIONS,
   ROLE_OPTIONS,
+  ROLE_VALUES,
+  normalizeRoleValue,
   isPrivilegedRole,
 } from "@/constants/roles";
 import { USER_TYPE_VALUES } from "@/constants/user-types";
@@ -96,7 +98,7 @@ function buildTemplateWorkbook(hasRoleScope: boolean) {
       "Aziz Rahmad",
       "aziz@student.prasetiyamulya.ac.id",
       "Password123",
-      ...(hasRoleScope ? [] : ["STUDENT"]),
+      ...(hasRoleScope ? [] : [ROLE_VALUES.STUDENT]),
     ],
   ];
   const sheet = XLSX.utils.aoa_to_sheet([headers, ...sample]);
@@ -135,7 +137,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
   const effectiveFilters = useMemo(
     () => ({
       ...filters,
-      role: roleParam ? roleParam.toUpperCase() : filters.role,
+      role: roleParam ? normalizeRoleValue(roleParam) : filters.role,
     }),
     [filters, roleParam],
   );
@@ -248,7 +250,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
           />
 
           {!isRoleScoped ? (
-            <div className="w-full min-w-0 rounded border border-slate-300/70 bg-slate-100 shadow-xs">
+            <div className="w-full min-w-0 rounded border-2 border-slate-400/80 bg-slate-50 shadow-xs">
               <div
                 className="flex cursor-pointer items-center justify-between px-4 py-3"
                 onClick={() => setFilterOpen((prev) => !prev)}
@@ -272,7 +274,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                     type="button"
                     variant="outline"
                     size="sm"
-                    className="h-8 gap-2 border-slate-300 bg-white/90 text-slate-900 hover:bg-white"
+                    className="h-8 gap-2 border-slate-400 bg-white text-slate-900 hover:bg-white"
                     onClick={(event) => {
                       event.stopPropagation();
                       resetFilters();
@@ -286,7 +288,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
               </div>
 
               {filterOpen ? (
-                <div className="border-t border-slate-300/70 px-4 pb-4 pt-3">
+                <div className="border-t border-slate-400/70 px-4 pb-4 pt-3">
                   <form
                     className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
                     onSubmit={(event) => {
@@ -302,7 +304,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                         type="search"
                         value={search}
                         placeholder="Nama, email, atau ID"
-                        className="border-slate-300 bg-white shadow-xs focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                        className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                         onChange={(event) => {
                           setSearch(event.target.value);
                           setPage(1);
@@ -560,7 +562,11 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
           if (!open) setActiveAction(null);
         }}
       >
-        <SheetContent side="right" showCloseButton={false} className="w-[92vw] p-0 sm:max-w-md">
+        <SheetContent
+          side="right"
+          showCloseButton={false}
+          className="w-[80vw] p-0 sm:max-w-md [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]"
+        >
           <ActionPanelContent
             key={activeAction === "detail" ? `detail-${String(selectedUser?.uid ?? "")}` : activeAction ?? "none"}
             action={activeAction}
@@ -596,7 +602,7 @@ function SelectField({ label, value, options, onChange }: SelectFieldProps) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
+        className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
       >
         <option value="">Semua</option>
         {options.map((opt) => (
@@ -666,8 +672,8 @@ type CreateUserPanelProps = {
 function CreateUserPanel({ roleParam, onClose, onCreated }: CreateUserPanelProps) {
   const normalizedRoleParam = (() => {
     if (!roleParam) return "";
-    const upperRole = roleParam.toUpperCase();
-    return (ROLE_FILTER_OPTIONS as readonly string[]).includes(upperRole) ? upperRole : "";
+    const normalizedRole = normalizeRoleValue(roleParam);
+    return (ROLE_FILTER_OPTIONS as readonly string[]).includes(normalizedRole) ? normalizedRole : "";
   })();
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -704,7 +710,7 @@ function CreateUserPanel({ roleParam, onClose, onCreated }: CreateUserPanelProps
     };
 
     if (formData.role) payload.role = formData.role;
-    if (formData.role === "STUDENT") {
+    if (formData.role === ROLE_VALUES.STUDENT) {
       if (formData.department) payload.department = formData.department;
       if (formData.batch) payload.batch = formData.batch;
       if (formData.idNumber) payload.id_number = formData.idNumber;
@@ -785,7 +791,7 @@ function CreateUserPanel({ roleParam, onClose, onCreated }: CreateUserPanelProps
           </select>
         </div>
 
-        {formData.role === "STUDENT" ? (
+        {formData.role === ROLE_VALUES.STUDENT ? (
           <>
             <div className="space-y-1">
               <label className="text-xs font-medium">ID Number</label>
@@ -853,7 +859,7 @@ type BulkCreatePanelProps = {
 };
 
 function BulkCreatePanel({ roleParam, onClose, onCompleted }: BulkCreatePanelProps) {
-  const normalizedRoleParam = roleParam ? roleParam.toUpperCase() : "";
+  const normalizedRoleParam = normalizeRoleValue(roleParam);
   const hasRoleScope = Boolean(normalizedRoleParam);
   const [previewRows, setPreviewRows] = useState<BulkRow[]>([]);
   const [fileName, setFileName] = useState("");
@@ -902,7 +908,7 @@ function BulkCreatePanel({ roleParam, onClose, onCompleted }: BulkCreatePanelPro
           const full_name = String(row[headerIndexes.full_name ?? -1] || "").trim();
           const email = String(row[headerIndexes.email ?? -1] || "").trim();
           const password = String(row[headerIndexes.password ?? -1] || "").trim();
-          const role = String(row[headerIndexes.role ?? -1] || "").trim();
+          const role = normalizeRoleValue(String(row[headerIndexes.role ?? -1] || "").trim());
           if (!full_name && !email && !password && !role) return null;
           return {
             index: index + 2,
@@ -1054,7 +1060,7 @@ function DetailUserPanel({
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState({
     full_name: selectedUser?.name || "",
-    role: selectedUser?.role || "",
+    role: normalizeRoleValue(selectedUser?.role || ""),
     department: selectedUser?.department === "-" ? "" : selectedUser?.department || "",
     batch: selectedUser?.batch === "-" ? "" : selectedUser?.batch || "",
     id_number: selectedUser?.idNumber === "-" ? "" : selectedUser?.idNumber || "",
@@ -1063,6 +1069,18 @@ function DetailUserPanel({
   const { updateUserProfile, isSubmitting, message } = useUpdateUserProfile();
   const { deleteUser, isDeleting } = useDeleteUser();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    if (!selectedUser) return;
+    setForm({
+      full_name: selectedUser.name || "",
+      role: normalizeRoleValue(selectedUser.role || ""),
+      department: selectedUser.department === "-" ? "" : selectedUser.department || "",
+      batch: selectedUser.batch === "-" ? "" : selectedUser.batch || "",
+      id_number: selectedUser.idNumber === "-" ? "" : selectedUser.idNumber || "",
+      user_type: selectedUser.userType === "-" ? "" : selectedUser.userType || "",
+    });
+  }, [selectedUser]);
 
   if (!selectedUser) {
     return (
@@ -1091,7 +1109,7 @@ function DetailUserPanel({
       const nextUser: UserRow = {
         ...selectedUser,
         name: String(updated.full_name || form.full_name || selectedUser.name),
-        role: String(updated.role || form.role || "-"),
+        role: normalizeRoleValue(String(updated.role || form.role || "")) || "-",
         department: String(updated.department || form.department || "-"),
         batch: String(updated.batch || form.batch || "-"),
         idNumber: String(updated.id_number || form.id_number || "-"),

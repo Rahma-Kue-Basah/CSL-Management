@@ -4,7 +4,7 @@ import UserManagementPage from "@/components/admin/user-management/user-manageme
 export default function UserManagementAdminPage() {
   return (
     <Suspense fallback={null}>
-      <UserManagementPage forcedRole="ADMIN" />
+      <UserManagementPage forcedRole="Admin" />
     </Suspense>
   );
 }

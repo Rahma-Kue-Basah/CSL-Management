@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { API_AUTH_USERS } from "@/constants/api";
+import { normalizeRoleValue } from "@/constants/roles";
 import { authFetch } from "@/lib/auth";
 
 export type UserFilters = {
@@ -64,7 +65,7 @@ function mapUser(item: ApiUser): UserRow {
     profileId: profile.id ?? null,
     name: String(name),
     email: String(email),
-    role: String(profile.role ?? "-"),
+    role: normalizeRoleValue(profile.role) || "-",
     userType: String(profile.user_type ?? "-"),
     batch: String(profile.batch ?? "-"),
     department: String(profile.department ?? "-"),

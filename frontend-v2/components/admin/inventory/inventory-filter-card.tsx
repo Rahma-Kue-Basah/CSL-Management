@@ -18,7 +18,7 @@ export function InventoryFilterCard({
   children,
 }: InventoryFilterCardProps) {
   return (
-    <div className="w-full min-w-0 rounded border border-slate-300/70 bg-slate-100 shadow-xs">
+    <div className="w-full min-w-0 rounded border-2 border-slate-400/80 bg-slate-50 shadow-xs">
       <div
         className="flex cursor-pointer items-center justify-between px-4 py-3"
         onClick={onToggle}
@@ -42,7 +42,7 @@ export function InventoryFilterCard({
             type="button"
             variant="outline"
             size="sm"
-            className="h-8 gap-2 border-slate-300 bg-white/90 text-slate-900 hover:bg-white"
+            className="h-8 gap-2 border-slate-400 bg-white text-slate-900 hover:bg-white"
             onClick={(event) => {
               event.stopPropagation();
               onReset();
@@ -54,7 +54,7 @@ export function InventoryFilterCard({
         ) : null}
       </div>
 
-      {open ? <div className="border-t border-slate-300/70 px-4 pb-4 pt-3">{children}</div> : null}
+      {open ? <div className="border-t border-slate-400/70 px-4 pb-4 pt-3">{children}</div> : null}
     </div>
   );
 }

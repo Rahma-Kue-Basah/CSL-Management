@@ -31,7 +31,7 @@ export default function AdminLayout({
       .join(" ");
 
   return (
-    <div className="min-h-svh overflow-x-hidden bg-background text-foreground">
+    <div className="min-h-svh overflow-x-hidden bg-background text-foreground [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6] [--sidebar-primary:#0048B4] [--sidebar-primary-foreground:#FFFFFF] [--sidebar-ring:#3B82F6]">
       <SidebarProvider>
         <AppSidebar />
         <main className="flex min-w-0 -ml-1 flex-1 flex-col overflow-x-hidden">

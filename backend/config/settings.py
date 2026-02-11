@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.forms',
 
     'django.contrib.sites',
 
@@ -174,6 +175,8 @@ if DEBUG:
     SESSION_COOKIE_DOMAIN = None
     SESSION_COOKIE_SECURE = False
     SESSION_COOKIE_SAMESITE = "Lax"
+    CSRF_COOKIE_DOMAIN = None
+    CSRF_COOKIE_SECURE = False
     CSRF_COOKIE_SAMESITE = "Lax"
 
 CORS_ALLOWED_ORIGINS = [

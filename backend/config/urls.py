@@ -16,9 +16,12 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import include, path
+from django.views.generic import RedirectView
 from drf_spectacular.views import SpectacularSwaggerView, SpectacularAPIView
 
 urlpatterns = [
+    # path('', RedirectView.as_view(url='/admin-csl/', permanent=False), name='root-redirect'),
+    # path('admin/', RedirectView.as_view(url='/admin-csl/', permanent=False), name='admin-redirect'),
     path('admin-csl/', admin.site.urls),
     path('api/auth/', include('csluse_auth.urls')),
     path('api/admin/', include('csluse_auth.admin_urls')),

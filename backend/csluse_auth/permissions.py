@@ -2,6 +2,7 @@
 Role definitions and permission classes for user roles.
 
 Roles:
+- GUEST: Guest role
 - STUDENT: Student role
 - LECTURER: Lecturer role
 - ADMINISTRATOR: Administrator role
@@ -61,7 +62,9 @@ LECTURER = 'Lecturer'
 ADMINISTRATOR = 'Administrator'
 SUPER_ADMINISTRATOR = 'SuperAdministrator'
 STAFF = 'Staff'
-OTHER = 'Other'
+GUEST = 'Guest'
+# Backward compatibility alias.
+OTHER = GUEST
 
 # All roles list
 ALL_ROLES = [
@@ -70,7 +73,7 @@ ALL_ROLES = [
     ADMINISTRATOR,
     SUPER_ADMINISTRATOR,
     STAFF,
-    OTHER,
+    GUEST,
 ]
 
 
@@ -91,7 +94,7 @@ def get_user_role(user):
     user_groups = user.groups.values_list('name', flat=True)
     
     # Check in order of hierarchy (lowest to highest)
-    for role in [OTHER, STUDENT, LECTURER, STAFF, ADMINISTRATOR, SUPER_ADMINISTRATOR]:
+    for role in [GUEST, STUDENT, LECTURER, STAFF, ADMINISTRATOR, SUPER_ADMINISTRATOR]:
         if role in user_groups:
             return role
     
@@ -140,9 +143,14 @@ def is_staff_role(user):
     return has_role(user, STAFF)
 
 
+def is_guest_role(user):
+    """Check if user is Guest."""
+    return has_role(user, GUEST)
+
+
 def is_other_role(user):
-    """Check if user is Other."""
-    return has_role(user, OTHER)
+    """Backward compatible alias for Guest role checks."""
+    return is_guest_role(user)
 
 
 def assign_role(user, role):
@@ -171,11 +179,15 @@ def assign_role(user, role):
 
 # Permission Classes for Django REST Framework
 
-class IsOther(permissions.BasePermission):
-    """Permission class to check if user is Other."""
+class IsGuest(permissions.BasePermission):
+    """Permission class to check if user is Guest."""
 
     def has_permission(self, request, view):
-        return is_other_role(request.user)
+        return is_guest_role(request.user)
+
+
+class IsOther(IsGuest):
+    """Backward compatible alias for Guest role permission."""
 
 class IsStudent(permissions.BasePermission):
     """

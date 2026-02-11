@@ -1,11 +1,11 @@
 const ROLE_VALUES = {
-  STUDENT: "STUDENT",
-  LECTURER: "LECTURER",
-  ADMIN: "ADMIN",
-  STAFF: "STAFF",
-  OTHER: "OTHER",
-  SUPER_ADMINISTRATOR: "SUPER_ADMINISTRATOR",
-  SUPERADMINISTRATOR: "SUPERADMINISTRATOR",
+  STUDENT: "Student",
+  LECTURER: "Lecturer",
+  ADMIN: "Admin",
+  STAFF: "Staff",
+  GUEST: "Guest",
+  SUPER_ADMINISTRATOR: "SuperAdministrator",
+  SUPERADMINISTRATOR: "SuperAdministrator",
 } as const;
 
 const ROLE_LABELS = {
@@ -13,7 +13,7 @@ const ROLE_LABELS = {
   [ROLE_VALUES.LECTURER]: "Lecturer",
   [ROLE_VALUES.ADMIN]: "Admin",
   [ROLE_VALUES.STAFF]: "Staff",
-  [ROLE_VALUES.OTHER]: "Other",
+  [ROLE_VALUES.GUEST]: "Guest",
 } as const;
 
 const ROLE_OPTIONS = [
@@ -22,7 +22,7 @@ const ROLE_OPTIONS = [
   { value: ROLE_VALUES.LECTURER, label: ROLE_LABELS[ROLE_VALUES.LECTURER] },
   { value: ROLE_VALUES.ADMIN, label: ROLE_LABELS[ROLE_VALUES.ADMIN] },
   { value: ROLE_VALUES.STAFF, label: ROLE_LABELS[ROLE_VALUES.STAFF] },
-  { value: ROLE_VALUES.OTHER, label: ROLE_LABELS[ROLE_VALUES.OTHER] },
+  { value: ROLE_VALUES.GUEST, label: ROLE_LABELS[ROLE_VALUES.GUEST] },
 ];
 
 const ROLE_FILTER_OPTIONS = [
@@ -30,12 +30,30 @@ const ROLE_FILTER_OPTIONS = [
   ROLE_VALUES.LECTURER,
   ROLE_VALUES.ADMIN,
   ROLE_VALUES.STAFF,
-  ROLE_VALUES.OTHER,
+  ROLE_VALUES.GUEST,
 ];
 
+const ROLE_NORMALIZATION_MAP: Record<string, string> = {
+  STUDENT: ROLE_VALUES.STUDENT,
+  LECTURER: ROLE_VALUES.LECTURER,
+  ADMIN: ROLE_VALUES.ADMIN,
+  STAFF: ROLE_VALUES.STAFF,
+  GUEST: ROLE_VALUES.GUEST,
+  OTHER: ROLE_VALUES.GUEST,
+  SUPERADMINISTRATOR: ROLE_VALUES.SUPER_ADMINISTRATOR,
+  SUPER_ADMINISTRATOR: ROLE_VALUES.SUPER_ADMINISTRATOR,
+};
+
+function normalizeRoleValue(role?: string | null): string {
+  if (!role) return "";
+  const normalized = ROLE_NORMALIZATION_MAP[String(role).trim().toUpperCase()];
+  if (normalized) return normalized;
+  return String(role).trim();
+}
+
 function isPrivilegedRole(role?: string | null): boolean {
-  if (!role) return false;
-  const normalized = role.toUpperCase();
+  const normalized = normalizeRoleValue(role);
+  if (!normalized) return false;
   return (
     normalized === ROLE_VALUES.ADMIN ||
     normalized === ROLE_VALUES.SUPER_ADMINISTRATOR ||
@@ -43,5 +61,11 @@ function isPrivilegedRole(role?: string | null): boolean {
   );
 }
 
-export { ROLE_VALUES, ROLE_LABELS, ROLE_OPTIONS, ROLE_FILTER_OPTIONS, isPrivilegedRole };
-
+export {
+  ROLE_VALUES,
+  ROLE_LABELS,
+  ROLE_OPTIONS,
+  ROLE_FILTER_OPTIONS,
+  normalizeRoleValue,
+  isPrivilegedRole,
+};
