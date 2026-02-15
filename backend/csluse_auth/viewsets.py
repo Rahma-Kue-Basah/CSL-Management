@@ -100,9 +100,10 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
     def destroy(self, request, *args, **kwargs):
         target = self.get_object()
 
-        if has_role(target, SUPER_ADMINISTRATOR) and not has_role(
-            request.user, SUPER_ADMINISTRATOR
-        ):
+        is_target_super_admin = has_role(target, SUPER_ADMINISTRATOR) or getattr(
+            target, "is_superuser", False
+        )
+        if is_target_super_admin:
             raise PermissionDenied("Tidak bisa menghapus SuperAdministrator.")
 
         log_admin_action(
