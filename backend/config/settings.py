@@ -181,6 +181,7 @@ if DEBUG:
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
+    'http://localhost:5173',
     'https://csluse-stg.azizrahmad.com',
     'https://csluse-api.azizrahmad.com',
     'https://csl-management.azizrahmad.com',

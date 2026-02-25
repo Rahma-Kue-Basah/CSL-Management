@@ -1,0 +1,21 @@
+import { http } from "@/services/api/http";
+
+export type LoginPayload = {
+  username: string;
+  password: string;
+};
+
+export const authService = {
+  login(payload: LoginPayload) {
+    return http.post("/api/auth/login/", payload);
+  },
+  logout() {
+    return http.get("/api/auth/logout/");
+  },
+  profile() {
+    return http.get("/api/auth/user/profile/");
+  },
+  refresh(payload?: { refresh?: string }) {
+    return http.post("/api/auth/token/refresh/", payload ?? {});
+  },
+};
