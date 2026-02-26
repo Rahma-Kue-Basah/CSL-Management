@@ -15,6 +15,7 @@ django-storages==1.14.6
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
 drf-spectacular==0.29.0
+gunicorn==22.0.0
 idna==3.11
 inflection==0.5.1
 jmespath==1.0.1

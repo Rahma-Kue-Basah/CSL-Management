@@ -31,9 +31,7 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = [
     "localhost",
-    'csluse-stg.azizrahmad.com',
-    'csl-management.azizrahmad.com',
-    'csluse-api.azizrahmad.com',
+    'csl.azizrahmad.com',
     "3.27.77.155",
     "127.0.0.1",
 ]
@@ -182,9 +180,7 @@ if DEBUG:
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',
     'http://localhost:5173',
-    'https://csluse-stg.azizrahmad.com',
-    'https://csluse-api.azizrahmad.com',
-    'https://csl-management.azizrahmad.com',
+    'https://csl.azizrahmad.com',
 ]   
 
 CORS_ALLOW_CREDENTIALS = True
@@ -203,12 +199,16 @@ CORS_ALLOW_HEADERS = [
 
 # CSRF Configuration
 CSRF_TRUSTED_ORIGINS = [
-    'https://csluse-stg.azizrahmad.com',
-    'https://csluse-api.azizrahmad.com',
-    'https://csl-management.azizrahmad.com',
+    'https://csl.azizrahmad.com',
     'http://localhost:3000',
     'http://127.0.0.1:3000',
 ]
+
+# Proxy/SSL settings (enable in production via env)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'False') == 'True'
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'False') == 'True'
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'False') == 'True'
 
 
 # Django Sites Framework

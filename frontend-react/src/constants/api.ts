@@ -1,10 +1,10 @@
 const API_BASE_URL: string = (
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000"
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8000/api"
 ).replace(/\/+$/, "");
 
 // REGION: Auth API Endpoints
-const API_AUTH_BASE = `${API_BASE_URL}/api/auth`;
-const API_ADMIN_BASE = `${API_BASE_URL}/api/admin`;
+const API_AUTH_BASE = `${API_BASE_URL}/auth`;
+const API_ADMIN_BASE = `${API_BASE_URL}/admin`;
 
 const API_AUTH_LOGIN = `${API_AUTH_BASE}/login/`;
 const API_AUTH_LOGOUT = `${API_AUTH_BASE}/logout/`;
@@ -39,7 +39,7 @@ const API_AUTH_ADMIN_DASHBOARD = `${API_ADMIN_BASE}/dashboard/`;
 const API_AUTH_ADMIN_DASHBOARD_KPIS = `${API_AUTH_ADMIN_DASHBOARD}kpis/`;
 
 // REGION: Bookings API Endpoints
-const API_BOOKINGS = `${API_BASE_URL}/api/bookings/`;
+const API_BOOKINGS = `${API_BASE_URL}/bookings/`;
 const API_BOOKING_DETAIL = (id: string | number) => `${API_BOOKINGS}${id}/`;
 const API_BOOKING_APPROVE = (id: string | number) =>
   `${API_BOOKINGS}${id}/approve/`;
@@ -50,7 +50,7 @@ const API_BOOKING_COMPLETE = (id: string | number) =>
 const API_BOOKINGS_BY_MONTH = `${API_BOOKINGS}by-month/`;
 
 // REGION: Borrows API Endpoints
-const API_BORROWS = `${API_BASE_URL}/api/borrows/`;
+const API_BORROWS = `${API_BASE_URL}/borrows/`;
 const API_BORROW_DETAIL = (id: string | number) => `${API_BORROWS}${id}/`;
 const API_BORROW_APPROVE = (id: string | number) =>
   `${API_BORROWS}${id}/approve/`;
@@ -61,16 +61,16 @@ const API_BORROW_RETURN = (id: string | number) =>
 const API_BORROWS_BY_MONTH = `${API_BORROWS}by-month/`;
 
 // REGION: Equipments API Endpoints
-const API_EQUIPMENTS = `${API_BASE_URL}/api/equipments/`;
+const API_EQUIPMENTS = `${API_BASE_URL}/equipments/`;
 const API_EQUIPMENT_DETAIL = (id: string | number) =>
   `${API_EQUIPMENTS}${id}/`;
 
 // REGION: Images API Endpoints
-const API_IMAGES = `${API_BASE_URL}/api/images/`;
+const API_IMAGES = `${API_BASE_URL}/images/`;
 const API_IMAGE_DETAIL = (id: string | number) => `${API_IMAGES}${id}/`;
 
 // REGION: Rooms API Endpoints
-const API_ROOMS = `${API_BASE_URL}/api/rooms/`;
+const API_ROOMS = `${API_BASE_URL}/rooms/`;
 const API_ROOMS_DROPDOWN = `${API_ROOMS}dropdown/`;
 const API_ROOM_DETAIL = (id: string | number) => `${API_ROOMS}${id}/`;
 const API_ROOM_AVAILABILITY = (id: string | number) =>

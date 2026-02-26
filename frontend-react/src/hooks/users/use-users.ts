@@ -102,7 +102,7 @@ export function useUsers(
       setError("");
 
       try {
-        const url = new URL(API_AUTH_USERS);
+        const url = new URL(API_AUTH_USERS, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.department) url.searchParams.set("department", filters.department);

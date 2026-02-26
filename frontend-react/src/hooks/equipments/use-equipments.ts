@@ -66,7 +66,7 @@ export function useEquipments(page: number, pageSize = 10, filters: EquipmentFil
       setIsLoading(true);
       setError("");
       try {
-        const url = new URL(API_EQUIPMENTS);
+        const url = new URL(API_EQUIPMENTS, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);

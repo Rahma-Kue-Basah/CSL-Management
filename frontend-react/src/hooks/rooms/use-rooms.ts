@@ -66,7 +66,7 @@ export function useRooms(page: number, pageSize = 10, filters: RoomFilters = {},
       setIsLoading(true);
       setError("");
       try {
-        const url = new URL(API_ROOMS);
+        const url = new URL(API_ROOMS, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.floor) url.searchParams.set("floor", filters.floor);
