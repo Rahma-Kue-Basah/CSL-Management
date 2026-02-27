@@ -3,7 +3,7 @@ from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .models import Image, Booking, Borrow, Room
+from .models import Image, Booking, Borrow, Room, Pengujian
 
 
 @receiver(post_delete, sender=Image)
@@ -108,3 +108,19 @@ def validate_room(sender, instance, **kwargs):
         raise ValidationError(
             "PIC harus user dengan role Staff, Lecturer, atau Admin."
         )
+
+
+@receiver(pre_save, sender=Pengujian)
+def validate_pengujians(sender, instance, **kwargs):
+    """
+    Pengujian rules:
+    - Only editable while pending and not approved.
+    - approved_by must be Admin (when set).
+    """
+    if instance.status != 'pending' or instance.approved_by is not None:
+        raise ValidationError("Cannot modify a pengujian that is not pending.")
+
+    if instance.approved_by_id:
+        approver_role = str(instance.approved_by.role or "").upper()
+        if approver_role not in {"ADMIN", "STAFF"}:
+            raise ValidationError("Approver harus Admin atau Staff.")

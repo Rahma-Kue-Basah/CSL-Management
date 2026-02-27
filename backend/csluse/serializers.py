@@ -2,7 +2,19 @@ from rest_framework import serializers
 
 from typing import Optional
 
-from .models import Image, Room, Equipment, Booking, Borrow
+from .models import (
+    Image,
+    Room,
+    Equipment,
+    Booking,
+    Borrow,
+    LabProfile,
+    Facility,
+    Announcement,
+    StructureOrganization,
+    Pengujian,
+    Use,
+)
 from csluse_auth.serializers import ProfileSerializer, RoomPicDetailSerializer
 
 class ImageSerializer(serializers.ModelSerializer):
@@ -98,5 +110,96 @@ class BorrowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Borrow
+        fields = '__all__'
+        read_only_fields = ['requested_by', 'code']
+
+
+class LabProfileSerializer(serializers.ModelSerializer):
+    images_detail = ImageSerializer(source="images", many=True, read_only=True)
+
+    class Meta:
+        model = LabProfile
+        fields = [
+            "id",
+            "title",
+            "description",
+            "images",
+            "images_detail",
+        ]
+
+
+class FacilitySerializer(serializers.ModelSerializer):
+    image_detail = ImageSerializer(source="image", read_only=True)
+
+    class Meta:
+        model = Facility
+        fields = [
+            "id",
+            "name",
+            "description",
+            "image",
+            "image_detail",
+        ]
+
+
+class AnnouncementSerializer(serializers.ModelSerializer):
+    image_detail = ImageSerializer(source="image", read_only=True)
+    created_by_detail = ProfileSerializer(source="created_by", read_only=True)
+
+    class Meta:
+        model = Announcement
+        fields = [
+            "id",
+            "title",
+            "content",
+            "image",
+            "image_detail",
+            "created_by",
+            "created_by_detail",
+            "created_at",
+        ]
+
+
+class StructureOrganizationSimpleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StructureOrganization
+        fields = [
+            "id",
+            "title",
+            "name",
+        ]
+
+
+class StructureOrganizationSerializer(serializers.ModelSerializer):
+    parent_detail = StructureOrganizationSimpleSerializer(source="parent", read_only=True)
+
+    class Meta:
+        model = StructureOrganization
+        fields = [
+            "id",
+            "title",
+            "name",
+            "parent",
+            "parent_detail",
+        ]
+
+
+class PengujianSerializer(serializers.ModelSerializer):
+    requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
+    approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
+
+    class Meta:
+        model = Pengujian
+        fields = '__all__'
+        read_only_fields = ['requested_by', 'code']
+
+
+class UseSerializer(serializers.ModelSerializer):
+    requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
+    approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
+    equipment_detail = EquipmentSerializer(source="equipment", read_only=True)
+
+    class Meta:
+        model = Use
         fields = '__all__'
         read_only_fields = ['requested_by', 'code']

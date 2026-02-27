@@ -14,6 +14,7 @@ import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import AdminHomePage from "@/pages/admin/AdminHomePage";
 import AdminJadwalPage from "@/pages/admin/AdminJadwalPage";
+import AdminPengumumanPage from "@/pages/admin/AdminPengumumanPage";
 import AdminPeralatanPage from "@/pages/admin/AdminPeralatanPage";
 import AdminRuanganPage from "@/pages/admin/AdminRuanganPage";
 import AdminMyProfilePage from "@/pages/admin/AdminMyProfilePage";
@@ -71,6 +72,7 @@ export const router = createBrowserRouter([
       { path: "home", element: <AdminHomePage /> },
       { path: "informasi", element: <Navigate to="/admin/informasi/jadwal" replace /> },
       { path: "informasi/jadwal", element: <AdminJadwalPage /> },
+      { path: "informasi/pengumuman", element: <AdminPengumumanPage /> },
       { path: "inventarisasi", element: <Navigate to="/admin/inventarisasi/peralatan" replace /> },
       { path: "inventarisasi/peralatan", element: <AdminPeralatanPage /> },
       { path: "inventarisasi/ruangan", element: <AdminRuanganPage /> },

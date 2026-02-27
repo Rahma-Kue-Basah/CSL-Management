@@ -75,6 +75,7 @@ const API_ROOMS_DROPDOWN = `${API_ROOMS}dropdown/`;
 const API_ROOM_DETAIL = (id: string | number) => `${API_ROOMS}${id}/`;
 const API_ROOM_AVAILABILITY = (id: string | number) =>
   `${API_ROOMS}${id}/availability/`;
+const API_ANNOUNCEMENTS = `${API_BASE_URL}/announcements/`;
 
 export {
   API_BASE_URL,
@@ -125,4 +126,5 @@ export {
   API_ROOMS_DROPDOWN,
   API_ROOM_DETAIL,
   API_ROOM_AVAILABILITY,
+  API_ANNOUNCEMENTS,
 };

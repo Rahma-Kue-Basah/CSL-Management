@@ -13,7 +13,19 @@ from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
-from .models import Image, Room, Equipment, Booking, Borrow
+from .models import (
+    Image,
+    Room,
+    Equipment,
+    Booking,
+    Borrow,
+    LabProfile,
+    Facility,
+    Announcement,
+    StructureOrganization,
+    Pengujian,
+    Use,
+)
 from .serializers import (
     ImageSerializer,
     RoomSerializer,
@@ -21,6 +33,12 @@ from .serializers import (
     EquipmentSerializer,
     BookingSerializer,
     BorrowSerializer,
+    LabProfileSerializer,
+    FacilitySerializer,
+    AnnouncementSerializer,
+    StructureOrganizationSerializer,
+    PengujianSerializer,
+    UseSerializer,
 )
 from csluse_auth.audit import log_admin_action
 from csluse_auth.permissions import IsStaffOrAbove
@@ -591,4 +609,251 @@ class BorrowViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
+        return Response(serializer.data)
+
+
+class LabProfileViewSet(viewsets.ModelViewSet):
+    queryset = LabProfile.objects.prefetch_related('images').order_by('-created_at')
+    serializer_class = LabProfileSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        return super().get_permissions()
+
+
+class FacilityViewSet(viewsets.ModelViewSet):
+    queryset = Facility.objects.select_related('image').order_by('-created_at')
+    serializer_class = FacilitySerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        return super().get_permissions()
+
+
+class AnnouncementViewSet(viewsets.ModelViewSet):
+    queryset = Announcement.objects.select_related('image', 'created_by').order_by('-created_at')
+    serializer_class = AnnouncementSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        return super().get_permissions()
+
+    def perform_create(self, serializer):
+        instance = serializer.save(created_by=getattr(self.request.user, 'profile', None))
+        log_admin_action(
+            self.request.user,
+            instance,
+            ADDITION,
+            "Created announcement via CSL Admin.",
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            CHANGE,
+            "Updated announcement via CSL Admin.",
+        )
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted announcement via CSL Admin.",
+        )
+        super().perform_destroy(instance)
+
+
+class StructureOrganizationViewSet(viewsets.ModelViewSet):
+    queryset = StructureOrganization.objects.select_related('parent').order_by('-created_at')
+    serializer_class = StructureOrganizationSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        return super().get_permissions()
+
+
+class PengujianViewSet(viewsets.ModelViewSet):
+    queryset = Pengujian.objects.select_related('requested_by', 'approved_by').order_by('-created_at')
+    serializer_class = PengujianSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("requested_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("approved_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get('status')
+        requested_by = self.request.query_params.get('requested_by')
+        approved_by = self.request.query_params.get('approved_by')
+
+        if status_param:
+            qs = qs.filter(status=status_param)
+        if requested_by:
+            qs = qs.filter(requested_by_id=requested_by)
+        if approved_by:
+            qs = qs.filter(approved_by_id=approved_by)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(requested_by=getattr(self.request.user, 'profile', None))
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance,
+            data={'status': 'approved', **request.data},
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance,
+            data={'status': 'rejected', **request.data},
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def complete(self, request, pk=None):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance,
+            data={'status': 'completed', **request.data},
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+
+class UseViewSet(viewsets.ModelViewSet):
+    queryset = (
+        Use.objects
+        .select_related(
+            'equipment',
+            'equipment__room',
+            'equipment__room__pic',
+            'equipment__room__image',
+            'equipment__image',
+            'requested_by',
+            'approved_by',
+        )
+        .order_by('-created_at')
+    )
+    serializer_class = UseSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("equipment", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("requested_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("approved_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("start_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("end_before", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("created_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("created_before", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        status_param = self.request.query_params.get('status')
+        equipment_id = self.request.query_params.get('equipment')
+        requester_id = self.request.query_params.get('requested_by')
+        approved_by = self.request.query_params.get('approved_by')
+        start_after = self.request.query_params.get('start_after')
+        end_before = self.request.query_params.get('end_before')
+        created_after = self.request.query_params.get('created_after')
+        created_before = self.request.query_params.get('created_before')
+
+        if status_param:
+            qs = qs.filter(status=status_param)
+        if equipment_id:
+            qs = qs.filter(equipment_id=equipment_id)
+        if requester_id:
+            qs = qs.filter(requested_by_id=requester_id)
+        if approved_by:
+            qs = qs.filter(approved_by_id=approved_by)
+        if start_after:
+            qs = qs.filter(start_time__gte=start_after)
+        if end_before:
+            qs = qs.filter(end_time__lte=end_before)
+        if created_after:
+            qs = qs.filter(created_at__gte=created_after)
+        if created_before:
+            qs = qs.filter(created_at__lte=created_before)
+        return qs
+
+    def perform_create(self, serializer):
+        serializer.save(requested_by=getattr(self.request.user, 'profile', None))
+
+    @action(detail=True, methods=['post'])
+    def approve(self, request, pk=None):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance,
+            data={'status': 'approved', **request.data},
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def reject(self, request, pk=None):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance,
+            data={'status': 'rejected', **request.data},
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def complete(self, request, pk=None):
+        instance = self.get_object()
+        serializer = self.get_serializer(
+            instance,
+            data={'status': 'completed', **request.data},
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data)

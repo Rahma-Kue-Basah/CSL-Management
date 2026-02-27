@@ -9,6 +9,12 @@ router.register(r'rooms', views.RoomViewSet, basename='rooms')
 router.register(r'equipments', views.EquipmentViewSet, basename='equipments')
 router.register(r'bookings', views.BookingViewSet, basename='bookings')
 router.register(r'borrows', views.BorrowViewSet, basename='borrows')
+router.register(r'lab-profiles', views.LabProfileViewSet, basename='lab-profiles')
+router.register(r'facilities', views.FacilityViewSet, basename='facilities')
+router.register(r'announcements', views.AnnouncementViewSet, basename='announcements')
+router.register(r'structure-organizations', views.StructureOrganizationViewSet, basename='structure-organizations')
+router.register(r'pengujians', views.PengujianViewSet, basename='pengujians')
+router.register(r'uses', views.UseViewSet, basename='uses')
 
 urlpatterns = [
     path('', include(router.urls)),
