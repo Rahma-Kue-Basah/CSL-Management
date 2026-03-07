@@ -1,17 +1,23 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import {
   Image as ImageIcon,
   Megaphone,
   Pencil,
   Plus,
+  RotateCcw,
   Search,
   Trash2,
   User2,
 } from "lucide-react";
+import { DatePicker } from "rsuite";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import {
+  AnnouncementCreateDialog,
+  AnnouncementEditDialog,
+} from "@/components/admin/pengumuman/announcement-dialogs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,18 +29,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { API_BASE_URL } from "@/constants/api";
 import {
   useAnnouncements,
@@ -51,13 +47,16 @@ function resolveImageUrl(value?: string | null) {
   return `${API_BASE_URL}/${value}`;
 }
 
-function truncateText(value: string, length = 180) {
-  if (value.length <= length) return value;
-  return `${value.slice(0, length).trim()}...`;
-}
-
 function normalizeText(value: string) {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function stripHtmlTags(value: string) {
+  return value
+    .replace(/<[^>]*>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function formatTime(value?: string | null) {
@@ -65,6 +64,20 @@ function formatTime(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(date);
+}
+
+function formatDateTime(value?: string | null) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -98,6 +111,19 @@ function formatDateLabel(value?: string | null) {
   }).format(date);
 }
 
+function formatDateKeyFromDate(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function parseDateKey(value: string) {
+  const [year, month, day] = value.split("-").map((part) => Number(part));
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day);
+}
+
 const FALLBACK_TONES = [
   "from-emerald-200 via-emerald-100 to-emerald-50",
   "from-sky-200 via-sky-100 to-sky-50",
@@ -118,6 +144,7 @@ function getFallbackTone(value: string | number) {
 
 export default function AdminPengumumanPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
   const {
     announcements,
     setAnnouncements,
@@ -172,13 +199,6 @@ export default function AdminPengumumanPage() {
     setEditError("");
   };
 
-  const handleFormChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handleCreateAnnouncement = async (
     event: FormEvent<HTMLFormElement>,
   ) => {
@@ -187,13 +207,14 @@ export default function AdminPengumumanPage() {
 
     const title = formData.title.trim();
     const content = formData.content.trim();
+    const plainContent = stripHtmlTags(content);
 
     if (!title) {
       setFormError("Judul wajib diisi.");
       return;
     }
 
-    if (!content) {
+    if (!plainContent) {
       setFormError("Isi pengumuman wajib diisi.");
       return;
     }
@@ -221,13 +242,6 @@ export default function AdminPengumumanPage() {
     }
   };
 
-  const handleEditChange = (
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = event.target;
-    setEditForm((prev) => ({ ...prev, [name]: value }));
-  };
-
   const handleEditSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!editTarget) return;
@@ -235,13 +249,14 @@ export default function AdminPengumumanPage() {
 
     const title = editForm.title.trim();
     const content = editForm.content.trim();
+    const plainContent = stripHtmlTags(content);
 
     if (!title) {
       setEditError("Judul wajib diisi.");
       return;
     }
 
-    if (!content) {
+    if (!plainContent) {
       setEditError("Isi pengumuman wajib diisi.");
       return;
     }
@@ -301,18 +316,25 @@ export default function AdminPengumumanPage() {
 
   const filteredAnnouncements = useMemo(() => {
     const query = normalizeText(searchQuery);
-    if (!query) return announcements;
     return announcements.filter((announcement) => {
+      if (dateFilter && getDateKey(announcement.created_at) !== dateFilter) {
+        return false;
+      }
+      if (!query) return true;
       const title = normalizeText(announcement.title || "");
-      const content = normalizeText(announcement.content || "");
+      const content = normalizeText(stripHtmlTags(announcement.content || ""));
       return title.includes(query) || content.includes(query);
     });
-  }, [announcements, searchQuery]);
+  }, [announcements, searchQuery, dateFilter]);
 
   const groupedAnnouncements = useMemo(() => {
     const sorted = [...filteredAnnouncements].sort((first, second) => {
-      const firstDate = first.created_at ? new Date(first.created_at).getTime() : 0;
-      const secondDate = second.created_at ? new Date(second.created_at).getTime() : 0;
+      const firstDate = first.created_at
+        ? new Date(first.created_at).getTime()
+        : 0;
+      const secondDate = second.created_at
+        ? new Date(second.created_at).getTime()
+        : 0;
       return secondDate - firstDate;
     });
 
@@ -329,12 +351,6 @@ export default function AdminPengumumanPage() {
     return Array.from(map.entries());
   }, [filteredAnnouncements]);
 
-  const totalAnnouncements = announcements.length;
-  const announcementsWithImages = announcements.filter(
-    (announcement) => announcement.image_detail?.url,
-  ).length;
-  const announcementsWithoutImages = totalAnnouncements - announcementsWithImages;
-
   return (
     <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
       <AdminPageHeader
@@ -342,8 +358,21 @@ export default function AdminPengumumanPage() {
         description="Kelola informasi terbaru untuk semua pengguna CSL."
         icon={<Megaphone className="h-5 w-5 text-sky-100" />}
         actions={
-          <Dialog open={isDialogOpen} onOpenChange={handleDialogChange}>
-            <DialogTrigger asChild>
+          <AnnouncementCreateDialog
+            open={isDialogOpen}
+            onOpenChange={handleDialogChange}
+            titleValue={formData.title}
+            contentValue={formData.content}
+            onTitleChange={(value) =>
+              setFormData((prev) => ({ ...prev, title: value }))
+            }
+            onContentChange={(value) =>
+              setFormData((prev) => ({ ...prev, content: value }))
+            }
+            onSubmit={handleCreateAnnouncement}
+            isSubmitting={isSubmitting}
+            error={formError}
+            trigger={
               <Button
                 type="button"
                 size="sm"
@@ -352,109 +381,31 @@ export default function AdminPengumumanPage() {
                 <Plus className="h-4 w-4" />
                 Tambah Pengumuman
               </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-xl">
-              <DialogHeader>
-                <DialogTitle>Buat Pengumuman Baru</DialogTitle>
-                <DialogDescription>
-                  Pastikan judul singkat dan isi pengumuman jelas.
-                </DialogDescription>
-              </DialogHeader>
-              <form className="space-y-4" onSubmit={handleCreateAnnouncement}>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    Judul
-                  </label>
-                  <Input
-                    name="title"
-                    value={formData.title}
-                    onChange={handleFormChange}
-                    placeholder="Contoh: Maintenance jaringan Jumat"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">
-                    Isi Pengumuman
-                  </label>
-                  <Textarea
-                    name="content"
-                    value={formData.content}
-                    onChange={handleFormChange}
-                    placeholder="Tulis detail pengumuman yang akan ditampilkan."
-                    rows={6}
-                  />
-                </div>
-                {formError ? (
-                  <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-                    {formError}
-                  </div>
-                ) : null}
-                <DialogFooter>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setIsDialogOpen(false)}
-                  >
-                    Batal
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting ? "Menyimpan..." : "Simpan Pengumuman"}
-                  </Button>
-                </DialogFooter>
-              </form>
-            </DialogContent>
-          </Dialog>
+            }
+          />
         }
       />
 
-      <Dialog open={Boolean(editTarget)} onOpenChange={(open) => (!open ? handleEditClose() : null)}>
-        <DialogContent className="max-w-xl">
-          <DialogHeader>
-            <DialogTitle>Edit Pengumuman</DialogTitle>
-            <DialogDescription>
-              Perbarui judul dan isi pengumuman yang akan tampil di halaman publik.
-            </DialogDescription>
-          </DialogHeader>
-          <form className="space-y-4" onSubmit={handleEditSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">Judul</label>
-              <Input
-                name="title"
-                value={editForm.title}
-                onChange={handleEditChange}
-                placeholder="Judul pengumuman"
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-slate-700">
-                Isi Pengumuman
-              </label>
-              <Textarea
-                name="content"
-                value={editForm.content}
-                onChange={handleEditChange}
-                placeholder="Tulis detail pengumuman"
-                rows={6}
-              />
-            </div>
-            {editError ? (
-              <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-                {editError}
-              </div>
-            ) : null}
-            <DialogFooter>
-              <Button type="button" variant="ghost" onClick={handleEditClose}>
-                Batal
-              </Button>
-              <Button type="submit" disabled={isEditing}>
-                {isEditing ? "Menyimpan..." : "Simpan Perubahan"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <AnnouncementEditDialog
+        open={Boolean(editTarget)}
+        onOpenChange={(open) => (!open ? handleEditClose() : null)}
+        titleValue={editForm.title}
+        contentValue={editForm.content}
+        onTitleChange={(value) =>
+          setEditForm((prev) => ({ ...prev, title: value }))
+        }
+        onContentChange={(value) =>
+          setEditForm((prev) => ({ ...prev, content: value }))
+        }
+        onSubmit={handleEditSubmit}
+        isSubmitting={isEditing}
+        error={editError}
+      />
 
-      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}>
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Hapus pengumuman?</AlertDialogTitle>
@@ -467,6 +418,7 @@ export default function AdminPengumumanPage() {
             <AlertDialogAction
               onClick={handleDeleteAnnouncement}
               disabled={isDeleting}
+              className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
             >
               {isDeleting ? "Menghapus..." : "Hapus"}
             </AlertDialogAction>
@@ -487,29 +439,37 @@ export default function AdminPengumumanPage() {
                 className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
               />
             </div>
-            {searchQuery ? (
+            <div className="flex items-center rounded-lg border bg-slate-50 px-2 py-1 text-sm text-slate-600">
+              {/* <label className="text-xs font-medium text-slate-500">
+                Tanggal
+              </label> */}
+              <DatePicker
+                value={dateFilter ? parseDateKey(dateFilter) : null}
+                onChange={(value) =>
+                  setDateFilter(value ? formatDateKeyFromDate(value) : "")
+                }
+                placeholder="Pilih tanggal"
+                format="dd MMM yyyy"
+                oneTap
+                cleanable
+                className="w-[280px]"
+              />
+            </div>
+            {searchQuery || dateFilter ? (
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                size="icon-sm"
                 className="text-slate-600"
-                onClick={() => setSearchQuery("")}
+                onClick={() => {
+                  setSearchQuery("");
+                  setDateFilter("");
+                }}
+                aria-label="Hapus filter"
               >
-                Hapus Filter
+                <RotateCcw className="h-4 w-4" />
               </Button>
             ) : null}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-sky-50 px-3 py-1 text-sky-700">
-              {totalAnnouncements} Pengumuman
-            </span>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">
-              {announcementsWithImages} Dengan Visual
-            </span>
-            <span className="rounded-full bg-amber-50 px-3 py-1 text-amber-700">
-              {announcementsWithoutImages} Tanpa Gambar
-            </span>
           </div>
         </div>
       </div>
@@ -555,6 +515,16 @@ export default function AdminPengumumanPage() {
                         "Admin";
                       const content = announcement.content || "";
                       const timeLabel = formatTime(announcement.created_at);
+                      const createdAt = announcement.created_at
+                        ? new Date(announcement.created_at).getTime()
+                        : null;
+                      const updatedAt = announcement.updated_at
+                        ? new Date(announcement.updated_at).getTime()
+                        : null;
+                      const updatedLabel =
+                        updatedAt && (!createdAt || updatedAt !== createdAt)
+                          ? formatDateTime(announcement.updated_at)
+                          : "";
                       const fallbackTone = getFallbackTone(announcement.id);
 
                       return (
@@ -577,7 +547,7 @@ export default function AdminPengumumanPage() {
                             )}
                             {!imageUrl ? (
                               <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-slate-600/80">
-                                <ImageIcon className="h-3 w-3" />
+                                {/* <ImageIcon className="h-3 w-3" /> */}
                               </div>
                             ) : null}
                           </div>
@@ -586,9 +556,10 @@ export default function AdminPengumumanPage() {
                               <p className="truncate text-base font-semibold text-slate-900">
                                 {announcement.title}
                               </p>
-                              <p className="truncate text-sm text-slate-500">
-                                {truncateText(content, 120)}
-                              </p>
+                              <div
+                                className="text-sm text-slate-500 leading-relaxed [&_p]:mb-2 [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-5"
+                                dangerouslySetInnerHTML={{ __html: content }}
+                              />
                             </div>
                             <div className="flex shrink-0 items-center gap-2 text-xs text-slate-500">
                               <User2 className="h-3.5 w-3.5" />
@@ -596,9 +567,16 @@ export default function AdminPengumumanPage() {
                                 {creatorName}
                               </span>
                             </div>
-                            <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                              {timeLabel}
-                            </span>
+                            <div className="flex shrink-0 flex-col items-end gap-1">
+                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
+                                {timeLabel}
+                              </span>
+                              {updatedLabel ? (
+                                <span className="text-[10px] text-slate-400">
+                                  Diupdate {updatedLabel}
+                                </span>
+                              ) : null}
+                            </div>
                             <div className="flex shrink-0 items-center gap-1">
                               <Button
                                 type="button"

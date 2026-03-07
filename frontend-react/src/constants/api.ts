@@ -60,6 +60,24 @@ const API_BORROW_RETURN = (id: string | number) =>
   `${API_BORROWS}${id}/return/`;
 const API_BORROWS_BY_MONTH = `${API_BORROWS}by-month/`;
 
+// REGION: Uses API Endpoints
+const API_USES = `${API_BASE_URL}/uses/`;
+const API_USE_DETAIL = (id: string | number) => `${API_USES}${id}/`;
+const API_USE_APPROVE = (id: string | number) => `${API_USES}${id}/approve/`;
+const API_USE_REJECT = (id: string | number) => `${API_USES}${id}/reject/`;
+const API_USE_COMPLETE = (id: string | number) => `${API_USES}${id}/complete/`;
+
+// REGION: Pengujians API Endpoints
+const API_PENGUJIANS = `${API_BASE_URL}/pengujians/`;
+const API_PENGUJIAN_DETAIL = (id: string | number) =>
+  `${API_PENGUJIANS}${id}/`;
+const API_PENGUJIAN_APPROVE = (id: string | number) =>
+  `${API_PENGUJIANS}${id}/approve/`;
+const API_PENGUJIAN_REJECT = (id: string | number) =>
+  `${API_PENGUJIANS}${id}/reject/`;
+const API_PENGUJIAN_COMPLETE = (id: string | number) =>
+  `${API_PENGUJIANS}${id}/complete/`;
+
 // REGION: Equipments API Endpoints
 const API_EQUIPMENTS = `${API_BASE_URL}/equipments/`;
 const API_EQUIPMENT_DETAIL = (id: string | number) =>
@@ -118,6 +136,16 @@ export {
   API_BORROW_REJECT,
   API_BORROW_RETURN,
   API_BORROWS_BY_MONTH,
+  API_USES,
+  API_USE_DETAIL,
+  API_USE_APPROVE,
+  API_USE_REJECT,
+  API_USE_COMPLETE,
+  API_PENGUJIANS,
+  API_PENGUJIAN_DETAIL,
+  API_PENGUJIAN_APPROVE,
+  API_PENGUJIAN_REJECT,
+  API_PENGUJIAN_COMPLETE,
   API_EQUIPMENTS,
   API_EQUIPMENT_DETAIL,
   API_IMAGES,

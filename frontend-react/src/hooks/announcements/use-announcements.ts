@@ -29,6 +29,7 @@ export type Announcement = {
   created_by?: string | number | null;
   created_by_detail?: AnnouncementCreator | null;
   created_at?: string | null;
+  updated_at?: string | null;
 };
 
 type AnnouncementListResponse = {

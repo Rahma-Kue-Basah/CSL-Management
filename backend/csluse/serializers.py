@@ -157,6 +157,7 @@ class AnnouncementSerializer(serializers.ModelSerializer):
             "created_by",
             "created_by_detail",
             "created_at",
+            "updated_at",
         ]
 
 
