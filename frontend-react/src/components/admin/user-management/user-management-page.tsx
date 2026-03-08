@@ -400,7 +400,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                             variant="outline"
                             size="icon-sm"
                             onClick={() => {
-                              navigate(`/admin/user-management/u/${user.id}`, {
+                              navigate(`/admin/user-management/detail/${user.id}`, {
                                 state: { from: location.pathname },
                               });
                             }}

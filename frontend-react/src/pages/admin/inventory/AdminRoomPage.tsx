@@ -8,11 +8,11 @@ import {
   type FormEvent,
 } from "react";
 import { Eye, Loader2, Plus, Trash2, X } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,10 +24,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { API_BASE_URL, API_ROOM_DETAIL } from "@/constants/api";
-import { useIsMobile } from "@/hooks/use-mobile";
 import { useCreateRoom } from "@/hooks/rooms/use-create-room";
 import { useDeleteRoom } from "@/hooks/rooms/use-delete-room";
 import { useRooms, type RoomRow } from "@/hooks/rooms/use-rooms";
@@ -48,6 +54,8 @@ function resolveAssetUrl(value: string | null | undefined) {
 }
 
 export default function AdminRoomsPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -55,11 +63,8 @@ export default function AdminRoomsPage() {
   const [pic, setPic] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [activeAction, setActiveAction] = useState<ActionType | null>(null);
-  const [selectedRoom, setSelectedRoom] = useState<RoomRow | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
   const [deleteCandidate, setDeleteCandidate] = useState<RoomRow | null>(null);
-  const isMobile = useIsMobile();
-  const isActionOpen = Boolean(activeAction);
   const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } =
     usePicUsers();
   const {
@@ -113,10 +118,6 @@ export default function AdminRoomsPage() {
     if (!result.ok) return;
 
     setDeleteCandidate(null);
-    if (selectedRoom?.id === room.id) {
-      setSelectedRoom(null);
-      if (activeAction === "detail") setActiveAction(null);
-    }
     setReloadKey((prev) => prev + 1);
   };
 
@@ -133,7 +134,7 @@ export default function AdminRoomsPage() {
                 type="button"
                 size="sm"
                 className="bg-white text-slate-900 hover:bg-slate-100"
-                onClick={() => setActiveAction("create")}
+                onClick={() => setCreateOpen(true)}
               >
                 <Plus className="h-4 w-4" />
                 Tambah Ruangan
@@ -273,8 +274,9 @@ export default function AdminRoomsPage() {
                             variant="outline"
                             size="icon-sm"
                             onClick={() => {
-                              setSelectedRoom(room);
-                              setActiveAction("detail");
+                              navigate(`/admin/inventarisasi/ruangan/${room.id}`, {
+                                state: { from: location.pathname },
+                              });
                             }}
                           >
                             <Eye className="h-4 w-4" />
@@ -353,96 +355,22 @@ export default function AdminRoomsPage() {
             onPageChange={setPage}
           />
         </div>
-
-        {!isMobile && isActionOpen ? (
-          <aside className="sticky top-0 hidden self-start w-full max-w-[380px] shrink-0 rounded border bg-card shadow-xs lg:block">
-            <ActionPanelContent
-              action={activeAction}
-              selectedRoom={selectedRoom}
-              isDeleting={isDeleting}
-              deleteErrorMessage={deleteErrorMessage}
-              onDelete={handleDelete}
-              onClose={() => setActiveAction(null)}
-              onCreated={handleCreated}
-              onUpdated={handleCreated}
-            />
-          </aside>
-        ) : null}
       </div>
-
-      <Sheet
-        open={isMobile && isActionOpen}
-        onOpenChange={(open) => {
-          if (!open) setActiveAction(null);
-        }}
-      >
-        <SheetContent
-          side="right"
-          showCloseButton={false}
-          className="w-[92vw] p-0 sm:max-w-md [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]"
-        >
-          <ActionPanelContent
-            action={activeAction}
-            selectedRoom={selectedRoom}
-            isDeleting={isDeleting}
-            deleteErrorMessage={deleteErrorMessage}
-            onDelete={handleDelete}
-            onClose={() => setActiveAction(null)}
-            onCreated={handleCreated}
-            onUpdated={handleCreated}
-          />
-        </SheetContent>
-      </Sheet>
+      <CreateRoomDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onCreated={handleCreated}
+      />
     </section>
   );
 }
-
-type ActionPanelContentProps = {
-  action: ActionType | null;
-  selectedRoom: RoomRow | null;
-  isDeleting: boolean;
-  deleteErrorMessage: string;
-  onDelete: (room: RoomRow) => Promise<void>;
-  onClose: () => void;
-  onCreated: () => void;
-  onUpdated: () => void;
-};
-
-function ActionPanelContent({
-  action,
-  selectedRoom,
-  isDeleting,
-  deleteErrorMessage,
-  onDelete,
-  onClose,
-  onCreated,
-  onUpdated,
-}: ActionPanelContentProps) {
-  if (action === "create") {
-    return <CreateRoomPanel onClose={onClose} onCreated={onCreated} />;
-  }
-  if (action === "detail") {
-    return (
-      <DetailRoomPanel
-        room={selectedRoom}
-        isDeleting={isDeleting}
-        deleteErrorMessage={deleteErrorMessage}
-        onDelete={onDelete}
-        onUpdated={onUpdated}
-        onClose={onClose}
-      />
-    );
-  }
-
-  return null;
-}
-
-type CreateRoomPanelProps = {
-  onClose: () => void;
+type CreateRoomDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onCreated: () => void;
 };
 
-function CreateRoomPanel({ onClose, onCreated }: CreateRoomPanelProps) {
+function CreateRoomDialog({ open, onOpenChange, onCreated }: CreateRoomDialogProps) {
   const [formData, setFormData] = useState({
     name: "",
     number: "",
@@ -517,15 +445,34 @@ function CreateRoomPanel({ onClose, onCreated }: CreateRoomPanelProps) {
 
     if (result.ok) {
       onCreated();
-      onClose();
+      onOpenChange(false);
     }
   };
 
   return (
-    <div className="max-h-[calc(100svh-7rem)] overflow-y-auto p-4">
-      <PanelHeader title="Tambah Ruangan" onClose={onClose} />
-
-      <form className="space-y-4" onSubmit={handleSubmit}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        onOpenChange(nextOpen);
+        if (!nextOpen) {
+          setErrorMessage("");
+          setFormData({
+            name: "",
+            number: "",
+            floor: "",
+            capacity: "",
+            description: "",
+            picId: "",
+            imageFile: null,
+          });
+        }
+      }}
+    >
+      <DialogContent className="w-[min(720px,calc(100%-2rem))] max-w-none sm:max-w-none [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]">
+        <DialogHeader>
+          <DialogTitle>Tambah Ruangan</DialogTitle>
+        </DialogHeader>
+        <form className="space-y-4" onSubmit={handleSubmit}>
         <div className="space-y-1">
           <label className="text-xs font-medium">Nama Ruangan</label>
           <Input
@@ -658,12 +605,18 @@ function CreateRoomPanel({ onClose, onCreated }: CreateRoomPanelProps) {
           </div>
         ) : null}
 
-        <Button type="submit" disabled={isSubmitting} className="w-full gap-2">
-          <Plus className="h-4 w-4" />
-          {isSubmitting ? "Menyimpan..." : "Simpan Ruangan"}
-        </Button>
-      </form>
-    </div>
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={isSubmitting} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {isSubmitting ? "Menyimpan..." : "Simpan Ruangan"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
