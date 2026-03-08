@@ -3,7 +3,7 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import AuthLayout from "@/layouts/AuthLayout";
 import AdminLayout from "@/layouts/AdminLayout";
 import { UserLayout } from "@/layouts/UserLayout";
-import { RequireAdmin, RequireAuth } from "@/routes/guards";
+import { hasAuthToken, RequireAdmin, RequireAuth } from "@/routes/guards";
 
 import LoginPage from "@/pages/auth/LoginPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
@@ -45,8 +45,12 @@ function AuthLayoutOutlet() {
   );
 }
 
+function RootRedirect() {
+  return <Navigate to={hasAuthToken() ? "/dashboard" : "/login"} replace />;
+}
+
 export const router = createBrowserRouter([
-  { path: "/", element: <Navigate to="/login" replace /> },
+  { path: "/", element: <RootRedirect /> },
   {
     element: <AuthLayoutOutlet />,
     children: [

@@ -12,6 +12,10 @@ function getAccessToken() {
   return Cookies.get("access") || Cookies.get("access_token");
 }
 
+export function hasAuthToken() {
+  return Boolean(getAccessToken());
+}
+
 function getProfile(): ProfileCookie {
   const cookieProfile = Cookies.get("profile");
   if (cookieProfile) {
@@ -37,7 +41,7 @@ function getProfile(): ProfileCookie {
 export function RequireAuth({ children }: { children: ReactElement }) {
   const location = useLocation();
 
-  if (!getAccessToken()) {
+  if (!hasAuthToken()) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 

@@ -294,11 +294,13 @@ class Pengujian(BaseModel):
     email = models.EmailField()
     phone_number = models.CharField(max_length=20, blank=True, null=True)
 
+    sample_name = models.CharField(max_length=255)
     sample_type = models.CharField(max_length=255)
-    sample_shape = models.CharField(max_length=255, blank=True, null=True)
-    sample_condition = models.CharField(max_length=255, blank=True, null=True)
-    sample_packaging = models.CharField(max_length=255, blank=True, null=True)
-    sample_weight = models.CharField(max_length=255, blank=True, null=True)
+    # sample_shape = models.CharField(max_length=255, blank=True, null=True)
+    # sample_condition = models.CharField(max_length=255, blank=True, null=True)
+    sample_brand = models.CharField(max_length=255, blank=True, null=True) # Merk Sampel
+    sample_packaging = models.CharField(max_length=255, blank=True, null=True) # Kemasan Sampel
+    sample_weight = models.CharField(max_length=255, blank=True, null=True) # Berat Netto / Dimensi Sampel
     sample_quantity = models.CharField(max_length=255, blank=True, null=True)
     sample_testing_serving = models.CharField(max_length=255, blank=True, null=True) # Cara Penyajian/ Penanganan
     sample_testing_method = models.CharField(max_length=255, blank=True, null=True) # Metode Pengujian

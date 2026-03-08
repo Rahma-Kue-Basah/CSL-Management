@@ -1,11 +1,32 @@
+# FROM node:20-alpine AS build
+
+# WORKDIR /app
+
+# COPY package*.json /app/
+# RUN --mount=type=cache,target=/root/.npm \
+#     npm ci --no-audit --no-fund
+
+# COPY . /app
+# RUN npm run build
+
+# FROM nginx:1.27-alpine
+
+# COPY nginx.dev.conf /etc/nginx/conf.d/default.conf
+# COPY --from=build /app/dist /usr/share/nginx/html
+
+# EXPOSE 80
+
+# CMD ["nginx", "-g", "daemon off;"]
+
 FROM node:20-alpine AS build
 
 WORKDIR /app
 
-COPY package*.json /app/
-RUN npm ci
+COPY package.json package-lock.json ./
+RUN npm ci --no-audit --no-fund
 
-COPY . /app
+COPY . .
+
 RUN npm run build
 
 FROM nginx:1.27-alpine

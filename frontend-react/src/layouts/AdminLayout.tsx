@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/breadcrumb";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CircleArrowOutUpLeft, CircleArrowOutUpRightIcon } from "lucide-react";
+import { CircleArrowOutUpRightIcon } from "lucide-react";
 
 export default function AdminLayout({
   children,
@@ -22,7 +22,13 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const segments = pathname.split("/").filter(Boolean).slice(1);
+  const uuidPattern =
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  const segments = pathname
+    .split("/")
+    .filter(Boolean)
+    .slice(1)
+    .filter((segment) => !uuidPattern.test(segment));
 
   const formatSegment = (segment: string) =>
     segment
@@ -93,7 +99,15 @@ export default function AdminLayout({
                 </Button>
               </div>
             </div>
-            {children}
+            <div className="flex-1">
+              {children}
+            </div>
+            <footer className="border-t border-slate-200/80 bg-white/80 px-4 py-5 text-center text-xs text-slate-500 backdrop-blur">
+              2026 ©
+              <Link href="/" className="ml-1 font-medium text-slate-600 hover:text-[#0048B4]">
+                CSL STEM Universitas Prasetiya Mulya 
+              </Link>
+            </footer>
           </div>
         </main>
       </SidebarProvider>

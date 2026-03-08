@@ -1,3 +1,7 @@
 node_modules/
 dist/
 .git/
+build
+Dockerfile
+docker-compose*
+*.log
