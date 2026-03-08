@@ -28,6 +28,7 @@ import UserManagementLecturerPage from "@/pages/admin/UserManagementLecturerPage
 import UserManagementAdminPage from "@/pages/admin/UserManagementAdminPage";
 import UserManagementStaffPage from "@/pages/admin/UserManagementStaffPage";
 import UserManagementGuestPage from "@/pages/admin/UserManagementGuestPage";
+import UserManagementUserDetailPage from "@/pages/admin/UserManagementUserDetailPage";
 import NotFoundPage from "@/pages/errors/NotFoundPage";
 
 function AuthLayoutOutlet() {
@@ -92,6 +93,7 @@ export const router = createBrowserRouter([
       { path: "user-management/admin", element: <UserManagementAdminPage /> },
       { path: "user-management/staff", element: <UserManagementStaffPage /> },
       { path: "user-management/guest", element: <UserManagementGuestPage /> },
+      { path: "user-management/u/:id", element: <UserManagementUserDetailPage /> },
     ],
   },
   { path: "*", element: <NotFoundPage /> },

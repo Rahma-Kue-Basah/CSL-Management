@@ -52,7 +52,7 @@ export type UserRow = {
   isVerified: boolean;
 };
 
-function mapUser(item: ApiUser): UserRow {
+export function mapUser(item: ApiUser): UserRow {
   const fallbackId = String(item.email ?? item.username ?? "user");
   const rawId = item.id ?? item.email ?? item.username ?? fallbackId;
   const profile = item.profile ?? {};
@@ -71,6 +71,67 @@ function mapUser(item: ApiUser): UserRow {
     department: String(profile.department ?? "-"),
     idNumber: String(profile.id_number ?? "-"),
     isVerified: Boolean(item.is_verified),
+  };
+}
+
+export function useUserDetail(userId?: string | number | null) {
+  const [user, setUser] = useState<UserRow | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!userId) {
+      setUser(null);
+      setError("User ID tidak ditemukan.");
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isAborted = false;
+
+    const loadUser = async () => {
+      setIsLoading(true);
+      setError("");
+
+      try {
+        const response = await authFetch(`${API_AUTH_USERS}${userId}/`, {
+          method: "GET",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Gagal memuat detail user (${response.status})`);
+        }
+
+        const payload = (await response.json()) as ApiUser;
+        setUser(mapUser(payload));
+      } catch (loadError) {
+        if (loadError instanceof DOMException && loadError.name === "AbortError") return;
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Terjadi kesalahan saat memuat detail user.",
+        );
+      } finally {
+        if (isAborted || controller.signal.aborted) return;
+        setIsLoading(false);
+      }
+    };
+
+    void loadUser();
+
+    return () => {
+      isAborted = true;
+      controller.abort();
+    };
+  }, [userId]);
+
+  return {
+    user,
+    setUser,
+    isLoading,
+    error,
+    setError,
   };
 }
 
