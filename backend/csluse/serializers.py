@@ -17,6 +17,15 @@ from .models import (
 )
 from csluse_auth.serializers import ProfileSerializer, RoomPicDetailSerializer
 
+
+class RoomPicListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RoomPicDetailSerializer.Meta.model
+        fields = [
+            "id",
+            "full_name",
+        ]
+
 class ImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(write_only=True)
     url = serializers.SerializerMethodField()
@@ -61,6 +70,22 @@ class RoomSerializer(serializers.ModelSerializer):
         ]
 
 
+class RoomListSerializer(serializers.ModelSerializer):
+    pic_detail = RoomPicListSerializer(source="pic", read_only=True)
+
+    class Meta:
+        model = Room
+        fields = [
+            "id",
+            "name",
+            "capacity",
+            "description",
+            "number",
+            "floor",
+            "pic_detail",
+        ]
+
+
 class RoomDropdownSerializer(serializers.ModelSerializer):
     class Meta:
         model = Room
@@ -91,6 +116,58 @@ class EquipmentSerializer(serializers.ModelSerializer):
         ]
 
 
+class EquipmentRoomListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Room
+        fields = [
+            "id",
+            "name",
+        ]
+
+
+class EquipmentListSerializer(serializers.ModelSerializer):
+    room_detail = EquipmentRoomListSerializer(source="room", read_only=True)
+
+    class Meta:
+        model = Equipment
+        fields = [
+            "id",
+            "name",
+            "quantity",
+            "status",
+            "category",
+            "room_detail",
+            "is_moveable",
+        ]
+
+
+class RecordProfileListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProfileSerializer.Meta.model
+        fields = [
+            "id",
+            "full_name",
+        ]
+
+
+class RecordRoomListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Room
+        fields = [
+            "id",
+            "name",
+        ]
+
+
+class RecordEquipmentListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Equipment
+        fields = [
+            "id",
+            "name",
+        ]
+
+
 class BookingSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
@@ -103,6 +180,32 @@ class BookingSerializer(serializers.ModelSerializer):
         read_only_fields = ['requested_by', 'code']
 
 
+class BookingListSerializer(serializers.ModelSerializer):
+    requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
+    approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
+    room_detail = RecordRoomListSerializer(source="room", read_only=True)
+    equipment_detail = RecordEquipmentListSerializer(source="equipment", read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = [
+            "id",
+            "code",
+            "quantity_equipment",
+            "start_time",
+            "end_time",
+            "purpose",
+            "note",
+            "status",
+            "requested_by_detail",
+            "approved_by_detail",
+            "room_detail",
+            "equipment_detail",
+            "created_at",
+            "updated_at",
+        ]
+
+
 class BorrowSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
@@ -112,6 +215,31 @@ class BorrowSerializer(serializers.ModelSerializer):
         model = Borrow
         fields = '__all__'
         read_only_fields = ['requested_by', 'code']
+
+
+class BorrowListSerializer(serializers.ModelSerializer):
+    requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
+    approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
+    equipment_detail = RecordEquipmentListSerializer(source="equipment", read_only=True)
+
+    class Meta:
+        model = Borrow
+        fields = [
+            "id",
+            "code",
+            "quantity",
+            "start_time",
+            "end_time",
+            "end_time_actual",
+            "purpose",
+            "note",
+            "status",
+            "requested_by_detail",
+            "approved_by_detail",
+            "equipment_detail",
+            "created_at",
+            "updated_at",
+        ]
 
 
 class LabProfileSerializer(serializers.ModelSerializer):
@@ -195,6 +323,36 @@ class PengujianSerializer(serializers.ModelSerializer):
         read_only_fields = ['requested_by', 'code']
 
 
+class PengujianListSerializer(serializers.ModelSerializer):
+    requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
+    approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
+
+    class Meta:
+        model = Pengujian
+        fields = [
+            "id",
+            "code",
+            "name",
+            "institution",
+            "email",
+            "phone_number",
+            "sample_type",
+            "sample_shape",
+            "sample_condition",
+            "sample_packaging",
+            "sample_weight",
+            "sample_quantity",
+            "sample_testing_serving",
+            "sample_testing_method",
+            "sample_testing_type",
+            "status",
+            "requested_by_detail",
+            "approved_by_detail",
+            "created_at",
+            "updated_at",
+        ]
+
+
 class UseSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
@@ -204,3 +362,27 @@ class UseSerializer(serializers.ModelSerializer):
         model = Use
         fields = '__all__'
         read_only_fields = ['requested_by', 'code']
+
+
+class UseListSerializer(serializers.ModelSerializer):
+    requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
+    approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
+    equipment_detail = RecordEquipmentListSerializer(source="equipment", read_only=True)
+
+    class Meta:
+        model = Use
+        fields = [
+            "id",
+            "code",
+            "quantity",
+            "start_time",
+            "end_time",
+            "purpose",
+            "note",
+            "status",
+            "requested_by_detail",
+            "approved_by_detail",
+            "equipment_detail",
+            "created_at",
+            "updated_at",
+        ]

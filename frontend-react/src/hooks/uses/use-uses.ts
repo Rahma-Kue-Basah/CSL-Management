@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { API_USES } from "@/constants/api";
+import { API_USE_DETAIL, API_USES } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type UseFilters = {
@@ -14,8 +14,11 @@ export type UseFilters = {
 export type UseRow = {
   id: string | number;
   code: string;
+  equipmentId: string;
   equipmentName: string;
+  requesterId: string;
   requesterName: string;
+  approvedById: string;
   approvedByName: string;
   status: string;
   purpose: string;
@@ -38,14 +41,20 @@ type ApiUse = {
   end_time?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  equipment?: string | number | null;
   equipment_detail?: {
+    id?: string | number | null;
     name?: string | null;
   } | null;
+  requested_by?: string | number | null;
   requested_by_detail?: {
+    id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
   } | null;
+  approved_by?: string | number | null;
   approved_by_detail?: {
+    id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
   } | null;
@@ -56,7 +65,7 @@ type ApiUsesResponse = {
   results?: ApiUse[];
 };
 
-function mapUse(item: ApiUse): UseRow {
+export function mapUse(item: ApiUse): UseRow {
   const requesterName =
     item.requested_by_detail?.full_name ||
     item.requested_by_detail?.email ||
@@ -69,8 +78,11 @@ function mapUse(item: ApiUse): UseRow {
   return {
     id: item.id ?? `use-${Math.random().toString(36).slice(2, 8)}`,
     code: String(item.code ?? "-"),
+    equipmentId: String(item.equipment_detail?.id ?? item.equipment ?? ""),
     equipmentName: String(item.equipment_detail?.name ?? "-"),
+    requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
+    approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     status: String(item.status ?? "-"),
     purpose: String(item.purpose ?? "-"),
@@ -80,6 +92,62 @@ function mapUse(item: ApiUse): UseRow {
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
     note: String(item.note ?? ""),
+  };
+}
+
+export function useUseDetail(id?: string | number | null) {
+  const [useItem, setUseItem] = useState<UseRow | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!id) {
+      setUseItem(null);
+      setError("ID penggunaan tidak ditemukan.");
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isAborted = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const response = await authFetch(API_USE_DETAIL(id), {
+          method: "GET",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Gagal memuat detail penggunaan alat (${response.status})`);
+        }
+
+        const payload = (await response.json()) as ApiUse;
+        setUseItem(mapUse(payload));
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      } finally {
+        if (isAborted || controller.signal.aborted) return;
+        setIsLoading(false);
+      }
+    };
+
+    void load();
+
+    return () => {
+      isAborted = true;
+      controller.abort();
+    };
+  }, [id]);
+
+  return {
+    useItem,
+    setUseItem,
+    isLoading,
+    error,
+    setError,
   };
 }
 

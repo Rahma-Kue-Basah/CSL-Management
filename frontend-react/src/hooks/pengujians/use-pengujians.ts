@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { API_PENGUJIANS } from "@/constants/api";
+import { API_PENGUJIAN_DETAIL, API_PENGUJIANS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type PengujianFilters = {
@@ -26,7 +26,9 @@ export type PengujianRow = {
   sampleTestingMethod: string;
   sampleTestingType: string;
   status: string;
+  requesterId: string;
   requesterName: string;
+  approvedById: string;
   approvedByName: string;
   createdAt: string;
   updatedAt: string;
@@ -51,11 +53,15 @@ type ApiPengujian = {
   status?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  requested_by?: string | number | null;
   requested_by_detail?: {
+    id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
   } | null;
+  approved_by?: string | number | null;
   approved_by_detail?: {
+    id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
   } | null;
@@ -66,7 +72,7 @@ type ApiPengujiansResponse = {
   results?: ApiPengujian[];
 };
 
-function mapPengujian(item: ApiPengujian): PengujianRow {
+export function mapPengujian(item: ApiPengujian): PengujianRow {
   const requesterName =
     item.requested_by_detail?.full_name ||
     item.requested_by_detail?.email ||
@@ -93,10 +99,68 @@ function mapPengujian(item: ApiPengujian): PengujianRow {
     sampleTestingMethod: String(item.sample_testing_method ?? "-"),
     sampleTestingType: String(item.sample_testing_type ?? "-"),
     status: String(item.status ?? "-"),
+    requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
+    approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
+  };
+}
+
+export function usePengujianDetail(id?: string | number | null) {
+  const [pengujian, setPengujian] = useState<PengujianRow | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!id) {
+      setPengujian(null);
+      setError("ID pengujian tidak ditemukan.");
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isAborted = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const response = await authFetch(API_PENGUJIAN_DETAIL(id), {
+          method: "GET",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Gagal memuat detail pengujian sampel (${response.status})`);
+        }
+
+        const payload = (await response.json()) as ApiPengujian;
+        setPengujian(mapPengujian(payload));
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      } finally {
+        if (isAborted || controller.signal.aborted) return;
+        setIsLoading(false);
+      }
+    };
+
+    void load();
+
+    return () => {
+      isAborted = true;
+      controller.abort();
+    };
+  }, [id]);
+
+  return {
+    pengujian,
+    setPengujian,
+    isLoading,
+    error,
+    setError,
   };
 }
 

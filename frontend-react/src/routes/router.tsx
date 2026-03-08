@@ -20,9 +20,13 @@ import AdminEquipmentDetailPage from "@/pages/admin/inventory/AdminEquipmentDeta
 import AdminRoomPage from "@/pages/admin/inventory/AdminRoomPage";
 import AdminRoomDetailPage from "@/pages/admin/inventory/AdminRoomDetailPage";
 import AdminRoomBorrowRecordPage from "@/pages/admin/records/AdminRoomBorrowRecordPage";
+import AdminRoomBorrowRecordDetailPage from "@/pages/admin/records/AdminRoomBorrowRecordDetailPage";
 import AdminEquipmentUsageRecordPage from "@/pages/admin/records/AdminEquipmentUsageRecordPage";
+import AdminEquipmentUsageRecordDetailPage from "@/pages/admin/records/AdminEquipmentUsageRecordDetailPage";
 import AdminEquipmentBorrowRecordPage from "@/pages/admin/records/AdminEquipmentBorrowRecordPage";
+import AdminEquipmentBorrowRecordDetailPage from "@/pages/admin/records/AdminEquipmentBorrowRecordDetailPage";
 import AdminSampleTestingRecordPage from "@/pages/admin/records/AdminSampleTestingRecordPage";
+import AdminSampleTestingRecordDetailPage from "@/pages/admin/records/AdminSampleTestingRecordDetailPage";
 import AdminMyProfilePage from "@/pages/admin/profile/AdminMyProfilePage";
 import UserManagementAllPage from "@/pages/admin/user-management/UserManagementAllPage";
 import UserManagementStudentPage from "@/pages/admin/user-management/UserManagementStudentPage";
@@ -86,9 +90,13 @@ export const router = createBrowserRouter([
       { path: "inventarisasi/ruangan", element: <AdminRoomPage /> },
       { path: "inventarisasi/ruangan/:id", element: <AdminRoomDetailPage /> },
       { path: "record/peminjaman-ruangan", element: <AdminRoomBorrowRecordPage /> },
+      { path: "record/peminjaman-ruangan/:id", element: <AdminRoomBorrowRecordDetailPage /> },
       { path: "record/penggunaan-alat", element: <AdminEquipmentUsageRecordPage /> },
+      { path: "record/penggunaan-alat/:id", element: <AdminEquipmentUsageRecordDetailPage /> },
       { path: "record/peminjaman-alat", element: <AdminEquipmentBorrowRecordPage /> },
+      { path: "record/peminjaman-alat/:id", element: <AdminEquipmentBorrowRecordDetailPage /> },
       { path: "record/pengujian-sampel", element: <AdminSampleTestingRecordPage /> },
+      { path: "record/pengujian-sampel/:id", element: <AdminSampleTestingRecordDetailPage /> },
       { path: "my-profile", element: <AdminMyProfilePage /> },
       { path: "user-management", element: <Navigate to="/admin/user-management/all" replace /> },
       { path: "user-management/all", element: <UserManagementAllPage /> },

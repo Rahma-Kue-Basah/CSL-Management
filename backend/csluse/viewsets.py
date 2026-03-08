@@ -29,16 +29,22 @@ from .models import (
 from .serializers import (
     ImageSerializer,
     RoomSerializer,
+    RoomListSerializer,
     RoomDropdownSerializer,
     EquipmentSerializer,
+    EquipmentListSerializer,
     BookingSerializer,
+    BookingListSerializer,
     BorrowSerializer,
+    BorrowListSerializer,
     LabProfileSerializer,
     FacilitySerializer,
     AnnouncementSerializer,
     StructureOrganizationSerializer,
     PengujianSerializer,
+    PengujianListSerializer,
     UseSerializer,
+    UseListSerializer,
 )
 from csluse_auth.audit import log_admin_action
 from csluse_auth.permissions import IsStaffOrAbove
@@ -80,6 +86,13 @@ class RoomViewSet(viewsets.ModelViewSet):
     serializer_class = RoomSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
+
+    def get_serializer_class(self):
+        if self.action == "dropdown":
+            return RoomDropdownSerializer
+        if self.action == "list":
+            return RoomListSerializer
+        return RoomSerializer
 
     def get_permissions(self):
         if self.action == "create":
@@ -206,6 +219,11 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     serializer_class = EquipmentSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return EquipmentListSerializer
+        return EquipmentSerializer
 
     def get_permissions(self):
         if self.action == "create":
@@ -360,6 +378,11 @@ class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
 
+    def get_serializer_class(self):
+        if self.action == "list":
+            return BookingListSerializer
+        return BookingSerializer
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -491,6 +514,11 @@ class BorrowViewSet(viewsets.ModelViewSet):
     serializer_class = BorrowSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return BorrowListSerializer
+        return BorrowSerializer
 
     @extend_schema(
         parameters=[
@@ -693,6 +721,11 @@ class PengujianViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
 
+    def get_serializer_class(self):
+        if self.action == "list":
+            return PengujianListSerializer
+        return PengujianSerializer
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -774,6 +807,11 @@ class UseViewSet(viewsets.ModelViewSet):
     serializer_class = UseSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return UseListSerializer
+        return UseSerializer
 
     @extend_schema(
         parameters=[

@@ -49,12 +49,14 @@ function DetailField({
   editable = false,
   onChange,
   type = "text",
+  onView,
 }: {
   label: string;
   value: string;
   editable?: boolean;
   onChange?: (value: string) => void;
   type?: "text" | "number";
+  onView?: (() => void) | undefined;
 }) {
   return (
     <div className="space-y-1">
@@ -66,6 +68,14 @@ function DetailField({
           onChange={(event) => onChange?.(event.target.value)}
           className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
         />
+      ) : onView ? (
+        <button
+          type="button"
+          onClick={onView}
+          className="w-full rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-left text-sm text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+        >
+          {value || "-"}
+        </button>
       ) : (
         <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
           {value || "-"}
@@ -405,9 +415,23 @@ export default function AdminRoomDetailPage() {
                   ))}
                 </select>
               ) : (
-                <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!detailRoom.picId) return;
+                    navigate(`/admin/user-management/detail/${detailRoom.picId}`, {
+                      state: { from: location.pathname },
+                    });
+                  }}
+                  disabled={!detailRoom.picId}
+                  className={`w-full rounded-md border px-3 py-2 text-left text-sm ${
+                    detailRoom.picId
+                      ? "border-sky-200 bg-sky-50 text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                      : "border-slate-200 bg-slate-50 text-slate-700"
+                  }`}
+                >
                   {detailRoom.picName || "-"}
-                </div>
+                </button>
               )}
               {picError ? (
                 <p className="text-xs text-destructive">{picError}</p>

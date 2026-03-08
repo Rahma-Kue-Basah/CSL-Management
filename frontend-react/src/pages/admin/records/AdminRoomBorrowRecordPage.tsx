@@ -1,20 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Loader2, X } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useBookings, type BookingRow } from "@/hooks/bookings/use-bookings";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const PAGE_SIZE = 10;
-
-type ActionType = "detail";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Semua Status" },
@@ -83,6 +80,8 @@ function matchesSearch(booking: BookingRow, query: string) {
 }
 
 export default function AdminRecordPeminjamanRuanganPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -91,11 +90,6 @@ export default function AdminRecordPeminjamanRuanganPage() {
   const [createdBefore, setCreatedBefore] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [activeAction, setActiveAction] = useState<ActionType | null>(null);
-  const [selectedBooking, setSelectedBooking] = useState<BookingRow | null>(null);
-
-  const isMobile = useIsMobile();
-  const isActionOpen = Boolean(activeAction);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
@@ -288,8 +282,9 @@ export default function AdminRecordPeminjamanRuanganPage() {
                             variant="outline"
                             size="icon-sm"
                             onClick={() => {
-                              setSelectedBooking(booking);
-                              setActiveAction("detail");
+                              navigate(`/admin/record/peminjaman-ruangan/${booking.id}`, {
+                                state: { from: location.pathname },
+                              });
                             }}
                           >
                             <Eye className="h-4 w-4" />
@@ -319,110 +314,7 @@ export default function AdminRecordPeminjamanRuanganPage() {
             onPageChange={setPage}
           />
         </div>
-
-        {!isMobile && isActionOpen ? (
-          <aside className="sticky top-0 hidden self-start w-full max-w-[380px] shrink-0 rounded border bg-card shadow-xs lg:block">
-            <BookingDetailPanel
-              booking={selectedBooking}
-              onClose={() => {
-                setActiveAction(null);
-                setSelectedBooking(null);
-              }}
-            />
-          </aside>
-        ) : null}
       </div>
-
-      <Sheet
-        open={isMobile && isActionOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setActiveAction(null);
-            setSelectedBooking(null);
-          }
-        }}
-      >
-        <SheetContent
-          side="right"
-          showCloseButton={false}
-          className="w-[92vw] p-0 sm:max-w-md [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]"
-        >
-          <BookingDetailPanel
-            booking={selectedBooking}
-            onClose={() => {
-              setActiveAction(null);
-              setSelectedBooking(null);
-            }}
-          />
-        </SheetContent>
-      </Sheet>
     </section>
-  );
-}
-
-type BookingDetailPanelProps = {
-  booking: BookingRow | null;
-  onClose: () => void;
-};
-
-function BookingDetailPanel({ booking, onClose }: BookingDetailPanelProps) {
-  if (!booking) return null;
-
-  return (
-    <div className="space-y-4 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Detail Peminjaman
-          </p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-900">
-            {booking.code}
-          </h3>
-        </div>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-sm"
-          onClick={onClose}
-        >
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="rounded-lg border bg-white p-4 text-sm text-slate-700 shadow-xs">
-        <div className="grid gap-3">
-          <DetailRow label="Ruangan" value={booking.roomName} />
-          <DetailRow label="Peminjam" value={booking.requesterName} />
-          <DetailRow label="Status" value={booking.status} />
-          <DetailRow label="Tujuan" value={booking.purpose} />
-          <DetailRow label="Waktu" value={formatDateRange(booking.startTime, booking.endTime)} />
-          <DetailRow label="Dibuat" value={formatDateTime(booking.createdAt)} />
-          <DetailRow
-            label="Diupdate"
-            value={booking.updatedAt ? formatDateTime(booking.updatedAt) : "-"}
-          />
-          <DetailRow label="Disetujui Oleh" value={booking.approvedByName} />
-          <DetailRow label="Peralatan" value={booking.equipmentName} />
-          <DetailRow label="Jumlah Alat" value={booking.equipmentQty} />
-          <DetailRow label="Catatan" value={booking.note || "-"} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type DetailRowProps = {
-  label: string;
-  value: string;
-};
-
-function DetailRow({ label, value }: DetailRowProps) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-        {label}
-      </span>
-      <span className="text-sm text-slate-700">{value}</span>
-    </div>
   );
 }

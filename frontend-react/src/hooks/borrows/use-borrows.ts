@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { API_BORROWS } from "@/constants/api";
+import { API_BORROWS, API_BORROW_DETAIL } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type BorrowFilters = {
@@ -14,8 +14,11 @@ export type BorrowFilters = {
 export type BorrowRow = {
   id: string | number;
   code: string;
+  equipmentId: string;
   equipmentName: string;
+  requesterId: string;
   requesterName: string;
+  approvedById: string;
   approvedByName: string;
   status: string;
   purpose: string;
@@ -40,14 +43,20 @@ type ApiBorrow = {
   end_time_actual?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  equipment?: string | number | null;
   equipment_detail?: {
+    id?: string | number | null;
     name?: string | null;
   } | null;
+  requested_by?: string | number | null;
   requested_by_detail?: {
+    id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
   } | null;
+  approved_by?: string | number | null;
   approved_by_detail?: {
+    id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
   } | null;
@@ -58,7 +67,7 @@ type ApiBorrowsResponse = {
   results?: ApiBorrow[];
 };
 
-function mapBorrow(item: ApiBorrow): BorrowRow {
+export function mapBorrow(item: ApiBorrow): BorrowRow {
   const requesterName =
     item.requested_by_detail?.full_name ||
     item.requested_by_detail?.email ||
@@ -71,8 +80,11 @@ function mapBorrow(item: ApiBorrow): BorrowRow {
   return {
     id: item.id ?? `borrow-${Math.random().toString(36).slice(2, 8)}`,
     code: String(item.code ?? "-"),
+    equipmentId: String(item.equipment_detail?.id ?? item.equipment ?? ""),
     equipmentName: String(item.equipment_detail?.name ?? "-"),
+    requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
+    approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     status: String(item.status ?? "-"),
     purpose: String(item.purpose ?? "-"),
@@ -83,6 +95,62 @@ function mapBorrow(item: ApiBorrow): BorrowRow {
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
     note: String(item.note ?? ""),
+  };
+}
+
+export function useBorrowDetail(id?: string | number | null) {
+  const [borrow, setBorrow] = useState<BorrowRow | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!id) {
+      setBorrow(null);
+      setError("ID peminjaman tidak ditemukan.");
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isAborted = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const response = await authFetch(API_BORROW_DETAIL(id), {
+          method: "GET",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Gagal memuat detail peminjaman alat (${response.status})`);
+        }
+
+        const payload = (await response.json()) as ApiBorrow;
+        setBorrow(mapBorrow(payload));
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      } finally {
+        if (isAborted || controller.signal.aborted) return;
+        setIsLoading(false);
+      }
+    };
+
+    void load();
+
+    return () => {
+      isAborted = true;
+      controller.abort();
+    };
+  }, [id]);
+
+  return {
+    borrow,
+    setBorrow,
+    isLoading,
+    error,
+    setError,
   };
 }
 

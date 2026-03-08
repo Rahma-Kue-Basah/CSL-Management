@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { API_BOOKINGS } from "@/constants/api";
+import { API_BOOKINGS, API_BOOKING_DETAIL } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type BookingFilters = {
@@ -14,7 +14,9 @@ export type BookingFilters = {
 export type BookingRow = {
   id: string | number;
   code: string;
+  roomId: string;
   roomName: string;
+  requesterId: string;
   requesterName: string;
   status: string;
   purpose: string;
@@ -22,7 +24,9 @@ export type BookingRow = {
   endTime: string;
   createdAt: string;
   updatedAt: string;
+  approvedById: string;
   approvedByName: string;
+  equipmentId: string;
   equipmentName: string;
   equipmentQty: string;
   note: string;
@@ -39,19 +43,27 @@ type ApiBooking = {
   created_at?: string | null;
   updated_at?: string | null;
   quantity_equipment?: number | string | null;
+  room?: string | number | null;
   room_detail?: {
+    id?: string | number | null;
     name?: string | null;
     number?: string | null;
   } | null;
+  requested_by?: string | number | null;
   requested_by_detail?: {
+    id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
   } | null;
+  approved_by?: string | number | null;
   approved_by_detail?: {
+    id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
   } | null;
+  equipment?: string | number | null;
   equipment_detail?: {
+    id?: string | number | null;
     name?: string | null;
   } | null;
 };
@@ -61,7 +73,7 @@ type ApiBookingsResponse = {
   results?: ApiBooking[];
 };
 
-function mapBooking(item: ApiBooking): BookingRow {
+export function mapBooking(item: ApiBooking): BookingRow {
   const requesterName =
     item.requested_by_detail?.full_name ||
     item.requested_by_detail?.email ||
@@ -74,7 +86,9 @@ function mapBooking(item: ApiBooking): BookingRow {
   return {
     id: item.id ?? `booking-${Math.random().toString(36).slice(2, 8)}`,
     code: String(item.code ?? "-"),
+    roomId: String(item.room_detail?.id ?? item.room ?? ""),
     roomName: String(item.room_detail?.name ?? "-"),
+    requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
     status: String(item.status ?? "-"),
     purpose: String(item.purpose ?? "-"),
@@ -82,10 +96,68 @@ function mapBooking(item: ApiBooking): BookingRow {
     endTime: String(item.end_time ?? "-"),
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
+    approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
+    equipmentId: String(item.equipment_detail?.id ?? item.equipment ?? ""),
     equipmentName: String(item.equipment_detail?.name ?? "-"),
     equipmentQty: String(item.quantity_equipment ?? "-"),
     note: String(item.note ?? ""),
+  };
+}
+
+export function useBookingDetail(id?: string | number | null) {
+  const [booking, setBooking] = useState<BookingRow | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!id) {
+      setBooking(null);
+      setError("ID booking tidak ditemukan.");
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isAborted = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const response = await authFetch(API_BOOKING_DETAIL(id), {
+          method: "GET",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Gagal memuat detail booking (${response.status})`);
+        }
+
+        const payload = (await response.json()) as ApiBooking;
+        setBooking(mapBooking(payload));
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      } finally {
+        if (isAborted || controller.signal.aborted) return;
+        setIsLoading(false);
+      }
+    };
+
+    void load();
+
+    return () => {
+      isAborted = true;
+      controller.abort();
+    };
+  }, [id]);
+
+  return {
+    booking,
+    setBooking,
+    isLoading,
+    error,
+    setError,
   };
 }
 

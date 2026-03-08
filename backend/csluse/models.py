@@ -4,10 +4,10 @@ from csluse_auth.models import Profile
 from django.utils import timezone
 
 PURPOSE_CHOICES = [
-    ('class', 'Class'),
-    ('lab_work', 'Lab Work'),
-    ('research', 'Research'),
-    ('other', 'Other'),
+    ('Class', 'Class'),
+    ('Lab Work', 'Lab Work'),
+    ('Research', 'Research'),
+    ('Other', 'Other'),
 ]
 
 
@@ -83,26 +83,26 @@ class Equipment(BaseModel):
     quantity = models.PositiveIntegerField(default=1)
 
     STATUS_CHOICES = [
-        ('available', 'Available'),
-        ('borrowed', 'Borrowed'),
-        ('maintenance', 'Under Maintenance'),
-        ('broken', 'Broken'),
-        ('storage', 'In Storage'),
+        ('Available', 'Available'),
+        ('Borrowed', 'Borrowed'),
+        ('Under Maintenance', 'Under Maintenance'),
+        ('Broken', 'Broken'),
+        ('In Storage', 'In Storage'),
     ]
     CATEGORY_CHOICES = [
-        ('electricity', 'Electricity'),
-        ('electronics', 'Electronics'),
-        ('large_equipment', 'Large Equipment'), 
-        ('furniture', 'Furniture'),
-        ('glassware', 'Glassware'),
-        ('chemicals', 'Chemicals'),
-        ('tools', 'Tools'),
-        ('safety', 'Safety Equipment'),
-        ('other', 'Other'),
+        ('Electricity', 'Electricity'),
+        ('Electronics', 'Electronics'),
+        ('Large Equipment', 'Large Equipment'), 
+        ('Furniture', 'Furniture'),
+        ('Glassware', 'Glassware'),
+        ('Chemicals', 'Chemicals'),
+        ('Tools', 'Tools'),
+        ('Safety Equipment', 'Safety Equipment'),
+        ('Other', 'Other'),
     ]
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='available')
-    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='other')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Available')
+    category = models.CharField(max_length=20, choices=CATEGORY_CHOICES, default='Other')
 
     image = models.ForeignKey(
         Image,
@@ -150,19 +150,19 @@ class Booking(BaseModel):
     purpose = models.CharField(
         max_length=20,
         choices=PURPOSE_CHOICES,
-        default='other',
+        default='Other',
     )
     note = models.CharField(max_length=2000, blank=True, null=True)
 
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
     ]
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
 
     approved_by = models.ForeignKey(
         Profile,
@@ -200,19 +200,19 @@ class Use(BaseModel):
 
     start_time = models.DateTimeField()
     end_time = models.DateTimeField(blank=True, null=True)
-    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, default='other')
+    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, default='Other')
 
     note = models.CharField(max_length=2000, blank=True, null=True)
 
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('in_use', 'In Use'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+        ('In Use', 'In Use'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
     ]
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
 
     approved_by = models.ForeignKey(
         Profile,
@@ -252,21 +252,21 @@ class Borrow(BaseModel):
 
     quantity = models.PositiveIntegerField(default=1)
 
-    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, default='other')
+    purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, default='Other')
     note = models.CharField(max_length=2000, blank=True, null=True)
 
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('borrowed', 'Borrowed'),
-        ('returned', 'Returned'),
-        ('overdue', 'Overdue'),
-        ('lost_damaged', 'Lost/Damaged'),
-        ('cancelled', 'Cancelled'),
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+        ('Borrowed', 'Borrowed'),
+        ('Returned', 'Returned'),
+        ('Overdue', 'Overdue'),
+        ('Lost/Damaged', 'Lost/Damaged'),
+        ('Cancelled', 'Cancelled'),
     ]
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='borrowed')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Borrowed')
 
     approved_by = models.ForeignKey(
         Profile,
@@ -319,14 +319,14 @@ class Pengujian(BaseModel):
     )
 
     STATUS_CHOICES = [
-        ('pending', 'Pending'),
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('completed', 'Completed'),
-        ('cancelled', 'Cancelled'),
+        ('Pending', 'Pending'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+        ('Completed', 'Completed'),
+        ('Cancelled', 'Cancelled'),
     ]
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     code = models.CharField(max_length=12, unique=True, editable=False, null=True)
 
     def save(self, *args, **kwargs):
@@ -349,13 +349,13 @@ class Notification(BaseModel):
     title = models.CharField(max_length=255)
 
     CATEGORY_CHOICES = [
-        ('approved', 'Approved'),
-        ('rejected', 'Rejected'),
-        ('reminder', 'Reminder'),
-        ('general', 'General'),
+        ('Approved', 'Approved'),
+        ('Rejected', 'Rejected'),
+        ('Reminder', 'Reminder'),
+        ('General', 'General'),
     ]
 
-    category = models.CharField(max_length=255, choices=CATEGORY_CHOICES, default='general')
+    category = models.CharField(max_length=255, choices=CATEGORY_CHOICES, default='General')
     message = models.CharField(max_length=2000)
 
     def __str__(self):
@@ -430,4 +430,3 @@ class LabProfile(BaseModel):
 
     def __str__(self):
         return self.title
-

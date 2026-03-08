@@ -1,20 +1,17 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Loader2, X } from "lucide-react";
+import { Eye, Loader2 } from "lucide-react";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { useUses, type UseRow } from "@/hooks/uses/use-uses";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 const PAGE_SIZE = 10;
-
-type ActionType = "detail";
 
 const STATUS_OPTIONS = [
   { value: "", label: "Semua Status" },
@@ -81,6 +78,8 @@ function matchesSearch(row: UseRow, query: string) {
 }
 
 export default function AdminRecordPenggunaanAlatPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -89,11 +88,6 @@ export default function AdminRecordPenggunaanAlatPage() {
   const [createdBefore, setCreatedBefore] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [activeAction, setActiveAction] = useState<ActionType | null>(null);
-  const [selectedUse, setSelectedUse] = useState<UseRow | null>(null);
-
-  const isMobile = useIsMobile();
-  const isActionOpen = Boolean(activeAction);
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
@@ -286,8 +280,9 @@ export default function AdminRecordPenggunaanAlatPage() {
                             variant="outline"
                             size="icon-sm"
                             onClick={() => {
-                              setSelectedUse(item);
-                              setActiveAction("detail");
+                              navigate(`/admin/record/penggunaan-alat/${item.id}`, {
+                                state: { from: location.pathname },
+                              });
                             }}
                           >
                             <Eye className="h-4 w-4" />
@@ -317,101 +312,7 @@ export default function AdminRecordPenggunaanAlatPage() {
             onPageChange={setPage}
           />
         </div>
-
-        {!isMobile && isActionOpen ? (
-          <aside className="sticky top-0 hidden self-start w-full max-w-[380px] shrink-0 rounded border bg-card shadow-xs lg:block">
-            <UseDetailPanel
-              item={selectedUse}
-              onClose={() => {
-                setActiveAction(null);
-                setSelectedUse(null);
-              }}
-            />
-          </aside>
-        ) : null}
       </div>
-
-      <Sheet
-        open={isMobile && isActionOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setActiveAction(null);
-            setSelectedUse(null);
-          }
-        }}
-      >
-        <SheetContent
-          side="right"
-          showCloseButton={false}
-          className="w-[92vw] p-0 sm:max-w-md [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]"
-        >
-          <UseDetailPanel
-            item={selectedUse}
-            onClose={() => {
-              setActiveAction(null);
-              setSelectedUse(null);
-            }}
-          />
-        </SheetContent>
-      </Sheet>
     </section>
-  );
-}
-
-type UseDetailPanelProps = {
-  item: UseRow | null;
-  onClose: () => void;
-};
-
-function UseDetailPanel({ item, onClose }: UseDetailPanelProps) {
-  if (!item) return null;
-
-  return (
-    <div className="space-y-4 p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-            Detail Penggunaan
-          </p>
-          <h3 className="mt-1 text-lg font-semibold text-slate-900">
-            {item.code}
-          </h3>
-        </div>
-        <Button type="button" variant="ghost" size="icon-sm" onClick={onClose}>
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-
-      <div className="rounded-lg border bg-white p-4 text-sm text-slate-700 shadow-xs">
-        <div className="grid gap-3">
-          <DetailRow label="Alat" value={item.equipmentName} />
-          <DetailRow label="Jumlah" value={item.quantity} />
-          <DetailRow label="Pengguna" value={item.requesterName} />
-          <DetailRow label="Status" value={item.status} />
-          <DetailRow label="Tujuan" value={item.purpose} />
-          <DetailRow label="Waktu" value={formatDateRange(item.startTime, item.endTime)} />
-          <DetailRow label="Dibuat" value={formatDateTime(item.createdAt)} />
-          <DetailRow label="Diupdate" value={formatDateTime(item.updatedAt)} />
-          <DetailRow label="Disetujui Oleh" value={item.approvedByName} />
-          <DetailRow label="Catatan" value={item.note || "-"} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type DetailRowProps = {
-  label: string;
-  value: string;
-};
-
-function DetailRow({ label, value }: DetailRowProps) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-        {label}
-      </span>
-      <span className="text-sm text-slate-700">{value}</span>
-    </div>
   );
 }

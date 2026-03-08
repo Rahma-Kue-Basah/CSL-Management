@@ -63,12 +63,14 @@ function DetailField({
   editable = false,
   onChange,
   type = "text",
+  onView,
 }: {
   label: string;
   value: string;
   editable?: boolean;
   onChange?: (value: string) => void;
   type?: "text" | "number";
+  onView?: (() => void) | undefined;
 }) {
   return (
     <div className="space-y-1">
@@ -80,6 +82,14 @@ function DetailField({
           onChange={(event) => onChange?.(event.target.value)}
           className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
         />
+      ) : onView ? (
+        <button
+          type="button"
+          onClick={onView}
+          className="w-full rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-left text-sm text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+        >
+          {value || "-"}
+        </button>
       ) : (
         <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
           {value || "-"}
@@ -395,15 +405,30 @@ export default function AdminEquipmentDetailPage() {
               options={EQUIPMENT_CATEGORY_OPTIONS}
               onChange={(value) => setFormData((prev) => ({ ...prev, category: value }))}
             />
-            <SelectDetailField
-              label="Ruangan"
-              value={isEditing ? formData.roomId : detailItem.roomName}
-              editable={isEditing}
-              options={roomOptions}
-              onChange={(value) => setFormData((prev) => ({ ...prev, roomId: value }))}
-              placeholder={isLoadingRooms ? "Memuat ruangan..." : "Pilih ruangan"}
-              disabled={isLoadingRooms}
-            />
+            {isEditing ? (
+              <SelectDetailField
+                label="Ruangan"
+                value={formData.roomId}
+                editable
+                options={roomOptions}
+                onChange={(value) => setFormData((prev) => ({ ...prev, roomId: value }))}
+                placeholder={isLoadingRooms ? "Memuat ruangan..." : "Pilih ruangan"}
+                disabled={isLoadingRooms}
+              />
+            ) : (
+              <DetailField
+                label="Ruangan"
+                value={detailItem.roomName}
+                onView={
+                  detailItem.roomId
+                    ? () =>
+                        navigate(`/admin/inventarisasi/ruangan/${detailItem.roomId}`, {
+                          state: { from: location.pathname },
+                        })
+                    : undefined
+                }
+              />
+            )}
             {roomError ? <p className="text-xs text-destructive">{roomError}</p> : null}
             <SelectDetailField
               label="Moveable"

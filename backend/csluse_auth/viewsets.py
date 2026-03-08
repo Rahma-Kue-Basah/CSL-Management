@@ -1,3 +1,5 @@
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.contrib.admin.models import CHANGE, DELETION
 from django.contrib.admin.models import LogEntry
@@ -7,6 +9,7 @@ from allauth.account.models import EmailAddress
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
+from rest_framework.generics import get_object_or_404
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from drf_spectacular.utils import extend_schema
@@ -61,6 +64,19 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
     queryset = User.objects.select_related("profile").all()
     pagination_class = DefaultPagination
     http_method_names = ["get", "delete"]
+
+    def get_object(self):
+        queryset = self.filter_queryset(self.get_queryset())
+        lookup_value = self.kwargs.get(self.lookup_url_kwarg or self.lookup_field)
+
+        if lookup_value is None:
+            return super().get_object()
+
+        try:
+            uuid.UUID(str(lookup_value))
+            return get_object_or_404(queryset, profile__id=lookup_value)
+        except ValueError:
+            return get_object_or_404(queryset, pk=lookup_value)
 
     def get_queryset(self):
         """Enable lightweight filtering and search over user profiles."""

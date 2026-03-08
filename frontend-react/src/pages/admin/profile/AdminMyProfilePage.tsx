@@ -209,8 +209,7 @@ export default function AdminMyProfilePage() {
               ) : (
                 <ProfileRow label="Nama" value={displayProfile.name || "-"} />
               )}
-              <ProfileRow label="Email" value={profile.email || "-"} />
-              <ProfileRow label="Role" value={formatRole(profile.role)} />
+              {/* <ProfileRow label="Email" value={profile.email || "-"} /> */}
               {isEditing ? (
                 <EditRow label="Department">
                   <select
@@ -262,6 +261,8 @@ export default function AdminMyProfilePage() {
               ) : (
                 <ProfileRow label="ID Number" value={displayProfile.id_number || "-"} />
               )}
+              <ProfileRow label="Role" value={formatRole(profile.role)} />
+
               <div className="md:col-span-2">
                 <ProfileRow label="Last Login" value={formatTime(profile.last_login)} />
               </div>
