@@ -62,7 +62,167 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: "/dashboard",
+    path: "/dashboard/:action?",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/schedule",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/booking-rooms",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/booking-rooms/form",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/rooms",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/use-equipment",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/use-equipment/form",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/equipment",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/sample-testing",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/sample-testing/form",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/borrow-equipment",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/borrow-equipment/form",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/notifications",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/activity-history",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/my-profile",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/my-profile/edit",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/my-profile/security",
     element: (
       <RequireAuth>
         <UserLayout>

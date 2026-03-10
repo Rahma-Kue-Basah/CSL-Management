@@ -77,7 +77,7 @@ export function DashboardUserMenu({
         </DropdownMenuLabel>
         <DropdownMenuSeparator className="bg-slate-200" />
         <DropdownMenuItem className="cursor-pointer text-slate-900 hover:bg-slate-100 focus:bg-slate-100 focus:text-slate-900 text-sm">
-          <Link href="/" className="flex items-center w-full">
+          <Link href="/my-profile" className="flex items-center w-full">
             <UserRound className="mr-2 h-4 w-4" />
             Profil Saya
           </Link>
