@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { API_ROOMS } from "@/constants/api";
+import { API_BASE_URL, API_ROOM_DETAIL, API_ROOMS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type RoomFilters = {
@@ -19,6 +19,10 @@ export type RoomRow = {
   capacity: string;
   description: string;
   picName: string;
+};
+
+export type RoomDetail = RoomRow & {
+  imageUrl: string;
 };
 
 type ApiRoom = {
@@ -49,6 +53,13 @@ function mapRoom(room: ApiRoom): RoomRow {
     description: String(room.description ?? ""),
     picName: String(room.pic_detail?.full_name ?? room.pic_detail?.email ?? "-"),
   };
+}
+
+function resolveAssetUrl(value?: string | null) {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/")) return `${API_BASE_URL}${value}`;
+  return `${API_BASE_URL}/${value}`;
 }
 
 export function useRooms(page: number, pageSize = 10, filters: RoomFilters = {}, reloadKey = 0) {
@@ -108,6 +119,68 @@ export function useRooms(page: number, pageSize = 10, filters: RoomFilters = {},
   }, [page, pageSize, filters.floor, filters.pic, filters.search, reloadKey]);
 
   return { rooms, setRooms, totalCount, setTotalCount, isLoading, hasLoadedOnce, error, setError };
+}
+
+export function useRoomDetail(id?: string | number | null) {
+  const [room, setRoom] = useState<RoomDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!id) {
+      setRoom(null);
+      setError("ID ruangan tidak ditemukan.");
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isAborted = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const response = await authFetch(API_ROOM_DETAIL(id), {
+          method: "GET",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Gagal memuat detail ruangan (${response.status})`);
+        }
+
+        const payload = (await response.json()) as ApiRoom & {
+          image_detail?: { url?: string | null } | null;
+        };
+        const mapped = mapRoom(payload);
+        setRoom({
+          ...mapped,
+          imageUrl: resolveAssetUrl(payload.image_detail?.url ?? ""),
+        });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      } finally {
+        if (isAborted || controller.signal.aborted) return;
+        setIsLoading(false);
+      }
+    };
+
+    void load();
+
+    return () => {
+      isAborted = true;
+      controller.abort();
+    };
+  }, [id]);
+
+  return {
+    room,
+    setRoom,
+    isLoading,
+    error,
+    setError,
+  };
 }
 
 export default useRooms;

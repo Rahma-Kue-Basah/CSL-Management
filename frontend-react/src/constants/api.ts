@@ -40,6 +40,8 @@ const API_AUTH_ADMIN_DASHBOARD_KPIS = `${API_AUTH_ADMIN_DASHBOARD}kpis/`;
 
 // REGION: Bookings API Endpoints
 const API_BOOKINGS = `${API_BASE_URL}/bookings/`;
+const API_BOOKINGS_MY = `${API_BOOKINGS}my/`;
+const API_BOOKINGS_ALL = `${API_BOOKINGS}all/`;
 const API_BOOKING_DETAIL = (id: string | number) => `${API_BOOKINGS}${id}/`;
 const API_BOOKING_APPROVE = (id: string | number) =>
   `${API_BOOKINGS}${id}/approve/`;
@@ -80,6 +82,7 @@ const API_PENGUJIAN_COMPLETE = (id: string | number) =>
 
 // REGION: Equipments API Endpoints
 const API_EQUIPMENTS = `${API_BASE_URL}/equipments/`;
+const API_EQUIPMENTS_DROPDOWN = `${API_EQUIPMENTS}dropdown/`;
 const API_EQUIPMENT_DETAIL = (id: string | number) =>
   `${API_EQUIPMENTS}${id}/`;
 
@@ -125,6 +128,8 @@ export {
   API_AUTH_TOKEN_REFRESH,
   API_AUTH_TOKEN_VERIFY,
   API_BOOKINGS,
+  API_BOOKINGS_MY,
+  API_BOOKINGS_ALL,
   API_BOOKING_DETAIL,
   API_BOOKING_APPROVE,
   API_BOOKING_REJECT,
@@ -147,6 +152,7 @@ export {
   API_PENGUJIAN_REJECT,
   API_PENGUJIAN_COMPLETE,
   API_EQUIPMENTS,
+  API_EQUIPMENTS_DROPDOWN,
   API_EQUIPMENT_DETAIL,
   API_IMAGES,
   API_IMAGE_DETAIL,

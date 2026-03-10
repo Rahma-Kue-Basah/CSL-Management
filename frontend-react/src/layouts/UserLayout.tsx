@@ -75,14 +75,14 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
     actions: [
       {
         id: "request-list",
-        label: "List Request",
-        description: "Lihat list request booking ruangan dari user.",
+        label: "Pengajuan Saya",
+        description: "Lihat daftar pengajuan booking ruangan Anda.",
         href: "/booking-rooms",
       },
       {
         id: "request-form",
-        label: "Form Request",
-        description: "Buat request booking ruangan melalui form pengajuan.",
+        label: "Ajukan Booking",
+        description: "Buat pengajuan booking ruangan melalui formulir.",
         href: "/booking-rooms/form",
       },
       {
@@ -96,20 +96,20 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   {
     id: "use-equipment",
     label: "Booking Alat",
-    description: "Kelola request penggunaan alat beserta form pengajuan.",
+    description: "Kelola pengajuan penggunaan alat beserta formulirnya.",
     href: "/use-equipment",
     icon: Wrench,
     actions: [
       {
         id: "request-list",
-        label: "List Request",
-        description: "Lihat list request booking alat dari user.",
+        label: "Pengajuan Saya",
+        description: "Lihat daftar pengajuan booking alat Anda.",
         href: "/use-equipment",
       },
       {
         id: "request-form",
-        label: "Form Request",
-        description: "Buat request booking alat melalui form pengajuan.",
+        label: "Ajukan Booking",
+        description: "Buat pengajuan booking alat melalui formulir.",
         href: "/use-equipment/form",
       },
       {
@@ -129,14 +129,14 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
     actions: [
       {
         id: "request-list",
-        label: "List Request",
-        description: "Lihat daftar request pengujian sampel.",
+        label: "Pengajuan Saya",
+        description: "Lihat daftar pengajuan pengujian sampel Anda.",
         href: "/sample-testing",
       },
       {
         id: "request-form",
-        label: "Form Request",
-        description: "Buat request pengujian sampel melalui form.",
+        label: "Ajukan Pengujian",
+        description: "Buat pengajuan pengujian sampel melalui formulir.",
         href: "/sample-testing/form",
       },
     ],
@@ -150,14 +150,14 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
     actions: [
       {
         id: "request-list",
-        label: "List Request",
-        description: "Lihat daftar request peminjaman alat.",
+        label: "Pengajuan Saya",
+        description: "Lihat daftar pengajuan peminjaman alat Anda.",
         href: "/borrow-equipment",
       },
       {
         id: "request-form",
-        label: "Form Request",
-        description: "Buat request peminjaman alat melalui form.",
+        label: "Ajukan Peminjaman",
+        description: "Buat pengajuan peminjaman alat melalui formulir.",
         href: "/borrow-equipment/form",
       },
     ],
@@ -165,7 +165,7 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   {
     id: "notifications",
     label: "Notifikasi",
-    description: "Lihat update status request dan pemberitahuan terbaru.",
+    description: "Lihat update status pengajuan dan pemberitahuan terbaru.",
     href: "/notifications",
     icon: Bell,
     actions: [],
@@ -173,7 +173,7 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   {
     id: "activity-history",
     label: "Riwayat Aktivitas",
-    description: "Lihat histori aktivitas request yang pernah dilakukan.",
+    description: "Lihat histori aktivitas pengajuan yang pernah dilakukan.",
     href: "/activity-history",
     icon: History,
     actions: [],

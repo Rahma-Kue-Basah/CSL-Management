@@ -11,7 +11,24 @@ import SignupGuestPage from "@/pages/auth/SignupGuestPage";
 import SignupGuestVerifyPage from "@/pages/auth/SignupGuestVerifyPage";
 import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 
-import DashboardPage from "@/pages/dashboard/DashboardPage";
+import DashboardHomePage from "@/pages/dashboard/DashboardHomePage";
+import DashboardOverviewPage from "@/pages/dashboard/overview/DashboardOverviewPage";
+import SchedulePage from "@/pages/dashboard/schedule/SchedulePage";
+import BookingRoomsListPage from "@/pages/dashboard/booking-rooms/BookingRoomsListPage";
+import BookingRoomsFormPage from "@/pages/dashboard/booking-rooms/BookingRoomsFormPage";
+import BookingRoomsDetailPage from "@/pages/dashboard/booking-rooms/BookingRoomsDetailPage";
+import RoomsListPage from "@/pages/dashboard/booking-rooms/RoomsListPage";
+import RoomDetailPage from "@/pages/dashboard/booking-rooms/RoomDetailPage";
+import UseEquipmentListPage from "@/pages/dashboard/use-equipment/UseEquipmentListPage";
+import UseEquipmentFormPage from "@/pages/dashboard/use-equipment/UseEquipmentFormPage";
+import EquipmentListPage from "@/pages/dashboard/use-equipment/EquipmentListPage";
+import SampleTestingListPage from "@/pages/dashboard/sample-testing/SampleTestingListPage";
+import SampleTestingFormPage from "@/pages/dashboard/sample-testing/SampleTestingFormPage";
+import BorrowEquipmentListPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentListPage";
+import BorrowEquipmentFormPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentFormPage";
+import NotificationsPage from "@/pages/dashboard/account/NotificationsPage";
+import ActivityHistoryPage from "@/pages/dashboard/account/ActivityHistoryPage";
+import MyProfilePage from "@/pages/dashboard/account/MyProfilePage";
 import AdminHomePage from "@/pages/admin/home/AdminHomePage";
 import AdminSchedulePage from "@/pages/admin/information/AdminSchedulePage";
 import AdminAnnouncementPage from "@/pages/admin/information/AdminAnnouncementPage";
@@ -62,11 +79,21 @@ export const router = createBrowserRouter([
     ],
   },
   {
-    path: "/dashboard/:action?",
+    path: "/dashboard",
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <DashboardHomePage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/dashboard/overview",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardOverviewPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -76,7 +103,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <SchedulePage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -86,7 +113,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <BookingRoomsListPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -96,7 +123,17 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <BookingRoomsFormPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/booking-rooms/:id",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <BookingRoomsDetailPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -106,7 +143,17 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <RoomsListPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/rooms/:id",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <RoomDetailPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -116,7 +163,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <UseEquipmentListPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -126,7 +173,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <UseEquipmentFormPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -136,7 +183,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <EquipmentListPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -146,7 +193,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <SampleTestingListPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -156,7 +203,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <SampleTestingFormPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -166,7 +213,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <BorrowEquipmentListPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -176,7 +223,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <BorrowEquipmentFormPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -186,7 +233,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <NotificationsPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -196,7 +243,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <ActivityHistoryPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -206,7 +253,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <MyProfilePage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -216,7 +263,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <MyProfilePage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -226,7 +273,7 @@ export const router = createBrowserRouter([
     element: (
       <RequireAuth>
         <UserLayout>
-          <DashboardPage />
+          <MyProfilePage />
         </UserLayout>
       </RequireAuth>
     ),

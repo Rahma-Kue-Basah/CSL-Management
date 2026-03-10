@@ -1,4 +1,4 @@
-export function EquipmentListSection() {
+export default function EquipmentListPage() {
   return (
     <section>
       <h2 className="text-lg font-semibold text-slate-800">List Equipment untuk Booking</h2>

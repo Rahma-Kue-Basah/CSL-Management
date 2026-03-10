@@ -63,7 +63,7 @@ function getVisibleProfileFields(role: string | null | undefined) {
   return { department: true, batch: true, idNumber: true };
 }
 
-export function MyProfileSection() {
+export default function MyProfilePage() {
   const pathname = usePathname();
   const router = useRouter();
   const { profile } = useLoadProfile();

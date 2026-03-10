@@ -13,7 +13,7 @@ function KpiCard({
   );
 }
 
-export function DashboardOverviewSection() {
+export default function DashboardOverviewPage() {
   return (
     <section>
       <h2 className="text-lg font-semibold text-slate-800">KPI Overview</h2>
@@ -21,7 +21,7 @@ export function DashboardOverviewSection() {
         <KpiCard label="Total Booking Ruangan" value="24" />
         <KpiCard label="Total Booking Alat" value="18" />
         <KpiCard label="Jadwal Aktif Minggu Ini" value="9" />
-        <KpiCard label="Request Menunggu" value="6" />
+        <KpiCard label="Pengajuan Menunggu" value="6" />
       </div>
     </section>
   );

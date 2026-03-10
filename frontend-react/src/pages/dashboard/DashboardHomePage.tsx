@@ -1,4 +1,4 @@
-export function DashboardWelcomeSection() {
+export default function DashboardHomePage() {
   return (
     <section className="rounded-xl border border-slate-200 bg-slate-50 p-6">
       <h2 className="text-xl font-semibold text-slate-800">

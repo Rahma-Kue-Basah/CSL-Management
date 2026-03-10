@@ -105,6 +105,7 @@ export default function AdminRecordPeminjamanRuanganPage() {
       createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
     reloadKey,
+    "all",
   );
 
   const filteredBookings = useMemo(

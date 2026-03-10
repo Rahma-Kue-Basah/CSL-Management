@@ -11,6 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 from .models import (
@@ -33,8 +34,10 @@ from .serializers import (
     RoomDropdownSerializer,
     EquipmentSerializer,
     EquipmentListSerializer,
+    EquipmentDropdownSerializer,
     BookingSerializer,
     BookingListSerializer,
+    BookingUserListSerializer,
     BorrowSerializer,
     BorrowListSerializer,
     LabProfileSerializer,
@@ -47,7 +50,13 @@ from .serializers import (
     UseListSerializer,
 )
 from csluse_auth.audit import log_admin_action
-from csluse_auth.permissions import IsStaffOrAbove
+from csluse_auth.permissions import (
+    IsStaffOrAbove,
+    has_role,
+    STAFF,
+    ADMINISTRATOR,
+    SUPER_ADMINISTRATOR,
+)
 
 
 class DefaultPagination(PageNumberPagination):
@@ -221,6 +230,8 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     pagination_class = DefaultPagination
 
     def get_serializer_class(self):
+        if self.action == "dropdown":
+            return EquipmentDropdownSerializer
         if self.action == "list":
             return EquipmentListSerializer
         return EquipmentSerializer
@@ -311,6 +322,12 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             finally:
                 image.delete()
 
+    @action(detail=False, methods=['get'], url_path='dropdown')
+    def dropdown(self, request):
+        queryset = self.get_queryset().order_by('name')
+        serializer = EquipmentDropdownSerializer(queryset, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['get'])
     def availability(self, request, pk=None):
         equipment = self.get_object()
@@ -378,8 +395,24 @@ class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
 
+    def _is_staff_or_above(self):
+        user = self.request.user
+        return (
+            user
+            and user.is_authenticated
+            and (
+                has_role(user, STAFF)
+                or has_role(user, ADMINISTRATOR)
+                or has_role(user, SUPER_ADMINISTRATOR)
+            )
+        )
+
     def get_serializer_class(self):
         if self.action == "list":
+            if self._is_staff_or_above():
+                return BookingListSerializer
+            return BookingUserListSerializer
+        if self.action == "by_month":
             return BookingListSerializer
         return BookingSerializer
 
@@ -400,8 +433,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
-    def get_queryset(self):
-        qs = super().get_queryset()
+    def _apply_list_filters(self, qs, allow_requester_filter: bool):
         status_param = self.request.query_params.get('status')
         room_id = self.request.query_params.get('room')
         equipment_id = self.request.query_params.get('equipment')
@@ -412,14 +444,13 @@ class BookingViewSet(viewsets.ModelViewSet):
         created_after = self.request.query_params.get('created_after')
         created_before = self.request.query_params.get('created_before')
 
-        # Filter params: status, room, equipment, requested_by, pic, start_after, end_before, created range
         if status_param:
             qs = qs.filter(status=status_param)
         if room_id:
             qs = qs.filter(room_id=room_id)
         if equipment_id:
             qs = qs.filter(equipment_id=equipment_id)
-        if requester_id:
+        if requester_id and allow_requester_filter:
             qs = qs.filter(requested_by_id=requester_id)
         if pic_id:
             qs = qs.filter(room__pic_id=pic_id)
@@ -433,8 +464,41 @@ class BookingViewSet(viewsets.ModelViewSet):
             qs = qs.filter(created_at__lte=created_before)
         return qs
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        is_staff_or_above = self._is_staff_or_above()
+
+        # User-level access: non staff/admin can only see their own submitted bookings.
+        if not is_staff_or_above:
+            qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
+
+        return self._apply_list_filters(qs, allow_requester_filter=is_staff_or_above)
+
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
+
+    @action(detail=False, methods=['get'], url_path='my')
+    def my(self, request):
+        qs = super().get_queryset().filter(requested_by=getattr(request.user, "profile", None))
+        qs = self._apply_list_filters(qs, allow_requester_filter=False)
+
+        page = self.paginate_queryset(qs)
+        serializer = BookingUserListSerializer(page if page is not None else qs, many=True)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='all')
+    def all(self, request):
+        if not self._is_staff_or_above():
+            raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data booking.")
+
+        qs = self._apply_list_filters(super().get_queryset(), allow_requester_filter=True)
+        page = self.paginate_queryset(qs)
+        serializer = BookingListSerializer(page if page is not None else qs, many=True)
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='by-month')
     def by_month(self, request):

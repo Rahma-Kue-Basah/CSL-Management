@@ -141,6 +141,15 @@ class EquipmentListSerializer(serializers.ModelSerializer):
         ]
 
 
+class EquipmentDropdownSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Equipment
+        fields = [
+            "id",
+            "name",
+        ]
+
+
 class RecordProfileListSerializer(serializers.ModelSerializer):
     class Meta:
         model = ProfileSerializer.Meta.model
@@ -203,6 +212,25 @@ class BookingListSerializer(serializers.ModelSerializer):
             "equipment_detail",
             "created_at",
             "updated_at",
+        ]
+
+
+class BookingUserListSerializer(serializers.ModelSerializer):
+    requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
+    room_detail = RecordRoomListSerializer(source="room", read_only=True)
+
+    class Meta:
+        model = Booking
+        fields = [
+            "id",
+            "code",
+            "start_time",
+            "end_time",
+            "purpose",
+            "status",
+            "requested_by_detail",
+            "room_detail",
+            "created_at",
         ]
 
 

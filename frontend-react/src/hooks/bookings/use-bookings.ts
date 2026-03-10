@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import { API_BOOKINGS, API_BOOKING_DETAIL } from "@/constants/api";
+import {
+  API_BOOKINGS,
+  API_BOOKINGS_ALL,
+  API_BOOKINGS_MY,
+  API_BOOKING_DETAIL,
+} from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type BookingFilters = {
@@ -11,13 +16,17 @@ export type BookingFilters = {
   createdBefore?: string;
 };
 
+export type BookingListScope = "default" | "my" | "all";
+
 export type BookingRow = {
   id: string | number;
   code: string;
   roomId: string;
   roomName: string;
+  roomNumber: string;
   requesterId: string;
   requesterName: string;
+  requesterEmail: string;
   status: string;
   purpose: string;
   startTime: string;
@@ -26,6 +35,7 @@ export type BookingRow = {
   updatedAt: string;
   approvedById: string;
   approvedByName: string;
+  approvedByEmail: string;
   equipmentId: string;
   equipmentName: string;
   equipmentQty: string;
@@ -88,8 +98,10 @@ export function mapBooking(item: ApiBooking): BookingRow {
     code: String(item.code ?? "-"),
     roomId: String(item.room_detail?.id ?? item.room ?? ""),
     roomName: String(item.room_detail?.name ?? "-"),
+    roomNumber: String(item.room_detail?.number ?? "-"),
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
+    requesterEmail: String(item.requested_by_detail?.email ?? "-"),
     status: String(item.status ?? "-"),
     purpose: String(item.purpose ?? "-"),
     startTime: String(item.start_time ?? "-"),
@@ -98,6 +110,7 @@ export function mapBooking(item: ApiBooking): BookingRow {
     updatedAt: String(item.updated_at ?? "-"),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
+    approvedByEmail: String(item.approved_by_detail?.email ?? "-"),
     equipmentId: String(item.equipment_detail?.id ?? item.equipment ?? ""),
     equipmentName: String(item.equipment_detail?.name ?? "-"),
     equipmentQty: String(item.quantity_equipment ?? "-"),
@@ -166,6 +179,7 @@ export function useBookings(
   pageSize = 10,
   filters: BookingFilters = {},
   reloadKey = 0,
+  scope: BookingListScope = "default",
 ) {
   const [bookings, setBookings] = useState<BookingRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -181,7 +195,9 @@ export function useBookings(
       setIsLoading(true);
       setError("");
       try {
-        const url = new URL(API_BOOKINGS, window.location.origin);
+        const listEndpoint =
+          scope === "my" ? API_BOOKINGS_MY : scope === "all" ? API_BOOKINGS_ALL : API_BOOKINGS;
+        const url = new URL(listEndpoint, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
@@ -224,7 +240,7 @@ export function useBookings(
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, filters.createdAfter, filters.createdBefore, reloadKey]);
+  }, [page, pageSize, filters.status, filters.createdAfter, filters.createdBefore, reloadKey, scope]);
 
   return {
     bookings,

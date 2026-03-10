@@ -1,4 +1,4 @@
-export function ActivityHistorySection() {
+export default function ActivityHistoryPage() {
   return (
     <section>
       <h2 className="text-lg font-semibold text-slate-800">Riwayat Aktivitas</h2>

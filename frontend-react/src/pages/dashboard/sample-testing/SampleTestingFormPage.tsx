@@ -1,12 +1,12 @@
-export function BorrowEquipmentListSection() {
+export default function SampleTestingFormPage() {
   return (
     <section>
       <h2 className="text-lg font-semibold text-slate-800">
-        List Request Peminjaman Alat
+        Ajukan Pengujian Sampel
       </h2>
       <div className="mt-4 rounded-xl border border-slate-200 bg-white p-4">
         <p className="text-sm text-slate-600">
-          Daftar request peminjaman alat ditampilkan di sini.
+          Form pengajuan pengujian sampel ditampilkan di sini.
         </p>
       </div>
     </section>
