@@ -1,8 +1,6 @@
 "use client";
 
 import type { FormEvent, ReactNode } from "react";
-import { CKEditor } from "@ckeditor/ckeditor5-react";
-import ClassicEditor from "@ckeditor/ckeditor5-build-classic";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -15,20 +13,6 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-
-const EDITOR_TOOLBAR = [
-  "heading",
-  "|",
-  "bold",
-  "italic",
-  "link",
-  "bulletedList",
-  "numberedList",
-  "|",
-  "blockQuote",
-  "undo",
-  "redo",
-];
 
 const DIALOG_WIDTH_CLASS =
   "w-[min(1000px,calc(100%-2rem))] max-w-none sm:max-w-none [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]";
@@ -83,17 +67,13 @@ export function AnnouncementCreateDialog({
             <label className="text-sm font-medium text-slate-700">
               Isi Pengumuman
             </label>
-            <CKEditor
-              editor={ClassicEditor}
-              data={contentValue}
-              onChange={(_, editor) => {
-                const data = editor.getData();
-                onContentChange(data);
-              }}
-              config={{
-                toolbar: EDITOR_TOOLBAR,
-                placeholder: "Tulis detail pengumuman yang akan ditampilkan.",
-              }}
+            <textarea
+              name="content"
+              value={contentValue}
+              onChange={(event) => onContentChange(event.target.value)}
+              placeholder="Tulis detail pengumuman yang akan ditampilkan."
+              rows={8}
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus-visible:border-[#0052C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0052C7]/20"
             />
           </div>
           {error ? (
@@ -170,17 +150,13 @@ export function AnnouncementEditDialog({
             <label className="text-sm font-medium text-slate-700">
               Isi Pengumuman
             </label>
-            <CKEditor
-              editor={ClassicEditor}
-              data={contentValue}
-              onChange={(_, editor) => {
-                const data = editor.getData();
-                onContentChange(data);
-              }}
-              config={{
-                toolbar: EDITOR_TOOLBAR,
-                placeholder: "Tulis detail pengumuman",
-              }}
+            <textarea
+              name="content"
+              value={contentValue}
+              onChange={(event) => onContentChange(event.target.value)}
+              placeholder="Tulis detail pengumuman"
+              rows={8}
+              className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus-visible:border-[#0052C7] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0052C7]/20"
             />
           </div>
           {error ? (
