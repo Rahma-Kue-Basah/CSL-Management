@@ -17,6 +17,14 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import {
+  Combobox,
+  ComboboxContent,
+  ComboboxEmpty,
+  ComboboxInput,
+  ComboboxItem,
+  ComboboxList,
+} from "@/components/ui/combobox";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { useCreateBookingRoom } from "@/hooks/bookings/use-create-booking-room";
@@ -32,6 +40,11 @@ type FormData = {
   note: string;
   equipmentId: string;
   quantityEquipment: string;
+};
+
+type SelectOption = {
+  value: string;
+  label: string;
 };
 
 const PURPOSE_OPTIONS = [
@@ -80,11 +93,88 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
   const isEmpty = displayValue === "-";
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
-      <p className="text-xs font-semibold text-slate-500">{label}</p>
-      <p className={`mt-1.5 text-sm ${isEmpty ? "italic text-slate-400" : "font-medium text-slate-800"}`}>
+    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
+      <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500">
+        {label}
+      </p>
+      <p
+        className={`mt-2 text-sm ${isEmpty ? "italic text-slate-400" : "font-medium text-slate-800"}`}
+      >
         {displayValue}
       </p>
+    </div>
+  );
+}
+
+type ComboboxFieldProps = {
+  label: string;
+  value: string;
+  options: SelectOption[];
+  placeholder: string;
+  emptyText: string;
+  disabled?: boolean;
+  required?: boolean;
+  showClear?: boolean;
+  onChange: (value: string) => void;
+};
+
+function ComboboxField({
+  label,
+  value,
+  options,
+  placeholder,
+  emptyText,
+  disabled,
+  required,
+  showClear = false,
+  onChange,
+}: ComboboxFieldProps) {
+  const [query, setQuery] = useState("");
+  const selectedOption = options.find((option) => option.value === value) ?? null;
+  const filteredOptions = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
+
+    if (!normalizedQuery) return options;
+
+    return options.filter((option) =>
+      option.label.toLowerCase().includes(normalizedQuery),
+    );
+  }, [options, query]);
+
+  return (
+    <div className="space-y-1.5">
+      <label className="text-xs font-medium text-slate-600">
+        {label}{" "}
+        {required ? <span className="text-rose-600">*</span> : null}
+      </label>
+      <Combobox<SelectOption>
+        items={filteredOptions}
+        value={selectedOption}
+        itemToStringLabel={(item) => item.label}
+        itemToStringValue={(item) => item.value}
+        onInputValueChange={(inputValue) => setQuery(inputValue)}
+        onValueChange={(nextValue) => {
+          onChange(nextValue?.value ?? "");
+          setQuery("");
+        }}
+      >
+        <ComboboxInput
+          disabled={disabled}
+          placeholder={placeholder}
+          showClear={showClear}
+          className="h-11 w-full rounded-md border-slate-300 bg-white shadow-xs [&_[data-slot=input-group-control]]:h-11 [&_[data-slot=input-group-control]]:px-3 [&_[data-slot=input-group-control]]:text-sm"
+        />
+        <ComboboxContent className="border border-slate-200 bg-white">
+          <ComboboxList>
+            <ComboboxEmpty>{emptyText}</ComboboxEmpty>
+            {filteredOptions.map((option, index) => (
+              <ComboboxItem key={option.value} value={option} index={index}>
+                {option.label}
+              </ComboboxItem>
+            ))}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
     </div>
   );
 }
@@ -179,9 +269,21 @@ export default function BookingRoomsFormPage() {
     () => equipmentOptions.find((equipment) => equipment.id === formData.equipmentId)?.label ?? "-",
     [equipmentOptions, formData.equipmentId],
   );
+  const roomOptions = useMemo<SelectOption[]>(
+    () => rooms.map((room) => ({ value: room.id, label: room.label })),
+    [rooms],
+  );
+  const equipmentComboboxOptions = useMemo<SelectOption[]>(
+    () =>
+      equipmentOptions.map((equipment) => ({
+        value: equipment.id,
+        label: equipment.label,
+      })),
+    [equipmentOptions],
+  );
 
   const handleChange = (
-    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -225,6 +327,12 @@ export default function BookingRoomsFormPage() {
       ...prev,
       endTime: combineDateTime(endDate, time),
     }));
+    setValidationMessage("");
+    setErrorMessage("");
+  };
+
+  const handleSelectChange = (name: "roomId" | "purpose" | "equipmentId", value: string) => {
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setValidationMessage("");
     setErrorMessage("");
   };
@@ -314,44 +422,27 @@ export default function BookingRoomsFormPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
-              Ruangan <span className="text-rose-600">*</span>
-            </label>
-            <select
-              name="roomId"
-              value={formData.roomId}
-              onChange={handleChange}
-              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
-              disabled={isLoadingRooms || isSubmitting}
-            >
-              <option value="">Pilih ruangan</option>
-              {rooms.map((room) => (
-                <option key={room.id} value={room.id}>
-                  {room.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ComboboxField
+            label="Ruangan"
+            value={formData.roomId}
+            options={roomOptions}
+            placeholder="Pilih ruangan"
+            emptyText="Ruangan tidak ditemukan."
+            disabled={isLoadingRooms || isSubmitting}
+            required
+            onChange={(value) => handleSelectChange("roomId", value)}
+          />
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
-              Tujuan <span className="text-rose-600">*</span>
-            </label>
-            <select
-              name="purpose"
-              value={formData.purpose}
-              onChange={handleChange}
-              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
-              disabled={isSubmitting}
-            >
-              {PURPOSE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ComboboxField
+            label="Tujuan"
+            value={formData.purpose}
+            options={PURPOSE_OPTIONS}
+            placeholder="Pilih tujuan"
+            emptyText="Tujuan tidak ditemukan."
+            disabled={isSubmitting}
+            required
+            onChange={(value) => handleSelectChange("purpose", value)}
+          />
 
           <DateTimePickerField
             id="start-time"
@@ -375,25 +466,16 @@ export default function BookingRoomsFormPage() {
             disabled={isSubmitting}
           />
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-slate-600">
-              Peralatan (Opsional)
-            </label>
-            <select
-              name="equipmentId"
-              value={formData.equipmentId}
-              onChange={handleChange}
-              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
-              disabled={isSubmitting || isLoadingEquipments}
-            >
-              <option value="">-</option>
-              {equipmentOptions.map((equipment) => (
-                <option key={equipment.id} value={equipment.id}>
-                  {equipment.label}
-                </option>
-              ))}
-            </select>
-          </div>
+          <ComboboxField
+            label="Peralatan (Opsional)"
+            value={formData.equipmentId}
+            options={equipmentComboboxOptions}
+            placeholder="Pilih peralatan"
+            emptyText="Peralatan tidak ditemukan."
+            disabled={isSubmitting || isLoadingEquipments}
+            showClear
+            onChange={(value) => handleSelectChange("equipmentId", value)}
+          />
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600">
@@ -468,39 +550,55 @@ export default function BookingRoomsFormPage() {
       ) : null}
 
       <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-xl border-slate-200 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
           <AlertDialogHeader className="place-items-start text-left">
-            <AlertDialogTitle>Ringkasan Pengajuan</AlertDialogTitle>
+            <AlertDialogTitle>Konfirmasi Pengajuan</AlertDialogTitle>
             <AlertDialogDescription>
-              Pastikan data berikut sudah sesuai sebelum pengajuan dikirim.
+              Periksa kembali data booking ruangan sebelum pengajuan dikirim.
             </AlertDialogDescription>
           </AlertDialogHeader>
 
-          <div className="grid gap-2 rounded-lg border border-slate-200 bg-slate-50 p-3 sm:grid-cols-2">
+          <div className="space-y-3">
             <SummaryItem label="Ruangan" value={selectedRoomLabel} />
             <SummaryItem label="Tujuan" value={formData.purpose} />
-            <SummaryItem label="Waktu Mulai" value={formatDateTime(formData.startTime)} />
-            <SummaryItem label="Waktu Selesai" value={formatDateTime(formData.endTime)} />
+            <SummaryItem
+              label="Waktu Mulai"
+              value={formatDateTime(formData.startTime)}
+            />
+            <SummaryItem
+              label="Waktu Selesai"
+              value={formatDateTime(formData.endTime)}
+            />
             <SummaryItem label="Peralatan" value={selectedEquipmentLabel} />
-            <SummaryItem label="Jumlah Peralatan" value={formData.quantityEquipment} />
-            <div className="sm:col-span-2">
-              <SummaryItem label="Catatan" value={formData.note} />
-            </div>
+            <SummaryItem
+              label="Jumlah Peralatan"
+              value={formData.quantityEquipment}
+            />
+            <SummaryItem label="Catatan" value={formData.note} />
           </div>
 
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={isSubmitting}>Kembali</AlertDialogCancel>
-            <AlertDialogAction disabled={isSubmitting} onClick={() => void handleConfirmSubmit()}>
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Mengirim...
-                </>
-              ) : (
-                "Konfirmasi Ajukan"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          <AlertDialogFooter className="border-t border-slate-200 pt-4">
+              <AlertDialogCancel
+                disabled={isSubmitting}
+                className="rounded-md border-slate-300"
+              >
+                Batal
+              </AlertDialogCancel>
+              <AlertDialogAction
+                disabled={isSubmitting}
+                onClick={() => void handleConfirmSubmit()}
+                className="rounded-md bg-[#0052C7] text-white hover:bg-[#0048B4]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Mengirim...
+                  </>
+                ) : (
+                  "Konfirmasi"
+                )}
+              </AlertDialogAction>
+            </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </section>

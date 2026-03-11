@@ -6,10 +6,13 @@ import {
   Bell,
   Building2,
   CalendarDays,
+  ClipboardList,
+  FilePenLine,
   FlaskConical,
   History,
   LayoutDashboard,
   Package,
+  ShieldCheck,
   UserRound,
   Wrench,
 } from "lucide-react";
@@ -38,6 +41,54 @@ type SidebarShortcut = {
   icon: ComponentType<{ className?: string }>;
   actions: ShortcutAction[];
 };
+
+function getHeaderIcon(menuId: string, actionId: string | null) {
+  if (menuId === "dashboard") {
+    if (actionId === "announcements") return Bell;
+    return LayoutDashboard;
+  }
+
+  if (menuId === "schedule") return CalendarDays;
+
+  if (menuId === "booking-rooms") {
+    if (actionId === "request-form") return FilePenLine;
+    if (actionId === "request-list" || actionId === "all-requests") {
+      return ClipboardList;
+    }
+    if (actionId === "rooms") return Building2;
+    return Building2;
+  }
+
+  if (menuId === "use-equipment") {
+    if (actionId === "request-form") return FilePenLine;
+    if (actionId === "request-list") return ClipboardList;
+    if (actionId === "equipment") return Wrench;
+    return Wrench;
+  }
+
+  if (menuId === "sample-testing") {
+    if (actionId === "request-form") return FilePenLine;
+    if (actionId === "request-list") return ClipboardList;
+    return FlaskConical;
+  }
+
+  if (menuId === "borrow-equipment") {
+    if (actionId === "request-form") return FilePenLine;
+    if (actionId === "request-list") return ClipboardList;
+    if (actionId === "equipment") return Package;
+    return Package;
+  }
+
+  if (menuId === "notifications") return Bell;
+  if (menuId === "activity-history") return History;
+
+  if (menuId === "my-profile") {
+    if (actionId === "change-password") return ShieldCheck;
+    return UserRound;
+  }
+
+  return LayoutDashboard;
+}
 
 const ACTION_PANEL_WIDTH = "22rem";
 const SIDEBAR_WIDTH = "5rem";
@@ -333,6 +384,10 @@ function DashboardShell({ children }: UserLayoutProps) {
     activeMenu.id === "my-profile"
       ? "Ringkasan data akun pengguna Anda."
       : activeAction?.description ?? activeMenu.description;
+  const isAllBookingRequestsPage = pathname.startsWith("/booking-rooms/all");
+  const pageEyebrow = isAllBookingRequestsPage ? "CSL Management" : undefined;
+  const HeaderIcon = getHeaderIcon(activeMenu.id, actionParam);
+  const pageHeaderIcon = <HeaderIcon className="h-5 w-5 text-white" />;
 
   const hasActionPanel = isActionPanelOpen && !isMobile;
 
@@ -391,8 +446,14 @@ function DashboardShell({ children }: UserLayoutProps) {
         )}
 
         <DashboardMainLayout
-          pageTitle={pageTitle}
-          pageDescription={pageDescription}
+          pageTitle={isAllBookingRequestsPage ? "Daftar Pengajuan" : pageTitle}
+          pageDescription={
+            isAllBookingRequestsPage
+              ? "Lihat seluruh daftar pengajuan booking ruangan."
+              : pageDescription
+          }
+          pageEyebrow={pageEyebrow}
+          pageIcon={pageHeaderIcon}
         >
           {children}
         </DashboardMainLayout>

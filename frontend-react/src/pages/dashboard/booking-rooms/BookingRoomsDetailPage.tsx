@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowLeft, Check, Loader2, X } from "lucide-react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  Check,
+  Loader2,
+  MapPinned,
+  NotebookPen,
+  UserRound,
+  X,
+} from "lucide-react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { Steps } from "rsuite";
 import { toast } from "sonner";
@@ -44,6 +53,23 @@ function normalizeStatus(value: string) {
 
 function isPendingStatus(value: string) {
   return normalizeStatus(value) === "pending";
+}
+
+function getStatusBadge(status: string) {
+  switch (status.toLowerCase()) {
+    case "approved":
+      return "bg-emerald-100 text-emerald-700";
+    case "pending":
+      return "bg-amber-100 text-amber-700";
+    case "rejected":
+      return "bg-rose-100 text-rose-700";
+    case "completed":
+      return "bg-sky-100 text-sky-700";
+    case "cancelled":
+      return "bg-slate-200 text-slate-600";
+    default:
+      return "bg-slate-100 text-slate-600";
+  }
 }
 
 function getBookingFlow(booking: {
@@ -115,7 +141,9 @@ function getBookingFlow(booking: {
 function BookingFlow({ steps }: { steps: BookingFlowStep[] }) {
   const currentIndex = Math.max(
     0,
-    steps.findIndex((step) => step.state === "process" || step.state === "error"),
+    steps.findIndex(
+      (step) => step.state === "process" || step.state === "error",
+    ),
   );
 
   return (
@@ -134,17 +162,59 @@ function BookingFlow({ steps }: { steps: BookingFlowStep[] }) {
   );
 }
 
-function DetailRow({ label, value }: { label: string; value: string }) {
+function DetailItem({
+  label,
+  value,
+  variant = "default",
+}: {
+  label: string;
+  value: string;
+  variant?: "default" | "status";
+}) {
   const displayValue = value?.trim() ? value : "-";
   const isEmpty = displayValue === "-";
 
   return (
-    <div className="rounded-xl border border-slate-200/90 bg-gradient-to-br from-white to-slate-50 px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.06)] transition-colors hover:border-slate-300">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</p>
-      <p className={`mt-2 text-sm leading-relaxed ${isEmpty ? "italic text-slate-400" : "font-medium text-slate-800"}`}>
-        {displayValue}
-      </p>
+    <div className="space-y-1.5 rounded-md border border-slate-200 bg-white px-4 py-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      {variant === "status" && !isEmpty ? (
+        <span
+          className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadge(displayValue)}`}
+        >
+          {displayValue}
+        </span>
+      ) : (
+        <p
+          className={`text-sm leading-relaxed ${isEmpty ? "italic text-slate-400" : "text-slate-800"}`}
+        >
+          {displayValue}
+        </p>
+      )}
     </div>
+  );
+}
+
+function DetailSection({
+  title,
+  icon,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-slate-400/50 bg-white p-5">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
+          {icon}
+        </div>
+        <div>
+          <h3 className="text-sm text-slate-900">{title}</h3>
+        </div>
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -155,7 +225,9 @@ export default function BookingRoomsDetailPage() {
   const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
   const params = useParams<BookingDetailParams>();
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(null);
+  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
+    null,
+  );
   const backHref = pathname.startsWith("/booking-rooms/all/")
     ? "/booking-rooms/all"
     : "/booking-rooms";
@@ -182,7 +254,11 @@ export default function BookingRoomsDetailPage() {
         <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
-        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push(backHref)}
+        >
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
         </Button>
@@ -194,7 +270,11 @@ export default function BookingRoomsDetailPage() {
     return (
       <section className="space-y-3">
         <p className="text-sm text-slate-600">Data booking tidak ditemukan.</p>
-        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => router.push(backHref)}
+        >
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
         </Button>
@@ -229,7 +309,9 @@ export default function BookingRoomsDetailPage() {
             status: type === "approve" ? "Approved" : "Rejected",
             updatedAt: now,
             approvedById:
-              type === "approve" ? String(profile?.id ?? current.approvedById) : current.approvedById,
+              type === "approve"
+                ? String(profile?.id ?? current.approvedById)
+                : current.approvedById,
             approvedByName:
               type === "approve"
                 ? profile?.name || current.approvedByName
@@ -258,8 +340,18 @@ export default function BookingRoomsDetailPage() {
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-900">Detail Booking Ruangan</h2>
+      <div className="rounded-xl flex items-start justify-between gap-4 border border-slate-800 bg-slate-900 p-5">
+        <div className="flex items-start gap-4">
+         
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs text-slate-300">Detail Request</p>
+              <h2 className="mt-1 font-bold text-xl text-slate-50">
+                {booking.code}
+              </h2>
+            </div>
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           {canReviewBooking ? (
             <>
@@ -283,32 +375,97 @@ export default function BookingRoomsDetailPage() {
               </Button>
             </>
           ) : null}
-          <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => router.push(backHref)}
+          >
             <ArrowLeft className="h-4 w-4" />
             Kembali
           </Button>
         </div>
       </div>
 
-      <div className="rounded-xl border border-slate-200 bg-white p-4">
-        <h3 className="text-sm font-semibold text-slate-900">Alur Status Booking</h3>
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <h3 className="text-sm font-semibold text-slate-900">
+          Status
+        </h3>
         <BookingFlow steps={flowSteps} />
       </div>
 
-      <div className="grid gap-3 rounded-xl border border-slate-200 bg-white p-4 md:grid-cols-2">
-        <DetailRow label="Kode" value={booking.code} />
-        <DetailRow label="Status" value={booking.status} />
-        <DetailRow label="Ruangan" value={booking.roomName} />
-        <DetailRow label="Nomor Ruangan" value={booking.roomNumber || "-"} />
-        <DetailRow label="Peminjam" value={booking.requesterName} />
-        <DetailRow label="Disetujui Oleh" value={booking.approvedByName || "-"} />
-        <DetailRow label="Peralatan (Opsional)" value={booking.equipmentName || "-"} />
-        <DetailRow label="Jumlah Peralatan" value={booking.equipmentQty || "-"} />
-        <DetailRow label="Waktu Mulai" value={formatDateTime(booking.startTime)} />
-        <DetailRow label="Waktu Selesai" value={formatDateTime(booking.endTime)} />
-        <DetailRow label="Dibuat Pada" value={formatDateTime(booking.createdAt)} />
-        <DetailRow label="Tujuan" value={booking.purpose} />
-        <DetailRow label="Catatan" value={booking.note || "-"} />
+      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="space-y-4">
+          <DetailSection
+            title="Informasi Ruangan"
+            icon={<MapPinned className="h-4 w-4" />}
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <DetailItem label="Ruangan" value={booking.roomName} />
+              <DetailItem
+                label="Nomor Ruangan"
+                value={booking.roomNumber || "-"}
+              />
+              <DetailItem
+                label="Peralatan (Opsional)"
+                value={booking.equipmentName || "-"}
+              />
+              <DetailItem
+                label="Jumlah Peralatan"
+                value={booking.equipmentQty || "-"}
+              />
+            </div>
+          </DetailSection>
+
+          <DetailSection
+            title="Waktu Pengajuan"
+            icon={<CalendarClock className="h-4 w-4" />}
+          >
+            <div className="grid gap-3 md:grid-cols-2">
+              <DetailItem
+                label="Waktu Mulai"
+                value={formatDateTime(booking.startTime)}
+              />
+              <DetailItem
+                label="Waktu Selesai"
+                value={formatDateTime(booking.endTime)}
+              />
+              <DetailItem
+                label="Dibuat Pada"
+                value={formatDateTime(booking.createdAt)}
+              />
+              <DetailItem
+                label="Status Saat Ini"
+                value={booking.status}
+                variant="status"
+              />
+            </div>
+          </DetailSection>
+        </div>
+
+        <div className="space-y-4">
+          <DetailSection
+            title="Informasi Pemohon"
+            icon={<UserRound className="h-4 w-4" />}
+          >
+            <div className="grid gap-3">
+              <DetailItem label="Peminjam" value={booking.requesterName} />
+              <DetailItem
+                label="Disetujui Oleh"
+                value={booking.approvedByName || "-"}
+              />
+            </div>
+          </DetailSection>
+
+          <DetailSection
+            title="Keterangan Pengajuan"
+            icon={<NotebookPen className="h-4 w-4" />}
+          >
+            <div className="grid gap-3">
+              <DetailItem label="Tujuan" value={booking.purpose} />
+              <DetailItem label="Catatan" value={booking.note || "-"} />
+            </div>
+          </DetailSection>
+        </div>
       </div>
 
       <BookingStatusConfirmDialog

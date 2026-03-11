@@ -13,7 +13,7 @@ type DashboardPageHeaderProps = {
 export function DashboardPageHeader({
   title,
   description,
-  eyebrow = "CSL User",
+  eyebrow = "CSL Management",
   icon,
 }: DashboardPageHeaderProps) {
   return (

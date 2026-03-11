@@ -59,7 +59,8 @@ body {
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.3200 0.0060 285.8850);
   /* --primary: oklch(0.205 0 0); */
-  --primary: #e30614;
+  /* --primary: #e30614; */
+  --primary: #0048b4;
   --primary-foreground: oklch(0.9710 0.0130 17.3800);
   --secondary: oklch(0.9670 0.0010 286.3750);
   --secondary-foreground: oklch(0.2100 0.0060 285.8850);
@@ -230,7 +231,7 @@ body {
   .booking-flow .rs-steps-item-status-wait .rs-steps-item-icon-wrapper {
     background-color: #dbeafe;
     border-color: #93c5fd;
-    color: #3b82f6;
+    color: #1e40af;
   }
 
   .booking-flow .rs-steps-item-status-error .rs-steps-item-icon-wrapper {
@@ -240,15 +241,16 @@ body {
   }
 
   .booking-flow .rs-steps-item-status-error .rs-steps-item-tail {
-    background-color: #60a5fa;
+    background-color: #1e40af;
   }
 
-  .booking-flow .rs-steps-item-title {
-    color: #1e3a8a;
-    /* font-weight: 600; */
+  .booking-flow .rs-steps-item .rs-steps-item-title {
+    color: #0f172a;
+    font-size: 14px !important;
   }
 
-  .booking-flow .rs-steps-item-description {
+  .booking-flow .rs-steps-item .rs-steps-item-description {
     color: #64748b;
+    font-size: 12px !important;
   }
 }

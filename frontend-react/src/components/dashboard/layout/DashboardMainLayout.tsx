@@ -8,12 +8,16 @@ import { SidebarInset } from "@/components/ui/sidebar";
 type DashboardMainLayoutProps = {
   pageTitle: string;
   pageDescription?: string | null;
+  pageEyebrow?: string;
+  pageIcon?: ReactNode;
   children: ReactNode;
 };
 
 export function DashboardMainLayout({
   pageTitle,
   pageDescription,
+  pageEyebrow,
+  pageIcon,
   children,
 }: DashboardMainLayoutProps) {
   return (
@@ -24,6 +28,8 @@ export function DashboardMainLayout({
             <DashboardPageHeader
               title={pageTitle}
               description={pageDescription ?? undefined}
+              eyebrow={pageEyebrow}
+              icon={pageIcon}
             />
             <div className="mt-4">{children}</div>
           </div>
