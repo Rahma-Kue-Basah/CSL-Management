@@ -13,6 +13,7 @@ import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 
 import DashboardHomePage from "@/pages/dashboard/DashboardHomePage";
 import DashboardOverviewPage from "@/pages/dashboard/overview/DashboardOverviewPage";
+import DashboardAnnouncementsPage from "@/pages/dashboard/announcements/DashboardAnnouncementsPage";
 import SchedulePage from "@/pages/dashboard/schedule/SchedulePage";
 import BookingRoomsListPage from "@/pages/dashboard/booking-rooms/BookingRoomsListPage";
 import BookingRoomsFormPage from "@/pages/dashboard/booking-rooms/BookingRoomsFormPage";
@@ -26,6 +27,7 @@ import SampleTestingListPage from "@/pages/dashboard/sample-testing/SampleTestin
 import SampleTestingFormPage from "@/pages/dashboard/sample-testing/SampleTestingFormPage";
 import BorrowEquipmentListPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentListPage";
 import BorrowEquipmentFormPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentFormPage";
+import BorrowEquipmentAvailablePage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentAvailablePage";
 import NotificationsPage from "@/pages/dashboard/account/NotificationsPage";
 import ActivityHistoryPage from "@/pages/dashboard/account/ActivityHistoryPage";
 import MyProfilePage from "@/pages/dashboard/account/MyProfilePage";
@@ -94,6 +96,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <UserLayout>
           <DashboardOverviewPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/dashboard/announcements",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardAnnouncementsPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -224,6 +236,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <UserLayout>
           <BorrowEquipmentFormPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/borrow-equipment/equipment",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <BorrowEquipmentAvailablePage />
         </UserLayout>
       </RequireAuth>
     ),

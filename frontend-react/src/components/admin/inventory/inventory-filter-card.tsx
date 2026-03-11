@@ -18,31 +18,26 @@ export function InventoryFilterCard({
   children,
 }: InventoryFilterCardProps) {
   return (
-    <div className="w-full min-w-0 rounded border-2 border-slate-400/80 bg-slate-50 shadow-xs">
-      <div
-        className="flex cursor-pointer items-center justify-between px-4 py-3"
-        onClick={onToggle}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(event) => {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            onToggle();
-          }
-        }}
-      >
-        <div className="flex items-center gap-2">
-          <div className="rounded-lg bg-white/90 p-2 text-slate-700 shadow-xs">
+    <div className="w-full min-w-0 overflow-hidden rounded-2xl border border-slate-400/60 bg-gradient-to-br from-slate-50 to-slate-100/75 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+      <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+        <button
+          type="button"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-label="Toggle filter"
+        >
+          <div className="rounded-md bg-white p-1.5 text-slate-600 shadow-xs">
             <SlidersHorizontal className="h-4 w-4" />
           </div>
-          <p className="text-sm font-semibold text-slate-900">Filter</p>
-        </div>
+          <p className="text-sm font-semibold text-slate-800">Filter</p>
+        </button>
         {open ? (
           <Button
             type="button"
             variant="outline"
             size="sm"
-            className="h-8 gap-2 border-slate-400 bg-white text-slate-900 hover:bg-white"
+            className="h-9 gap-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
             onClick={(event) => {
               event.stopPropagation();
               onReset();
@@ -54,7 +49,11 @@ export function InventoryFilterCard({
         ) : null}
       </div>
 
-      {open ? <div className="border-t border-slate-400/70 px-4 pb-4 pt-3">{children}</div> : null}
+      {open ? (
+        <div className="border-t border-slate-200/70 bg-white px-4 pb-4.5 pt-3.5">
+          {children}
+        </div>
+      ) : null}
     </div>
   );
 }

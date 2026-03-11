@@ -14,8 +14,10 @@ import { useRouter } from "next/navigation";
 
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { useBookings } from "@/hooks/bookings/use-bookings";
+import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 
 const PAGE_SIZE = 10;
 
@@ -57,14 +59,6 @@ function getStatusBadge(status: string) {
     default:
       return "bg-slate-100 text-slate-600";
   }
-}
-
-function toStartOfDay(value: string) {
-  return value ? `${value}T00:00:00` : "";
-}
-
-function toEndOfDay(value: string) {
-  return value ? `${value}T23:59:59` : "";
 }
 
 function SummaryCard({
@@ -265,7 +259,7 @@ export default function BookingRoomsListPage() {
                   type="search"
                   value={search}
                   placeholder="Kode, ruangan, peminjam, tujuan"
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  className="h-11 border-slate-300 bg-white px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                   onChange={(event) => {
                     setSearch(event.target.value);
                     setPage(1);
@@ -282,7 +276,7 @@ export default function BookingRoomsListPage() {
                     setStatus(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
                 >
                   {STATUS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -295,28 +289,28 @@ export default function BookingRoomsListPage() {
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
                   Dibuat Dari
                 </label>
-                <Input
-                  type="date"
-                  value={createdAfter}
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                  onChange={(event) => {
-                    setCreatedAfter(event.target.value);
+                <DatePicker
+                  value={parseDateKey(createdAfter)}
+                  onChange={(value) => {
+                    setCreatedAfter(value ? formatDateKey(value) : "");
                     setPage(1);
                   }}
+                  clearable
+                  buttonClassName="h-11 border-slate-300 px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                 />
               </div>
               <div className="min-w-0">
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
                   Dibuat Sampai
                 </label>
-                <Input
-                  type="date"
-                  value={createdBefore}
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                  onChange={(event) => {
-                    setCreatedBefore(event.target.value);
+                <DatePicker
+                  value={parseDateKey(createdBefore)}
+                  onChange={(value) => {
+                    setCreatedBefore(value ? formatDateKey(value) : "");
                     setPage(1);
                   }}
+                  clearable
+                  buttonClassName="h-11 border-slate-300 px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                 />
               </div>
             </div>
@@ -352,7 +346,7 @@ export default function BookingRoomsListPage() {
               <th className="w-[120px] px-3 py-3 font-medium text-slate-50">
                 Status
               </th>
-              <th className="w-[120px] px-3 py-3 text-center font-medium text-slate-50">
+              <th className="sticky right-0 z-20 w-[120px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
                 Aksi
               </th>
             </tr>
@@ -395,7 +389,7 @@ export default function BookingRoomsListPage() {
                       {booking.status}
                     </span>
                   </td>
-                  <td className="px-3 py-2.5 text-center">
+                  <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <Button
                       type="button"
                       variant="outline"

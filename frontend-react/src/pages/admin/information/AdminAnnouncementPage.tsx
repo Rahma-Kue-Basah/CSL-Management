@@ -6,14 +6,13 @@ import {
   Megaphone,
   Pencil,
   Plus,
-  RotateCcw,
   Search,
   Trash2,
   User2,
 } from "lucide-react";
-import { DatePicker } from "rsuite";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import {
   AnnouncementCreateDialog,
   AnnouncementEditDialog,
@@ -29,6 +28,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { API_BASE_URL } from "@/constants/api";
@@ -39,6 +39,7 @@ import {
 import { useCreateAnnouncement } from "@/hooks/announcements/use-create-announcement";
 import { useUpdateAnnouncement } from "@/hooks/announcements/use-update-announcement";
 import { useDeleteAnnouncement } from "@/hooks/announcements/use-delete-announcement";
+import { formatDateKey, parseDateKey } from "@/lib/date";
 
 function resolveImageUrl(value?: string | null) {
   if (!value) return "";
@@ -111,19 +112,6 @@ function formatDateLabel(value?: string | null) {
   }).format(date);
 }
 
-function formatDateKeyFromDate(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseDateKey(value: string) {
-  const [year, month, day] = value.split("-").map((part) => Number(part));
-  if (!year || !month || !day) return null;
-  return new Date(year, month - 1, day);
-}
-
 const FALLBACK_TONES = [
   "from-emerald-200 via-emerald-100 to-emerald-50",
   "from-sky-200 via-sky-100 to-sky-50",
@@ -145,6 +133,7 @@ function getFallbackTone(value: string | number) {
 export default function AdminPengumumanPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
   const {
     announcements,
     setAnnouncements,
@@ -426,53 +415,34 @@ export default function AdminPengumumanPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <div className="relative overflow-hidden rounded-xl border bg-white p-5">
-        <div className="pointer-events-none absolute -right-8 -top-10 h-28 w-28 rounded-full bg-sky-500/10 blur-2xl" />
-        <div className="relative space-y-4">
-          <div className="flex flex-wrap items-center gap-3">
-            <div className="flex min-w-[220px] flex-1 items-center gap-2 rounded-lg border bg-slate-50 px-3 py-2">
-              <Search className="h-4 w-4 text-slate-400" />
-              <Input
-                value={searchQuery}
-                onChange={(event) => setSearchQuery(event.target.value)}
-                placeholder="Cari judul atau isi pengumuman"
-                className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
-              />
-            </div>
-            <div className="flex items-center rounded-lg border bg-slate-50 px-2 py-1 text-sm text-slate-600">
-              {/* <label className="text-xs font-medium text-slate-500">
-                Tanggal
-              </label> */}
-              <DatePicker
-                value={dateFilter ? parseDateKey(dateFilter) : null}
-                onChange={(value) =>
-                  setDateFilter(value ? formatDateKeyFromDate(value) : "")
-                }
-                placeholder="Pilih tanggal"
-                format="dd MMM yyyy"
-                oneTap
-                cleanable
-                className="w-[280px]"
-              />
-            </div>
-            {searchQuery || dateFilter ? (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                className="text-slate-600"
-                onClick={() => {
-                  setSearchQuery("");
-                  setDateFilter("");
-                }}
-                aria-label="Hapus filter"
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            ) : null}
+      <InventoryFilterCard
+        open={filterOpen}
+        onToggle={() => setFilterOpen((prev) => !prev)}
+        onReset={() => {
+          setSearchQuery("");
+          setDateFilter("");
+          setFilterOpen(false);
+        }}
+      >
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5">
+            <Search className="h-4 w-4 text-slate-400" />
+            <Input
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              placeholder="Cari judul atau isi pengumuman"
+              className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+            />
           </div>
+          <DatePicker
+            value={parseDateKey(dateFilter)}
+            onChange={(value) => setDateFilter(value ? formatDateKey(value) : "")}
+            clearable
+            className="w-full"
+            buttonClassName="h-11 rounded-lg border-slate-300 px-3 py-2.5 text-sm"
+          />
         </div>
-      </div>
+      </InventoryFilterCard>
 
       {errorMessage ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

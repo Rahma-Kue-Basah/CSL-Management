@@ -13,17 +13,16 @@ import {
   FileUp,
   Loader2,
   Plus,
-  SlidersHorizontal,
   Trash2,
   UploadCloud,
   UserPlus,
-  X,
   XCircle,
 } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -236,99 +235,66 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
           />
 
           {!isRoleScoped ? (
-            <div className="w-full min-w-0 rounded border-2 border-slate-400/80 bg-slate-50 shadow-xs">
-              <div
-                className="flex cursor-pointer items-center justify-between px-4 py-3"
-                onClick={() => setFilterOpen((prev) => !prev)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.preventDefault();
-                    setFilterOpen((prev) => !prev);
-                  }
+            <InventoryFilterCard
+              open={filterOpen}
+              onToggle={() => setFilterOpen((prev) => !prev)}
+              onReset={() => {
+                resetFilters();
+                setFilterOpen(false);
+              }}
+            >
+              <form
+                className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
+                onSubmit={(event) => {
+                  event.preventDefault();
+                  setPage(1);
                 }}
               >
-                <div className="flex items-center gap-2">
-                  <div className="rounded-lg bg-white/90 p-2 text-slate-700 shadow-xs">
-                    <SlidersHorizontal className="h-4 w-4" />
-                  </div>
-                  <p className="text-sm font-semibold text-slate-900">Filter User</p>
-                </div>
-                {filterOpen ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="h-8 gap-2 border-slate-400 bg-white text-slate-900 hover:bg-white"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      resetFilters();
-                      setFilterOpen(false);
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                    Reset
-                  </Button>
-                ) : null}
-              </div>
-
-              {filterOpen ? (
-                <div className="border-t border-slate-400/70 px-4 pb-4 pt-3">
-                  <form
-                    className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
-                    onSubmit={(event) => {
-                      event.preventDefault();
+                <div className="min-w-0">
+                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                    Cari
+                  </label>
+                  <Input
+                    type="search"
+                    value={search}
+                    placeholder="Nama, email, atau ID"
+                    className="h-9 border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                    onChange={(event) => {
+                      setSearch(event.target.value);
                       setPage(1);
                     }}
-                  >
-                    <div className="min-w-0">
-                      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                        Cari
-                      </label>
-                      <Input
-                        type="search"
-                        value={search}
-                        placeholder="Nama, email, atau ID"
-                        className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                        onChange={(event) => {
-                          setSearch(event.target.value);
-                          setPage(1);
-                        }}
-                      />
-                    </div>
-
-                    <SelectField
-                      label="Department"
-                      value={filters.department}
-                      options={DEPARTMENT_VALUES}
-                      onChange={(value) => {
-                        setFilters((prev) => ({ ...prev, department: value }));
-                        setPage(1);
-                      }}
-                    />
-                    <SelectField
-                      label="Role"
-                      value={filters.role}
-                      options={ROLE_FILTER_OPTIONS}
-                      onChange={(value) => {
-                        setFilters((prev) => ({ ...prev, role: value }));
-                        setPage(1);
-                      }}
-                    />
-                    <SelectField
-                      label="Batch"
-                      value={filters.batch}
-                      options={BATCH_OPTIONS}
-                      onChange={(value) => {
-                        setFilters((prev) => ({ ...prev, batch: value }));
-                        setPage(1);
-                      }}
-                    />
-                  </form>
+                  />
                 </div>
-              ) : null}
-            </div>
+
+                <SelectField
+                  label="Department"
+                  value={filters.department}
+                  options={DEPARTMENT_VALUES}
+                  onChange={(value) => {
+                    setFilters((prev) => ({ ...prev, department: value }));
+                    setPage(1);
+                  }}
+                />
+                <SelectField
+                  label="Role"
+                  value={filters.role}
+                  options={ROLE_FILTER_OPTIONS}
+                  onChange={(value) => {
+                    setFilters((prev) => ({ ...prev, role: value }));
+                    setPage(1);
+                  }}
+                />
+                <SelectField
+                  label="Batch"
+                  value={filters.batch}
+                  options={BATCH_OPTIONS}
+                  onChange={(value) => {
+                    setFilters((prev) => ({ ...prev, batch: value }));
+                    setPage(1);
+                  }}
+                />
+              </form>
+            </InventoryFilterCard>
           ) : null}
 
           {error ? (
@@ -558,7 +524,7 @@ function SelectField({ label, value, options, onChange }: SelectFieldProps) {
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+        className="h-9 w-full rounded-md border border-slate-400 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
       >
         <option value="">Semua</option>
         {options.map((opt) => (

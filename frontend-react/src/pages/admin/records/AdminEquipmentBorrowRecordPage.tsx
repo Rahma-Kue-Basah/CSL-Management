@@ -8,8 +8,10 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { useBorrows, type BorrowRow } from "@/hooks/borrows/use-borrows";
+import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 
 const PAGE_SIZE = 10;
 
@@ -65,14 +67,6 @@ function getStatusBadge(status: string) {
     default:
       return "bg-slate-100 text-slate-600";
   }
-}
-
-function toStartOfDay(value: string) {
-  return value ? `${value}T00:00:00` : "";
-}
-
-function toEndOfDay(value: string) {
-  return value ? `${value}T23:59:59` : "";
 }
 
 function matchesSearch(row: BorrowRow, query: string) {
@@ -192,28 +186,28 @@ export default function AdminRecordPeminjamanAlatPage() {
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
                   Dibuat Dari
                 </label>
-                <Input
-                  type="date"
-                  value={createdAfter}
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                  onChange={(event) => {
-                    setCreatedAfter(event.target.value);
+                <DatePicker
+                  value={parseDateKey(createdAfter)}
+                  onChange={(value) => {
+                    setCreatedAfter(value ? formatDateKey(value) : "");
                     setPage(1);
                   }}
+                  clearable
+                  buttonClassName="border-slate-400 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                 />
               </div>
               <div className="min-w-0">
                 <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
                   Dibuat Sampai
                 </label>
-                <Input
-                  type="date"
-                  value={createdBefore}
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                  onChange={(event) => {
-                    setCreatedBefore(event.target.value);
+                <DatePicker
+                  value={parseDateKey(createdBefore)}
+                  onChange={(value) => {
+                    setCreatedBefore(value ? formatDateKey(value) : "");
                     setPage(1);
                   }}
+                  clearable
+                  buttonClassName="border-slate-400 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                 />
               </div>
             </form>

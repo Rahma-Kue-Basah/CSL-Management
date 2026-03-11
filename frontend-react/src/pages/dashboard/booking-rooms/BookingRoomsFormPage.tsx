@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -15,10 +16,12 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { useCreateBookingRoom } from "@/hooks/bookings/use-create-booking-room";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { cn } from "@/lib/utils";
 
 type FormData = {
   roomId: string;
@@ -52,6 +55,11 @@ function toApiDateTime(value: string) {
   return `${value}:00`;
 }
 
+function combineDateTime(date: Date | undefined, time: string) {
+  if (!date || !time) return "";
+  return `${format(date, "yyyy-MM-dd")}T${time}`;
+}
+
 function formatDateTime(value: string) {
   if (!value) return "-";
   const date = new Date(value);
@@ -72,7 +80,7 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
 
   return (
     <div className="rounded-lg border border-slate-200 bg-white px-3 py-2.5 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
-      <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-slate-500">{label}</p>
+      <p className="text-xs font-semibold text-slate-500">{label}</p>
       <p className={`mt-1.5 text-sm ${isEmpty ? "italic text-slate-400" : "font-medium text-slate-800"}`}>
         {displayValue}
       </p>
@@ -80,8 +88,67 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
   );
 }
 
+type DateTimePickerFieldProps = {
+  id: string;
+  label: string;
+  date: Date | undefined;
+  time: string;
+  disabled?: boolean;
+  minDate?: Date;
+  minTime?: string;
+  onDateChange: (date: Date | undefined) => void;
+  onTimeChange: (time: string) => void;
+};
+
+function DateTimePickerField({
+  id,
+  label,
+  date,
+  time,
+  disabled,
+  minDate,
+  minTime,
+  onDateChange,
+  onTimeChange,
+}: DateTimePickerFieldProps) {
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={`${id}-time`} className="text-xs font-medium text-slate-600">
+        {label} <span className="text-rose-600">*</span>
+      </label>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <DatePicker
+          value={date}
+          onChange={onDateChange}
+          disabled={disabled}
+          defaultMonth={date}
+          calendarDisabled={
+            minDate ? (calendarDate) => calendarDate < minDate : undefined
+          }
+          buttonClassName={cn("sm:flex-1", !date && "text-slate-400")}
+        />
+        <Input
+          type="time"
+          id={`${id}-time`}
+          value={time}
+          onChange={(event) => onTimeChange(event.target.value)}
+          step="60"
+          min={minTime}
+          placeholder="HH:MM"
+          className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200 sm:w-36"
+          disabled={disabled}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default function BookingRoomsFormPage() {
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const [startDate, setStartDate] = useState<Date | undefined>(undefined);
+  const [startTime, setStartTime] = useState("");
+  const [endDate, setEndDate] = useState<Date | undefined>(undefined);
+  const [endTime, setEndTime] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
   const { rooms, isLoading: isLoadingRooms, error: roomError } = useRoomOptions();
@@ -92,6 +159,15 @@ export default function BookingRoomsFormPage() {
   } = useEquipmentOptions();
   const { createBookingRoom, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBookingRoom();
+
+  const minEndDate = startDate ? new Date(startDate) : undefined;
+  if (minEndDate) {
+    minEndDate.setHours(0, 0, 0, 0);
+  }
+  const minEndTime =
+    startDate && endDate && format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
+      ? startTime || undefined
+      : undefined;
 
   const selectedRoomLabel = useMemo(
     () => rooms.find((room) => room.id === formData.roomId)?.label ?? "-",
@@ -107,6 +183,46 @@ export default function BookingRoomsFormPage() {
   ) => {
     const { name, value } = event.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+    setValidationMessage("");
+    setErrorMessage("");
+  };
+
+  const handleStartDateChange = (date: Date | undefined) => {
+    setStartDate(date);
+    setFormData((prev) => ({
+      ...prev,
+      startTime: combineDateTime(date, startTime),
+    }));
+    setValidationMessage("");
+    setErrorMessage("");
+  };
+
+  const handleStartTimeChange = (time: string) => {
+    setStartTime(time);
+    setFormData((prev) => ({
+      ...prev,
+      startTime: combineDateTime(startDate, time),
+    }));
+    setValidationMessage("");
+    setErrorMessage("");
+  };
+
+  const handleEndDateChange = (date: Date | undefined) => {
+    setEndDate(date);
+    setFormData((prev) => ({
+      ...prev,
+      endTime: combineDateTime(date, endTime),
+    }));
+    setValidationMessage("");
+    setErrorMessage("");
+  };
+
+  const handleEndTimeChange = (time: string) => {
+    setEndTime(time);
+    setFormData((prev) => ({
+      ...prev,
+      endTime: combineDateTime(endDate, time),
+    }));
     setValidationMessage("");
     setErrorMessage("");
   };
@@ -174,6 +290,10 @@ export default function BookingRoomsFormPage() {
     if (result.ok) {
       toast.success("Pengajuan booking ruangan berhasil dikirim.");
       setFormData(initialFormData);
+      setStartDate(undefined);
+      setStartTime("");
+      setEndDate(undefined);
+      setEndTime("");
       setIsConfirmOpen(false);
     } else if (result.message) {
       toast.error(result.message);
@@ -183,19 +303,23 @@ export default function BookingRoomsFormPage() {
   return (
     <section className="space-y-4">
       <form
-        className="space-y-5 rounded-xl border border-slate-200 bg-white p-5"
+        className="space-y-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_6px_18px_rgba(15,23,42,0.05)]"
         onSubmit={handleOpenConfirmation}
       >
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="border-b border-slate-200 pb-4">
+          <p className="text-base font-semibold text-slate-900">Form Booking Ruangan</p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-600">
-              Ruangan
+            <label className="text-xs font-medium text-slate-600">
+              Ruangan <span className="text-rose-600">*</span>
             </label>
             <select
               name="roomId"
               value={formData.roomId}
               onChange={handleChange}
-              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
+              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
               disabled={isLoadingRooms || isSubmitting}
             >
               <option value="">Pilih ruangan</option>
@@ -208,14 +332,14 @@ export default function BookingRoomsFormPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-600">
-              Tujuan
+            <label className="text-xs font-medium text-slate-600">
+              Tujuan <span className="text-rose-600">*</span>
             </label>
             <select
               name="purpose"
               value={formData.purpose}
               onChange={handleChange}
-              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
+              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
               disabled={isSubmitting}
             >
               {PURPOSE_OPTIONS.map((option) => (
@@ -226,47 +350,40 @@ export default function BookingRoomsFormPage() {
             </select>
           </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-600">
-              Waktu Mulai
-            </label>
-            <Input
-              type="datetime-local"
-              name="startTime"
-              value={formData.startTime}
-              onChange={handleChange}
-              className="border-slate-300 focus-visible:border-slate-500 focus-visible:ring-slate-200"
-              disabled={isSubmitting}
-            />
-          </div>
+          <DateTimePickerField
+            id="start-time"
+            label="Waktu Mulai"
+            date={startDate}
+            time={startTime}
+            onDateChange={handleStartDateChange}
+            onTimeChange={handleStartTimeChange}
+            disabled={isSubmitting}
+          />
+
+          <DateTimePickerField
+            id="end-time"
+            label="Waktu Selesai"
+            date={endDate}
+            time={endTime}
+            minDate={minEndDate}
+            minTime={minEndTime}
+            onDateChange={handleEndDateChange}
+            onTimeChange={handleEndTimeChange}
+            disabled={isSubmitting}
+          />
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-600">
-              Waktu Selesai
-            </label>
-            <Input
-              type="datetime-local"
-              name="endTime"
-              value={formData.endTime}
-              onChange={handleChange}
-              min={formData.startTime || undefined}
-              className="border-slate-300 focus-visible:border-slate-500 focus-visible:ring-slate-200"
-              disabled={isSubmitting}
-            />
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-600">
+            <label className="text-xs font-medium text-slate-600">
               Peralatan (Opsional)
             </label>
             <select
               name="equipmentId"
               value={formData.equipmentId}
               onChange={handleChange}
-              className="h-9 w-full rounded-md border border-slate-300 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
+              className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
               disabled={isSubmitting || isLoadingEquipments}
             >
-              <option value="">Tanpa peralatan</option>
+              <option value="">-</option>
               {equipmentOptions.map((equipment) => (
                 <option key={equipment.id} value={equipment.id}>
                   {equipment.label}
@@ -276,7 +393,7 @@ export default function BookingRoomsFormPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium uppercase tracking-wide text-slate-600">
+            <label className="text-xs font-medium text-slate-600">
               Jumlah Peralatan (Opsional)
             </label>
             <Input
@@ -287,14 +404,19 @@ export default function BookingRoomsFormPage() {
               value={formData.quantityEquipment}
               onChange={handleChange}
               placeholder="Contoh: 1"
-              className="border-slate-300 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+              className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
               disabled={isSubmitting}
             />
+            {formData.equipmentId && !formData.quantityEquipment ? (
+              <p className="text-[11px] text-slate-500">
+                Isi jumlah jika memilih peralatan.
+              </p>
+            ) : null}
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium uppercase tracking-wide text-slate-600">
+          <label className="text-xs font-medium text-slate-600">
             Catatan
           </label>
           <textarea
@@ -304,9 +426,12 @@ export default function BookingRoomsFormPage() {
             rows={4}
             maxLength={2000}
             placeholder="Tambahkan catatan jika diperlukan"
-            className="w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
+            className="min-h-[120px] w-full rounded-md border border-slate-300 bg-white px-3 py-3 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
             disabled={isSubmitting}
           />
+          <p className="text-[11px] text-slate-500">
+            Maksimal 2000 karakter.
+          </p>
         </div>
 
         {validationMessage ? (
@@ -321,8 +446,8 @@ export default function BookingRoomsFormPage() {
           </div>
         ) : null}
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting || isLoadingRooms}>
+        <div className="flex justify-end border-t border-slate-200 pt-3">
+          <Button type="submit" className="min-w-[180px]" disabled={isSubmitting || isLoadingRooms}>
             Ajukan Booking
           </Button>
         </div>

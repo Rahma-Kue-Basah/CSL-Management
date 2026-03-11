@@ -56,6 +56,12 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         description: "Lihat KPI dan highlight terbaru dalam satu tampilan.",
         href: "/dashboard/overview",
       },
+      {
+        id: "announcements",
+        label: "Pengumuman",
+        description: "Lihat pengumuman terbaru dari admin.",
+        href: "/dashboard/announcements",
+      },
     ],
   },
   {
@@ -160,6 +166,12 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         description: "Buat pengajuan peminjaman alat melalui formulir.",
         href: "/borrow-equipment/form",
       },
+      {
+        id: "equipment",
+        label: "Alat yang Bisa Dipinjam",
+        description: "Lihat daftar alat yang tersedia untuk dipinjam.",
+        href: "/borrow-equipment/equipment",
+      },
     ],
   },
   {
@@ -217,6 +229,9 @@ function parseDashboardPath(pathname: string) {
     if (parts[1] === "overview") {
       return { menu: "dashboard", action: "overview" };
     }
+    if (parts[1] === "announcements") {
+      return { menu: "dashboard", action: "announcements" };
+    }
     return { menu: "dashboard", action: null };
   }
   if (parts[0] === "schedule") {
@@ -247,6 +262,9 @@ function parseDashboardPath(pathname: string) {
     return { menu: "sample-testing", action: "request-list" };
   }
   if (parts[0] === "borrow-equipment") {
+    if (parts[1] === "equipment") {
+      return { menu: "borrow-equipment", action: "equipment" };
+    }
     if (parts[1] === "form") {
       return { menu: "borrow-equipment", action: "request-form" };
     }

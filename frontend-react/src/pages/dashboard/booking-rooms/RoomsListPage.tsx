@@ -76,7 +76,7 @@ export default function RoomsListPage() {
                   type="search"
                   value={search}
                   placeholder="Nama ruangan atau nomor"
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  className="h-11 border-slate-300 bg-white px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                   onChange={(event) => {
                     setSearch(event.target.value);
                     setPage(1);
@@ -93,7 +93,7 @@ export default function RoomsListPage() {
                     setFloor(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
                 >
                   {FLOOR_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -123,7 +123,9 @@ export default function RoomsListPage() {
               <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Kapasitas</th>
               <th className="w-[200px] px-3 py-3 font-medium text-slate-50">PIC</th>
               <th className="w-[250px] px-3 py-3 font-medium text-slate-50">Deskripsi</th>
-              <th className="w-[120px] px-3 py-3 text-center font-medium text-slate-50">Aksi</th>
+              <th className="sticky right-0 z-20 w-[120px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
+                Aksi
+              </th>
             </tr>
           </thead>
           <tbody className="text-sm">
@@ -145,7 +147,7 @@ export default function RoomsListPage() {
                   <td className="truncate px-3 py-2.5">{room.capacity}</td>
                   <td className="truncate px-3 py-2.5">{room.picName}</td>
                   <td className="truncate px-3 py-2.5">{room.description || "-"}</td>
-                  <td className="px-3 py-2.5 text-center">
+                  <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <Button
                       type="button"
                       variant="outline"
