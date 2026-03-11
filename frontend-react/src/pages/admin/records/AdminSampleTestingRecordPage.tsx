@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Loader2 } from "lucide-react";
+import { Eye, Loader2, Trash2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { API_PENGUJIAN_DETAIL } from "@/constants/api";
 import { usePengujians, type PengujianRow } from "@/hooks/pengujians/use-pengujians";
+import { useDeleteRecord } from "@/hooks/use-delete-record";
 
 const PAGE_SIZE = 10;
 
@@ -37,7 +41,7 @@ function formatDateTime(value?: string | null) {
 }
 
 function getStatusBadge(status: string) {
-  switch (status) {
+  switch (status.toLowerCase()) {
     case "approved":
       return "bg-emerald-100 text-emerald-700";
     case "pending":
@@ -76,6 +80,8 @@ export default function AdminRecordPengujianSampelPage() {
   const [status, setStatus] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [deleteTarget, setDeleteTarget] = useState<PengujianRow | null>(null);
+  const { deleteRecord, isDeleting } = useDeleteRecord();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
@@ -108,6 +114,18 @@ export default function AdminRecordPengujianSampelPage() {
     setPage(1);
     setFilterOpen(false);
     setReloadKey((prev) => prev + 1);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const result = await deleteRecord(API_PENGUJIAN_DETAIL(deleteTarget.id));
+    if (result.ok) {
+      toast.success("Record pengujian sampel berhasil dihapus.");
+      setDeleteTarget(null);
+      setReloadKey((prev) => prev + 1);
+      return;
+    }
+    toast.error(result.message);
   };
 
   return (
@@ -229,7 +247,7 @@ export default function AdminRecordPengujianSampelPage() {
                         </span>
                       </td>
                       <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
-                        <div className="flex justify-center">
+                        <div className="flex justify-center gap-2">
                           <Button
                             variant="outline"
                             size="icon-sm"
@@ -240,6 +258,14 @@ export default function AdminRecordPengujianSampelPage() {
                             }}
                           >
                             <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon-sm"
+                            className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                            onClick={() => setDeleteTarget(item)}
+                          >
+                            <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
                       </td>
@@ -264,6 +290,17 @@ export default function AdminRecordPengujianSampelPage() {
             totalPages={totalPages}
             isLoading={isLoading}
             onPageChange={setPage}
+          />
+
+          <RecordDeleteDialog
+            open={Boolean(deleteTarget)}
+            title="Hapus record pengujian sampel?"
+            description={`Record ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
+            isDeleting={isDeleting}
+            onOpenChange={(open) => {
+              if (!open) setDeleteTarget(null);
+            }}
+            onConfirm={handleDelete}
           />
         </div>
       </div>

@@ -203,3 +203,52 @@ body {
     margin-top: 4px;
   }
 }
+
+@layer components {
+  .booking-flow .rs-steps-item-tail {
+    background-color: #93c5fd;
+  }
+
+  .booking-flow .rs-steps-item-icon-wrapper {
+    background-color: #bfdbfe;
+    border: 1px solid #60a5fa;
+    color: #1d4ed8;
+  }
+
+  .booking-flow .rs-steps-item-status-finish .rs-steps-item-icon-wrapper,
+  .booking-flow .rs-steps-item-status-process .rs-steps-item-icon-wrapper {
+    background-color: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #ffffff;
+  }
+
+  .booking-flow .rs-steps-item-status-finish .rs-steps-item-tail,
+  .booking-flow .rs-steps-item-status-process .rs-steps-item-tail {
+    background-color: #2563eb;
+  }
+
+  .booking-flow .rs-steps-item-status-wait .rs-steps-item-icon-wrapper {
+    background-color: #dbeafe;
+    border-color: #93c5fd;
+    color: #3b82f6;
+  }
+
+  .booking-flow .rs-steps-item-status-error .rs-steps-item-icon-wrapper {
+    background-color: #1e40af;
+    border-color: #1e40af;
+    color: #ffffff;
+  }
+
+  .booking-flow .rs-steps-item-status-error .rs-steps-item-tail {
+    background-color: #60a5fa;
+  }
+
+  .booking-flow .rs-steps-item-title {
+    color: #1e3a8a;
+    /* font-weight: 600; */
+  }
+
+  .booking-flow .rs-steps-item-description {
+    color: #64748b;
+  }
+}

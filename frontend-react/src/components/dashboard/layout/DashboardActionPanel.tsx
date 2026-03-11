@@ -63,10 +63,7 @@ export function DashboardActionPanel({
         </div>
         <div className="flex flex-col gap-3 overflow-y-auto p-3">
           <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Informasi Menu
-            </p>
-            <p className="mt-1 text-sm text-slate-700">{menu.description}</p>
+            <p className="text-sm text-slate-700">{menu.description}</p>
           </div>
 
           {menu.id === "schedule" && (

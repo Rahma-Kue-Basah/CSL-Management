@@ -2,11 +2,11 @@
 
 import BookingRoomsListContent from "@/pages/dashboard/booking-rooms/BookingRoomsListContent";
 
-export default function BookingRoomsListPage() {
+export default function BookingRoomsAllListPage() {
   return (
     <BookingRoomsListContent
-      scope="my"
-      emptyMessage="Belum ada pengajuan booking ruangan."
+      scope="all"
+      emptyMessage="Belum ada pengajuan booking ruangan yang tersedia."
     />
   );
 }

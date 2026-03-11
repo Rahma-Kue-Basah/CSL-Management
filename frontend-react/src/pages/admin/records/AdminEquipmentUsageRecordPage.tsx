@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Loader2 } from "lucide-react";
+import { Eye, Loader2, Trash2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
+import { API_USE_DETAIL } from "@/constants/api";
 import { useUses, type UseRow } from "@/hooks/uses/use-uses";
+import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 
 const PAGE_SIZE = 10;
@@ -45,7 +49,7 @@ function formatDateRange(start?: string | null, end?: string | null) {
 }
 
 function getStatusBadge(status: string) {
-  switch (status) {
+  switch (status.toLowerCase()) {
     case "approved":
       return "bg-emerald-100 text-emerald-700";
     case "pending":
@@ -82,6 +86,8 @@ export default function AdminRecordPenggunaanAlatPage() {
   const [createdBefore, setCreatedBefore] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [deleteTarget, setDeleteTarget] = useState<UseRow | null>(null);
+  const { deleteRecord, isDeleting } = useDeleteRecord();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
@@ -118,6 +124,18 @@ export default function AdminRecordPenggunaanAlatPage() {
     setPage(1);
     setFilterOpen(false);
     setReloadKey((prev) => prev + 1);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    const result = await deleteRecord(API_USE_DETAIL(deleteTarget.id));
+    if (result.ok) {
+      toast.success("Record penggunaan alat berhasil dihapus.");
+      setDeleteTarget(null);
+      setReloadKey((prev) => prev + 1);
+      return;
+    }
+    toast.error(result.message);
   };
 
   return (
@@ -226,8 +244,11 @@ export default function AdminRecordPenggunaanAlatPage() {
                   <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
                     Pengguna
                   </th>
-                  <th className="w-[260px] px-3 py-3 font-medium text-slate-50">
-                    Waktu
+                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
+                    Waktu Mulai
+                  </th>
+                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
+                    Waktu Selesai
                   </th>
                   <th className="w-[140px] px-3 py-3 font-medium text-slate-50">
                     Status
@@ -240,7 +261,7 @@ export default function AdminRecordPenggunaanAlatPage() {
               <tbody className="text-sm">
                 {isLoading || !hasLoadedOnce ? (
                   <tr>
-                    <td colSpan={6} className="px-3 py-8 text-center">
+                    <td colSpan={7} className="px-3 py-8 text-center">
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin" />
                       </div>
@@ -257,7 +278,10 @@ export default function AdminRecordPenggunaanAlatPage() {
                         {item.requesterName}
                       </td>
                       <td className="px-3 py-2">
-                        {formatDateRange(item.startTime, item.endTime)}
+                        {formatDateTime(item.startTime)}
+                      </td>
+                      <td className="px-3 py-2">
+                        {formatDateTime(item.endTime)}
                       </td>
                       <td className="px-3 py-2">
                         <span
@@ -269,7 +293,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                         </span>
                       </td>
                       <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
-                        <div className="flex justify-center">
+                        <div className="flex justify-center gap-2">
                           <Button
                             variant="outline"
                             size="icon-sm"
@@ -281,6 +305,14 @@ export default function AdminRecordPenggunaanAlatPage() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="icon-sm"
+                            className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                            onClick={() => setDeleteTarget(item)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </td>
                     </tr>
@@ -288,7 +320,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                 ) : (
                   <tr>
                     <td
-                      colSpan={6}
+                      colSpan={7}
                       className="px-3 py-6 text-center text-muted-foreground"
                     >
                       Tidak ada data penggunaan alat.
@@ -304,6 +336,17 @@ export default function AdminRecordPenggunaanAlatPage() {
             totalPages={totalPages}
             isLoading={isLoading}
             onPageChange={setPage}
+          />
+
+          <RecordDeleteDialog
+            open={Boolean(deleteTarget)}
+            title="Hapus record penggunaan alat?"
+            description={`Record ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
+            isDeleting={isDeleting}
+            onOpenChange={(open) => {
+              if (!open) setDeleteTarget(null);
+            }}
+            onConfirm={handleDelete}
           />
         </div>
       </div>

@@ -58,6 +58,30 @@ from csluse_auth.permissions import (
     SUPER_ADMINISTRATOR,
 )
 
+STATUS_VALUE_MAP = {
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "completed": "Completed",
+    "cancelled": "Cancelled",
+    "borrowed": "Borrowed",
+    "returned": "Returned",
+    "overdue": "Overdue",
+    "lost_damaged": "Lost/Damaged",
+    "lost/damaged": "Lost/Damaged",
+    "in_use": "In Use",
+    "in use": "In Use",
+}
+
+
+def normalize_status_value(value):
+    if value is None:
+        return value
+    raw = str(value).strip()
+    if not raw:
+        return raw
+    return STATUS_VALUE_MAP.get(raw.lower(), raw)
+
 
 class DefaultPagination(PageNumberPagination):
     page_size = 10
@@ -204,7 +228,7 @@ class RoomViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        blocking_statuses = ['pending', 'approved']
+        blocking_statuses = ['Pending', 'Approved']
         bookings = (
             Booking.objects
             .filter(
@@ -265,7 +289,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
         # Filter params: status, category, room, pic, is_moveable, created range
         if status_param:
-            qs = qs.filter(status=status_param)
+            qs = qs.filter(status=normalize_status_value(status_param))
         if category:
             qs = qs.filter(category=category)
         if room_id:
@@ -352,8 +376,8 @@ class EquipmentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        booking_block = ['pending', 'approved']
-        borrow_block = ['pending', 'approved', 'borrowed', 'overdue', 'lost_damaged']
+        booking_block = ['Pending', 'Approved']
+        borrow_block = ['Pending', 'Approved', 'Borrowed', 'Overdue', 'Lost/Damaged']
 
         bookings = (
             Booking.objects
@@ -407,6 +431,14 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
         )
 
+    def _auto_complete_expired_bookings(self):
+        now = timezone.now()
+        (
+            Booking.objects
+            .filter(status="Approved", end_time__lt=now)
+            .update(status="Completed", updated_at=now)
+        )
+
     def get_serializer_class(self):
         if self.action == "list":
             if self._is_staff_or_above():
@@ -445,7 +477,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         created_before = self.request.query_params.get('created_before')
 
         if status_param:
-            qs = qs.filter(status=status_param)
+            qs = qs.filter(status=normalize_status_value(status_param))
         if room_id:
             qs = qs.filter(room_id=room_id)
         if equipment_id:
@@ -465,6 +497,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_queryset(self):
+        self._auto_complete_expired_bookings()
         qs = super().get_queryset()
         is_staff_or_above = self._is_staff_or_above()
 
@@ -476,6 +509,15 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted booking record via CSL Admin.",
+        )
+        super().perform_destroy(instance)
 
     @action(detail=False, methods=['get'], url_path='my')
     def my(self, request):
@@ -523,7 +565,8 @@ class BookingViewSet(viewsets.ModelViewSet):
         else:
             end = timezone.make_aware(datetime(year, month + 1, 1), timezone.get_default_timezone())
 
-        statuses = request.query_params.getlist('status') or ['approved']
+        statuses = request.query_params.getlist('status') or ['Approved']
+        statuses = [normalize_status_value(item) for item in statuses]
 
         qs = self.get_queryset().filter(
             status__in=statuses,
@@ -538,7 +581,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'approved', **request.data},
+            data={'status': 'Approved', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -550,7 +593,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'rejected', **request.data},
+            data={'status': 'Rejected', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -562,7 +605,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'completed', **request.data},
+            data={'status': 'Completed', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -613,7 +656,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
         # Filter params: status, equipment, requested_by, pic, start_after, end_before, created range
         if status_param:
-            qs = qs.filter(status=status_param)
+            qs = qs.filter(status=normalize_status_value(status_param))
         if equipment_id:
             qs = qs.filter(equipment_id=equipment_id)
         if requester_id:
@@ -632,6 +675,15 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted borrow record via CSL Admin.",
+        )
+        super().perform_destroy(instance)
 
     @action(detail=False, methods=['get'], url_path='by-month')
     def by_month(self, request):
@@ -655,7 +707,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
         else:
             end = timezone.make_aware(datetime(year, month + 1, 1), timezone.get_default_timezone())
 
-        statuses = request.query_params.getlist('status') or ['approved', 'borrowed']
+        statuses = request.query_params.getlist('status') or ['Approved', 'Borrowed']
+        statuses = [normalize_status_value(item) for item in statuses]
 
         qs = self.get_queryset().filter(
             status__in=statuses,
@@ -672,7 +725,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
         serializer = self.get_serializer(
             instance,
-            data={'status': 'returned', 'end_time_actual': end_time_actual, **request.data},
+            data={'status': 'Returned', 'end_time_actual': end_time_actual, **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -684,7 +737,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'approved', **request.data},
+            data={'status': 'Approved', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -696,7 +749,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'rejected', **request.data},
+            data={'status': 'Rejected', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -807,7 +860,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
         approved_by = self.request.query_params.get('approved_by')
 
         if status_param:
-            qs = qs.filter(status=status_param)
+            qs = qs.filter(status=normalize_status_value(status_param))
         if requested_by:
             qs = qs.filter(requested_by_id=requested_by)
         if approved_by:
@@ -817,12 +870,21 @@ class PengujianViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted sample testing record via CSL Admin.",
+        )
+        super().perform_destroy(instance)
+
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'approved', **request.data},
+            data={'status': 'Approved', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -834,7 +896,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'rejected', **request.data},
+            data={'status': 'Rejected', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -846,7 +908,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'completed', **request.data},
+            data={'status': 'Completed', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -904,7 +966,7 @@ class UseViewSet(viewsets.ModelViewSet):
         created_before = self.request.query_params.get('created_before')
 
         if status_param:
-            qs = qs.filter(status=status_param)
+            qs = qs.filter(status=normalize_status_value(status_param))
         if equipment_id:
             qs = qs.filter(equipment_id=equipment_id)
         if requester_id:
@@ -924,12 +986,21 @@ class UseViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted equipment usage record via CSL Admin.",
+        )
+        super().perform_destroy(instance)
+
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'approved', **request.data},
+            data={'status': 'Approved', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -941,7 +1012,7 @@ class UseViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'rejected', **request.data},
+            data={'status': 'Rejected', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)
@@ -953,7 +1024,7 @@ class UseViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         serializer = self.get_serializer(
             instance,
-            data={'status': 'completed', **request.data},
+            data={'status': 'Completed', **request.data},
             partial=True,
         )
         serializer.is_valid(raise_exception=True)

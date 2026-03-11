@@ -86,6 +86,12 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         href: "/booking-rooms",
       },
       {
+        id: "all-requests",
+        label: "Daftar Pengajuan",
+        description: "Lihat seluruh daftar pengajuan booking ruangan.",
+        href: "/booking-rooms/all",
+      },
+      {
         id: "request-form",
         label: "Ajukan Booking",
         description: "Buat pengajuan booking ruangan melalui formulir.",
@@ -238,6 +244,9 @@ function parseDashboardPath(pathname: string) {
     return { menu: "schedule", action: null };
   }
   if (parts[0] === "booking-rooms") {
+    if (parts[1] === "all") {
+      return { menu: "booking-rooms", action: "all-requests" };
+    }
     if (parts[1] === "form") {
       return { menu: "booking-rooms", action: "request-form" };
     }

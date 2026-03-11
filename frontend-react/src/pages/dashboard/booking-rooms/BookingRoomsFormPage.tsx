@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -144,6 +145,7 @@ function DateTimePickerField({
 }
 
 export default function BookingRoomsFormPage() {
+  const router = useRouter();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
@@ -295,6 +297,7 @@ export default function BookingRoomsFormPage() {
       setEndDate(undefined);
       setEndTime("");
       setIsConfirmOpen(false);
+      router.push("/booking-rooms");
     } else if (result.message) {
       toast.error(result.message);
     }

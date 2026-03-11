@@ -1,11 +1,17 @@
 "use client";
 
-import { ArrowLeft, Loader2 } from "lucide-react";
-import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
+import { ArrowLeft, Check, Loader2, X } from "lucide-react";
+import { useParams, usePathname, useRouter } from "next/navigation";
 import { Steps } from "rsuite";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useBookingDetail } from "@/hooks/bookings/use-bookings";
+import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
+import BookingStatusConfirmDialog from "@/pages/dashboard/booking-rooms/BookingStatusConfirmDialog";
 
 type BookingDetailParams = {
   id?: string | string[];
@@ -34,6 +40,10 @@ function formatDateTime(value?: string | null) {
 
 function normalizeStatus(value: string) {
   return value.toLowerCase();
+}
+
+function isPendingStatus(value: string) {
+  return normalizeStatus(value) === "pending";
 }
 
 function getBookingFlow(booking: {
@@ -109,7 +119,7 @@ function BookingFlow({ steps }: { steps: BookingFlowStep[] }) {
   );
 
   return (
-    <div className="mt-3 overflow-x-auto pb-1">
+    <div className="booking-flow mt-3 overflow-x-auto pb-1">
       <Steps current={currentIndex} className="min-w-[720px]">
         {steps.map((step) => (
           <Steps.Item
@@ -140,10 +150,20 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 
 export default function BookingRoomsDetailPage() {
   const router = useRouter();
+  const pathname = usePathname();
+  const { profile } = useLoadProfile();
+  const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
   const params = useParams<BookingDetailParams>();
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
+  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(null);
+  const backHref = pathname.startsWith("/booking-rooms/all/")
+    ? "/booking-rooms/all"
+    : "/booking-rooms";
+  const backLabel = pathname.startsWith("/booking-rooms/all/")
+    ? "Kembali ke Daftar Pengajuan"
+    : "Kembali ke Pengajuan Saya";
 
-  const { booking, isLoading, error } = useBookingDetail(id);
+  const { booking, setBooking, isLoading, error } = useBookingDetail(id);
 
   if (isLoading) {
     return (
@@ -162,9 +182,9 @@ export default function BookingRoomsDetailPage() {
         <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
-        <Button type="button" variant="outline" onClick={() => router.push("/booking-rooms")}>
+        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
-          Kembali ke Pengajuan Saya
+          {backLabel}
         </Button>
       </section>
     );
@@ -174,13 +194,61 @@ export default function BookingRoomsDetailPage() {
     return (
       <section className="space-y-3">
         <p className="text-sm text-slate-600">Data booking tidak ditemukan.</p>
-        <Button type="button" variant="outline" onClick={() => router.push("/booking-rooms")}>
+        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
-          Kembali ke Pengajuan Saya
+          {backLabel}
         </Button>
       </section>
     );
   }
+
+  const normalizedRole = normalizeRoleValue(profile?.role);
+  const canReviewBooking =
+    pathname.startsWith("/booking-rooms/all/") &&
+    (normalizedRole === ROLE_VALUES.ADMIN ||
+      normalizedRole === ROLE_VALUES.LECTURER ||
+      normalizedRole === ROLE_VALUES.STAFF) &&
+    isPendingStatus(booking.status);
+
+  const handleBookingAction = async () => {
+    if (!confirmType) return;
+
+    const type = confirmType;
+    const result = await updateBookingStatus(booking.id, type);
+
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    setBooking((current) =>
+      current
+        ? {
+            ...current,
+            status: type === "approve" ? "Approved" : "Rejected",
+            updatedAt: now,
+            approvedById:
+              type === "approve" ? String(profile?.id ?? current.approvedById) : current.approvedById,
+            approvedByName:
+              type === "approve"
+                ? profile?.name || current.approvedByName
+                : current.approvedByName,
+            approvedByEmail:
+              type === "approve"
+                ? profile?.email || current.approvedByEmail
+                : current.approvedByEmail,
+          }
+        : current,
+    );
+    setConfirmType(null);
+
+    toast.success(
+      type === "approve"
+        ? "Pengajuan booking berhasil disetujui."
+        : "Pengajuan booking berhasil ditolak.",
+    );
+  };
 
   const flowSteps = getBookingFlow({
     status: booking.status,
@@ -192,10 +260,34 @@ export default function BookingRoomsDetailPage() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900">Detail Booking Ruangan</h2>
-        <Button type="button" variant="outline" onClick={() => router.push("/booking-rooms")}>
-          <ArrowLeft className="h-4 w-4" />
-          Kembali
-        </Button>
+        <div className="flex items-center gap-2">
+          {canReviewBooking ? (
+            <>
+              <Button
+                type="button"
+                className="h-10 rounded-md border border-emerald-600 bg-emerald-600 px-4 text-white shadow-sm hover:bg-emerald-700"
+                onClick={() => setConfirmType("approve")}
+                disabled={pendingAction.bookingId === booking.id}
+              >
+                <Check className="h-4 w-4" />
+                Setujui
+              </Button>
+              <Button
+                type="button"
+                className="h-10 rounded-md border border-rose-600 bg-rose-600 px-4 text-white shadow-sm hover:bg-rose-700"
+                onClick={() => setConfirmType("reject")}
+                disabled={pendingAction.bookingId === booking.id}
+              >
+                <X className="h-4 w-4" />
+                Tolak
+              </Button>
+            </>
+          ) : null}
+          <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
+            <ArrowLeft className="h-4 w-4" />
+            Kembali
+          </Button>
+        </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -218,6 +310,16 @@ export default function BookingRoomsDetailPage() {
         <DetailRow label="Tujuan" value={booking.purpose} />
         <DetailRow label="Catatan" value={booking.note || "-"} />
       </div>
+
+      <BookingStatusConfirmDialog
+        open={Boolean(confirmType)}
+        actionType={confirmType}
+        onOpenChange={(open) => {
+          if (!open) setConfirmType(null);
+        }}
+        onConfirm={handleBookingAction}
+        isSubmitting={pendingAction.bookingId === booking.id}
+      />
     </section>
   );
 }

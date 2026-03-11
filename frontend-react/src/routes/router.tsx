@@ -16,6 +16,7 @@ import DashboardOverviewPage from "@/pages/dashboard/overview/DashboardOverviewP
 import DashboardAnnouncementsPage from "@/pages/dashboard/announcements/DashboardAnnouncementsPage";
 import SchedulePage from "@/pages/dashboard/schedule/SchedulePage";
 import BookingRoomsListPage from "@/pages/dashboard/booking-rooms/BookingRoomsListPage";
+import BookingRoomsAllListPage from "@/pages/dashboard/booking-rooms/BookingRoomsAllListPage";
 import BookingRoomsFormPage from "@/pages/dashboard/booking-rooms/BookingRoomsFormPage";
 import BookingRoomsDetailPage from "@/pages/dashboard/booking-rooms/BookingRoomsDetailPage";
 import RoomsListPage from "@/pages/dashboard/booking-rooms/RoomsListPage";
@@ -126,6 +127,26 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <UserLayout>
           <BookingRoomsListPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/booking-rooms/all",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <BookingRoomsAllListPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/booking-rooms/all/:id",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <BookingRoomsDetailPage />
         </UserLayout>
       </RequireAuth>
     ),
