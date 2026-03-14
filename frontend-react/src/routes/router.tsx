@@ -14,6 +14,7 @@ import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 import DashboardHomePage from "@/pages/dashboard/DashboardHomePage";
 import DashboardOverviewPage from "@/pages/dashboard/overview/DashboardOverviewPage";
 import DashboardAnnouncementsPage from "@/pages/dashboard/announcements/DashboardAnnouncementsPage";
+import DashboardFaqPage from "@/pages/dashboard/faq/DashboardFaqPage";
 import SchedulePage from "@/pages/dashboard/schedule/SchedulePage";
 import BookingRoomsListPage from "@/pages/dashboard/booking-rooms/BookingRoomsListPage";
 import BookingRoomsAllListPage from "@/pages/dashboard/booking-rooms/BookingRoomsAllListPage";
@@ -22,8 +23,11 @@ import BookingRoomsDetailPage from "@/pages/dashboard/booking-rooms/BookingRooms
 import RoomsListPage from "@/pages/dashboard/booking-rooms/RoomsListPage";
 import RoomDetailPage from "@/pages/dashboard/booking-rooms/RoomDetailPage";
 import UseEquipmentListPage from "@/pages/dashboard/use-equipment/UseEquipmentListPage";
+import UseEquipmentAllListPage from "@/pages/dashboard/use-equipment/UseEquipmentAllListPage";
 import UseEquipmentFormPage from "@/pages/dashboard/use-equipment/UseEquipmentFormPage";
 import EquipmentListPage from "@/pages/dashboard/use-equipment/EquipmentListPage";
+import EquipmentDetailPage from "@/pages/dashboard/use-equipment/EquipmentDetailPage";
+import UseEquipmentDetailPage from "@/pages/dashboard/use-equipment/UseEquipmentDetailPage";
 import SampleTestingListPage from "@/pages/dashboard/sample-testing/SampleTestingListPage";
 import SampleTestingFormPage from "@/pages/dashboard/sample-testing/SampleTestingFormPage";
 import BorrowEquipmentListPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentListPage";
@@ -35,6 +39,7 @@ import MyProfilePage from "@/pages/dashboard/account/MyProfilePage";
 import AdminHomePage from "@/pages/admin/home/AdminHomePage";
 import AdminSchedulePage from "@/pages/admin/information/AdminSchedulePage";
 import AdminAnnouncementPage from "@/pages/admin/information/AdminAnnouncementPage";
+import AdminFaqPage from "@/pages/admin/information/AdminFaqPage";
 import AdminEquipmentPage from "@/pages/admin/inventory/AdminEquipmentPage";
 import AdminEquipmentDetailPage from "@/pages/admin/inventory/AdminEquipmentDetailPage";
 import AdminRoomPage from "@/pages/admin/inventory/AdminRoomPage";
@@ -107,6 +112,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <UserLayout>
           <DashboardAnnouncementsPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/dashboard/faq",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardFaqPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -202,6 +217,16 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/use-equipment/all",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <UseEquipmentAllListPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
     path: "/use-equipment/form",
     element: (
       <RequireAuth>
@@ -212,11 +237,41 @@ export const router = createBrowserRouter([
     ),
   },
   {
+    path: "/use-equipment/all/:id",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <UseEquipmentDetailPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/use-equipment/:id",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <UseEquipmentDetailPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
     path: "/equipment",
     element: (
       <RequireAuth>
         <UserLayout>
           <EquipmentListPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/equipment/:id",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <EquipmentDetailPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -338,6 +393,7 @@ export const router = createBrowserRouter([
       { path: "informasi", element: <Navigate to="/admin/informasi/jadwal" replace /> },
       { path: "informasi/jadwal", element: <AdminSchedulePage /> },
       { path: "informasi/pengumuman", element: <AdminAnnouncementPage /> },
+      { path: "informasi/faq", element: <AdminFaqPage /> },
       { path: "inventarisasi", element: <Navigate to="/admin/inventarisasi/peralatan" replace /> },
       { path: "inventarisasi/peralatan", element: <AdminEquipmentPage /> },
       { path: "inventarisasi/peralatan/:id", element: <AdminEquipmentDetailPage /> },

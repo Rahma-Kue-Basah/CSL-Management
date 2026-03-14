@@ -119,6 +119,7 @@ export function AppSidebar() {
   ];
   const informationItems = [
     { label: "Pengumuman", href: "/admin/informasi/pengumuman" },
+    { label: "FAQ", href: "/admin/informasi/faq" },
     { label: "Jadwal", href: "/admin/informasi/jadwal" },
   ];
 

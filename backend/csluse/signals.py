@@ -3,7 +3,44 @@ from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 
-from .models import Image, Booking, Borrow, Room, Pengujian
+from .models import Image, Booking, Borrow, Room, Pengujian, Use
+
+
+def validate_start_not_in_past(start_time, label="start time"):
+    if not start_time:
+        return
+
+    current_time = timezone.now()
+    if start_time <= current_time:
+        raise ValidationError(
+            f"Cannot create or update data with a {label} in the past."
+        )
+
+
+def validate_booking_working_hours(start_time, end_time):
+    if not start_time or not end_time:
+        return
+
+    local_start = timezone.localtime(start_time)
+    local_end = timezone.localtime(end_time)
+
+    start_minutes = (local_start.hour * 60) + local_start.minute
+    end_minutes = (local_end.hour * 60) + local_end.minute
+    workday_start = 8 * 60
+    workday_end = 17 * 60
+
+    if start_minutes < workday_start or start_minutes > workday_end:
+        raise ValidationError(
+            "Booking start time must be within working hours (08:00-17:00 WIB)."
+        )
+
+    if end_minutes < workday_start or end_minutes > workday_end:
+        raise ValidationError(
+            "Booking end time must be within working hours (08:00-17:00 WIB)."
+        )
+
+    if local_end <= local_start:
+        raise ValidationError("Booking end time must be after start time.")
 
 
 @receiver(post_delete, sender=Image)
@@ -18,6 +55,9 @@ def validate_booking(sender, instance, **kwargs):
     """
     Ensure booking-equipment selection is valid (room match, stock, editable state).
     """
+    validate_start_not_in_past(instance.start_time, "booking start time")
+    validate_booking_working_hours(instance.start_time, instance.end_time)
+
     if not instance.equipment_id:
         return
 
@@ -55,6 +95,19 @@ def validate_booking(sender, instance, **kwargs):
                     "Approver harus PIC ruangan terkait atau Admin."
                 )
 
+
+@receiver(pre_save, sender=Use)
+def validate_use(sender, instance, **kwargs):
+    """
+    Use rules:
+    - Quantity > 0.
+    - Start time cannot be in the past.
+    """
+    if instance.quantity <= 0:
+        raise ValidationError("Use quantity must be at least 1.")
+
+    validate_start_not_in_past(instance.start_time, "use start time")
+
 @receiver(pre_save, sender=Borrow)
 def validate_borrow(sender, instance, **kwargs):
     """
@@ -65,6 +118,9 @@ def validate_borrow(sender, instance, **kwargs):
     # quantity checks (apply to create/update)
     if instance.quantity <= 0:
         raise ValidationError("Borrow quantity must be at least 1.")
+
+    validate_start_not_in_past(instance.start_time, "borrow start time")
+
     if instance.equipment_id:
         equipment_qty = instance.equipment.quantity
         if instance.quantity > equipment_qty:

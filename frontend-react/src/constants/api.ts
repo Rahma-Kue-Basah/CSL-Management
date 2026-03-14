@@ -97,6 +97,10 @@ const API_ROOM_DETAIL = (id: string | number) => `${API_ROOMS}${id}/`;
 const API_ROOM_AVAILABILITY = (id: string | number) =>
   `${API_ROOMS}${id}/availability/`;
 const API_ANNOUNCEMENTS = `${API_BASE_URL}/announcements/`;
+const API_SCHEDULES = `${API_BASE_URL}/schedules/`;
+const API_SCHEDULE_DETAIL = (id: string | number) => `${API_SCHEDULES}${id}/`;
+const API_CALENDAR = `${API_BASE_URL}/calendar/`;
+const API_FAQS = `${API_BASE_URL}/faqs/`;
 
 export {
   API_BASE_URL,
@@ -161,4 +165,8 @@ export {
   API_ROOM_DETAIL,
   API_ROOM_AVAILABILITY,
   API_ANNOUNCEMENTS,
+  API_SCHEDULES,
+  API_SCHEDULE_DETAIL,
+  API_CALENDAR,
+  API_FAQS,
 };

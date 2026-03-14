@@ -1,737 +1,533 @@
 "use client";
 
-import { CSSProperties, useState } from "react";
-import { CalendarDays } from "lucide-react";
-import { Badge, Calendar } from "rsuite";
+import { useMemo, useState, type FormEvent } from "react";
+import { BadgeAlert, CalendarDays, Plus, Search } from "lucide-react";
+import { Badge, Calendar as RsuiteCalendar } from "rsuite";
+
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { HourlyScheduleTable } from "@/components/admin/information/hourly-schedule-table";
+import { ManualSchedulesTable } from "@/components/admin/information/manual-schedules-table";
+import {
+  formatDateTimeLocalInput,
+  type ScheduleCategory,
+  ScheduleFormDialog,
+  type ScheduleFormState,
+  validateScheduleForm,
+} from "@/components/admin/information/schedule-form-dialog";
+import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
+import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { useCalendarEvents } from "@/hooks/calendar/use-calendar-events";
+import { useCreateSchedule } from "@/hooks/schedules/use-create-schedule";
+import { useDeleteSchedule } from "@/hooks/schedules/use-delete-schedule";
+import {
+  useSchedules,
+  type ScheduleItem,
+} from "@/hooks/schedules/use-schedules";
+import { useUpdateSchedule } from "@/hooks/schedules/use-update-schedule";
+import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 
-type TodoItem = {
-  startTime: string;
-  endTime: string;
-  title: string;
-  activityType: "Booking Room" | "Praktikum" | "Penggunaan Alat";
-  room: string;
-  equipment: string;
-  status: "Disetujui";
-  course?: string;
-  classGroup?: string;
-  instructor?: string;
-  participants?: number;
-  labRequirement?: string;
-};
-type ActivityFilter = "Semua" | TodoItem["activityType"];
-type RoomFilter = "Semua Ruangan" | string;
+const PAGE_SIZE = 10;
 
-function getTodoList(date: Date | null): TodoItem[] {
-  if (!date) {
-    return [];
-  }
-
-  switch (date.getDate()) {
-    case 10:
-      return [
-        {
-          startTime: "08:00",
-          endTime: "10:00",
-          title: "Praktikum Dasar Pemrograman",
-          activityType: "Praktikum",
-          room: "Lab Komputer A",
-          equipment: "30 PC + Proyektor Epson EB-X06",
-          status: "Disetujui",
-          course: "Dasar Pemrograman",
-          classGroup: "IF-1A",
-          instructor: "Asisten Raka",
-          participants: 28,
-          labRequirement: "Wajib Lab Komputer A (spesifikasi i5, RAM 8GB)",
-        },
-        {
-          startTime: "08:00",
-          endTime: "10:00",
-          title: "Praktikum Sistem Digital",
-          activityType: "Praktikum",
-          room: "Lab Elektronika",
-          equipment: "Trainer Kit Digital + Osiloskop",
-          status: "Disetujui",
-          course: "Sistem Digital",
-          classGroup: "TE-1B",
-          instructor: "Asisten Nando",
-          participants: 22,
-          labRequirement: "Wajib Lab Elektronika (trainer logika digital)",
-        },
-        {
-          startTime: "08:00",
-          endTime: "11:00",
-          title: "Praktikum Fisika Dasar",
-          activityType: "Praktikum",
-          room: "Lab Fisika",
-          equipment: "Set Pengukuran Mekanika + Data Logger",
-          status: "Disetujui",
-          course: "Fisika Dasar",
-          classGroup: "TE-1A",
-          instructor: "Asisten Wulan",
-          participants: 26,
-          labRequirement: "Wajib Lab Fisika (alat ukur terkalibrasi)",
-        },
-        {
-          startTime: "09:00",
-          endTime: "12:00",
-          title: "Praktikum Kimia Analitik",
-          activityType: "Praktikum",
-          room: "Lab Kimia",
-          equipment: "Spektrofotometer UV-Vis + Gelas Ukur",
-          status: "Disetujui",
-          course: "Kimia Analitik",
-          classGroup: "TK-2A",
-          instructor: "Asisten Putri",
-          participants: 20,
-          labRequirement: "Wajib Lab Kimia (lemari asam aktif)",
-        },
-        {
-          startTime: "09:00",
-          endTime: "12:00",
-          title: "Praktikum Metrologi Industri",
-          activityType: "Praktikum",
-          room: "Lab Metrologi",
-          equipment: "CMM + Surface Roughness Tester",
-          status: "Disetujui",
-          course: "Metrologi Industri",
-          classGroup: "TM-3A",
-          instructor: "Asisten Galih",
-          participants: 19,
-          labRequirement: "Wajib Lab Metrologi (alat ukur presisi)",
-        },
-        {
-          startTime: "09:30",
-          endTime: "11:30",
-          title: "Penggunaan Thermal Camera untuk Audit Energi",
-          activityType: "Penggunaan Alat",
-          room: "Lab Energi",
-          equipment: "Thermal Camera FLIR E8",
-          status: "Disetujui",
-        },
-        {
-          startTime: "10:00",
-          endTime: "12:00",
-          title: "Praktikum Mikrokontroler",
-          activityType: "Praktikum",
-          room: "Lab Embedded",
-          equipment: "STM32 Kit + Logic Analyzer",
-          status: "Disetujui",
-          course: "Sistem Embedded",
-          classGroup: "TE-3A",
-          instructor: "Asisten Reyhan",
-          participants: 24,
-          labRequirement: "Wajib Lab Embedded (bench soldering siap pakai)",
-        },
-        {
-          startTime: "10:00",
-          endTime: "12:00",
-          title: "Praktikum Sistem Tenaga Listrik",
-          activityType: "Praktikum",
-          room: "Lab Power System",
-          equipment: "Power Analyzer + Trainer Panel",
-          status: "Disetujui",
-          course: "Sistem Tenaga",
-          classGroup: "TE-4B",
-          instructor: "Asisten Yoga",
-          participants: 21,
-          labRequirement: "Wajib Lab Power System (panel simulasi aktif)",
-        },
-        {
-          startTime: "13:30",
-          endTime: "15:00",
-          title: "Booking Presentasi Tugas Akhir",
-          activityType: "Booking Room",
-          room: "Ruang Rapat 2",
-          equipment: "Proyektor Epson EB-X06",
-          status: "Disetujui",
-        },
-        {
-          startTime: "13:00",
-          endTime: "16:00",
-          title: "Praktikum Machine Learning",
-          activityType: "Praktikum",
-          room: "Lab AI",
-          equipment: "GPU Workstation + JupyterHub Lokal",
-          status: "Disetujui",
-          course: "Machine Learning",
-          classGroup: "IF-4A",
-          instructor: "Asisten Daffa",
-          participants: 30,
-          labRequirement: "Wajib Lab AI (akses GPU lokal)",
-        },
-        {
-          startTime: "14:00",
-          endTime: "17:00",
-          title: "Praktikum Keamanan Jaringan",
-          activityType: "Praktikum",
-          room: "Lab Keamanan Siber",
-          equipment: "VM Server + Firewall Appliance",
-          status: "Disetujui",
-          course: "Keamanan Jaringan",
-          classGroup: "IF-4B",
-          instructor: "Asisten Ghani",
-          participants: 23,
-          labRequirement: "Wajib Lab Keamanan Siber (isolated network)",
-        },
-        {
-          startTime: "14:00",
-          endTime: "16:00",
-          title: "Booking Simulasi Sidang",
-          activityType: "Booking Room",
-          room: "Ruang Seminar 1",
-          equipment: "Proyektor Laser + Wireless Mic",
-          status: "Disetujui",
-        },
-        {
-          startTime: "14:30",
-          endTime: "17:30",
-          title: "Penggunaan CNC untuk Pembuatan Prototype",
-          activityType: "Penggunaan Alat",
-          room: "Workshop Manufaktur",
-          equipment: "CNC Milling Machine",
-          status: "Disetujui",
-        },
-        {
-          startTime: "15:00",
-          endTime: "18:00",
-          title: "Praktikum IoT",
-          activityType: "Praktikum",
-          room: "Lab IoT",
-          equipment: "ESP32 Kit + Sensor Pack",
-          status: "Disetujui",
-          course: "Internet of Things",
-          classGroup: "SI-3A",
-          instructor: "Asisten Sinta",
-          participants: 27,
-          labRequirement: "Wajib Lab IoT (gateway MQTT aktif)",
-        },
-        {
-          startTime: "16:00",
-          endTime: "18:00",
-          title: "Penggunaan Spektrometer untuk Penelitian",
-          activityType: "Penggunaan Alat",
-          room: "Lab Instrumentasi",
-          equipment: "Spektrometer FTIR",
-          status: "Disetujui",
-        },
-        {
-          startTime: "18:00",
-          endTime: "20:00",
-          title: "Praktikum Robotika",
-          activityType: "Praktikum",
-          room: "Lab Robotika",
-          equipment: "Mobile Robot Kit + Lidar",
-          status: "Disetujui",
-          course: "Robotika",
-          classGroup: "TE-4A",
-          instructor: "Asisten Faris",
-          participants: 18,
-          labRequirement: "Wajib Lab Robotika (arena uji robot siap pakai)",
-        },
-      ];
-    case 12:
-      return [
-        {
-          startTime: "09:00",
-          endTime: "12:00",
-          title: "Praktikum Jaringan Komputer",
-          activityType: "Praktikum",
-          room: "Lab Jaringan",
-          equipment: "Router Cisco + Switch + Kabel LAN",
-          status: "Disetujui",
-          course: "Jaringan Komputer",
-          classGroup: "IF-3B",
-          instructor: "Asisten Nabila",
-          participants: 24,
-          labRequirement: "Wajib Lab Jaringan (rack dan perangkat jaringan aktif)",
-        },
-      ];
-    case 15:
-      return [
-        {
-          startTime: "10:00",
-          endTime: "12:00",
-          title: "Praktikum Basis Data",
-          activityType: "Praktikum",
-          room: "Lab Database",
-          equipment: "Server MySQL Lokal + 25 PC",
-          status: "Disetujui",
-          course: "Basis Data",
-          classGroup: "SI-2A",
-          instructor: "Asisten Dimas",
-          participants: 25,
-          labRequirement: "Wajib Lab Database (akses server lokal)",
-        },
-        {
-          startTime: "14:00",
-          endTime: "15:00",
-          title: "Penggunaan 3D Printer untuk Prototype",
-          activityType: "Penggunaan Alat",
-          room: "Maker Space",
-          equipment: "3D Printer Prusa MK4",
-          status: "Disetujui",
-        },
-        {
-          startTime: "17:00",
-          endTime: "18:00",
-          title: "Product test and acceptance",
-          activityType: "Booking Room",
-          room: "Testing Lab",
-          equipment: "Oscilloscope + Multimeter",
-          status: "Disetujui",
-        },
-        {
-          startTime: "18:30",
-          endTime: "19:30",
-          title: "Client entertaining",
-          activityType: "Booking Room",
-          room: "Meeting Room Nusantara",
-          equipment: "Speaker Conference Jabra",
-          status: "Disetujui",
-        },
-      ];
-    default:
-      return [];
-  }
-}
-
-function parseTimeToMinutes(value: string) {
-  const [hour, minute] = value.split(":").map(Number);
-  return hour * 60 + minute;
-}
-
-function getHourLabel(hour: number) {
-  return `${String(hour).padStart(2, "0")}:00`;
-}
-
-function filterTodoList(
-  list: TodoItem[],
-  query: string,
-  activityFilter: ActivityFilter,
-  roomFilter: RoomFilter,
-) {
-  const normalizedQuery = query.trim().toLowerCase();
-
-  return list.filter((item) => {
-    const matchesCategory =
-      activityFilter === "Semua" || item.activityType === activityFilter;
-    if (!matchesCategory) return false;
-    const matchesRoom =
-      roomFilter === "Semua Ruangan" || item.room === roomFilter;
-    if (!matchesRoom) return false;
-
-    if (!normalizedQuery) return true;
-
-    const searchableText = [
-      item.title,
-      item.room,
-      item.equipment,
-      item.course,
-      item.classGroup,
-      item.instructor,
-      item.activityType,
-      item.startTime,
-      item.endTime,
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
-
-    return searchableText.includes(normalizedQuery);
-  });
-}
-
-function getFilteredTodoList(
-  date: Date | null,
-  query: string,
-  activityFilter: ActivityFilter,
-  roomFilter: RoomFilter,
-) {
-  return filterTodoList(getTodoList(date), query, activityFilter, roomFilter);
-}
-
-function renderCell(
-  date: Date,
-  query: string,
-  activityFilter: ActivityFilter,
-  roomFilter: RoomFilter,
-) {
-  const list = getFilteredTodoList(date, query, activityFilter, roomFilter);
-
-  if (!list.length) {
-    return null;
-  }
-
-  return <Badge className="calendar-todo-item-badge" />;
-}
-
-type TodoListProps = {
-  date: Date | null;
-  query: string;
-  activityFilter: ActivityFilter;
-  roomFilter: RoomFilter;
-};
-type StatsProps = {
-  date: Date | null;
+const EMPTY_FORM: ScheduleFormState = {
+  title: "",
+  description: "",
+  category: "Agenda",
+  room: "",
+  startTime: "",
+  endTime: "",
+  isActive: true,
 };
 
-const stickyTimeCellStyle: CSSProperties = {
-  boxShadow: "inset -1px 0 0 #cbd5e1, inset 0 -1px 0 #e2e8f0",
-};
-const HOUR_ROW_HEIGHT_PX = 96;
+function getYearBounds(date: Date) {
+  const year = date.getFullYear();
+  return {
+    start: new Date(year, 0, 1, 0, 0, 0).toISOString(),
+    end: new Date(year, 11, 31, 23, 59, 59).toISOString(),
+  };
+}
 
-function CompactStats({ date }: StatsProps) {
-  const selectedDayEvents = getTodoList(date).sort(
-    (a, b) =>
-      parseTimeToMinutes(a.startTime) - parseTimeToMinutes(b.startTime),
-  );
-  const monthDate = date ?? new Date();
-  const year = monthDate.getFullYear();
-  const month = monthDate.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const monthEvents: TodoItem[] = [];
-
-  for (let day = 1; day <= daysInMonth; day += 1) {
-    monthEvents.push(...getTodoList(new Date(year, month, day)));
-  }
-
-  const praktikumMonth = monthEvents.filter(
-    (item) => item.activityType === "Praktikum",
-  ).length;
-  const bookingMonth = monthEvents.filter(
-    (item) => item.activityType === "Booking Room",
-  ).length;
-  const penggunaanAlatMonth = monthEvents.filter(
-    (item) => item.activityType === "Penggunaan Alat",
-  ).length;
-
+function isSameDay(left: Date, right: Date) {
   return (
-    <div className="min-w-[260px] flex-1 rounded-lg border bg-white p-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        Statistik Bulan Ini
-      </p>
-      <p className="mt-1 text-sm font-semibold text-slate-900">
-        {monthDate.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
-      </p>
-
-      <div className="mt-3 grid grid-cols-4 gap-2">
-        <div className="rounded-md border border-sky-200 bg-linear-to-br from-sky-100 to-sky-50 px-2 py-1.5">
-          <p className="text-[11px] text-sky-700">Total Event</p>
-          <p className="text-base font-semibold text-sky-900">{monthEvents.length}</p>
-        </div>
-        <div className="rounded-md border border-indigo-200 bg-linear-to-br from-indigo-100 to-indigo-50 px-2 py-1.5">
-          <p className="text-[11px] text-indigo-700">Praktikum</p>
-          <p className="text-base font-semibold text-indigo-900">{praktikumMonth}</p>
-        </div>
-        <div className="rounded-md border border-amber-200 bg-linear-to-br from-amber-100 to-amber-50 px-2 py-1.5">
-          <p className="text-[11px] text-amber-700">Booking Room</p>
-          <p className="text-base font-semibold text-amber-900">{bookingMonth}</p>
-        </div>
-        <div className="rounded-md border border-fuchsia-200 bg-linear-to-br from-fuchsia-100 to-fuchsia-50 px-2 py-1.5">
-          <p className="text-[11px] text-fuchsia-700">Penggunaan Alat</p>
-          <p className="text-base font-semibold text-fuchsia-900">{penggunaanAlatMonth}</p>
-        </div>
-      </div>
-
-      <div className="mt-3 rounded-md border border-cyan-200 bg-linear-to-r from-cyan-100 to-blue-50 px-2 py-2">
-        <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
-          Hari Dipilih
-        </p>
-        <p className="mt-1 text-xs text-slate-600">
-          {date?.toLocaleDateString("id-ID", {
-            weekday: "long",
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-          }) ?? "-"}
-        </p>
-        <p className="mt-1 text-sm font-semibold text-slate-900">
-          {selectedDayEvents.length} event
-        </p>
-      </div>
-    </div>
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
   );
 }
 
-function TodoList({ date, query, activityFilter, roomFilter }: TodoListProps) {
-  const list = getFilteredTodoList(date, query, activityFilter, roomFilter).sort(
-    (a, b) =>
-      parseTimeToMinutes(a.startTime) - parseTimeToMinutes(b.startTime),
-  );
-
-  if (!list.length) {
-    return (
-      <div className="min-h-80 w-full rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-        Pilih tanggal yang punya event untuk melihat detail agenda.
-      </div>
-    );
-  }
-
-  const startHour = 7;
-  const endHour = 21;
-  const hours = Array.from(
-    { length: endHour - startHour },
-    (_, index) => startHour + index,
-  );
-  const laneEndTimes: number[] = [];
-  const eventByLaneStartHour = new Map<number, Map<number, { item: TodoItem; rowSpan: number }>>();
-  const occupiedByLaneHour = new Map<number, Set<number>>();
-
-  list.forEach((item) => {
-    const startMinutes = parseTimeToMinutes(item.startTime);
-    const endMinutes = parseTimeToMinutes(item.endTime);
-
-    let laneIndex = laneEndTimes.findIndex((laneEnd) => laneEnd <= startMinutes);
-    if (laneIndex === -1) {
-      laneIndex = laneEndTimes.length;
-      laneEndTimes.push(endMinutes);
-      eventByLaneStartHour.set(laneIndex, new Map());
-      occupiedByLaneHour.set(laneIndex, new Set());
-    } else {
-      laneEndTimes[laneIndex] = endMinutes;
-    }
-
-    const slotStart = Math.floor(startMinutes / 60);
-    const slotEnd = Math.max(slotStart + 1, Math.ceil(endMinutes / 60));
-    const rowSpan = slotEnd - slotStart;
-
-    const laneEvents = eventByLaneStartHour.get(laneIndex);
-    const laneOccupied = occupiedByLaneHour.get(laneIndex);
-    if (!laneEvents || !laneOccupied) return;
-
-    laneEvents.set(slotStart, { item, rowSpan });
-    for (let hour = slotStart + 1; hour < slotEnd; hour += 1) {
-      laneOccupied.add(hour);
-    }
-  });
-
-  const laneCount = Math.max(1, laneEndTimes.length);
-  const tableMinWidth = 120 + laneCount * 320;
-
+function isSameMonth(left: Date, right: Date) {
   return (
-    <div className="rounded-xl border bg-linear-to-b from-white to-slate-50 p-3">
-      <h3 className="mb-3 text-sm font-semibold text-slate-900">
-        Event {date?.toLocaleDateString("id-ID")}
-      </h3>
-      <div className="overflow-x-auto rounded-lg border bg-white">
-        <table
-          className="w-full table-fixed border-collapse text-xs"
-          style={{ minWidth: `${tableMinWidth}px` }}
-        >
-          <colgroup>
-            <col style={{ width: "80px" }} />
-            {Array.from({ length: laneCount }, (_, laneIndex) => (
-              <col key={`lane-col-${laneIndex}`} style={{ width: "320px" }} />
-            ))}
-          </colgroup>
-          <thead>
-            <tr className="bg-slate-50 text-slate-700">
-              <th
-                className="sticky left-0 z-30 w-20 border-b border-r bg-slate-50 p-2 text-left font-semibold"
-                style={stickyTimeCellStyle}
-              >
-                Jam
-              </th>
-              <th
-                colSpan={laneCount}
-                className="border-b p-2 text-left font-semibold"
-              >
-                Agenda
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {hours.map((hour) => {
-              return (
-                <tr key={`hour-${hour}`} className="h-24 align-top">
-                  <td
-                    className="sticky left-0 z-20 border-r border-b bg-white p-2 align-top text-slate-600"
-                    style={stickyTimeCellStyle}
-                  >
-                    {getHourLabel(hour)}
-                  </td>
-                  {Array.from({ length: laneCount }, (_, laneIndex) => {
-                    const laneEvents = eventByLaneStartHour.get(laneIndex);
-                    const laneOccupied = occupiedByLaneHour.get(laneIndex);
-                    const eventData = laneEvents?.get(hour);
-                    const isCoveredByPreviousEvent = laneOccupied?.has(hour);
-
-                    if (eventData) {
-                      const item = eventData.item;
-                      return (
-                        <td
-                          key={`event-${hour}-${laneIndex}`}
-                          rowSpan={eventData.rowSpan}
-                          className="border-r border-b p-0 align-top last:border-r-0"
-                          style={{ height: `${eventData.rowSpan * HOUR_ROW_HEIGHT_PX}px` }}
-                        >
-                          <div className="h-full p-2">
-                            <div className="relative h-full overflow-hidden rounded-lg border bg-slate-50 p-3">
-                            <span
-                              className={`absolute inset-y-0 left-0 w-1 ${
-                                item.activityType === "Praktikum"
-                                  ? "bg-indigo-500"
-                                  : item.activityType === "Penggunaan Alat"
-                                    ? "bg-fuchsia-500"
-                                    : "bg-sky-500"
-                              }`}
-                            />
-                            <div className="ml-2">
-                              <div className="flex items-start justify-between gap-2">
-                                <div>
-                                  <p className="text-xs text-slate-500">
-                                    {item.startTime} - {item.endTime}
-                                  </p>
-                                  <p className="text-sm font-semibold text-slate-900">
-                                    {item.title}
-                                  </p>
-                                </div>
-                                <span
-                                  className={`inline-flex rounded-full border px-2 py-0.5 text-[11px] font-semibold ${
-                                    item.activityType === "Praktikum"
-                                      ? "border-indigo-200 bg-indigo-100 text-indigo-800"
-                                      : item.activityType === "Penggunaan Alat"
-                                        ? "border-fuchsia-200 bg-fuchsia-100 text-fuchsia-800"
-                                        : "border-sky-200 bg-sky-100 text-sky-800"
-                                  }`}
-                                >
-                                  {item.activityType}
-                                </span>
-                              </div>
-                              <div className="mt-2 grid gap-1 text-xs text-slate-600">
-                                <p>Ruangan: {item.room}</p>
-                                <p>Alat: {item.equipment}</p>
-                                {item.course && <p>Mata Kuliah: {item.course}</p>}
-                                {item.classGroup && <p>Kelas: {item.classGroup}</p>}
-                                {item.instructor && <p>Asisten/Dosen: {item.instructor}</p>}
-                                {typeof item.participants === "number" && (
-                                  <p>Peserta: {item.participants} orang</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          </div>
-                        </td>
-                      );
-                    }
-
-                    if (isCoveredByPreviousEvent) {
-                      return null;
-                    }
-
-                    return (
-                      <td
-                        key={`empty-${hour}-${laneIndex}`}
-                        className="border-r border-b p-2 text-slate-400 last:border-r-0"
-                      >
-                        -
-                      </td>
-                    );
-                  })}
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth()
   );
+}
+
+function normalizeText(value: string) {
+  return value.toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function getCalendarDotClass(source: string) {
+  if (source === "schedule") return "bg-sky-500";
+  if (source === "booking") return "bg-emerald-500";
+  if (source === "use") return "bg-amber-500";
+  return "bg-slate-500";
 }
 
 export default function CalendarClient() {
-  const [selectedDate, setSelectedDate] = useState<Date | null>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [page, setPage] = useState(1);
   const [query, setQuery] = useState("");
-  const [activityFilter, setActivityFilter] = useState<ActivityFilter>("Semua");
-  const [roomFilter, setRoomFilter] = useState<RoomFilter>("Semua Ruangan");
-  const filterMonthDate = selectedDate ?? new Date();
-  const filterYear = filterMonthDate.getFullYear();
-  const filterMonth = filterMonthDate.getMonth();
-  const filterDaysInMonth = new Date(filterYear, filterMonth + 1, 0).getDate();
-  const availableRooms = Array.from(
-    new Set(
-      Array.from({ length: filterDaysInMonth }, (_, index) => {
-        const day = index + 1;
-        return getTodoList(new Date(filterYear, filterMonth, day)).map(
-          (item) => item.room,
-        );
-      }).flat(),
-    ),
-  ).sort((a, b) => a.localeCompare(b, "id-ID"));
+  const [roomFilter, setRoomFilter] = useState("");
+  const [activeFilter, setActiveFilter] = useState("true");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState<ScheduleFormState>(EMPTY_FORM);
+  const [editTarget, setEditTarget] = useState<ScheduleItem | null>(null);
+  const [editForm, setEditForm] = useState<ScheduleFormState>(EMPTY_FORM);
+  const [deleteTarget, setDeleteTarget] = useState<ScheduleItem | null>(null);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  const yearBounds = useMemo(() => getYearBounds(selectedDate), [selectedDate]);
+  const { rooms } = useRoomOptions();
+  const {
+    events,
+    error: calendarError,
+  } = useCalendarEvents(yearBounds.start, yearBounds.end, { room: roomFilter }, reloadKey);
+  const {
+    schedules,
+    totalCount,
+    isLoading: isSchedulesLoading,
+    error: schedulesError,
+    setError: setSchedulesError,
+  } = useSchedules(
+    page,
+    PAGE_SIZE,
+    {
+      search: query,
+      room: roomFilter,
+      isActive: activeFilter,
+      start: yearBounds.start,
+      end: yearBounds.end,
+    },
+    reloadKey,
+  );
+  const {
+    createSchedule,
+    isSubmitting: isCreating,
+    errorMessage: createError,
+    setErrorMessage: setCreateError,
+  } = useCreateSchedule();
+  const {
+    updateSchedule,
+    isSubmitting: isUpdating,
+    errorMessage: updateError,
+    setErrorMessage: setUpdateError,
+  } = useUpdateSchedule();
+  const {
+    deleteSchedule,
+    isDeleting,
+    errorMessage: deleteError,
+    setErrorMessage: setDeleteError,
+  } = useDeleteSchedule();
+
+  const filteredEvents = useMemo(() => {
+    const normalizedQuery = normalizeText(query);
+    return events.filter((item) => {
+      if (roomFilter && item.room_id !== roomFilter) return false;
+      if (!normalizedQuery) return true;
+      return normalizeText(
+        `${item.title} ${item.description ?? ""} ${item.room_name ?? ""} ${item.requested_by_name ?? ""}`,
+      ).includes(normalizedQuery);
+    });
+  }, [events, query, roomFilter]);
+
+  const monthEvents = useMemo(() => {
+    return filteredEvents.filter((item) =>
+      isSameMonth(new Date(item.start_time), selectedDate),
+    );
+  }, [filteredEvents, selectedDate]);
+
+  const monthKpis = useMemo(() => {
+    const scheduleCount = monthEvents.filter((item) => item.source === "schedule").length;
+    const bookingCount = monthEvents.filter((item) => item.source === "booking").length;
+    const useCount = monthEvents.filter((item) => item.source === "use").length;
+    const roomCount = new Set(
+      monthEvents.map((item) => item.room_name).filter(Boolean),
+    ).size;
+
+    return [
+      {
+        label: "Agenda Bulan Ini",
+        value: String(monthEvents.length),
+        tone: "from-sky-500/15 to-sky-100",
+      },
+      {
+        label: "Jadwal Manual",
+        value: String(scheduleCount),
+        tone: "from-emerald-500/15 to-emerald-100",
+      },
+      {
+        label: "Booking Ruangan",
+        value: String(bookingCount),
+        tone: "from-amber-500/15 to-amber-100",
+      },
+      {
+        label: "Ruangan Terpakai",
+        value: String(roomCount),
+        tone: "from-violet-500/15 to-violet-100",
+        helper: useCount ? `${useCount} penggunaan alat` : undefined,
+      },
+    ];
+  }, [monthEvents]);
+
+  const selectedDayEvents = useMemo(() => {
+    return filteredEvents
+      .filter((item) => isSameDay(new Date(item.start_time), selectedDate))
+      .sort(
+        (left, right) =>
+          new Date(left.start_time).getTime() - new Date(right.start_time).getTime(),
+      );
+  }, [filteredEvents, selectedDate]);
+
+  const totalPages = Math.max(1, Math.ceil((totalCount || schedules.length) / PAGE_SIZE));
+
+  const handleCreateDialogChange = (open: boolean) => {
+    setIsCreateOpen(open);
+    if (!open) {
+      setCreateForm(EMPTY_FORM);
+      setCreateError("");
+    }
+  };
+
+  const handleEditOpen = (item: ScheduleItem) => {
+    setEditTarget(item);
+    setEditForm({
+      title: item.title,
+      description: item.description ?? "",
+      category: (item.category as ScheduleCategory) || "Agenda",
+      room: item.room ? String(item.room) : "",
+      startTime: formatDateTimeLocalInput(item.start_time),
+      endTime: formatDateTimeLocalInput(item.end_time),
+      isActive: Boolean(item.is_active),
+    });
+    setUpdateError("");
+  };
+
+  const handleEditDialogChange = (open: boolean) => {
+    if (!open) {
+      setEditTarget(null);
+      setEditForm(EMPTY_FORM);
+      setUpdateError("");
+    }
+  };
+
+  const handleCreateSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setCreateError("");
+    const payload = validateScheduleForm(createForm, setCreateError);
+    if (!payload) return;
+
+    const result = await createSchedule(payload);
+    if (!result.ok) return;
+
+    handleCreateDialogChange(false);
+    setReloadKey((prev) => prev + 1);
+  };
+
+  const handleEditSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!editTarget) return;
+    setUpdateError("");
+    const payload = validateScheduleForm(editForm, setUpdateError);
+    if (!payload) return;
+
+    const result = await updateSchedule(editTarget.id, payload);
+    if (!result.ok) return;
+
+    handleEditDialogChange(false);
+    setReloadKey((prev) => prev + 1);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteError("");
+    const result = await deleteSchedule(deleteTarget.id);
+    if (!result.ok) {
+      setSchedulesError(result.message || "Gagal menghapus jadwal.");
+      return;
+    }
+    setDeleteTarget(null);
+    setReloadKey((prev) => prev + 1);
+  };
+
+  const renderCell = (date: Date) => {
+    const dayItems = filteredEvents.filter((item) =>
+      isSameDay(new Date(item.start_time), date),
+    );
+
+    if (!dayItems.length) return null;
+
+    const hasUse = dayItems.some((item) => item.source === "use");
+    const hasBooking = dayItems.some((item) => item.source === "booking");
+    const markerClass = hasUse
+      ? getCalendarDotClass("use")
+      : hasBooking
+        ? getCalendarDotClass("booking")
+        : getCalendarDotClass("schedule");
+
+    return (
+      <div className="mt-1 flex justify-center">
+        <Badge className="!mr-0">
+          <span className={`block h-2 w-2 rounded-full ${markerClass}`} />
+        </Badge>
+      </div>
+    );
+  };
 
   return (
     <section className="space-y-4">
       <AdminPageHeader
         title="Jadwal"
-        description="Pantau agenda booking ruangan dan praktikum laboratorium."
+        description="Kelola jadwal manual dan pantau agenda gabungan dari jadwal admin, booking ruangan, dan penggunaan alat."
         icon={<CalendarDays className="h-5 w-5 text-blue-100" />}
+        actions={
+          <ScheduleFormDialog
+            open={isCreateOpen}
+            onOpenChange={handleCreateDialogChange}
+            form={createForm}
+            onChange={(field, value) =>
+              setCreateForm((prev) => ({ ...prev, [field]: value }))
+            }
+            onSubmit={handleCreateSubmit}
+            rooms={rooms}
+            title="Tambah Jadwal"
+            description="Masukkan jadwal manual seperti praktikum tetap, maintenance, atau agenda laboratorium."
+            error={createError}
+            isSubmitting={isCreating}
+            trigger={
+              <Button
+                type="button"
+                size="sm"
+                className="bg-white text-slate-900 hover:bg-slate-100"
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Jadwal
+              </Button>
+            }
+          />
+        }
       />
 
-      <div className="flex flex-wrap items-start gap-4">
-        <div className="rounded-xl border bg-card p-3 shadow-xs">
-          <Calendar
+      <ScheduleFormDialog
+        open={Boolean(editTarget)}
+        onOpenChange={handleEditDialogChange}
+        form={editForm}
+        onChange={(field, value) => setEditForm((prev) => ({ ...prev, [field]: value }))}
+        onSubmit={handleEditSubmit}
+        rooms={rooms}
+        title="Edit Jadwal"
+        description="Perbarui detail jadwal manual."
+        error={updateError}
+        isSubmitting={isUpdating}
+      />
+
+      <AlertDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Hapus jadwal?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Jadwal manual yang dihapus tidak bisa dikembalikan.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDelete}
+              disabled={isDeleting}
+              className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
+            >
+              {isDeleting ? "Menghapus..." : "Hapus"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <InventoryFilterCard
+        open={filterOpen}
+        onToggle={() => setFilterOpen((prev) => !prev)}
+        onReset={() => {
+          setQuery("");
+          setRoomFilter("");
+          setActiveFilter("true");
+          setPage(1);
+          setFilterOpen(false);
+        }}
+      >
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+          <div className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5">
+            <Search className="h-4 w-4 text-slate-400" />
+            <Input
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setPage(1);
+              }}
+              placeholder="Cari judul, deskripsi, atau agenda"
+              className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+            />
+          </div>
+          <select
+            value={roomFilter}
+            onChange={(event) => {
+              setRoomFilter(event.target.value);
+              setPage(1);
+            }}
+            className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+          >
+            <option value="">Semua Ruangan</option>
+            {rooms.map((room) => (
+              <option key={room.id} value={room.id}>
+                {room.label}
+              </option>
+            ))}
+          </select>
+          <select
+            value={activeFilter}
+            onChange={(event) => {
+              setActiveFilter(event.target.value);
+              setPage(1);
+            }}
+            className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+          >
+            <option value="true">Jadwal Aktif</option>
+            <option value="false">Jadwal Nonaktif</option>
+            <option value="">Semua Status</option>
+          </select>
+        </div>
+      </InventoryFilterCard>
+
+      {calendarError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {calendarError}
+        </div>
+      ) : null}
+      {schedulesError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {schedulesError}
+        </div>
+      ) : null}
+      {deleteError ? (
+        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+          {deleteError}
+        </div>
+      ) : null}
+
+      <div className="grid items-start gap-4 xl:grid-cols-[auto_minmax(0,1fr)]">
+        <div className="inline-block w-fit max-w-full justify-self-start rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+          <RsuiteCalendar
             compact
-            renderCell={(date) => renderCell(date, query, activityFilter, roomFilter)}
-            onSelect={setSelectedDate}
-            style={{ width: 320 }}
+            value={selectedDate}
+            onSelect={(value) => setSelectedDate(value ?? new Date())}
+            renderCell={renderCell}
+            style={{ width: 388 }}
           />
         </div>
-        <div className="min-w-[260px] flex-1 space-y-3">
-          <CompactStats date={selectedDate} />
-          <div className="rounded-lg border bg-white p-3">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-              Filter Event
-            </p>
-            <div className="mt-2 grid grid-cols-3 gap-3">
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-600">Cari Event</span>
-                <input
-                  type="text"
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Cari judul, ruangan, alat, atau pengampu..."
-                  className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-                />
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-600">Kategori</span>
-                <select
-                  value={activityFilter}
-                  onChange={(event) => setActivityFilter(event.target.value as ActivityFilter)}
-                  className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-                >
-                  <option value="Semua">Semua</option>
-                  <option value="Praktikum">Praktikum</option>
-                  <option value="Booking Room">Booking Room</option>
-                  <option value="Penggunaan Alat">Penggunaan Alat</option>
-                </select>
-              </label>
-              <label className="space-y-1">
-                <span className="text-xs font-medium text-slate-600">Ruangan</span>
-                <select
-                  value={roomFilter}
-                  onChange={(event) => setRoomFilter(event.target.value)}
-                  className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-                >
-                  <option value="Semua Ruangan">Semua Ruangan</option>
-                  {availableRooms.map((room) => (
-                    <option key={room} value={room}>
-                      {room}
-                    </option>
-                  ))}
-                </select>
-              </label>
+
+        <div className="space-y-3">
+          <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+            <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-4 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                Ringkasan Bulan
+              </p>
+              <p className="mt-2 text-lg font-semibold text-slate-900">
+                {selectedDate.toLocaleDateString("id-ID", {
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+              <p className="mt-1 text-sm text-slate-500">
+                Rekap agenda otomatis berdasarkan bulan yang sedang dipilih.
+              </p>
             </div>
-          </div>
+
+            <div className="grid grid-cols-2 gap-3 p-4 2xl:grid-cols-4">
+              {monthKpis.map((item) => (
+                <div
+                  key={`sidebar-${item.label}`}
+                  className={`rounded-2xl border border-slate-200 bg-gradient-to-br ${item.tone} px-4 py-4`}
+                >
+                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
+                    {item.label}
+                  </p>
+                  <p className="mt-3 text-3xl font-semibold leading-none text-slate-900">
+                    {item.value}
+                  </p>
+                  {/* <p className="mt-3 text-xs leading-5 text-slate-500">
+                    {item.helper ?? "Agenda terhitung pada bulan aktif"}
+                  </p> */}
+                </div>
+              ))}
+            </div>
+          </article>
+          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Tanggal Terpilih
+            </p>
+            <p className="mt-2 text-lg font-semibold text-slate-900">
+              {selectedDate.toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}
+            </p>
+            <p className="mt-2 text-sm text-slate-500">
+              Agenda harian difokuskan pada tabel per jam di bawah.
+            </p>
+          </article>
         </div>
       </div>
 
-      <div className="w-full min-w-0">
-        <TodoList
-          date={selectedDate}
-          query={query}
-          activityFilter={activityFilter}
-          roomFilter={roomFilter}
+      <HourlyScheduleTable
+        events={selectedDayEvents}
+        title={`Agenda ${selectedDate.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        })}`}
+      />
+
+      <div className="space-y-3">
+        <div className="flex items-center gap-2">
+          {/* <BadgeAlert className="h-4 w-4 text-slate-500" /> */}
+          <h3 className="text-base font-semibold text-slate-900">Jadwal</h3>
+        </div>
+
+        <ManualSchedulesTable
+          schedules={schedules}
+          isLoading={isSchedulesLoading}
+          onEdit={handleEditOpen}
+          onDelete={(item) => setDeleteTarget(item)}
+        />
+
+        <InventoryPagination
+          page={page}
+          totalPages={totalPages}
+          isLoading={isSchedulesLoading}
+          onPageChange={setPage}
         />
       </div>
     </section>

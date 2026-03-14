@@ -2,11 +2,11 @@
 
 import UseEquipmentListContent from "@/pages/dashboard/use-equipment/UseEquipmentListContent";
 
-export default function UseEquipmentListPage() {
+export default function UseEquipmentAllListPage() {
   return (
     <UseEquipmentListContent
-      scope="my"
-      emptyMessage="Belum ada pengajuan booking alat."
+      scope="all"
+      emptyMessage="Belum ada pengajuan booking alat yang tersedia."
     />
   );
 }

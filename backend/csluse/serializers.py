@@ -11,6 +11,8 @@ from .models import (
     LabProfile,
     Facility,
     Announcement,
+    Schedule,
+    FAQ,
     StructureOrganization,
     Pengujian,
     Use,
@@ -317,6 +319,80 @@ class AnnouncementSerializer(serializers.ModelSerializer):
         ]
 
 
+class ScheduleSerializer(serializers.ModelSerializer):
+    room_detail = RoomListSerializer(source="room", read_only=True)
+    created_by_detail = ProfileSerializer(source="created_by", read_only=True)
+
+    class Meta:
+        model = Schedule
+        fields = [
+            "id",
+            "title",
+            "description",
+            "start_time",
+            "end_time",
+            "category",
+            "room",
+            "room_detail",
+            "created_by",
+            "created_by_detail",
+            "is_active",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["created_by"]
+
+
+class FAQSerializer(serializers.ModelSerializer):
+    created_by_detail = ProfileSerializer(source="created_by", read_only=True)
+
+    class Meta:
+        model = FAQ
+        fields = [
+            "id",
+            "question",
+            "answer",
+            "created_by",
+            "created_by_detail",
+            "created_at",
+            "updated_at",
+        ]
+
+
+class CalendarEventSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    source = serializers.CharField()
+    title = serializers.CharField()
+    description = serializers.CharField(
+        allow_blank=True,
+        allow_null=True,
+        required=False,
+    )
+    start_time = serializers.DateTimeField()
+    end_time = serializers.DateTimeField(allow_null=True)
+    category = serializers.CharField(
+        allow_blank=True,
+        allow_null=True,
+        required=False,
+    )
+    status = serializers.CharField(
+        allow_blank=True,
+        allow_null=True,
+        required=False,
+    )
+    room_id = serializers.UUIDField(allow_null=True, required=False)
+    room_name = serializers.CharField(
+        allow_blank=True,
+        allow_null=True,
+        required=False,
+    )
+    requested_by_name = serializers.CharField(
+        allow_blank=True,
+        allow_null=True,
+        required=False,
+    )
+
+
 class StructureOrganizationSimpleSerializer(serializers.ModelSerializer):
     class Meta:
         model = StructureOrganization
@@ -362,11 +438,12 @@ class PengujianListSerializer(serializers.ModelSerializer):
             "code",
             "name",
             "institution",
+            "institution_address",
             "email",
             "phone_number",
+            "sample_name",
             "sample_type",
-            "sample_shape",
-            "sample_condition",
+            "sample_brand",
             "sample_packaging",
             "sample_weight",
             "sample_quantity",

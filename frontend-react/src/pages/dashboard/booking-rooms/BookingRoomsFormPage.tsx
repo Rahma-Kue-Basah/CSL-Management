@@ -30,6 +30,7 @@ import { Input } from "@/components/ui/input";
 import { useCreateBookingRoom } from "@/hooks/bookings/use-create-booking-room";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-time";
 import { cn } from "@/lib/utils";
 
 type FormData = {
@@ -64,28 +65,9 @@ const initialFormData: FormData = {
   quantityEquipment: "",
 };
 
-function toApiDateTime(value: string) {
-  if (!value) return "";
-  return `${value}:00`;
-}
-
 function combineDateTime(date: Date | undefined, time: string) {
   if (!date || !time) return "";
   return `${format(date, "yyyy-MM-dd")}T${time}`;
-}
-
-function formatDateTime(value: string) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
 }
 
 function SummaryItem({ label, value }: { label: string; value: string }) {
@@ -203,11 +185,11 @@ function DateTimePickerField({
   onTimeChange,
 }: DateTimePickerFieldProps) {
   return (
-    <div className="space-y-1.5">
+    <div className="w-full space-y-1.5">
       <label htmlFor={`${id}-time`} className="text-xs font-medium text-slate-600">
         {label} <span className="text-rose-600">*</span>
       </label>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
         <DatePicker
           value={date}
           onChange={onDateChange}
@@ -216,7 +198,8 @@ function DateTimePickerField({
           calendarDisabled={
             minDate ? (calendarDate) => calendarDate < minDate : undefined
           }
-          buttonClassName={cn("sm:flex-1", !date && "text-slate-400")}
+          className="w-full sm:flex-1"
+          buttonClassName={cn("w-full", !date && "text-slate-400")}
         />
         <Input
           type="time"
@@ -369,8 +352,8 @@ export default function BookingRoomsFormPage() {
       return false;
     }
 
-    const start = new Date(formData.startTime);
-    const end = new Date(formData.endTime);
+    const start = new Date(toWibIsoString(formData.startTime));
+    const end = new Date(toWibIsoString(formData.endTime));
     if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
       setValidationMessage("Rentang waktu tidak valid. Pastikan selesai lebih besar dari mulai.");
       return false;
@@ -388,8 +371,8 @@ export default function BookingRoomsFormPage() {
     const result = await createBookingRoom({
       roomId: formData.roomId,
       purpose: formData.purpose,
-      startTime: toApiDateTime(formData.startTime),
-      endTime: toApiDateTime(formData.endTime),
+      startTime: toWibIsoString(formData.startTime),
+      endTime: toWibIsoString(formData.endTime),
       note: formData.note,
       equipmentId: formData.equipmentId || undefined,
       quantityEquipment: formData.quantityEquipment
@@ -444,27 +427,29 @@ export default function BookingRoomsFormPage() {
             onChange={(value) => handleSelectChange("purpose", value)}
           />
 
-          <DateTimePickerField
-            id="start-time"
-            label="Waktu Mulai"
-            date={startDate}
-            time={startTime}
-            onDateChange={handleStartDateChange}
-            onTimeChange={handleStartTimeChange}
-            disabled={isSubmitting}
-          />
+          <div className="space-y-5">
+            <DateTimePickerField
+              id="start-time"
+              label="Waktu Mulai (WIB)"
+              date={startDate}
+              time={startTime}
+              onDateChange={handleStartDateChange}
+              onTimeChange={handleStartTimeChange}
+              disabled={isSubmitting}
+            />
 
-          <DateTimePickerField
-            id="end-time"
-            label="Waktu Selesai"
-            date={endDate}
-            time={endTime}
-            minDate={minEndDate}
-            minTime={minEndTime}
-            onDateChange={handleEndDateChange}
-            onTimeChange={handleEndTimeChange}
-            disabled={isSubmitting}
-          />
+            <DateTimePickerField
+              id="end-time"
+              label="Waktu Selesai (WIB)"
+              date={endDate}
+              time={endTime}
+              minDate={minEndDate}
+              minTime={minEndTime}
+              onDateChange={handleEndDateChange}
+              onTimeChange={handleEndTimeChange}
+              disabled={isSubmitting}
+            />
+          </div>
 
           <ComboboxField
             label="Peralatan (Opsional)"
@@ -562,12 +547,12 @@ export default function BookingRoomsFormPage() {
             <SummaryItem label="Ruangan" value={selectedRoomLabel} />
             <SummaryItem label="Tujuan" value={formData.purpose} />
             <SummaryItem
-              label="Waktu Mulai"
-              value={formatDateTime(formData.startTime)}
+              label="Waktu Mulai (WIB)"
+              value={formatLocalDateTimeAsWib(formData.startTime)}
             />
             <SummaryItem
-              label="Waktu Selesai"
-              value={formatDateTime(formData.endTime)}
+              label="Waktu Selesai (WIB)"
+              value={formatLocalDateTimeAsWib(formData.endTime)}
             />
             <SummaryItem label="Peralatan" value={selectedEquipmentLabel} />
             <SummaryItem

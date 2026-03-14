@@ -16,18 +16,18 @@ import { Steps } from "rsuite";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { useBookingDetail } from "@/hooks/bookings/use-bookings";
-import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import BookingStatusConfirmDialog from "@/pages/dashboard/booking-rooms/BookingStatusConfirmDialog";
+import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
+import { useUseDetail } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-time";
 
-type BookingDetailParams = {
+type UseDetailParams = {
   id?: string | string[];
 };
 
-type BookingFlowStep = {
+type UseFlowStep = {
   key: string;
   label: string;
   time?: string;
@@ -50,6 +50,9 @@ function getStatusBadge(status: string) {
       return "bg-amber-100 text-amber-700";
     case "rejected":
       return "bg-rose-100 text-rose-700";
+    case "in use":
+    case "in_use":
+      return "bg-indigo-100 text-indigo-700";
     case "completed":
       return "bg-sky-100 text-sky-700";
     case "cancelled":
@@ -59,18 +62,18 @@ function getStatusBadge(status: string) {
   }
 }
 
-function getBookingFlow(booking: {
+function getUseFlow(item: {
   status: string;
   createdAt: string;
   updatedAt: string;
 }) {
-  const status = normalizeStatus(booking.status);
+  const status = normalizeStatus(item.status);
 
-  const baseSteps: BookingFlowStep[] = [
+  const baseSteps: UseFlowStep[] = [
     {
       key: "submitted",
       label: "Diajukan",
-      time: formatDateTimeWib(booking.createdAt),
+      time: formatDateTimeWib(item.createdAt),
       state: "finish",
     },
     {
@@ -81,6 +84,11 @@ function getBookingFlow(booking: {
     {
       key: "approved",
       label: "Disetujui",
+      state: "wait",
+    },
+    {
+      key: "in-use",
+      label: "Digunakan",
       state: "wait",
     },
     {
@@ -97,27 +105,36 @@ function getBookingFlow(booking: {
   if (status === "approved") {
     baseSteps[1].state = "finish";
     baseSteps[2].state = "process";
-    baseSteps[2].time = formatDateTimeWib(booking.updatedAt);
+    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
+    return baseSteps;
+  }
+  if (status === "in use" || status === "in_use") {
+    baseSteps[1].state = "finish";
+    baseSteps[2].state = "finish";
+    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[3].state = "process";
+    baseSteps[3].time = formatDateTimeWib(item.updatedAt);
     return baseSteps;
   }
   if (status === "completed") {
     baseSteps[1].state = "finish";
     baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(booking.updatedAt);
-    baseSteps[3].state = "process";
-    baseSteps[3].time = formatDateTimeWib(booking.updatedAt);
+    baseSteps[3].state = "finish";
+    baseSteps[3].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[4].state = "process";
+    baseSteps[4].time = formatDateTimeWib(item.updatedAt);
     return baseSteps;
   }
   if (status === "rejected") {
     baseSteps[1].state = "error";
     baseSteps[1].label = "Ditolak";
-    baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
     return baseSteps.slice(0, 2);
   }
   if (status === "cancelled") {
     baseSteps[1].state = "error";
     baseSteps[1].label = "Dibatalkan";
-    baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
     return baseSteps.slice(0, 2);
   }
 
@@ -125,7 +142,7 @@ function getBookingFlow(booking: {
   return baseSteps;
 }
 
-function BookingFlow({ steps }: { steps: BookingFlowStep[] }) {
+function UseFlow({ steps }: { steps: UseFlowStep[] }) {
   const currentIndex = Math.max(
     0,
     steps.findIndex(
@@ -205,31 +222,31 @@ function DetailSection({
   );
 }
 
-export default function BookingRoomsDetailPage() {
+export default function UseEquipmentDetailPage() {
   const router = useRouter();
   const pathname = usePathname();
   const { profile } = useLoadProfile();
-  const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
-  const params = useParams<BookingDetailParams>();
+  const { updateUseStatus, pendingAction } = useUpdateUseStatus();
+  const params = useParams<UseDetailParams>();
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
   const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
     null,
   );
-  const backHref = pathname.startsWith("/booking-rooms/all/")
-    ? "/booking-rooms/all"
-    : "/booking-rooms";
-  const backLabel = pathname.startsWith("/booking-rooms/all/")
+  const backHref = pathname.startsWith("/use-equipment/all/")
+    ? "/use-equipment/all"
+    : "/use-equipment";
+  const backLabel = pathname.startsWith("/use-equipment/all/")
     ? "Kembali ke Daftar Pengajuan"
     : "Kembali ke Pengajuan Saya";
 
-  const { booking, setBooking, isLoading, error } = useBookingDetail(id);
+  const { useItem: item, setUseItem, isLoading, error } = useUseDetail(id);
 
   if (isLoading) {
     return (
       <section className="rounded-xl border border-slate-200 bg-white p-6">
         <div className="flex items-center justify-center gap-2 text-slate-500">
           <Loader2 className="h-4 w-4 animate-spin" />
-          Memuat detail booking...
+          Memuat detail pengajuan...
         </div>
       </section>
     );
@@ -241,11 +258,7 @@ export default function BookingRoomsDetailPage() {
         <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push(backHref)}
-        >
+        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
         </Button>
@@ -253,15 +266,11 @@ export default function BookingRoomsDetailPage() {
     );
   }
 
-  if (!booking) {
+  if (!item) {
     return (
       <section className="space-y-3">
-        <p className="text-sm text-slate-600">Data booking tidak ditemukan.</p>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push(backHref)}
-        >
+        <p className="text-sm text-slate-600">Data pengajuan booking alat tidak ditemukan.</p>
+        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
         </Button>
@@ -270,18 +279,18 @@ export default function BookingRoomsDetailPage() {
   }
 
   const normalizedRole = normalizeRoleValue(profile?.role);
-  const canReviewBooking =
-    pathname.startsWith("/booking-rooms/all/") &&
+  const canReviewUse =
+    pathname.startsWith("/use-equipment/all/") &&
     (normalizedRole === ROLE_VALUES.ADMIN ||
       normalizedRole === ROLE_VALUES.LECTURER ||
       normalizedRole === ROLE_VALUES.STAFF) &&
-    isPendingStatus(booking.status);
+    isPendingStatus(item.status);
 
-  const handleBookingAction = async () => {
+  const handleUseAction = async () => {
     if (!confirmType) return;
 
     const type = confirmType;
-    const result = await updateBookingStatus(booking.id, type);
+    const result = await updateUseStatus(item.id, type);
 
     if (!result.ok) {
       toast.error(result.message);
@@ -289,7 +298,7 @@ export default function BookingRoomsDetailPage() {
     }
 
     const now = new Date().toISOString();
-    setBooking((current) =>
+    setUseItem((current) =>
       current
         ? {
             ...current,
@@ -303,10 +312,6 @@ export default function BookingRoomsDetailPage() {
               type === "approve"
                 ? profile?.name || current.approvedByName
                 : current.approvedByName,
-            approvedByEmail:
-              type === "approve"
-                ? profile?.email || current.approvedByEmail
-                : current.approvedByEmail,
           }
         : current,
     );
@@ -314,39 +319,38 @@ export default function BookingRoomsDetailPage() {
 
     toast.success(
       type === "approve"
-        ? "Pengajuan booking berhasil disetujui."
-        : "Pengajuan booking berhasil ditolak.",
+        ? "Pengajuan booking alat berhasil disetujui."
+        : "Pengajuan booking alat berhasil ditolak.",
     );
   };
 
-  const flowSteps = getBookingFlow({
-    status: booking.status,
-    createdAt: booking.createdAt,
-    updatedAt: booking.updatedAt,
+  const flowSteps = getUseFlow({
+    status: item.status,
+    createdAt: item.createdAt,
+    updatedAt: item.updatedAt,
   });
 
   return (
     <section className="space-y-4">
       <div className="rounded-xl flex items-start justify-between gap-4 border border-slate-800 bg-slate-900 p-5">
         <div className="flex items-start gap-4">
-         
           <div className="space-y-3">
             <div>
               <p className="text-xs text-slate-300">Detail Request</p>
               <h2 className="mt-1 font-bold text-xl text-slate-50">
-                {booking.code}
+                {item.code}
               </h2>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {canReviewBooking ? (
+          {canReviewUse ? (
             <>
               <Button
                 type="button"
                 className="h-10 rounded-md border border-emerald-600 bg-emerald-600 px-4 text-white shadow-sm hover:bg-emerald-700"
                 onClick={() => setConfirmType("approve")}
-                disabled={pendingAction.bookingId === booking.id}
+                disabled={pendingAction.useId === item.id}
               >
                 <Check className="h-4 w-4" />
                 Setujui
@@ -355,18 +359,14 @@ export default function BookingRoomsDetailPage() {
                 type="button"
                 className="h-10 rounded-md border border-rose-600 bg-rose-600 px-4 text-white shadow-sm hover:bg-rose-700"
                 onClick={() => setConfirmType("reject")}
-                disabled={pendingAction.bookingId === booking.id}
+                disabled={pendingAction.useId === item.id}
               >
                 <X className="h-4 w-4" />
                 Tolak
               </Button>
             </>
           ) : null}
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => router.push(backHref)}
-          >
+          <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
             <ArrowLeft className="h-4 w-4" />
             Kembali
           </Button>
@@ -374,32 +374,20 @@ export default function BookingRoomsDetailPage() {
       </div>
 
       <div className="rounded-xl border border-slate-300 bg-gradient-to-br from-slate-50 to-slate-100/80 p-5">
-        <h3 className="text-sm font-semibold text-slate-900">
-          Status
-        </h3>
-        <BookingFlow steps={flowSteps} />
+        <h3 className="text-sm font-semibold text-slate-900">Status</h3>
+        <UseFlow steps={flowSteps} />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-4">
           <DetailSection
-            title="Informasi Ruangan"
+            title="Informasi Alat"
             icon={<MapPinned className="h-4 w-4" />}
           >
             <div className="grid gap-3 md:grid-cols-2">
-              <DetailItem label="Ruangan" value={booking.roomName} />
-              <DetailItem
-                label="Nomor Ruangan"
-                value={booking.roomNumber || "-"}
-              />
-              <DetailItem
-                label="Peralatan (Opsional)"
-                value={booking.equipmentName || "-"}
-              />
-              <DetailItem
-                label="Jumlah Peralatan"
-                value={booking.equipmentQty || "-"}
-              />
+              <DetailItem label="Alat" value={item.equipmentName} />
+              <DetailItem label="Ruangan" value={item.roomName || "-"} />
+              <DetailItem label="Jumlah" value={item.quantity} />
             </div>
           </DetailSection>
 
@@ -410,15 +398,15 @@ export default function BookingRoomsDetailPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <DetailItem
                 label="Waktu Mulai (WIB)"
-                value={formatDateTimeWib(booking.startTime)}
+                value={formatDateTimeWib(item.startTime)}
               />
               <DetailItem
                 label="Waktu Selesai (WIB)"
-                value={formatDateTimeWib(booking.endTime)}
+                value={formatDateTimeWib(item.endTime)}
               />
               <DetailItem
                 label="Status Saat Ini"
-                value={booking.status}
+                value={item.status}
                 variant="status"
               />
             </div>
@@ -431,10 +419,10 @@ export default function BookingRoomsDetailPage() {
             icon={<UserRound className="h-4 w-4" />}
           >
             <div className="grid gap-3">
-              <DetailItem label="Peminjam" value={booking.requesterName} />
+              <DetailItem label="Peminjam" value={item.requesterName} />
               <DetailItem
                 label="Disetujui Oleh"
-                value={booking.approvedByName || "-"}
+                value={item.approvedByName || "-"}
               />
             </div>
           </DetailSection>
@@ -444,8 +432,8 @@ export default function BookingRoomsDetailPage() {
             icon={<NotebookPen className="h-4 w-4" />}
           >
             <div className="grid gap-3">
-              <DetailItem label="Tujuan" value={booking.purpose} />
-              <DetailItem label="Catatan" value={booking.note || "-"} />
+              <DetailItem label="Tujuan" value={item.purpose} />
+              <DetailItem label="Catatan" value={item.note || "-"} />
             </div>
           </DetailSection>
         </div>
@@ -457,8 +445,8 @@ export default function BookingRoomsDetailPage() {
         onOpenChange={(open) => {
           if (!open) setConfirmType(null);
         }}
-        onConfirm={handleBookingAction}
-        isSubmitting={pendingAction.bookingId === booking.id}
+        onConfirm={handleUseAction}
+        isSubmitting={pendingAction.useId === item.id}
       />
     </section>
   );

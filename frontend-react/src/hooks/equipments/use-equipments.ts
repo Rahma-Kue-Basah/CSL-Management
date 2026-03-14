@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { API_EQUIPMENTS } from "@/constants/api";
+import { API_BASE_URL, API_EQUIPMENT_DETAIL, API_EQUIPMENTS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type EquipmentFilters = {
@@ -21,6 +21,11 @@ export type EquipmentRow = {
   quantity: string;
   roomName: string;
   isMoveable: boolean;
+};
+
+export type EquipmentDetail = EquipmentRow & {
+  description: string;
+  imageUrl: string;
 };
 
 type ApiEquipment = {
@@ -49,6 +54,13 @@ function mapEquipment(item: ApiEquipment): EquipmentRow {
     roomName: String(item.room_detail?.name ?? item.room ?? "-"),
     isMoveable: Boolean(item.is_moveable),
   };
+}
+
+function resolveAssetUrl(value: string | null | undefined) {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/")) return `${API_BASE_URL}${value}`;
+  return `${API_BASE_URL}/${value}`;
 }
 
 export function useEquipments(page: number, pageSize = 10, filters: EquipmentFilters = {}, reloadKey = 0) {
@@ -118,6 +130,70 @@ export function useEquipments(page: number, pageSize = 10, filters: EquipmentFil
     setTotalCount,
     isLoading,
     hasLoadedOnce,
+    error,
+    setError,
+  };
+}
+
+export function useEquipmentDetail(id?: string | number | null) {
+  const [equipment, setEquipment] = useState<EquipmentDetail | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!id) {
+      setEquipment(null);
+      setError("ID peralatan tidak ditemukan.");
+      setIsLoading(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    let isAborted = false;
+
+    const load = async () => {
+      setIsLoading(true);
+      setError("");
+      try {
+        const response = await authFetch(API_EQUIPMENT_DETAIL(id), {
+          method: "GET",
+          signal: controller.signal,
+        });
+        if (!response.ok) {
+          throw new Error(`Gagal memuat detail peralatan (${response.status})`);
+        }
+
+        const payload = (await response.json()) as ApiEquipment & {
+          description?: string | null;
+          image_detail?: { url?: string | null } | null;
+        };
+        const mapped = mapEquipment(payload);
+        setEquipment({
+          ...mapped,
+          description: String(payload.description ?? ""),
+          imageUrl: resolveAssetUrl(payload.image_detail?.url ?? ""),
+        });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") return;
+        setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      } finally {
+        if (isAborted || controller.signal.aborted) return;
+        setIsLoading(false);
+      }
+    };
+
+    void load();
+
+    return () => {
+      isAborted = true;
+      controller.abort();
+    };
+  }, [id]);
+
+  return {
+    equipment,
+    setEquipment,
+    isLoading,
     error,
     setError,
   };

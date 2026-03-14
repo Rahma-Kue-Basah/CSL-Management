@@ -9,13 +9,17 @@ export type UseFilters = {
   status?: string;
   createdAfter?: string;
   createdBefore?: string;
+  requestedBy?: string;
 };
+
+export type UseListScope = "default" | "my" | "all";
 
 export type UseRow = {
   id: string | number;
   code: string;
   equipmentId: string;
   equipmentName: string;
+  roomName: string;
   requesterId: string;
   requesterName: string;
   approvedById: string;
@@ -45,6 +49,10 @@ type ApiUse = {
   equipment_detail?: {
     id?: string | number | null;
     name?: string | null;
+    room_detail?: {
+      id?: string | number | null;
+      name?: string | null;
+    } | null;
   } | null;
   requested_by?: string | number | null;
   requested_by_detail?: {
@@ -80,6 +88,7 @@ export function mapUse(item: ApiUse): UseRow {
     code: String(item.code ?? "-"),
     equipmentId: String(item.equipment_detail?.id ?? item.equipment ?? ""),
     equipmentName: String(item.equipment_detail?.name ?? "-"),
+    roomName: String(item.equipment_detail?.room_detail?.name ?? "-"),
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
@@ -156,6 +165,7 @@ export function useUses(
   pageSize = 10,
   filters: UseFilters = {},
   reloadKey = 0,
+  scope: UseListScope = "default",
 ) {
   const [uses, setUses] = useState<UseRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -164,6 +174,15 @@ export function useUses(
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (scope === "my" && !filters.requestedBy) {
+      setUses([]);
+      setTotalCount(0);
+      setError("");
+      setIsLoading(false);
+      setHasLoadedOnce(true);
+      return;
+    }
+
     const controller = new AbortController();
     let isAborted = false;
 
@@ -175,6 +194,9 @@ export function useUses(
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
+        if (filters.requestedBy && scope === "my") {
+          url.searchParams.set("requested_by", filters.requestedBy);
+        }
         if (filters.createdAfter) {
           url.searchParams.set("created_after", filters.createdAfter);
         }
@@ -214,7 +236,7 @@ export function useUses(
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, filters.createdAfter, filters.createdBefore, reloadKey]);
+  }, [page, pageSize, filters.status, filters.createdAfter, filters.createdBefore, filters.requestedBy, reloadKey, scope]);
 
   return {
     uses,

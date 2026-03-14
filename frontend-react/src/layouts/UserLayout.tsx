@@ -9,6 +9,7 @@ import {
   ClipboardList,
   FilePenLine,
   FlaskConical,
+  CircleHelp,
   History,
   LayoutDashboard,
   Package,
@@ -45,6 +46,7 @@ type SidebarShortcut = {
 function getHeaderIcon(menuId: string, actionId: string | null) {
   if (menuId === "dashboard") {
     if (actionId === "announcements") return Bell;
+    if (actionId === "faq") return CircleHelp;
     return LayoutDashboard;
   }
 
@@ -61,7 +63,7 @@ function getHeaderIcon(menuId: string, actionId: string | null) {
 
   if (menuId === "use-equipment") {
     if (actionId === "request-form") return FilePenLine;
-    if (actionId === "request-list") return ClipboardList;
+    if (actionId === "request-list" || actionId === "all-requests") return ClipboardList;
     if (actionId === "equipment") return Wrench;
     return Wrench;
   }
@@ -113,6 +115,12 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         description: "Lihat pengumuman terbaru dari admin.",
         href: "/dashboard/announcements",
       },
+      {
+        id: "faq",
+        label: "FAQ",
+        description: "Temukan jawaban cepat untuk pertanyaan yang sering diajukan.",
+        href: "/dashboard/faq",
+      },
     ],
   },
   {
@@ -150,7 +158,7 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
       },
       {
         id: "rooms",
-        label: "Rooms yang Bisa Dibooking",
+        label: "Ruangan yang Bisa di-Booking",
         description: "Lihat daftar ruangan yang tersedia untuk dibooking.",
         href: "/rooms",
       },
@@ -170,6 +178,12 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         href: "/use-equipment",
       },
       {
+        id: "all-requests",
+        label: "Daftar Pengajuan",
+        description: "Lihat seluruh daftar pengajuan booking alat.",
+        href: "/use-equipment/all",
+      },
+      {
         id: "request-form",
         label: "Ajukan Booking",
         description: "Buat pengajuan booking alat melalui formulir.",
@@ -177,8 +191,8 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
       },
       {
         id: "equipment",
-        label: "Equipment yang Bisa Dibooking",
-        description: "Lihat daftar equipment yang tersedia untuk dibooking.",
+        label: "Peralatan yang Bisa Dibooking",
+        description: "Lihat daftar peralatan yang tersedia untuk dibooking.",
         href: "/equipment",
       },
     ],
@@ -289,6 +303,9 @@ function parseDashboardPath(pathname: string) {
     if (parts[1] === "announcements") {
       return { menu: "dashboard", action: "announcements" };
     }
+    if (parts[1] === "faq") {
+      return { menu: "dashboard", action: "faq" };
+    }
     return { menu: "dashboard", action: null };
   }
   if (parts[0] === "schedule") {
@@ -307,6 +324,9 @@ function parseDashboardPath(pathname: string) {
     return { menu: "booking-rooms", action: "rooms" };
   }
   if (parts[0] === "use-equipment") {
+    if (parts[1] === "all") {
+      return { menu: "use-equipment", action: "all-requests" };
+    }
     if (parts[1] === "form") {
       return { menu: "use-equipment", action: "request-form" };
     }

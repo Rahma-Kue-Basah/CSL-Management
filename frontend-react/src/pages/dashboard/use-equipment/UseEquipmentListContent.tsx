@@ -2,13 +2,13 @@
 
 import { useMemo, useState, type ReactNode } from "react";
 import {
-  Building2,
   CalendarClock,
+  Check,
   CheckCircle2,
   Eye,
   Filter,
   Loader2,
-  Check,
+  Package,
   RotateCcw,
   X,
 } from "lucide-react";
@@ -19,21 +19,18 @@ import { InventoryPagination } from "@/components/admin/inventory/inventory-pagi
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
-import {
-  useBookings,
-  type BookingListScope,
-} from "@/hooks/bookings/use-bookings";
-import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import BookingStatusConfirmDialog from "@/pages/dashboard/booking-rooms/BookingStatusConfirmDialog";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
+import { useUses } from "@/hooks/uses/use-uses";
+import { formatDateTimeWib } from "@/lib/date-time";
 import {
   formatDateKey,
   parseDateKey,
   toEndOfDay,
   toStartOfDay,
 } from "@/lib/date";
-import { formatDateTimeWib } from "@/lib/date-time";
 
 const PAGE_SIZE = 10;
 
@@ -42,6 +39,7 @@ const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
+  { value: "in_use", label: "In Use" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
 ];
@@ -54,6 +52,8 @@ function getStatusBadge(status: string) {
       return "bg-amber-100 text-amber-700";
     case "rejected":
       return "bg-rose-100 text-rose-700";
+    case "in_use":
+      return "bg-indigo-100 text-indigo-700";
     case "completed":
       return "bg-sky-100 text-sky-700";
     case "cancelled":
@@ -128,18 +128,16 @@ function SummaryCard({
   );
 }
 
-type BookingRoomsListContentProps = {
-  scope: BookingListScope;
-  emptyMessage: string;
-};
-
-export default function BookingRoomsListContent({
+export default function UseEquipmentListContent({
   scope,
   emptyMessage,
-}: BookingRoomsListContentProps) {
+}: {
+  scope: "my" | "all";
+  emptyMessage: string;
+}) {
   const router = useRouter();
   const { profile } = useLoadProfile();
-  const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
+  const { updateUseStatus, pendingAction } = useUpdateUseStatus();
   const [page, setPage] = useState(1);
   const [status, setStatus] = useState("");
   const [search, setSearch] = useState("");
@@ -148,72 +146,78 @@ export default function BookingRoomsListContent({
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmState, setConfirmState] = useState<{
-    bookingId: string | number;
+    useId: string | number;
     type: "approve" | "reject";
   } | null>(null);
 
-  const { bookings, totalCount, isLoading, hasLoadedOnce, error } = useBookings(
+  const { uses, totalCount, isLoading, hasLoadedOnce, error } = useUses(
     page,
     PAGE_SIZE,
     {
       status,
+      requestedBy: scope === "my" ? String(profile?.id ?? "") : "",
       createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
       createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
     reloadKey,
     scope,
   );
-  const { bookings: summarySourceBookings, totalCount: summaryTotalCount } =
-    useBookings(1, 1000, {}, reloadKey, scope);
+  const { uses: summarySourceUses, totalCount: summaryTotalCount } = useUses(
+    1,
+    1000,
+    { requestedBy: scope === "my" ? String(profile?.id ?? "") : "" },
+    reloadKey,
+    scope,
+  );
 
-  const normalizedRole = normalizeRoleValue(profile?.role);
-  const canReviewBookings =
-    scope === "all" &&
-    (normalizedRole === ROLE_VALUES.ADMIN ||
-      normalizedRole === ROLE_VALUES.LECTURER ||
-      normalizedRole === ROLE_VALUES.STAFF);
-
-  const filteredBookings = useMemo(() => {
+  const filteredUses = useMemo(() => {
     const query = search.trim().toLowerCase();
-    const roomBookings = bookings.filter(
-      (booking) => booking.roomName && booking.roomName !== "-",
+    const equipmentUses = uses.filter(
+      (item) => item.equipmentName && item.equipmentName !== "-",
     );
 
-    if (!query) return roomBookings;
-    return roomBookings.filter((booking) => {
+    if (!query) return equipmentUses;
+    return equipmentUses.filter((item) => {
       const haystack = [
-        booking.code,
-        booking.roomName,
-        booking.requesterName,
-        booking.purpose,
+        item.code,
+        item.equipmentName,
+        item.requesterName,
+        item.purpose,
       ]
         .join(" ")
         .toLowerCase();
       return haystack.includes(query);
     });
-  }, [bookings, search]);
-  const summaryBookings = useMemo(
+  }, [uses, search]);
+
+  const summaryUses = useMemo(
     () =>
-      summarySourceBookings.filter(
-        (booking) => booking.roomName && booking.roomName !== "-",
+      summarySourceUses.filter(
+        (item) => item.equipmentName && item.equipmentName !== "-",
       ),
-    [summarySourceBookings],
+    [summarySourceUses],
   );
+  const normalizedRole = normalizeRoleValue(profile?.role);
+  const canReviewUses =
+    scope === "all" &&
+    (normalizedRole === ROLE_VALUES.ADMIN ||
+      normalizedRole === ROLE_VALUES.LECTURER ||
+      normalizedRole === ROLE_VALUES.STAFF);
 
   const totalPages = Math.max(
     1,
-    Math.ceil((totalCount || filteredBookings.length) / PAGE_SIZE),
+    Math.ceil((totalCount || filteredUses.length) / PAGE_SIZE),
   );
-  const pendingCount = summaryBookings.filter(
-    (item) => isPendingStatus(item.status),
+  const pendingCount = summaryUses.filter(
+    (item) => item.status.toLowerCase() === "pending",
   ).length;
-  const approvedCount = summaryBookings.filter(
+  const approvedCount = summaryUses.filter(
     (item) => item.status.toLowerCase() === "approved",
   ).length;
-  const completedCount = summaryBookings.filter(
+  const completedCount = summaryUses.filter(
     (item) => item.status.toLowerCase() === "completed",
   ).length;
-  const rejectedCount = summaryBookings.filter(
+  const rejectedCount = summaryUses.filter(
     (item) => item.status.toLowerCase() === "rejected",
   ).length;
 
@@ -226,17 +230,17 @@ export default function BookingRoomsListContent({
     setFilterOpen(false);
   };
 
-  const handleBookingAction = async () => {
+  const handleUseAction = async () => {
     if (!confirmState) return;
 
-    const { bookingId, type } = confirmState;
-    const result = await updateBookingStatus(bookingId, type);
+    const { useId, type } = confirmState;
+    const result = await updateUseStatus(useId, type);
 
     if (result.ok) {
       toast.success(
         type === "approve"
-          ? "Pengajuan booking berhasil disetujui."
-          : "Pengajuan booking berhasil ditolak.",
+          ? "Pengajuan booking alat berhasil disetujui."
+          : "Pengajuan booking alat berhasil ditolak.",
       );
       setReloadKey((prev) => prev + 1);
       setConfirmState(null);
@@ -251,8 +255,8 @@ export default function BookingRoomsListContent({
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <SummaryCard
           label="Total Pengajuan"
-          value={summaryTotalCount || summaryBookings.length}
-          icon={<Building2 className="h-4 w-4" />}
+          value={summaryTotalCount || summaryUses.length}
+          icon={<Package className="h-4 w-4" />}
           tone="blue"
         />
         <SummaryCard
@@ -315,7 +319,7 @@ export default function BookingRoomsListContent({
                 <Input
                   type="search"
                   value={search}
-                  placeholder="Kode, ruangan"
+                  placeholder="Kode, alat"
                   className="h-11 border-slate-300 bg-white px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                   onChange={(event) => {
                     setSearch(event.target.value);
@@ -385,30 +389,14 @@ export default function BookingRoomsListContent({
         <table className="w-full min-w-[1120px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Kode
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Ruangan
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Pemohon
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Waktu Mulai
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Waktu Selesai
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Tujuan
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Status
-              </th>
-              <th
-                className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 whitespace-nowrap shadow-[-1px_0_0_0_rgba(51,65,85,1)]"
-              >
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Alat</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Pemohon</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Mulai</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Selesai</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Tujuan</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Status</th>
+              <th className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
                 Aksi
               </th>
             </tr>
@@ -416,48 +404,38 @@ export default function BookingRoomsListContent({
           <tbody className="text-sm">
             {isLoading || !hasLoadedOnce ? (
               <tr>
-                <td
-                  colSpan={8}
-                  className="px-3 py-10 text-center text-slate-500"
-                >
+                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Memuat data...
                   </div>
                 </td>
               </tr>
-            ) : filteredBookings.length ? (
-              filteredBookings.map((booking) => (
-                <tr
-                  key={String(booking.id)}
-                  className="border-b last:border-b-0"
-                >
-                  <td className="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap">
-                    {booking.code}
+            ) : filteredUses.length ? (
+              filteredUses.map((item) => (
+                <tr key={String(item.id)} className="border-b last:border-b-0">
+                  <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
+                    {item.code}
                   </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{booking.roomName}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">
-                    {booking.requesterName}
+                  <td className="px-3 py-2.5 whitespace-nowrap">{item.equipmentName}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">{item.requesterName}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {formatDateTimeWib(item.startTime)}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
-                    {formatDateTimeWib(booking.startTime)}
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {formatDateTimeWib(item.endTime)}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
-                    {formatDateTimeWib(booking.endTime)}
-                  </td>
-                  <td className="px-3 py-2.5 text-slate-700">
-                    {booking.purpose}
-                  </td>
+                  <td className="px-3 py-2.5 text-slate-700">{item.purpose}</td>
                   <td className="px-3 py-2.5">
                     <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadge(booking.status)}`}
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadge(item.status)}`}
                     >
-                      {booking.status}
+                      {item.status}
                     </span>
                   </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
-                      {canReviewBookings && isPendingStatus(booking.status) ? (
+                      {canReviewUses && isPendingStatus(item.status) ? (
                         <>
                           <Button
                             type="button"
@@ -465,11 +443,11 @@ export default function BookingRoomsListContent({
                             className="h-8 w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
                             onClick={() =>
                               setConfirmState({
-                                bookingId: booking.id,
+                                useId: item.id,
                                 type: "approve",
                               })
                             }
-                            disabled={pendingAction.bookingId === booking.id}
+                            disabled={pendingAction.useId === item.id}
                           >
                             <Check className="h-3.5 w-3.5" />
                           </Button>
@@ -479,11 +457,11 @@ export default function BookingRoomsListContent({
                             className="h-8 w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
                             onClick={() =>
                               setConfirmState({
-                                bookingId: booking.id,
+                                useId: item.id,
                                 type: "reject",
                               })
                             }
-                            disabled={pendingAction.bookingId === booking.id}
+                            disabled={pendingAction.useId === item.id}
                           >
                             <X className="h-3.5 w-3.5" />
                           </Button>
@@ -497,8 +475,8 @@ export default function BookingRoomsListContent({
                         onClick={() =>
                           router.push(
                             scope === "all"
-                              ? `/booking-rooms/all/${booking.id}`
-                              : `/booking-rooms/${booking.id}`,
+                              ? `/use-equipment/all/${item.id}`
+                              : `/use-equipment/${item.id}`,
                           )
                         }
                       >
@@ -510,10 +488,7 @@ export default function BookingRoomsListContent({
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={8}
-                  className="px-3 py-10 text-center text-slate-500"
-                >
+                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>
@@ -535,8 +510,8 @@ export default function BookingRoomsListContent({
         onOpenChange={(open) => {
           if (!open) setConfirmState(null);
         }}
-        onConfirm={handleBookingAction}
-        isSubmitting={pendingAction.bookingId === confirmState?.bookingId}
+        onConfirm={handleUseAction}
+        isSubmitting={pendingAction.useId === confirmState?.useId}
       />
     </section>
   );

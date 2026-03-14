@@ -154,12 +154,12 @@ function ActionList({
                       {formatActionClock(item.action_time)}
                     </span>
                   </p>
-                  <p className="flex min-w-0 items-center gap-2">
+                  {/* <p className="flex min-w-0 items-center gap-2">
                     <Waypoints className="h-3.5 w-3.5 text-slate-500" />
                     <span className="min-w-0 max-w-[80%] flex-1 break-all sm:max-w-none sm:break-words">
                       {item.target || "-"}
                     </span>
-                  </p>
+                  </p> */}
                 </div>
 
                 {item.change_message ? (

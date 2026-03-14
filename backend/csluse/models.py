@@ -294,7 +294,7 @@ class Pengujian(BaseModel):
     email = models.EmailField()
     phone_number = models.CharField(max_length=20, blank=True, null=True)
 
-    sample_name = models.CharField(max_length=255)
+    sample_name = models.CharField(max_length=255, blank=True, null=True)
     sample_type = models.CharField(max_length=255)
     # sample_shape = models.CharField(max_length=255, blank=True, null=True)
     # sample_condition = models.CharField(max_length=255, blank=True, null=True)
@@ -390,6 +390,70 @@ class Announcement(BaseModel):
     def __str__(self):
         creator_email = self.created_by.user.email if self.created_by else 'unknown'
         return f"{self.title} - {creator_email}"
+
+
+class Schedule(BaseModel):
+    CATEGORY_CHOICES = [
+        ('Practicum', 'Practicum'),
+        ('Maintenance', 'Maintenance'),
+        ('Agenda', 'Agenda'),
+        ('Holiday', 'Holiday'),
+        ('Block', 'Block'),
+        ('Other', 'Other'),
+    ]
+
+    title = models.CharField(max_length=255)
+    description = models.CharField(max_length=2000, blank=True, null=True)
+    start_time = models.DateTimeField()
+    end_time = models.DateTimeField()
+    category = models.CharField(
+        max_length=20,
+        choices=CATEGORY_CHOICES,
+        default='Other',
+    )
+
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='schedules',
+    )
+
+    created_by = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='schedules_created_by',
+    )
+
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['start_time', 'title']
+
+    def __str__(self):
+        return self.title
+
+
+class FAQ(BaseModel):
+    question = models.CharField(max_length=500)
+    answer = models.CharField(max_length=5000)
+
+    created_by = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='faqs_created_by',
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return self.question
     
 class StructureOrganization(BaseModel):
     title = models.CharField(max_length=255)

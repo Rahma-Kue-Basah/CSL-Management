@@ -23,6 +23,8 @@ from .models import (
     LabProfile,
     Facility,
     Announcement,
+    Schedule,
+    FAQ,
     StructureOrganization,
     Pengujian,
     Use,
@@ -43,6 +45,9 @@ from .serializers import (
     LabProfileSerializer,
     FacilitySerializer,
     AnnouncementSerializer,
+    ScheduleSerializer,
+    FAQSerializer,
+    CalendarEventSerializer,
     StructureOrganizationSerializer,
     PengujianSerializer,
     PengujianListSerializer,
@@ -87,6 +92,16 @@ class DefaultPagination(PageNumberPagination):
     page_size = 10
     page_size_query_param = 'page_size'
     max_page_size = 100
+
+
+def _profile_display_name(profile):
+    if not profile:
+        return None
+    return (
+        getattr(profile, 'full_name', None)
+        or getattr(getattr(profile, 'user', None), 'email', None)
+        or str(profile)
+    )
 
 
 class ImageViewSet(viewsets.ModelViewSet):
@@ -816,6 +831,241 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             instance,
             DELETION,
             "Deleted announcement via CSL Admin.",
+        )
+        super().perform_destroy(instance)
+
+
+class ScheduleViewSet(viewsets.ModelViewSet):
+    queryset = Schedule.objects.select_related('room', 'created_by').order_by('start_time')
+    serializer_class = ScheduleSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        return super().get_permissions()
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        room_id = self.request.query_params.get('room')
+        is_active = self.request.query_params.get('is_active')
+        search = self.request.query_params.get('search')
+        start_raw = self.request.query_params.get('start')
+        end_raw = self.request.query_params.get('end')
+
+        if room_id:
+            qs = qs.filter(room_id=room_id)
+        if is_active is not None:
+            qs = qs.filter(is_active=str(is_active).lower() in ['1', 'true', 'yes'])
+        if search:
+            qs = qs.filter(Q(title__icontains=search) | Q(description__icontains=search))
+        start = parse_datetime(start_raw) if start_raw else None
+        end = parse_datetime(end_raw) if end_raw else None
+        if start:
+            if timezone.is_naive(start):
+                start = timezone.make_aware(start, timezone.get_default_timezone())
+            qs = qs.filter(end_time__gte=start)
+        if end:
+            if timezone.is_naive(end):
+                end = timezone.make_aware(end, timezone.get_default_timezone())
+            qs = qs.filter(start_time__lte=end)
+
+        return qs
+
+    def perform_create(self, serializer):
+        instance = serializer.save(created_by=getattr(self.request.user, 'profile', None))
+        log_admin_action(
+            self.request.user,
+            instance,
+            ADDITION,
+            "Created schedule via CSL Admin.",
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            CHANGE,
+            "Updated schedule via CSL Admin.",
+        )
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted schedule via CSL Admin.",
+        )
+        super().perform_destroy(instance)
+
+
+class CalendarViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("start", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("end", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("room", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+        ],
+        responses=CalendarEventSerializer(many=True),
+    )
+    def list(self, request):
+        start_raw = request.query_params.get('start')
+        end_raw = request.query_params.get('end')
+        room_id = request.query_params.get('room')
+
+        start = parse_datetime(start_raw) if start_raw else None
+        end = parse_datetime(end_raw) if end_raw else None
+
+        if not start or not end:
+            return Response(
+                {'detail': 'start and end query params (ISO datetime) are required'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if timezone.is_naive(start):
+            start = timezone.make_aware(start, timezone.get_default_timezone())
+        if timezone.is_naive(end):
+            end = timezone.make_aware(end, timezone.get_default_timezone())
+        if start >= end:
+            return Response(
+                {'detail': 'start must be before end'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        schedule_qs = (
+            Schedule.objects
+            .filter(
+                is_active=True,
+                start_time__lt=end,
+                end_time__gt=start,
+            )
+            .select_related('room', 'created_by')
+        )
+
+        booking_qs = (
+            Booking.objects
+            .filter(
+                status='Approved',
+                start_time__lt=end,
+                end_time__gt=start,
+            )
+            .select_related('room', 'requested_by')
+        )
+
+        if room_id:
+            schedule_qs = schedule_qs.filter(room_id=room_id)
+            booking_qs = booking_qs.filter(room_id=room_id)
+
+        items = []
+
+        for item in schedule_qs:
+            items.append({
+                'id': str(item.id),
+                'source': 'schedule',
+                'title': item.title,
+                'description': item.description,
+                'start_time': item.start_time,
+                'end_time': item.end_time,
+                'category': item.category,
+                'status': 'Scheduled',
+                'room_id': item.room_id,
+                'room_name': item.room.name if item.room else None,
+                'requested_by_name': _profile_display_name(item.created_by),
+            })
+
+        for item in booking_qs:
+            items.append({
+                'id': str(item.id),
+                'source': 'booking',
+                'title': f'Booking Ruangan - {item.room.name}',
+                'description': item.note,
+                'start_time': item.start_time,
+                'end_time': item.end_time,
+                'category': 'Booking',
+                'status': item.status,
+                'room_id': item.room_id,
+                'room_name': item.room.name if item.room else None,
+                'requested_by_name': _profile_display_name(item.requested_by),
+            })
+
+        if (
+            has_role(request.user, STAFF)
+            or has_role(request.user, ADMINISTRATOR)
+            or has_role(request.user, SUPER_ADMINISTRATOR)
+        ):
+            use_qs = (
+                Use.objects
+                .filter(
+                    start_time__lt=end,
+                    status__in=['Approved', 'In Use'],
+                )
+                .filter(Q(end_time__isnull=True) | Q(end_time__gt=start))
+                .select_related('equipment', 'equipment__room', 'requested_by')
+            )
+
+            if room_id:
+                use_qs = use_qs.filter(equipment__room_id=room_id)
+
+            for item in use_qs:
+                room = item.equipment.room if item.equipment else None
+                items.append({
+                    'id': str(item.id),
+                    'source': 'use',
+                    'title': f'Penggunaan Alat - {item.equipment.name}',
+                    'description': item.note,
+                    'start_time': item.start_time,
+                    'end_time': item.end_time,
+                    'category': 'Equipment Use',
+                    'status': item.status,
+                    'room_id': room.id if room else None,
+                    'room_name': room.name if room else None,
+                    'requested_by_name': _profile_display_name(item.requested_by),
+                })
+
+        items.sort(key=lambda item: (item['start_time'], item['title']))
+        serializer = CalendarEventSerializer(items, many=True)
+        return Response(serializer.data)
+
+
+class FAQViewSet(viewsets.ModelViewSet):
+    queryset = FAQ.objects.select_related('created_by').order_by('-created_at')
+    serializer_class = FAQSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        return super().get_permissions()
+
+    def perform_create(self, serializer):
+        instance = serializer.save(created_by=getattr(self.request.user, 'profile', None))
+        log_admin_action(
+            self.request.user,
+            instance,
+            ADDITION,
+            "Created FAQ via CSL Admin.",
+        )
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            CHANGE,
+            "Updated FAQ via CSL Admin.",
+        )
+
+    def perform_destroy(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted FAQ via CSL Admin.",
         )
         super().perform_destroy(instance)
 
