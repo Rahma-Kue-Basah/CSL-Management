@@ -54,6 +54,7 @@ import AdminSampleTestingRecordPage from "@/pages/admin/records/AdminSampleTesti
 import AdminSampleTestingRecordDetailPage from "@/pages/admin/records/AdminSampleTestingRecordDetailPage";
 import AdminMyProfilePage from "@/pages/admin/profile/AdminMyProfilePage";
 import StructureOrgansPage from "@/pages/admin/lab-profile/StructureOrgansPage";
+import FacilityPage from "@/pages/admin/lab-profile/FacilityPage";
 import UserManagementAllPage from "@/pages/admin/user-management/UserManagementAllPage";
 import UserManagementStudentPage from "@/pages/admin/user-management/UserManagementStudentPage";
 import UserManagementLecturerPage from "@/pages/admin/user-management/UserManagementLecturerPage";
@@ -409,7 +410,8 @@ export const router = createBrowserRouter([
       { path: "record/pengujian-sampel", element: <AdminSampleTestingRecordPage /> },
       { path: "record/pengujian-sampel/:id", element: <AdminSampleTestingRecordDetailPage /> },
       { path: "my-profile", element: <AdminMyProfilePage /> },
-      { path: "profile/struktur-organisasi", element: <StructureOrgansPage /> },
+      { path: "profile/organization-structure", element: <StructureOrgansPage /> },
+      { path: "profile/facilities", element: <FacilityPage /> },
       { path: "user-management", element: <Navigate to="/admin/user-management/all" replace /> },
       { path: "user-management/all", element: <UserManagementAllPage /> },
       { path: "user-management/student", element: <UserManagementStudentPage /> },

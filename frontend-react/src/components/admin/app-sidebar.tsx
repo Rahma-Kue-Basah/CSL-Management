@@ -112,9 +112,9 @@ export function AppSidebar() {
   const profileItems = [
     {
       label: "Struktur Organisasi",
-      href: "/admin/profile/struktur-organisasi",
+      href: "/admin/profile/organization-structure",
     },
-    { label: "Fasilitas", href: "/admin/profile/fasilitas" },
+    { label: "Fasilitas", href: "/admin/profile/facilities" },
   ];
   const informationItems = [
     { label: "Pengumuman", href: "/admin/informasi/pengumuman" },

@@ -956,7 +956,7 @@ class CalendarViewSet(viewsets.ViewSet):
         booking_qs = (
             Booking.objects
             .filter(
-                status='Approved',
+                status__in=['Approved', 'Completed'],
                 start_time__lt=end,
                 end_time__gt=start,
             )
@@ -1010,7 +1010,7 @@ class CalendarViewSet(viewsets.ViewSet):
                 Use.objects
                 .filter(
                     start_time__lt=end,
-                    status__in=['Approved', 'In Use'],
+                    status__in=['Approved', 'In Use', 'Completed'],
                 )
                 .filter(Q(end_time__isnull=True) | Q(end_time__gt=start))
                 .select_related('equipment', 'equipment__room', 'requested_by')

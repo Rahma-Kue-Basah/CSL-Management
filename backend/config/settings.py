@@ -32,7 +32,8 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = [
     "localhost",
     'csl.azizrahmad.com',
-    "3.27.77.155",
+    # "3.27.77.155",
+    "3.27.145.20",
     "127.0.0.1",
 ]
 
