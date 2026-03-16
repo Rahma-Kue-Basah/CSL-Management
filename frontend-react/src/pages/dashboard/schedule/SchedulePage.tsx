@@ -1,15 +1,12 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Badge, Calendar as RsuiteCalendar } from "rsuite";
-import { CalendarDays, Clock3, Search } from "lucide-react";
+import { CalendarDays, Clock3 } from "lucide-react";
 
-import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
-import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCalendarEvents } from "@/hooks/calendar/use-calendar-events";
-import { useRoomOptions } from "@/hooks/rooms/use-room-options";
-import { formatDateTimeWib } from "@/lib/date-time";
 
 function getYearBounds(date: Date) {
   const year = date.getFullYear();
@@ -56,6 +53,39 @@ function getCalendarDotClass(source: string) {
   return "bg-slate-500";
 }
 
+function getStickyNoteTone(source: string) {
+  if (source === "schedule") {
+    return {
+      card: "border-sky-200 bg-[#DDF2FF] shadow-[0_6px_14px_rgba(14,116,144,0.08)]",
+      tape: "before:bg-white/45",
+      overlay:
+        "after:bg-[linear-gradient(180deg,rgba(255,255,255,0.1),transparent_30%)]",
+      chip: "ring-sky-200/70 bg-white/85 text-slate-700",
+      meta: "text-sky-800/70",
+    };
+  }
+
+  return {
+    card: "border-amber-200 bg-[#FFF3A6] shadow-[0_6px_14px_rgba(120,84,0,0.08)]",
+    tape: "before:bg-white/45",
+    overlay:
+      "after:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent_30%)]",
+    chip: "ring-amber-300/60 bg-white/85 text-slate-700",
+    meta: "text-amber-800/70",
+  };
+}
+
+function getInitials(value?: string | null) {
+  const source = String(value ?? "").trim();
+  if (!source) return "NA";
+  return source
+    .split(/\s+/)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 3)
+    .toUpperCase();
+}
+
 function formatHourLabel(hour: number) {
   return `${String(hour).padStart(2, "0")}:00`;
 }
@@ -89,9 +119,13 @@ function HourlyScheduleTable({
     id: string | number;
     source: string;
     title: string;
+    category?: string | null;
+    status?: string | null;
     room_name?: string | null;
     start_time: string;
     end_time?: string | null;
+    requested_by_name?: string | null;
+    requested_by_role?: string | null;
   }>;
   title?: string;
 }) {
@@ -101,9 +135,13 @@ function HourlyScheduleTable({
     id: string | number;
     source: string;
     title: string;
+    category?: string | null;
+    status?: string | null;
     room_name?: string | null;
     start_time: string;
     end_time?: string | null;
+    requested_by_name?: string | null;
+    requested_by_role?: string | null;
     lane: number;
     startHour: number;
     rowSpan: number;
@@ -208,6 +246,8 @@ function HourlyScheduleTable({
                       );
                     }
 
+                    const noteTone = getStickyNoteTone(event.source);
+
                     return (
                       <td
                         key={`${event.source}-${event.id}-${laneIndex}-${hour}`}
@@ -217,33 +257,38 @@ function HourlyScheduleTable({
                         }`}
                       >
                         <div
-                          className="h-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                          className={`relative h-full rounded-[18px] px-3 py-3 before:absolute before:left-1/2 before:top-2 before:h-4 before:w-14 before:-translate-x-1/2 before:rounded-sm after:absolute after:inset-0 after:rounded-[18px] after:content-[''] ${noteTone.card} ${noteTone.tape} ${noteTone.overlay}`}
                           style={{ minHeight: `${event.rowSpan * 56}px` }}
                         >
-                          <div className="flex flex-wrap items-center gap-2">
+                          <div className="relative flex flex-wrap items-center gap-2">
                             <span
-                              className={`rounded-full px-2 py-1 text-xs font-medium ${sourceTone(event.source)}`}
+                              className={`rounded-full px-2 py-1 text-xs font-medium shadow-sm ${sourceTone(event.source)}`}
                             >
                               {mapSourceLabel(event.source)}
                             </span>
-                            <span className="text-xs text-slate-500">
-                              {event.room_name || "Tanpa ruangan"}
-                            </span>
+                            {event.category ? (
+                              <span className={`rounded-full px-2 py-1 text-xs font-medium ring-1 ${noteTone.chip}`}>
+                                {event.category}
+                              </span>
+                            ) : null}
                             {event.rowSpan > 1 ? (
-                              <span className="text-xs text-slate-400">
+                              <span className={`text-xs ${noteTone.meta}`}>
                                 {event.rowSpan} jam
                               </span>
                             ) : null}
                           </div>
-                          <p className="mt-2 font-medium text-slate-900">
+                          <p className="relative mt-3 font-semibold text-slate-900">
                             {event.title}
                           </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            {formatDateTimeWib(event.start_time)}
-                            {event.end_time
-                              ? ` - ${formatDateTimeWib(event.end_time)}`
-                              : ""}
-                          </p>
+                          <div className="relative mt-3 grid gap-2 text-xs text-slate-600">
+                            {event.source !== "schedule" &&
+                            event.requested_by_name ? (
+                              <p className={`inline-flex w-fit rounded-full px-2 py-1 ring-1 ${noteTone.chip}`}>
+                                {`Oleh ${getInitials(event.requested_by_name)} `}
+                                ({event.requested_by_role || "User"})
+                              </p>
+                            ) : null}
+                          </div>
                         </div>
                       </td>
                     );
@@ -259,30 +304,34 @@ function HourlyScheduleTable({
 }
 
 export default function SchedulePage() {
+  const searchParams = useSearchParams();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [query, setQuery] = useState("");
-  const [roomFilter, setRoomFilter] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const query = searchParams.get("q") ?? "";
+  const roomFilter = searchParams.get("room") ?? "";
+  const categoryFilter = searchParams.get("category") ?? "";
   const yearBounds = useMemo(() => getYearBounds(selectedDate), [selectedDate]);
-  const { rooms } = useRoomOptions();
   const { events, isLoading, error } = useCalendarEvents(
     yearBounds.start,
     yearBounds.end,
-    {
-      room: roomFilter,
-    },
   );
 
   const filteredEvents = useMemo(() => {
     const normalizedQuery = normalizeText(query);
     return events.filter((item) => {
+      if (categoryFilter && item.source !== categoryFilter) return false;
       if (roomFilter && item.room_id !== roomFilter) return false;
       if (!normalizedQuery) return true;
       return normalizeText(
         `${item.title} ${item.description ?? ""} ${item.room_name ?? ""}`,
       ).includes(normalizedQuery);
     });
-  }, [events, query, roomFilter]);
+  }, [categoryFilter, events, query, roomFilter]);
+
+  const monthSummaryEvents = useMemo(() => {
+    return events.filter((item) =>
+      isSameMonth(new Date(item.start_time), selectedDate),
+    );
+  }, [events, selectedDate]);
 
   const monthEvents = useMemo(() => {
     return filteredEvents.filter((item) =>
@@ -291,20 +340,20 @@ export default function SchedulePage() {
   }, [filteredEvents, selectedDate]);
 
   const monthKpis = useMemo(() => {
-    const scheduleCount = monthEvents.filter(
+    const scheduleCount = monthSummaryEvents.filter(
       (item) => item.source === "schedule",
     ).length;
-    const bookingCount = monthEvents.filter(
+    const bookingCount = monthSummaryEvents.filter(
       (item) => item.source === "booking",
     ).length;
     const roomCount = new Set(
-      monthEvents.map((item) => item.room_name).filter(Boolean),
+      monthSummaryEvents.map((item) => item.room_name).filter(Boolean),
     ).size;
 
     return [
       {
         label: "Agenda Bulan Ini",
-        value: String(monthEvents.length),
+        value: String(monthSummaryEvents.length),
         tone: "from-sky-500/15 to-sky-100",
       },
       {
@@ -323,7 +372,7 @@ export default function SchedulePage() {
         tone: "from-violet-500/15 to-violet-100",
       },
     ];
-  }, [monthEvents]);
+  }, [monthSummaryEvents]);
 
   const selectedDayEvents = useMemo(() => {
     return filteredEvents
@@ -358,40 +407,6 @@ export default function SchedulePage() {
 
   return (
     <section className="space-y-4">
-      <InventoryFilterCard
-        open={filterOpen}
-        onToggle={() => setFilterOpen((prev) => !prev)}
-        onReset={() => {
-          setQuery("");
-          setRoomFilter("");
-          setFilterOpen(false);
-        }}
-      >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-          <div className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5">
-            <Search className="h-4 w-4 text-slate-400" />
-            <Input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Cari agenda atau ruangan"
-              className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
-            />
-          </div>
-          <select
-            value={roomFilter}
-            onChange={(event) => setRoomFilter(event.target.value)}
-            className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-          >
-            <option value="">Semua Ruangan</option>
-            {rooms.map((room) => (
-              <option key={room.id} value={room.id}>
-                {room.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </InventoryFilterCard>
-
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
           {error}
@@ -453,9 +468,9 @@ export default function SchedulePage() {
                 year: "numeric",
               })}
             </p>
-            <p className="mt-2 text-sm text-slate-500">
+            {/* <p className="mt-2 text-sm text-slate-500">
               Agenda harian difokuskan pada tabel per jam di bawah.
-            </p>
+            </p> */}
           </article>
         </div>
       </div>

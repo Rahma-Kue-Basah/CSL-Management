@@ -16,6 +16,7 @@ import { API_BORROW_DETAIL } from "@/constants/api";
 import { useBorrows, type BorrowRow } from "@/hooks/borrows/use-borrows";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
+import { getStatusBadgeClass } from "@/lib/status";
 
 const PAGE_SIZE = 10;
 
@@ -48,29 +49,6 @@ function formatDateTime(value?: string | null) {
 function formatDateRange(start?: string | null, end?: string | null) {
   if (!start && !end) return "-";
   return `${formatDateTime(start)} — ${formatDateTime(end)}`;
-}
-
-function getStatusBadge(status: string) {
-  switch (status.toLowerCase()) {
-    case "approved":
-      return "bg-emerald-100 text-emerald-700";
-    case "pending":
-      return "bg-amber-100 text-amber-700";
-    case "rejected":
-      return "bg-rose-100 text-rose-700";
-    case "borrowed":
-      return "bg-indigo-100 text-indigo-700";
-    case "returned":
-      return "bg-sky-100 text-sky-700";
-    case "overdue":
-      return "bg-orange-100 text-orange-700";
-    case "lost_damaged":
-      return "bg-red-100 text-red-700";
-    case "cancelled":
-      return "bg-slate-200 text-slate-600";
-    default:
-      return "bg-slate-100 text-slate-600";
-  }
 }
 
 function matchesSearch(row: BorrowRow, query: string) {
@@ -291,7 +269,7 @@ export default function AdminRecordPeminjamanAlatPage() {
                       </td>
                       <td className="px-3 py-2">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadge(
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
                             item.status,
                           )}`}
                         >

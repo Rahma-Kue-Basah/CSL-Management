@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { API_PENGUJIAN_DETAIL } from "@/constants/api";
 import { usePengujians, type PengujianRow } from "@/hooks/pengujians/use-pengujians";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
+import { getStatusBadgeClass } from "@/lib/status";
 
 const PAGE_SIZE = 10;
 
@@ -38,23 +39,6 @@ function formatDateTime(value?: string | null) {
     minute: "2-digit",
     hour12: false,
   }).format(date);
-}
-
-function getStatusBadge(status: string) {
-  switch (status.toLowerCase()) {
-    case "approved":
-      return "bg-emerald-100 text-emerald-700";
-    case "pending":
-      return "bg-amber-100 text-amber-700";
-    case "rejected":
-      return "bg-rose-100 text-rose-700";
-    case "completed":
-      return "bg-sky-100 text-sky-700";
-    case "cancelled":
-      return "bg-slate-200 text-slate-600";
-    default:
-      return "bg-slate-100 text-slate-600";
-  }
 }
 
 function matchesSearch(row: PengujianRow, query: string) {
@@ -239,7 +223,7 @@ export default function AdminRecordPengujianSampelPage() {
                       <td className="truncate px-3 py-2">{item.sampleType}</td>
                       <td className="px-3 py-2">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadge(
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
                             item.status,
                           )}`}
                         >

@@ -1,30 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Eye, Filter, Loader2, RotateCcw } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Eye, Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useRooms } from "@/hooks/rooms/use-rooms";
 
 const PAGE_SIZE = 10;
-const FLOOR_OPTIONS = [
-  { value: "", label: "Semua Lantai" },
-  { value: "1", label: "Lantai 1" },
-  { value: "2", label: "Lantai 2" },
-  { value: "3", label: "Lantai 3" },
-  { value: "4", label: "Lantai 4" },
-  { value: "5", label: "Lantai 5" },
-];
 
 export default function RoomsListPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [floor, setFloor] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const search = searchParams.get("q") ?? "";
+  const floor = searchParams.get("floor") ?? "";
+
+  useEffect(() => {
+    setPage(1);
+  }, [search, floor]);
 
   const { rooms, totalCount, isLoading, hasLoadedOnce, error } = useRooms(page, PAGE_SIZE, {
     search: search.trim(),
@@ -32,81 +27,9 @@ export default function RoomsListPage() {
   });
 
   const totalPages = Math.max(1, Math.ceil((totalCount || rooms.length) / PAGE_SIZE));
-  const resetFilters = () => {
-    setSearch("");
-    setFloor("");
-    setPage(1);
-    setFilterOpen(false);
-  };
 
   return (
     <section className="space-y-4">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100/80">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <button
-            type="button"
-            className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-slate-800"
-            onClick={() => setFilterOpen((prev) => !prev)}
-          >
-            <span className="rounded-md bg-white p-1.5 text-slate-600 shadow-xs">
-              <Filter className="h-4 w-4" />
-            </span>
-            Filter Ruangan
-          </button>
-          {filterOpen ? (
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-              onClick={resetFilters}
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Reset
-            </button>
-          ) : null}
-        </div>
-
-        {filterOpen ? (
-          <div className="border-t border-slate-200/80 bg-white px-4 pb-4 pt-3">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Cari
-                </label>
-                <Input
-                  type="search"
-                  value={search}
-                  placeholder="Nama ruangan atau nomor"
-                  className="h-11 border-slate-300 bg-white px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Lantai
-                </label>
-                <select
-                  value={floor}
-                  onChange={(event) => {
-                    setFloor(event.target.value);
-                    setPage(1);
-                  }}
-                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
-                >
-                  {FLOOR_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
       {error ? (
         <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}

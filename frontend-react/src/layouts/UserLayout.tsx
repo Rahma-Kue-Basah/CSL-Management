@@ -22,6 +22,7 @@ import { DashboardTopNavbar } from "@/components/dashboard/layout/DashboardTopNa
 import { DashboardSideNavbar } from "@/components/dashboard/layout/DashboardSideNavbar";
 import { DashboardActionPanel } from "@/components/dashboard/layout/DashboardActionPanel";
 import { DashboardMainLayout } from "@/components/dashboard/layout/DashboardMainLayout";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 
 type UserLayoutProps = {
   children: ReactNode;
@@ -98,15 +99,15 @@ const SIDEBAR_WIDTH = "5rem";
 const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   {
     id: "dashboard",
-    label: "Dashboard",
-    description: "Ringkasan aktivitas dan insight utama pengguna.",
+    label: "Welcome, User!",
+    description: "Akses utama untuk layanan CSL, termasuk jadwal, pemesanan, pengajuan, dan informasi terbaru.",
     href: "/dashboard",
     icon: LayoutDashboard,
     actions: [
       {
         id: "overview",
-        label: "Ringkasan Dashboard",
-        description: "Lihat KPI dan highlight terbaru dalam satu tampilan.",
+        label: "Ringkasan",
+        description: "Lihat ringkasan status pengajuan dan aktivitas terbaru Anda.",
         href: "/dashboard/overview",
       },
       {
@@ -125,7 +126,7 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   },
   {
     id: "schedule",
-    label: "Jadwal",
+    label: "Jadwal Lab",
     description: "Kelola agenda lab dan jadwal kegiatan mendatang.",
     href: "/schedule",
     icon: CalendarDays,
@@ -135,9 +136,15 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
     id: "booking-rooms",
     label: "Booking Ruangan",
     description: "Kelola pengajuan booking dan pantau progresnya.",
-    href: "/booking-rooms",
+    href: "/booking-rooms/form",
     icon: Building2,
     actions: [
+      {
+        id: "request-form",
+        label: "Ajukan Booking",
+        description: "Buat pengajuan booking ruangan melalui formulir.",
+        href: "/booking-rooms/form",
+      },
       {
         id: "request-list",
         label: "Pengajuan Saya",
@@ -151,12 +158,6 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         href: "/booking-rooms/all",
       },
       {
-        id: "request-form",
-        label: "Ajukan Booking",
-        description: "Buat pengajuan booking ruangan melalui formulir.",
-        href: "/booking-rooms/form",
-      },
-      {
         id: "rooms",
         label: "Ruangan yang Bisa di-Booking",
         description: "Lihat daftar ruangan yang tersedia untuk dibooking.",
@@ -168,9 +169,15 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
     id: "use-equipment",
     label: "Booking Alat",
     description: "Kelola pengajuan penggunaan alat beserta formulirnya.",
-    href: "/use-equipment",
+    href: "/use-equipment/form",
     icon: Wrench,
     actions: [
+      {
+        id: "request-form",
+        label: "Ajukan Booking",
+        description: "Buat pengajuan booking alat melalui formulir.",
+        href: "/use-equipment/form",
+      },
       {
         id: "request-list",
         label: "Pengajuan Saya",
@@ -184,12 +191,6 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         href: "/use-equipment/all",
       },
       {
-        id: "request-form",
-        label: "Ajukan Booking",
-        description: "Buat pengajuan booking alat melalui formulir.",
-        href: "/use-equipment/form",
-      },
-      {
         id: "equipment",
         label: "Peralatan yang Bisa Dibooking",
         description: "Lihat daftar peralatan yang tersedia untuk dibooking.",
@@ -201,20 +202,20 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
     id: "sample-testing",
     label: "Pengujian Sampel",
     description: "Kelola pengajuan pengujian sampel dan formulirnya.",
-    href: "/sample-testing",
+    href: "/sample-testing/form",
     icon: FlaskConical,
     actions: [
-      {
-        id: "request-list",
-        label: "Pengajuan Saya",
-        description: "Lihat daftar pengajuan pengujian sampel Anda.",
-        href: "/sample-testing",
-      },
       {
         id: "request-form",
         label: "Ajukan Pengujian",
         description: "Buat pengajuan pengujian sampel melalui formulir.",
         href: "/sample-testing/form",
+      },
+      {
+        id: "request-list",
+        label: "Pengajuan Saya",
+        description: "Lihat daftar pengajuan pengujian sampel Anda.",
+        href: "/sample-testing",
       },
     ],
   },
@@ -222,20 +223,20 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
     id: "borrow-equipment",
     label: "Peminjaman Alat",
     description: "Kelola permintaan peminjaman alat dan formulirnya.",
-    href: "/borrow-equipment",
+    href: "/borrow-equipment/form",
     icon: Package,
     actions: [
-      {
-        id: "request-list",
-        label: "Pengajuan Saya",
-        description: "Lihat daftar pengajuan peminjaman alat Anda.",
-        href: "/borrow-equipment",
-      },
       {
         id: "request-form",
         label: "Ajukan Peminjaman",
         description: "Buat pengajuan peminjaman alat melalui formulir.",
         href: "/borrow-equipment/form",
+      },
+      {
+        id: "request-list",
+        label: "Pengajuan Saya",
+        description: "Lihat daftar pengajuan peminjaman alat Anda.",
+        href: "/borrow-equipment",
       },
       {
         id: "equipment",
@@ -373,9 +374,19 @@ function DashboardShell({ children }: UserLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isMobile = useIsMobile();
+  const { profile } = useLoadProfile();
 
   const { menu: menuParam, action: actionParam } = parseDashboardPath(pathname);
   const defaultMenuId = SIDEBAR_SHORTCUTS[0].id;
+  const displayName = profile.name?.trim() || "User";
+  const sidebarShortcuts = SIDEBAR_SHORTCUTS.map((item) =>
+    item.id === "dashboard"
+      ? {
+          ...item,
+          label: `Welcome, ${displayName}!`,
+        }
+      : item,
+  );
 
   const [activeMenuId, setActiveMenuId] = useState<string>(
     menuParam || defaultMenuId,
@@ -390,8 +401,8 @@ function DashboardShell({ children }: UserLayoutProps) {
   }, [menuParam]);
 
   const activeMenu =
-    SIDEBAR_SHORTCUTS.find((item) => item.id === activeMenuId) ??
-    SIDEBAR_SHORTCUTS[0];
+    sidebarShortcuts.find((item) => item.id === activeMenuId) ??
+    sidebarShortcuts[0];
   const activeAction =
     activeMenu.id === "my-profile"
       ? null
@@ -423,7 +434,7 @@ function DashboardShell({ children }: UserLayoutProps) {
       <DashboardTopNavbar
         activeMenuId={activeMenuId}
         onShortcutClick={(menuId) => {
-          const selectedMenu = SIDEBAR_SHORTCUTS.find((item) => item.id === menuId);
+          const selectedMenu = sidebarShortcuts.find((item) => item.id === menuId);
           if (selectedMenu) handleMenuClick(selectedMenu);
         }}
       />
@@ -441,12 +452,12 @@ function DashboardShell({ children }: UserLayoutProps) {
         }
       >
         <DashboardSideNavbar
-          menus={SIDEBAR_SHORTCUTS}
+          menus={sidebarShortcuts}
           activeMenuId={activeMenuId}
           getMenuHref={getMenuDefaultHref}
           bottomMenuId="my-profile"
           onMenuClick={(menuId) => {
-            const selectedMenu = SIDEBAR_SHORTCUTS.find((item) => item.id === menuId);
+            const selectedMenu = sidebarShortcuts.find((item) => item.id === menuId);
             if (selectedMenu) handleMenuClick(selectedMenu);
           }}
           onLogoClick={() => router.push(toMenuHref())}

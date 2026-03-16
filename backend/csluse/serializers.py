@@ -391,6 +391,11 @@ class CalendarEventSerializer(serializers.Serializer):
         allow_null=True,
         required=False,
     )
+    requested_by_role = serializers.CharField(
+        allow_blank=True,
+        allow_null=True,
+        required=False,
+    )
 
 
 class StructureOrganizationSimpleSerializer(serializers.ModelSerializer):
@@ -491,3 +496,36 @@ class UseListSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+class DashboardOverviewTotalsSerializer(serializers.Serializer):
+    total_requests = serializers.IntegerField()
+    pending = serializers.IntegerField()
+    approved = serializers.IntegerField()
+    completed = serializers.IntegerField()
+    rejected = serializers.IntegerField()
+
+
+class DashboardOverviewUpcomingSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    title = serializers.CharField()
+    type = serializers.CharField()
+    start_time = serializers.DateTimeField()
+    end_time = serializers.DateTimeField(allow_null=True)
+    href = serializers.CharField()
+
+
+class DashboardOverviewActivitySerializer(serializers.Serializer):
+    id = serializers.CharField()
+    title = serializers.CharField()
+    code = serializers.CharField(allow_blank=True)
+    type = serializers.CharField()
+    status = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    href = serializers.CharField()
+
+
+class DashboardOverviewSerializer(serializers.Serializer):
+    totals = DashboardOverviewTotalsSerializer()
+    upcoming_approved = DashboardOverviewUpcomingSerializer(allow_null=True)
+    recent_activities = DashboardOverviewActivitySerializer(many=True)

@@ -22,6 +22,7 @@ import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import BookingStatusConfirmDialog from "@/pages/dashboard/booking-rooms/BookingStatusConfirmDialog";
 import { formatDateTimeWib } from "@/lib/date-time";
+import { getStatusBadgeClass } from "@/lib/status";
 
 type BookingDetailParams = {
   id?: string | string[];
@@ -40,23 +41,6 @@ function normalizeStatus(value: string) {
 
 function isPendingStatus(value: string) {
   return normalizeStatus(value) === "pending";
-}
-
-function getStatusBadge(status: string) {
-  switch (status.toLowerCase()) {
-    case "approved":
-      return "bg-emerald-100 text-emerald-700";
-    case "pending":
-      return "bg-amber-100 text-amber-700";
-    case "rejected":
-      return "bg-rose-100 text-rose-700";
-    case "completed":
-      return "bg-sky-100 text-sky-700";
-    case "cancelled":
-      return "bg-slate-200 text-slate-600";
-    default:
-      return "bg-slate-100 text-slate-600";
-  }
 }
 
 function getBookingFlow(booking: {
@@ -166,7 +150,7 @@ function DetailItem({
       <p className="text-xs text-slate-500">{label}</p>
       {variant === "status" && !isEmpty ? (
         <span
-          className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadge(displayValue)}`}
+          className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(displayValue)}`}
         >
           {displayValue}
         </span>

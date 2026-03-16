@@ -16,6 +16,7 @@ import {
   type ProfileUserInput,
 } from "@/hooks/profile/use-load-profile";
 import { useLogout } from "@/hooks/auth/use-logout";
+import { isPrivilegedRole } from "@/constants/roles";
 import { cn } from "@/lib/utils";
 
 type DashboardUserMenuProps = {
@@ -31,6 +32,7 @@ export function DashboardUserMenu({
 }: DashboardUserMenuProps) {
   const { profile, initials } = useLoadProfile(user);
   const { handleLogout } = useLogout();
+  const canAccessAdmin = isPrivilegedRole(profile.role);
 
   return (
     <DropdownMenu>
@@ -82,13 +84,17 @@ export function DashboardUserMenu({
             Profil Saya
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuSeparator className="bg-slate-200" />
-        <DropdownMenuItem className="cursor-pointer text-slate-900 hover:bg-slate-100 focus:bg-slate-100 focus:text-slate-900 text-sm">
-          <Link href="/admin/home" className="flex items-center w-full">
-            <UserRoundSearch className="mr-2 h-4 w-4" />
-            Admin CSL
-          </Link>
-        </DropdownMenuItem>
+        {canAccessAdmin ? (
+          <>
+            <DropdownMenuSeparator className="bg-slate-200" />
+            <DropdownMenuItem className="cursor-pointer text-slate-900 hover:bg-slate-100 focus:bg-slate-100 focus:text-slate-900 text-sm">
+              <Link href="/admin/home" className="flex items-center w-full">
+                <UserRoundSearch className="mr-2 h-4 w-4" />
+                Admin CSL
+              </Link>
+            </DropdownMenuItem>
+          </>
+        ) : null}
         <DropdownMenuItem
           className="cursor-pointer text-slate-900 hover:bg-slate-100 focus:bg-slate-100 focus:text-slate-900"
           onSelect={(event) => {

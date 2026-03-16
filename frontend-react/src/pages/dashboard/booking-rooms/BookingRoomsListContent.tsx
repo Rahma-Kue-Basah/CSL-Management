@@ -1,24 +1,21 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Building2,
   CalendarClock,
   CheckCircle2,
   Eye,
-  Filter,
   Loader2,
   Check,
   RotateCcw,
   X,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
-import { Input } from "@/components/ui/input";
 import {
   useBookings,
   type BookingListScope,
@@ -28,40 +25,13 @@ import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import BookingStatusConfirmDialog from "@/pages/dashboard/booking-rooms/BookingStatusConfirmDialog";
 import {
-  formatDateKey,
-  parseDateKey,
   toEndOfDay,
   toStartOfDay,
 } from "@/lib/date";
 import { formatDateTimeWib } from "@/lib/date-time";
+import { getStatusBadgeClass } from "@/lib/status";
 
 const PAGE_SIZE = 10;
-
-const STATUS_OPTIONS = [
-  { value: "", label: "Semua Status" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
-];
-
-function getStatusBadge(status: string) {
-  switch (status.toLowerCase()) {
-    case "approved":
-      return "bg-emerald-100 text-emerald-700";
-    case "pending":
-      return "bg-amber-100 text-amber-700";
-    case "rejected":
-      return "bg-rose-100 text-rose-700";
-    case "completed":
-      return "bg-sky-100 text-sky-700";
-    case "cancelled":
-      return "bg-slate-200 text-slate-600";
-    default:
-      return "bg-slate-100 text-slate-600";
-  }
-}
 
 function isPendingStatus(status: string) {
   return status.toLowerCase() === "pending";
@@ -138,19 +108,23 @@ export default function BookingRoomsListContent({
   emptyMessage,
 }: BookingRoomsListContentProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { profile } = useLoadProfile();
   const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
   const [page, setPage] = useState(1);
-  const [status, setStatus] = useState("");
-  const [search, setSearch] = useState("");
-  const [createdAfter, setCreatedAfter] = useState("");
-  const [createdBefore, setCreatedBefore] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmState, setConfirmState] = useState<{
     bookingId: string | number;
     type: "approve" | "reject";
   } | null>(null);
+  const status = searchParams.get("status") ?? "";
+  const search = searchParams.get("q") ?? "";
+  const createdAfter = searchParams.get("created_after") ?? "";
+  const createdBefore = searchParams.get("created_before") ?? "";
+
+  useEffect(() => {
+    setPage(1);
+  }, [status, search, createdAfter, createdBefore]);
 
   const { bookings, totalCount, isLoading, hasLoadedOnce, error } = useBookings(
     page,
@@ -217,15 +191,6 @@ export default function BookingRoomsListContent({
     (item) => item.status.toLowerCase() === "rejected",
   ).length;
 
-  const resetFilters = () => {
-    setSearch("");
-    setStatus("");
-    setCreatedAfter("");
-    setCreatedBefore("");
-    setPage(1);
-    setFilterOpen(false);
-  };
-
   const handleBookingAction = async () => {
     if (!confirmState) return;
 
@@ -279,100 +244,6 @@ export default function BookingRoomsListContent({
           icon={<RotateCcw className="h-4 w-4" />}
           tone="rose"
         />
-      </div>
-
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100/80">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <button
-            type="button"
-            className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-slate-800"
-            onClick={() => setFilterOpen((prev) => !prev)}
-          >
-            <span className="rounded-md bg-white p-1.5 text-slate-600 shadow-xs">
-              <Filter className="h-4 w-4" />
-            </span>
-            Filter Pengajuan
-          </button>
-          {filterOpen ? (
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-              onClick={resetFilters}
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Reset
-            </button>
-          ) : null}
-        </div>
-
-        {filterOpen ? (
-          <div className="border-t border-slate-200/80 bg-white px-4 pb-4 pt-3">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Cari
-                </label>
-                <Input
-                  type="search"
-                  value={search}
-                  placeholder="Kode, ruangan"
-                  className="h-11 border-slate-300 bg-white px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Status
-                </label>
-                <select
-                  value={status}
-                  onChange={(event) => {
-                    setStatus(event.target.value);
-                    setPage(1);
-                  }}
-                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
-                >
-                  {STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Dibuat Dari
-                </label>
-                <DatePicker
-                  value={parseDateKey(createdAfter)}
-                  onChange={(value) => {
-                    setCreatedAfter(value ? formatDateKey(value) : "");
-                    setPage(1);
-                  }}
-                  clearable
-                  buttonClassName="h-11 border-slate-300 px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Dibuat Sampai
-                </label>
-                <DatePicker
-                  value={parseDateKey(createdBefore)}
-                  onChange={(value) => {
-                    setCreatedBefore(value ? formatDateKey(value) : "");
-                    setPage(1);
-                  }}
-                  clearable
-                  buttonClassName="h-11 border-slate-300 px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                />
-              </div>
-            </div>
-          </div>
-        ) : null}
       </div>
 
       {error ? (
@@ -450,7 +321,7 @@ export default function BookingRoomsListContent({
                   </td>
                   <td className="px-3 py-2.5">
                     <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadge(booking.status)}`}
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(booking.status)}`}
                     >
                       {booking.status}
                     </span>

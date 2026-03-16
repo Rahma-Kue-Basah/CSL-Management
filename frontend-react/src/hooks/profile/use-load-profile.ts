@@ -40,6 +40,17 @@ let inMemoryProfile: UserProfile | null = null;
 let inMemoryProfileAt = 0;
 let inFlightProfileRequest: Promise<UserProfile | null> | null = null;
 
+export function clearProfileCache() {
+  inMemoryProfile = null;
+  inMemoryProfileAt = 0;
+  inFlightProfileRequest = null;
+
+  if (typeof window === "undefined") return;
+
+  window.localStorage.removeItem(PROFILE_CACHE_KEY);
+  window.localStorage.removeItem(PROFILE_CACHE_TS_KEY);
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }

@@ -1,13 +1,17 @@
+import Image from "next/image";
+
 export default function DashboardHomePage() {
   return (
-    <section className="rounded-xl border border-slate-200 bg-slate-50 p-6">
-      <h2 className="text-xl font-semibold text-slate-800">
-        Selamat datang di Dashboard
-      </h2>
-      <p className="mt-2 text-sm text-slate-600">
-        Gunakan menu di sisi kiri untuk melihat jadwal, booking ruangan, dan
-        booking alat.
-      </p>
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
+      <div className="relative aspect-[16/7] w-full">
+        <Image
+          src="/images/welcome.jpg"
+          alt="Welcome"
+          fill
+          priority
+          className="object-cover"
+        />
+      </div>
     </section>
   );
 }

@@ -1,19 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { Eye, Filter, Loader2, RotateCcw } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Eye, Loader2 } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  EQUIPMENT_CATEGORY_OPTIONS,
-  EQUIPMENT_STATUS_OPTIONS,
-  MOVEABLE_OPTIONS,
-} from "@/constants/equipments";
 import { useEquipments } from "@/hooks/equipments/use-equipments";
-import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 
 const PAGE_SIZE = 10;
 
@@ -31,15 +24,18 @@ function formatStatus(value: string) {
 
 export default function EquipmentListPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [category, setCategory] = useState("");
-  const [room, setRoom] = useState("");
-  const [moveable, setMoveable] = useState("");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const search = searchParams.get("q") ?? "";
+  const status = searchParams.get("status") ?? "";
+  const category = searchParams.get("category") ?? "";
+  const room = searchParams.get("room") ?? "";
+  const moveable = searchParams.get("moveable") ?? "";
 
-  const { rooms: filterRooms, isLoading: isLoadingFilterRooms } = useRoomOptions();
+  useEffect(() => {
+    setPage(1);
+  }, [search, status, category, room, moveable]);
+
   const { equipments, totalCount, isLoading, hasLoadedOnce, error } = useEquipments(page, PAGE_SIZE, {
     search: search.trim(),
     status,
@@ -50,152 +46,8 @@ export default function EquipmentListPage() {
 
   const totalPages = Math.max(1, Math.ceil((totalCount || equipments.length) / PAGE_SIZE));
 
-  const resetFilters = () => {
-    setSearch("");
-    setStatus("");
-    setCategory("");
-    setRoom("");
-    setMoveable("");
-    setPage(1);
-    setFilterOpen(false);
-  };
-
   return (
     <section className="space-y-4">
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-gradient-to-br from-slate-50 to-slate-100/80">
-        <div className="flex items-center gap-3 px-4 py-3">
-          <button
-            type="button"
-            className="flex flex-1 items-center gap-2 text-left text-sm font-semibold text-slate-800"
-            onClick={() => setFilterOpen((prev) => !prev)}
-          >
-            <span className="rounded-md bg-white p-1.5 text-slate-600 shadow-xs">
-              <Filter className="h-4 w-4" />
-            </span>
-            Filter Peralatan
-          </button>
-          {filterOpen ? (
-            <button
-              type="button"
-              className="inline-flex items-center gap-2 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
-              onClick={resetFilters}
-            >
-              <RotateCcw className="h-3.5 w-3.5" />
-              Reset
-            </button>
-          ) : null}
-        </div>
-
-        {filterOpen ? (
-          <div className="border-t border-slate-200/80 bg-white px-4 pb-4 pt-3">
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Cari
-                </label>
-                <Input
-                  type="search"
-                  value={search}
-                  placeholder="Nama atau kategori"
-                  className="h-11 border-slate-300 bg-white px-3 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                />
-              </div>
-
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Status
-                </label>
-                <select
-                  value={status}
-                  onChange={(event) => {
-                    setStatus(event.target.value);
-                    setPage(1);
-                  }}
-                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
-                >
-                  <option value="">Semua Status</option>
-                  {EQUIPMENT_STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Kategori
-                </label>
-                <select
-                  value={category}
-                  onChange={(event) => {
-                    setCategory(event.target.value);
-                    setPage(1);
-                  }}
-                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
-                >
-                  <option value="">Semua Kategori</option>
-                  {EQUIPMENT_CATEGORY_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Ruangan
-                </label>
-                <select
-                  value={room}
-                  onChange={(event) => {
-                    setRoom(event.target.value);
-                    setPage(1);
-                  }}
-                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
-                  disabled={isLoadingFilterRooms}
-                >
-                  <option value="">
-                    {isLoadingFilterRooms ? "Memuat ruangan..." : "Semua Ruangan"}
-                  </option>
-                  {filterRooms.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
-                  Moveable
-                </label>
-                <select
-                  value={moveable}
-                  onChange={(event) => {
-                    setMoveable(event.target.value);
-                    setPage(1);
-                  }}
-                  className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
-                >
-                  <option value="">Semua</option>
-                  {MOVEABLE_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
-
       {error ? (
         <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}

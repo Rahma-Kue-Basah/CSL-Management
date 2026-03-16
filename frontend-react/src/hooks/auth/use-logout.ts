@@ -1,8 +1,7 @@
 import { useRouter } from "next/navigation";
-import { removeCookieValue } from "@/lib/cookies";
-
 import { API_AUTH_LOGOUT } from "@/constants/api";
-import { authFetch } from "@/lib/auth";
+import { authFetch, clearTokens } from "@/lib/auth";
+import { clearProfileCache } from "@/hooks/profile/use-load-profile";
 
 export function useLogout() {
   const router = useRouter();
@@ -16,18 +15,11 @@ export function useLogout() {
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      removeCookieValue("access_token");
-      removeCookieValue("accessToken");
-      removeCookieValue("refresh_token");
-      removeCookieValue("access");
-      removeCookieValue("refresh");
-      removeCookieValue("user");
+      clearTokens();
       try {
-        if (typeof window !== "undefined") {
-          window.localStorage.clear();
-        }
+        clearProfileCache();
       } catch (error) {
-        console.error("LocalStorage clear error:", error);
+        console.error("Profile cache clear error:", error);
       }
       router.push("/login");
     }

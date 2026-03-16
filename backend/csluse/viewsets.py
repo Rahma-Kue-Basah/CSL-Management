@@ -53,6 +53,7 @@ from .serializers import (
     PengujianListSerializer,
     UseSerializer,
     UseListSerializer,
+    DashboardOverviewSerializer,
 )
 from csluse_auth.audit import log_admin_action
 from csluse_auth.permissions import (
@@ -102,6 +103,19 @@ def _profile_display_name(profile):
         or getattr(getattr(profile, 'user', None), 'email', None)
         or str(profile)
     )
+
+
+def _profile_role(profile):
+    if not profile:
+        return None
+    return getattr(profile, "role", None)
+
+
+def _overview_title(value, fallback):
+    if value is None:
+        return fallback
+    raw = str(value).strip()
+    return raw or fallback
 
 
 class ImageViewSet(viewsets.ModelViewSet):
@@ -975,13 +989,14 @@ class CalendarViewSet(viewsets.ViewSet):
                 'room_id': item.room_id,
                 'room_name': item.room.name if item.room else None,
                 'requested_by_name': _profile_display_name(item.created_by),
+                'requested_by_role': _profile_role(item.created_by),
             })
 
         for item in booking_qs:
             items.append({
                 'id': str(item.id),
                 'source': 'booking',
-                'title': f'Booking Ruangan - {item.room.name}',
+                'title': item.room.name if item.room else 'Booking Ruangan',
                 'description': item.note,
                 'start_time': item.start_time,
                 'end_time': item.end_time,
@@ -990,6 +1005,7 @@ class CalendarViewSet(viewsets.ViewSet):
                 'room_id': item.room_id,
                 'room_name': item.room.name if item.room else None,
                 'requested_by_name': _profile_display_name(item.requested_by),
+                'requested_by_role': _profile_role(item.requested_by),
             })
 
         if (
@@ -1024,10 +1040,183 @@ class CalendarViewSet(viewsets.ViewSet):
                     'room_id': room.id if room else None,
                     'room_name': room.name if room else None,
                     'requested_by_name': _profile_display_name(item.requested_by),
+                    'requested_by_role': _profile_role(item.requested_by),
                 })
 
         items.sort(key=lambda item: (item['start_time'], item['title']))
         serializer = CalendarEventSerializer(items, many=True)
+        return Response(serializer.data)
+
+
+class DashboardOverviewViewSet(viewsets.ViewSet):
+    permission_classes = [IsAuthenticated]
+
+    def list(self, request):
+        profile = getattr(request.user, "profile", None)
+        if not profile:
+            return Response(
+                {
+                    "totals": {
+                        "total_requests": 0,
+                        "pending": 0,
+                        "approved": 0,
+                        "completed": 0,
+                        "rejected": 0,
+                    },
+                    "upcoming_approved": None,
+                    "recent_activities": [],
+                }
+            )
+
+        now = timezone.now()
+
+        bookings = list(
+            Booking.objects
+            .filter(requested_by=profile)
+            .select_related("room")
+            .order_by("-created_at")
+        )
+        uses = list(
+            Use.objects
+            .filter(requested_by=profile)
+            .select_related("equipment")
+            .order_by("-created_at")
+        )
+        borrows = list(
+            Borrow.objects
+            .filter(requested_by=profile)
+            .select_related("equipment")
+            .order_by("-created_at")
+        )
+        pengujians = list(
+            Pengujian.objects
+            .filter(requested_by=profile)
+            .order_by("-created_at")
+        )
+
+        def status_count(items, *statuses):
+            normalized_targets = {normalize_status_value(status) for status in statuses}
+            return sum(1 for item in items if item.status in normalized_targets)
+
+        upcoming_items = []
+
+        for item in bookings:
+            if item.status == "Approved" and item.start_time and item.start_time >= now:
+                upcoming_items.append({
+                    "id": f"booking-{item.id}",
+                    "title": _overview_title(getattr(getattr(item, "room", None), "name", None), item.code or "Booking Ruangan"),
+                    "type": "Booking Ruangan",
+                    "start_time": item.start_time,
+                    "end_time": item.end_time,
+                    "href": f"/booking-rooms/{item.id}",
+                })
+
+        for item in uses:
+            if item.status == "Approved" and item.start_time and item.start_time >= now:
+                upcoming_items.append({
+                    "id": f"use-{item.id}",
+                    "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Booking Alat"),
+                    "type": "Booking Alat",
+                    "start_time": item.start_time,
+                    "end_time": item.end_time,
+                    "href": f"/use-equipment/{item.id}",
+                })
+
+        for item in borrows:
+            if item.status == "Approved" and item.start_time and item.start_time >= now:
+                upcoming_items.append({
+                    "id": f"borrow-{item.id}",
+                    "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Peminjaman Alat"),
+                    "type": "Peminjaman Alat",
+                    "start_time": item.start_time,
+                    "end_time": item.end_time,
+                    "href": "/borrow-equipment",
+                })
+
+        upcoming_items.sort(key=lambda item: item["start_time"])
+        upcoming_approved = upcoming_items[0] if upcoming_items else None
+
+        recent_activities = []
+
+        for item in bookings:
+            recent_activities.append({
+                "id": f"booking-{item.id}",
+                "title": _overview_title(getattr(getattr(item, "room", None), "name", None), item.code or "Booking Ruangan"),
+                "code": item.code or "",
+                "type": "Booking Ruangan",
+                "status": item.status,
+                "created_at": item.created_at,
+                "href": f"/booking-rooms/{item.id}",
+            })
+
+        for item in uses:
+            recent_activities.append({
+                "id": f"use-{item.id}",
+                "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Booking Alat"),
+                "code": item.code or "",
+                "type": "Booking Alat",
+                "status": item.status,
+                "created_at": item.created_at,
+                "href": f"/use-equipment/{item.id}",
+            })
+
+        for item in borrows:
+            recent_activities.append({
+                "id": f"borrow-{item.id}",
+                "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Peminjaman Alat"),
+                "code": item.code or "",
+                "type": "Peminjaman Alat",
+                "status": item.status,
+                "created_at": item.created_at,
+                "href": "/borrow-equipment",
+            })
+
+        for item in pengujians:
+            recent_activities.append({
+                "id": f"pengujian-{item.id}",
+                "title": _overview_title(item.name, item.code or "Pengujian Sampel"),
+                "code": item.code or "",
+                "type": "Pengujian Sampel",
+                "status": item.status,
+                "created_at": item.created_at,
+                "href": "/sample-testing",
+            })
+
+        recent_activities.sort(key=lambda item: item["created_at"], reverse=True)
+
+        payload = {
+            "totals": {
+                "total_requests": len(bookings) + len(uses) + len(borrows) + len(pengujians),
+                "pending": (
+                    status_count(bookings, "Pending")
+                    + status_count(uses, "Pending")
+                    + status_count(borrows, "Pending")
+                    + status_count(pengujians, "Pending")
+                ),
+                "approved": (
+                    status_count(bookings, "Approved")
+                    + status_count(uses, "Approved")
+                    + status_count(borrows, "Approved")
+                    + status_count(pengujians, "Approved")
+                ),
+                "completed": (
+                    status_count(bookings, "Completed")
+                    + status_count(uses, "Completed")
+                    + status_count(borrows, "Returned")
+                    + status_count(pengujians, "Completed")
+                ),
+                "rejected": (
+                    status_count(bookings, "Rejected", "Cancelled")
+                    + status_count(uses, "Rejected", "Cancelled")
+                    + status_count(borrows, "Rejected", "Cancelled")
+                    + status_count(pengujians, "Rejected", "Cancelled")
+                ),
+            },
+            "upcoming_approved": upcoming_approved,
+            "recent_activities": recent_activities[:6],
+        }
+
+        serializer = DashboardOverviewSerializer(payload)
         return Response(serializer.data)
 
 

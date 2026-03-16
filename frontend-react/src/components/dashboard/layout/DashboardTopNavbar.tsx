@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
 import { cn } from "@/lib/utils";
+import { href } from "react-router-dom";
 
 type DashboardTopNavbarProps = {
   activeMenuId: string;
@@ -18,17 +19,46 @@ type DashboardTopNavbarProps = {
 };
 
 const TOP_NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", href: "/dashboard" },
+  {
+    id: "dashboard",
+    label: "Dashboard",
+    href: "/dashboard",
+  },
   { id: "schedule", label: "Lihat Jadwal", href: "/schedule" },
   {
     id: "booking-rooms",
     label: "Booking Ruangan",
-    children: [{ label: "Ajukan Booking", href: "/booking-rooms/form" }],
+    children: [
+      { label: "Pengajuan Saya", href: "/booking-rooms" },
+      { label: "Ajukan Booking Ruangan", href: "/booking-rooms/form" },
+      // { label: "Daftar Ruangan", href: "/rooms" },
+    ],
   },
   {
     id: "use-equipment",
     label: "Booking Alat",
-    children: [{ label: "Ajukan Booking", href: "/use-equipment/form" }],
+    children: [
+      { label: "Pengajuan Saya", href: "/use-equipment" },
+      { label: "Ajukan Booking Alat", href: "/use-equipment/form" },
+      // { label: "Daftar Alat", href: "/equipment" },
+    ],
+  },
+  {
+    id: "sample-testing",
+    label: "Pengujian Sampel",
+    children: [
+      { label: "Pengajuan Saya", href: "/sample-testing" },
+      { label: "Ajukan Pengujian", href: "/sample-testing/form" },
+    ],
+  },
+  {
+    id: "borrow-equipment",
+    label: "Peminjaman Alat",
+    children: [
+      { label: "Pengajuan Saya", href: "/borrow-equipment" },
+      { label: "Ajukan Peminjaman", href: "/borrow-equipment/form" },
+      // { label: "Daftar Alat", href: "/borrow-equipment/equipment" },
+    ],
   },
 ];
 
@@ -48,12 +78,14 @@ export function DashboardTopNavbar({
             className="h-auto w-[110px] sm:w-[130px]"
             priority
           /> */}
-          <h1 className="text-lg font-semibold text-slate-800">CSL Management</h1>
+          <h1 className="text-lg font-semibold text-slate-800">
+            CSL Management
+          </h1>
         </div>
 
         <div className="justify-self-center">
           <nav className="hidden lg:flex items-center gap-5">
-            {TOP_NAV_ITEMS.map((item) => (
+            {TOP_NAV_ITEMS.map((item) =>
               item.children ? (
                 <DropdownMenu key={item.id}>
                   <DropdownMenuTrigger asChild>
@@ -93,8 +125,8 @@ export function DashboardTopNavbar({
                 >
                   {item.label}
                 </Link>
-              )
-            ))}
+              ),
+            )}
           </nav>
         </div>
 

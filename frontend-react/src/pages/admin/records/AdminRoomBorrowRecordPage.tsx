@@ -16,6 +16,7 @@ import { API_BOOKING_DETAIL } from "@/constants/api";
 import { useBookings, type BookingRow } from "@/hooks/bookings/use-bookings";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
+import { getStatusBadgeClass } from "@/lib/status";
 
 const PAGE_SIZE = 10;
 
@@ -45,23 +46,6 @@ function formatDateTime(value?: string | null) {
 function formatDateRange(start?: string | null, end?: string | null) {
   if (!start && !end) return "-";
   return `${formatDateTime(start)} — ${formatDateTime(end)}`;
-}
-
-function getStatusBadge(status: string) {
-  switch (status.toLowerCase()) {
-    case "approved":
-      return "bg-emerald-100 text-emerald-700";
-    case "pending":
-      return "bg-amber-100 text-amber-700";
-    case "rejected":
-      return "bg-rose-100 text-rose-700";
-    case "completed":
-      return "bg-sky-100 text-sky-700";
-    case "cancelled":
-      return "bg-slate-200 text-slate-600";
-    default:
-      return "bg-slate-100 text-slate-600";
-  }
 }
 
 function matchesSearch(booking: BookingRow, query: string) {
@@ -288,7 +272,7 @@ export default function AdminRecordPeminjamanRuanganPage() {
                       </td>
                       <td className="px-3 py-2">
                         <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadge(
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
                             booking.status,
                           )}`}
                         >

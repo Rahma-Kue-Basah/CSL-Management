@@ -1,12 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ChevronRight, ChevronsLeft, Eye, EyeOff, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
+import {
+  EQUIPMENT_CATEGORY_OPTIONS,
+  EQUIPMENT_STATUS_OPTIONS,
+  MOVEABLE_OPTIONS,
+} from "@/constants/equipments";
 import { useChangePassword } from "@/hooks/auth/use-change-password";
+import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { formatDateKey, parseDateKey } from "@/lib/date";
 
 type DashboardActionPanelProps = {
   width: string;
@@ -35,8 +43,76 @@ export function DashboardActionPanel({
   onClose,
 }: DashboardActionPanelProps) {
   const router = useRouter();
-  const [scheduleKeyword, setScheduleKeyword] = useState("");
-  const [scheduleFilter, setScheduleFilter] = useState("all");
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const { rooms } = useRoomOptions();
+  const scheduleKeyword = searchParams.get("q") ?? "";
+  const scheduleRoom = searchParams.get("room") ?? "";
+  const scheduleCategory = searchParams.get("category") ?? "";
+  const bookingKeyword = searchParams.get("q") ?? "";
+  const bookingStatus = searchParams.get("status") ?? "";
+  const bookingCreatedAfter = searchParams.get("created_after") ?? "";
+  const bookingCreatedBefore = searchParams.get("created_before") ?? "";
+  const roomKeyword = searchParams.get("q") ?? "";
+  const roomFloor = searchParams.get("floor") ?? "";
+  const equipmentKeyword = searchParams.get("q") ?? "";
+  const equipmentStatus = searchParams.get("status") ?? "";
+  const equipmentCategory = searchParams.get("category") ?? "";
+  const equipmentRoom = searchParams.get("room") ?? "";
+  const equipmentMoveable = searchParams.get("moveable") ?? "";
+
+  const updateScheduleFilter = (
+    key: "q" | "room" | "category",
+    value: string,
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname);
+  };
+
+  const updateBookingFilter = (
+    key: "q" | "status" | "created_after" | "created_before",
+    value: string,
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname);
+  };
+
+  const updateRoomFilter = (key: "q" | "floor", value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname);
+  };
+
+  const updateEquipmentFilter = (
+    key: "q" | "status" | "category" | "room" | "moveable",
+    value: string,
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname);
+  };
 
   return (
     <aside
@@ -72,22 +148,70 @@ export function DashboardActionPanel({
                 Filter Jadwal
               </p>
               <div className="mt-2 space-y-2">
-                <input
-                  value={scheduleKeyword}
-                  onChange={(event) => setScheduleKeyword(event.target.value)}
-                  type="text"
-                  placeholder="Cari jadwal lab..."
-                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                />
-                <select
-                  value={scheduleFilter}
-                  onChange={(event) => setScheduleFilter(event.target.value)}
-                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Cari Agenda
+                  </label>
+                  <Input
+                    value={scheduleKeyword}
+                    onChange={(event) =>
+                      updateScheduleFilter("q", event.target.value)
+                    }
+                    type="text"
+                    placeholder="Cari jadwal lab..."
+                    className="h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Kategori
+                  </label>
+                  <select
+                    value={scheduleCategory}
+                    onChange={(event) =>
+                      updateScheduleFilter("category", event.target.value)
+                    }
+                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                  >
+                    <option value="">Semua Kategori</option>
+                    <option value="schedule">Jadwal Umum</option>
+                    <option value="booking">Booking Ruangan</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-slate-600">
+                    Ruangan
+                  </label>
+                  <select
+                    value={scheduleRoom}
+                    onChange={(event) =>
+                      updateScheduleFilter("room", event.target.value)
+                    }
+                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                  >
+                    <option value="">Semua Ruangan</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {room.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => {
+                    const params = new URLSearchParams(searchParams.toString());
+                    params.delete("q");
+                    params.delete("category");
+                    params.delete("room");
+                    const next = params.toString();
+                    router.replace(next ? `${pathname}?${next}` : pathname);
+                  }}
                 >
-                  <option value="all">Semua Hari</option>
-                  <option value="weekday">Weekday</option>
-                  <option value="weekend">Weekend</option>
-                </select>
+                  Reset Filter
+                </Button>
               </div>
             </div>
           )}
@@ -96,26 +220,400 @@ export function DashboardActionPanel({
             menu.actions.map((action) => {
               const isActionActive =
                 actionParam === action.id && menuParam === menu.id;
+              const showBookingFilters =
+                menu.id === "booking-rooms" &&
+                isActionActive &&
+                (action.id === "request-list" || action.id === "all-requests");
+              const showRoomFilters =
+                menu.id === "booking-rooms" &&
+                isActionActive &&
+                action.id === "rooms";
+              const showUseFilters =
+                menu.id === "use-equipment" &&
+                isActionActive &&
+                (action.id === "request-list" || action.id === "all-requests");
+              const showEquipmentFilters =
+                menu.id === "use-equipment" &&
+                isActionActive &&
+                action.id === "equipment";
 
               return (
-                <Link
-                  key={action.id}
-                  href={getActionHref(action.id)}
-                  onClick={(event) => {
-                    if (isActionActive && event.detail === 2) {
-                      event.preventDefault();
-                      router.push(getMenuHref());
-                    }
-                  }}
-                  className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition ${
-                    isActionActive
-                      ? "bg-blue-50 text-blue-700"
-                      : "text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  <span className="truncate">{action.label}</span>
-                  <ChevronRight className="h-4 w-4 opacity-70" />
-                </Link>
+                <div key={action.id} className="space-y-3">
+                  <Link
+                    href={getActionHref(action.id)}
+                    onClick={(event) => {
+                      if (isActionActive && event.detail === 2) {
+                        event.preventDefault();
+                        router.push(getMenuHref());
+                      }
+                    }}
+                    className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition ${
+                      isActionActive
+                        ? "bg-blue-50 text-blue-700"
+                        : "text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    <span className="truncate">{action.label}</span>
+                    <ChevronRight className="h-4 w-4 opacity-70" />
+                  </Link>
+
+                  {showBookingFilters ? (
+                    <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Filter Pengajuan
+                      </p>
+                      <div className="mt-2 space-y-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Cari
+                          </label>
+                          <Input
+                            value={bookingKeyword}
+                            onChange={(event) =>
+                              updateBookingFilter("q", event.target.value)
+                            }
+                            type="search"
+                            placeholder="Kode, ruangan"
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Status
+                          </label>
+                          <select
+                            value={bookingStatus}
+                            onChange={(event) =>
+                              updateBookingFilter("status", event.target.value)
+                            }
+                            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                          >
+                            <option value="">Semua Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Dibuat Dari
+                          </label>
+                          <DatePicker
+                            value={parseDateKey(bookingCreatedAfter)}
+                            onChange={(value) =>
+                              updateBookingFilter(
+                                "created_after",
+                                value ? formatDateKey(value) : "",
+                              )
+                            }
+                            clearable
+                            buttonClassName="h-9 border-slate-200 px-3"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Dibuat Sampai
+                          </label>
+                          <DatePicker
+                            value={parseDateKey(bookingCreatedBefore)}
+                            onChange={(value) =>
+                              updateBookingFilter(
+                                "created_before",
+                                value ? formatDateKey(value) : "",
+                              )
+                            }
+                            clearable
+                            buttonClassName="h-9 border-slate-200 px-3"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete("q");
+                            params.delete("status");
+                            params.delete("created_after");
+                            params.delete("created_before");
+                            const next = params.toString();
+                            router.replace(next ? `${pathname}?${next}` : pathname);
+                          }}
+                        >
+                          Reset Filter
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {showRoomFilters ? (
+                    <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Filter Ruangan
+                      </p>
+                      <div className="mt-2 space-y-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Cari
+                          </label>
+                          <Input
+                            value={roomKeyword}
+                            onChange={(event) =>
+                              updateRoomFilter("q", event.target.value)
+                            }
+                            type="search"
+                            placeholder="Nama ruangan atau nomor"
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Lantai
+                          </label>
+                          <select
+                            value={roomFloor}
+                            onChange={(event) =>
+                              updateRoomFilter("floor", event.target.value)
+                            }
+                            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                          >
+                            <option value="">Semua Lantai</option>
+                            <option value="1">Lantai 1</option>
+                            <option value="2">Lantai 2</option>
+                            <option value="3">Lantai 3</option>
+                            <option value="4">Lantai 4</option>
+                            <option value="5">Lantai 5</option>
+                          </select>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete("q");
+                            params.delete("floor");
+                            const next = params.toString();
+                            router.replace(next ? `${pathname}?${next}` : pathname);
+                          }}
+                        >
+                          Reset Filter
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {showUseFilters ? (
+                    <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Filter Pengajuan
+                      </p>
+                      <div className="mt-2 space-y-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Cari
+                          </label>
+                          <Input
+                            value={bookingKeyword}
+                            onChange={(event) =>
+                              updateBookingFilter("q", event.target.value)
+                            }
+                            type="search"
+                            placeholder="Kode, alat"
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Status
+                          </label>
+                          <select
+                            value={bookingStatus}
+                            onChange={(event) =>
+                              updateBookingFilter("status", event.target.value)
+                            }
+                            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                          >
+                            <option value="">Semua Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                            <option value="in_use">In Use</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Dibuat Dari
+                          </label>
+                          <DatePicker
+                            value={parseDateKey(bookingCreatedAfter)}
+                            onChange={(value) =>
+                              updateBookingFilter(
+                                "created_after",
+                                value ? formatDateKey(value) : "",
+                              )
+                            }
+                            clearable
+                            buttonClassName="h-9 border-slate-200 px-3"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Dibuat Sampai
+                          </label>
+                          <DatePicker
+                            value={parseDateKey(bookingCreatedBefore)}
+                            onChange={(value) =>
+                              updateBookingFilter(
+                                "created_before",
+                                value ? formatDateKey(value) : "",
+                              )
+                            }
+                            clearable
+                            buttonClassName="h-9 border-slate-200 px-3"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete("q");
+                            params.delete("status");
+                            params.delete("created_after");
+                            params.delete("created_before");
+                            const next = params.toString();
+                            router.replace(next ? `${pathname}?${next}` : pathname);
+                          }}
+                        >
+                          Reset Filter
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {showEquipmentFilters ? (
+                    <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Filter Peralatan
+                      </p>
+                      <div className="mt-2 space-y-2">
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Cari
+                          </label>
+                          <Input
+                            value={equipmentKeyword}
+                            onChange={(event) =>
+                              updateEquipmentFilter("q", event.target.value)
+                            }
+                            type="search"
+                            placeholder="Nama atau kategori"
+                            className="h-9"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Status
+                          </label>
+                          <select
+                            value={equipmentStatus}
+                            onChange={(event) =>
+                              updateEquipmentFilter("status", event.target.value)
+                            }
+                            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                          >
+                            <option value="">Semua Status</option>
+                            {EQUIPMENT_STATUS_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Kategori
+                          </label>
+                          <select
+                            value={equipmentCategory}
+                            onChange={(event) =>
+                              updateEquipmentFilter("category", event.target.value)
+                            }
+                            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                          >
+                            <option value="">Semua Kategori</option>
+                            {EQUIPMENT_CATEGORY_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Ruangan
+                          </label>
+                          <select
+                            value={equipmentRoom}
+                            onChange={(event) =>
+                              updateEquipmentFilter("room", event.target.value)
+                            }
+                            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                          >
+                            <option value="">Semua Ruangan</option>
+                            {rooms.map((room) => (
+                              <option key={room.id} value={room.id}>
+                                {room.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-xs font-medium text-slate-600">
+                            Moveable
+                          </label>
+                          <select
+                            value={equipmentMoveable}
+                            onChange={(event) =>
+                              updateEquipmentFilter("moveable", event.target.value)
+                            }
+                            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                          >
+                            <option value="">Semua</option>
+                            {MOVEABLE_OPTIONS.map((option) => (
+                              <option key={option.value} value={option.value}>
+                                {option.label}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.delete("q");
+                            params.delete("status");
+                            params.delete("category");
+                            params.delete("room");
+                            params.delete("moveable");
+                            const next = params.toString();
+                            router.replace(next ? `${pathname}?${next}` : pathname);
+                          }}
+                        >
+                          Reset Filter
+                        </Button>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
               );
             })
           ) : null}
