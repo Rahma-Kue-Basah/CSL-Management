@@ -2,13 +2,13 @@ from rest_framework import serializers
 
 from typing import Optional
 
+from csluse_auth.models import Profile
 from .models import (
     Image,
     Room,
     Equipment,
     Booking,
     Borrow,
-    LabProfile,
     Facility,
     Announcement,
     Schedule,
@@ -53,8 +53,26 @@ class ImageSerializer(serializers.ModelSerializer):
 
 
 class RoomSerializer(serializers.ModelSerializer):
-    pic_detail = RoomPicDetailSerializer(source="pic", read_only=True)
+    pics = serializers.PrimaryKeyRelatedField(
+        many=True,
+        queryset=Profile.objects.all(),
+        required=False,
+    )
+    pics_detail = RoomPicDetailSerializer(source="pics", many=True, read_only=True)
     image_detail = ImageSerializer(source="image", read_only=True)
+
+    def validate_pics(self, value):
+        allowed_roles = {"STAFF", "LECTURER", "ADMIN"}
+        invalid_profiles = [
+            profile.full_name or getattr(profile.user, "email", str(profile))
+            for profile in value
+            if str(profile.role or "").upper() not in allowed_roles
+        ]
+        if invalid_profiles:
+            raise serializers.ValidationError(
+                "PIC harus user dengan role Staff, Lecturer, atau Admin."
+            )
+        return value
 
     class Meta:
         model = Room
@@ -65,15 +83,15 @@ class RoomSerializer(serializers.ModelSerializer):
             "description",
             "number",
             "floor",
-            "pic",
+            "pics",
             "image",
-            "pic_detail",
+            "pics_detail",
             "image_detail",
         ]
 
 
 class RoomListSerializer(serializers.ModelSerializer):
-    pic_detail = RoomPicListSerializer(source="pic", read_only=True)
+    pics_detail = RoomPicListSerializer(source="pics", many=True, read_only=True)
 
     class Meta:
         model = Room
@@ -84,7 +102,7 @@ class RoomListSerializer(serializers.ModelSerializer):
             "description",
             "number",
             "floor",
-            "pic_detail",
+            "pics_detail",
         ]
 
 
@@ -269,20 +287,6 @@ class BorrowListSerializer(serializers.ModelSerializer):
             "equipment_detail",
             "created_at",
             "updated_at",
-        ]
-
-
-class LabProfileSerializer(serializers.ModelSerializer):
-    images_detail = ImageSerializer(source="images", many=True, read_only=True)
-
-    class Meta:
-        model = LabProfile
-        fields = [
-            "id",
-            "title",
-            "description",
-            "images",
-            "images_detail",
         ]
 
 

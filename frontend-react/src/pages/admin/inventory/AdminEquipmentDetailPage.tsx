@@ -29,6 +29,7 @@ import { useDeleteEquipment } from "@/hooks/equipments/use-delete-equipment";
 import { useUpdateEquipment } from "@/hooks/equipments/use-update-equipment";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { authFetch } from "@/lib/auth";
+import { toast } from "sonner";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
@@ -339,6 +340,7 @@ export default function AdminEquipmentDetailPage() {
     );
     setFormData((prev) => ({ ...prev, imageFile: null }));
     setIsEditing(false);
+    toast.success("Peralatan berhasil diperbarui.");
   };
 
   const handleDelete = async () => {
@@ -347,6 +349,7 @@ export default function AdminEquipmentDetailPage() {
     const result = await deleteEquipment(detailItem.id);
     if (!result.ok) return;
     setConfirmDeleteOpen(false);
+    toast.success("Peralatan berhasil dihapus.");
     navigate(backTo, { replace: true });
   };
 

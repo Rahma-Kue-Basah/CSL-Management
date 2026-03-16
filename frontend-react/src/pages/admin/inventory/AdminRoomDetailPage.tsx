@@ -15,11 +15,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { PicMultiSelect } from "@/components/admin/inventory/PicMultiSelect";
 import { API_BASE_URL, API_ROOM_DETAIL } from "@/constants/api";
 import { useDeleteRoom } from "@/hooks/rooms/use-delete-room";
 import { useUpdateRoom } from "@/hooks/rooms/use-update-room";
 import { usePicUsers } from "@/hooks/users/use-pic-users";
 import { authFetch } from "@/lib/auth";
+import { toast } from "sonner";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
@@ -30,7 +32,8 @@ type RoomDetailData = {
   floor: string;
   capacity: string;
   description: string;
-  picId: string;
+  picIds: string[];
+  picNames: string[];
   picName: string;
   imageId: string | number | null;
   imageUrl: string;
@@ -41,6 +44,10 @@ function resolveAssetUrl(value: string | null | undefined) {
   if (/^https?:\/\//i.test(value)) return value;
   if (value.startsWith("/")) return `${API_BASE_URL}${value}`;
   return `${API_BASE_URL}/${value}`;
+}
+
+function joinPicNames(names: string[]) {
+  return names.length ? names.join(", ") : "-";
 }
 
 function DetailField({
@@ -105,7 +112,7 @@ export default function AdminRoomDetailPage() {
     floor: "",
     capacity: "",
     description: "",
-    picId: "",
+    picIds: [] as string[],
     imageId: null as string | number | null,
     imageFile: null as File | null,
   });
@@ -171,14 +178,25 @@ export default function AdminRoomDetailPage() {
           floor?: string | number | null;
           capacity?: string | number | null;
           description?: string | null;
-          pic?: string | number | null;
-          pic_detail?: {
+          pics?: Array<string | number | null> | null;
+          pics_detail?: Array<{
             full_name?: string | null;
             email?: string | null;
-          } | null;
+          }> | null;
           image?: string | number | null;
           image_detail?: { url?: string | null } | null;
         };
+
+        const picIds = Array.isArray(data.pics)
+          ? data.pics
+              .filter((item): item is string | number => item !== null && item !== undefined)
+              .map((item) => String(item))
+          : [];
+        const picNames = Array.isArray(data.pics_detail)
+          ? data.pics_detail
+              .map((item) => String(item?.full_name ?? item?.email ?? "").trim())
+              .filter(Boolean)
+          : [];
 
         const nextDetail: RoomDetailData = {
           id: data.id ?? id,
@@ -187,10 +205,9 @@ export default function AdminRoomDetailPage() {
           floor: String(data.floor ?? "-"),
           capacity: String(data.capacity ?? "-"),
           description: String(data.description ?? ""),
-          picId: String(data.pic ?? ""),
-          picName: String(
-            data.pic_detail?.full_name ?? data.pic_detail?.email ?? "-",
-          ),
+          picIds,
+          picNames,
+          picName: joinPicNames(picNames),
           imageId: data.image ?? null,
           imageUrl: resolveAssetUrl(data.image_detail?.url ?? ""),
         };
@@ -202,7 +219,7 @@ export default function AdminRoomDetailPage() {
           floor: nextDetail.floor,
           capacity: nextDetail.capacity,
           description: nextDetail.description,
-          picId: nextDetail.picId,
+          picIds: nextDetail.picIds,
           imageId: nextDetail.imageId,
           imageFile: null,
         });
@@ -259,7 +276,7 @@ export default function AdminRoomDetailPage() {
       floor: formData.floor,
       capacity: formData.capacity,
       description: formData.description,
-      picId: formData.picId || undefined,
+      picIds: formData.picIds,
       imageId: formData.imageId,
       imageFile: formData.imageFile,
     });
@@ -270,12 +287,21 @@ export default function AdminRoomDetailPage() {
       | {
           image?: string | number | null;
           image_detail?: { url?: string | null } | null;
-          pic_detail?: {
+          pics?: Array<string | number | null> | null;
+          pics_detail?: Array<{
             full_name?: string | null;
             email?: string | null;
-          } | null;
+          }> | null;
         }
       | undefined;
+
+    const nextPicNames = Array.isArray(responseData?.pics_detail)
+      ? responseData.pics_detail
+          .map((item) => String(item?.full_name ?? item?.email ?? "").trim())
+          .filter(Boolean)
+      : picOptions
+          .filter((option) => formData.picIds.includes(option.value))
+          .map((option) => option.label);
 
     setDetailRoom((prev) =>
       prev
@@ -286,14 +312,13 @@ export default function AdminRoomDetailPage() {
             floor: formData.floor,
             capacity: formData.capacity,
             description: formData.description.trim(),
-            picId: formData.picId,
-            picName: String(
-              responseData?.pic_detail?.full_name ??
-                responseData?.pic_detail?.email ??
-                picOptions.find((option) => option.value === formData.picId)
-                  ?.label ??
-                (formData.picId ? prev.picName : "-"),
-            ),
+            picIds: Array.isArray(responseData?.pics)
+              ? responseData.pics
+                  .filter((item): item is string | number => item !== null && item !== undefined)
+                  .map((item) => String(item))
+              : formData.picIds,
+            picNames: nextPicNames,
+            picName: joinPicNames(nextPicNames),
             imageId: responseData?.image ?? prev.imageId,
             imageUrl: resolveAssetUrl(
               responseData?.image_detail?.url ?? prev.imageUrl,
@@ -303,6 +328,7 @@ export default function AdminRoomDetailPage() {
     );
     setFormData((prev) => ({ ...prev, imageFile: null }));
     setIsEditing(false);
+    toast.success("Ruangan berhasil diperbarui.");
   };
 
   const handleDelete = async () => {
@@ -311,6 +337,7 @@ export default function AdminRoomDetailPage() {
     const result = await deleteRoom(detailRoom.id);
     if (!result.ok) return;
     setConfirmDeleteOpen(false);
+    toast.success("Ruangan berhasil dihapus.");
     navigate(backTo, { replace: true });
   };
 
@@ -393,45 +420,40 @@ export default function AdminRoomDetailPage() {
             <div className="space-y-1">
               <p className="text-xs font-medium text-slate-700">PIC</p>
               {isEditing ? (
-                <select
-                  name="picId"
-                  value={formData.picId}
-                  onChange={(event) =>
+                <PicMultiSelect
+                  options={picOptions}
+                  selectedIds={formData.picIds}
+                  onChange={(nextIds) =>
                     setFormData((prev) => ({
                       ...prev,
-                      picId: event.target.value,
+                      picIds: nextIds,
                     }))
                   }
-                  className="h-9 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
                   disabled={isLoadingPics}
-                >
-                  <option value="">
-                    {isLoadingPics ? "Memuat PIC..." : "Pilih PIC"}
-                  </option>
-                  {picOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                />
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!detailRoom.picId) return;
-                    navigate(`/admin/user-management/detail/${detailRoom.picId}`, {
-                      state: { from: location.pathname },
-                    });
-                  }}
-                  disabled={!detailRoom.picId}
-                  className={`w-full rounded-md border px-3 py-2 text-left text-sm ${
-                    detailRoom.picId
-                      ? "border-sky-200 bg-sky-50 text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
-                      : "border-slate-200 bg-slate-50 text-slate-700"
-                  }`}
-                >
-                  {detailRoom.picName || "-"}
-                </button>
+                <div className="space-y-2">
+                  {detailRoom.picIds.length ? (
+                    detailRoom.picIds.map((picId, index) => (
+                      <button
+                        key={`${picId}-${index}`}
+                        type="button"
+                        onClick={() =>
+                          navigate(`/admin/user-management/detail/${picId}`, {
+                            state: { from: location.pathname },
+                          })
+                        }
+                        className="w-full rounded-md border border-sky-200 bg-sky-50 px-3 py-2 text-left text-sm text-sky-700 transition hover:border-sky-300 hover:bg-sky-100"
+                      >
+                        {detailRoom.picNames[index] ?? "PIC"}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm text-slate-700">
+                      -
+                    </div>
+                  )}
+                </div>
               )}
               {picError ? (
                 <p className="text-xs text-destructive">{picError}</p>
@@ -533,7 +555,7 @@ export default function AdminRoomDetailPage() {
                     floor: detailRoom.floor,
                     capacity: detailRoom.capacity,
                     description: detailRoom.description,
-                    picId: detailRoom.picId,
+                    picIds: detailRoom.picIds,
                     imageId: detailRoom.imageId,
                     imageFile: null,
                   });

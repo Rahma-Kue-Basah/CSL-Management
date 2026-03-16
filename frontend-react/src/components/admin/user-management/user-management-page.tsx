@@ -62,6 +62,7 @@ import {
   useUsers,
 } from "@/hooks/users/use-users";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import { toast } from "sonner";
 
 type FiltersState = {
   department: string;
@@ -191,6 +192,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
     setUsers((prev) => prev.filter((item) => item.id !== deleteCandidate.id));
     setTotalCount((prev) => Math.max(0, prev - 1));
     setDeleteCandidate(null);
+    toast.success("User berhasil dihapus.");
   };
 
   const resetFilters = () => {
@@ -595,6 +597,7 @@ function CreateUserDialog({ open, onOpenChange, roleParam, onCreated }: CreateUs
     if (result.ok) {
       onCreated();
       onOpenChange(false);
+      toast.success("User berhasil dibuat.");
       setFormData({
         fullName: "",
         email: "",
@@ -861,6 +864,11 @@ function BulkCreateDialog({ open, onOpenChange, roleParam, onCompleted }: BulkCr
     if (successCount > 0) {
       onCompleted();
       onOpenChange(false);
+      toast.success(
+        successCount === bulkResults.length
+          ? `${successCount} user berhasil dibuat.`
+          : `${successCount} user berhasil dibuat.`,
+      );
     }
   };
 

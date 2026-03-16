@@ -37,6 +37,7 @@ import {
 } from "@/hooks/schedules/use-schedules";
 import { useUpdateSchedule } from "@/hooks/schedules/use-update-schedule";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 
@@ -243,6 +244,7 @@ export default function CalendarClient() {
 
     handleCreateDialogChange(false);
     setReloadKey((prev) => prev + 1);
+    toast.success("Jadwal berhasil ditambahkan.");
   };
 
   const handleEditSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -257,6 +259,7 @@ export default function CalendarClient() {
 
     handleEditDialogChange(false);
     setReloadKey((prev) => prev + 1);
+    toast.success("Jadwal berhasil diperbarui.");
   };
 
   const handleDelete = async () => {
@@ -269,6 +272,7 @@ export default function CalendarClient() {
     }
     setDeleteTarget(null);
     setReloadKey((prev) => prev + 1);
+    toast.success("Jadwal berhasil dihapus.");
   };
 
   const renderCell = (date: Date) => {

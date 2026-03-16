@@ -1,7 +1,9 @@
-from django.db.models.signals import post_delete, pre_save
+from django.db.models.signals import m2m_changed, post_delete, pre_save
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
 from django.utils import timezone
+
+from csluse_auth.models import Profile
 
 from .models import Image, Booking, Borrow, Room, Pengujian, Use
 
@@ -89,8 +91,7 @@ def validate_booking(sender, instance, **kwargs):
     if instance.approved_by_id:
         approver_role = str(instance.approved_by.role or "").upper()
         if approver_role != "ADMIN":
-            room_pic_id = instance.room.pic_id
-            if not room_pic_id or instance.approved_by_id != room_pic_id:
+            if not instance.room.pics.filter(id=instance.approved_by_id).exists():
                 raise ValidationError(
                     "Approver harus PIC ruangan terkait atau Admin."
                 )
@@ -143,27 +144,33 @@ def validate_borrow(sender, instance, **kwargs):
     if instance.approved_by_id:
         approver_role = str(instance.approved_by.role or "").upper()
         if approver_role != "ADMIN":
-            room_pic_id = instance.equipment.room_id and instance.equipment.room.pic_id
-            if not room_pic_id or instance.approved_by_id != room_pic_id:
+            room = instance.equipment.room if instance.equipment_id else None
+            if not room or not room.pics.filter(id=instance.approved_by_id).exists():
                 raise ValidationError(
                     "Approver harus PIC ruangan dari equipment terkait atau Admin."
                 )
 
 
-@receiver(pre_save, sender=Room)
-def validate_room(sender, instance, **kwargs):
+def validate_room_pics(profiles):
+    allowed_roles = {"STAFF", "LECTURER", "ADMIN"}
+    for profile in profiles:
+        pic_role = str(profile.role or "").upper()
+        if pic_role not in allowed_roles:
+            raise ValidationError(
+                "PIC harus user dengan role Staff, Lecturer, atau Admin."
+            )
+
+
+@receiver(m2m_changed, sender=Room.pics.through)
+def validate_room_pic_members(sender, instance, action, pk_set, **kwargs):
     """
-    Ensure Room.pic is a Profile with role Staff, Lecturer, or Admin.
+    Ensure every Room PIC has an allowed role.
     """
-    if not instance.pic_id:
+    if action != "pre_add" or not pk_set:
         return
 
-    allowed_roles = {"STAFF", "LECTURER", "ADMIN"}
-    pic_role = str(instance.pic.role or "").upper()
-    if pic_role not in allowed_roles:
-        raise ValidationError(
-            "PIC harus user dengan role Staff, Lecturer, atau Admin."
-        )
+    profiles = Profile.objects.filter(pk__in=pk_set)
+    validate_room_pics(profiles)
 
 
 @receiver(pre_save, sender=Pengujian)

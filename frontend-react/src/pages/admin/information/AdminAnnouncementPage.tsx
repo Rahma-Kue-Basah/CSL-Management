@@ -37,6 +37,7 @@ import { useCreateAnnouncement } from "@/hooks/announcements/use-create-announce
 import { useUpdateAnnouncement } from "@/hooks/announcements/use-update-announcement";
 import { useDeleteAnnouncement } from "@/hooks/announcements/use-delete-announcement";
 import { formatDateKey, parseDateKey } from "@/lib/date";
+import { toast } from "sonner";
 
 function normalizeText(value: string) {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
@@ -184,6 +185,7 @@ export default function AdminPengumumanPage() {
 
       setFormData({ title: "", content: "" });
       setIsDialogOpen(false);
+      toast.success("Pengumuman berhasil ditambahkan.");
     } finally {
       // handled in hook
     }
@@ -230,6 +232,7 @@ export default function AdminPengumumanPage() {
       }
 
       handleEditClose();
+      toast.success("Pengumuman berhasil diperbarui.");
     } finally {
       // handled in hook
     }
@@ -256,6 +259,7 @@ export default function AdminPengumumanPage() {
         prev.filter((item) => item.id !== deleteTarget.id),
       );
       setDeleteTarget(null);
+      toast.success("Pengumuman berhasil dihapus.");
     } finally {
       // handled in hook
     }

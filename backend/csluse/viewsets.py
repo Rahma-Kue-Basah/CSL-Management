@@ -20,7 +20,6 @@ from .models import (
     Equipment,
     Booking,
     Borrow,
-    LabProfile,
     Facility,
     Announcement,
     Schedule,
@@ -42,7 +41,6 @@ from .serializers import (
     BookingUserListSerializer,
     BorrowSerializer,
     BorrowListSerializer,
-    LabProfileSerializer,
     FacilitySerializer,
     AnnouncementListSerializer,
     AnnouncementSerializer,
@@ -145,7 +143,7 @@ class ImageViewSet(viewsets.ModelViewSet):
 
 
 class RoomViewSet(viewsets.ModelViewSet):
-    queryset = Room.objects.select_related('pic', 'image').order_by('-created_at')
+    queryset = Room.objects.prefetch_related('pics').select_related('image').order_by('-created_at')
     serializer_class = RoomSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
@@ -179,7 +177,7 @@ class RoomViewSet(viewsets.ModelViewSet):
 
         # Filter params: pic, floor, capacity range, created range
         if pic_id:
-            qs = qs.filter(pic_id=pic_id)
+            qs = qs.filter(pics__id=pic_id).distinct()
         if floor:
             qs = qs.filter(floor=floor)
 
@@ -276,7 +274,8 @@ class RoomViewSet(viewsets.ModelViewSet):
 class EquipmentViewSet(viewsets.ModelViewSet):
     queryset = (
         Equipment.objects
-        .select_related('room', 'room__pic', 'room__image', 'image')
+        .select_related('room', 'room__image', 'image')
+        .prefetch_related('room__pics')
         .order_by('-created_at')
     )
     serializer_class = EquipmentSerializer
@@ -325,7 +324,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         if room_id:
             qs = qs.filter(room_id=room_id)
         if pic_id:
-            qs = qs.filter(room__pic_id=pic_id)
+            qs = qs.filter(room__pics__id=pic_id).distinct()
         if is_moveable is not None:
             if str(is_moveable).lower() in ['true', '1', 'yes']:
                 qs = qs.filter(is_moveable=True)
@@ -515,7 +514,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         if requester_id and allow_requester_filter:
             qs = qs.filter(requested_by_id=requester_id)
         if pic_id:
-            qs = qs.filter(room__pic_id=pic_id)
+            qs = qs.filter(room__pics__id=pic_id).distinct()
         if start_after:
             qs = qs.filter(start_time__gte=start_after)
         if end_before:
@@ -692,7 +691,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
         if requester_id:
             qs = qs.filter(requested_by_id=requester_id)
         if pic_id:
-            qs = qs.filter(equipment__room__pic_id=pic_id)
+            qs = qs.filter(equipment__room__pics__id=pic_id).distinct()
         if start_after:
             qs = qs.filter(start_time__gte=start_after)
         if end_before:
@@ -785,18 +784,6 @@ class BorrowViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
         return Response(serializer.data)
-
-
-class LabProfileViewSet(viewsets.ModelViewSet):
-    queryset = LabProfile.objects.prefetch_related('images').order_by('-created_at')
-    serializer_class = LabProfileSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = DefaultPagination
-
-    def get_permissions(self):
-        if self.action == "create":
-            return [IsAuthenticated(), IsStaffOrAbove()]
-        return super().get_permissions()
 
 
 class FacilityViewSet(viewsets.ModelViewSet):
@@ -1367,12 +1354,12 @@ class UseViewSet(viewsets.ModelViewSet):
         .select_related(
             'equipment',
             'equipment__room',
-            'equipment__room__pic',
             'equipment__room__image',
             'equipment__image',
             'requested_by',
             'approved_by',
         )
+        .prefetch_related('equipment__room__pics')
         .order_by('-created_at')
     )
     serializer_class = UseSerializer

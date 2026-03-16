@@ -36,6 +36,7 @@ import { Input } from "@/components/ui/input";
 import { API_STRUCTURE_ORGANIZATIONS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 type StructureOrganizationItem = {
   id: string | number;
@@ -383,6 +384,11 @@ export default function StructureOrgansPage() {
           ? "Struktur organisasi berhasil diperbarui."
           : "Struktur organisasi berhasil ditambahkan.",
       );
+      toast.success(
+        editTarget
+          ? "Struktur organisasi berhasil diperbarui."
+          : "Struktur organisasi berhasil ditambahkan.",
+      );
       await loadStructureOrganizations();
     } catch (err) {
       setSubmitMessage(
@@ -473,6 +479,7 @@ export default function StructureOrgansPage() {
 
       setDeleteTarget(null);
       setSubmitMessage("Struktur organisasi berhasil dihapus.");
+      toast.success("Struktur organisasi berhasil dihapus.");
       await loadStructureOrganizations();
     } catch (err) {
       setSubmitMessage(

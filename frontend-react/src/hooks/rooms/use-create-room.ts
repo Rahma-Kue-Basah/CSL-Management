@@ -11,7 +11,7 @@ type CreateRoomPayload = {
   number: string;
   floor: string;
   description?: string;
-  picId?: string;
+  picIds?: string[];
   imageFile?: File | null;
 };
 
@@ -29,7 +29,7 @@ function parseRoomError(data: unknown, fallback = "Gagal membuat ruangan.") {
   if (Array.isArray(typed.capacity) && typeof typed.capacity[0] === "string") return typed.capacity[0];
   if (Array.isArray(typed.number) && typeof typed.number[0] === "string") return typed.number[0];
   if (Array.isArray(typed.floor) && typeof typed.floor[0] === "string") return typed.floor[0];
-  if (Array.isArray(typed.pic) && typeof typed.pic[0] === "string") return typed.pic[0];
+  if (Array.isArray(typed.pics) && typeof typed.pics[0] === "string") return typed.pics[0];
   if (Array.isArray(typed.image) && typeof typed.image[0] === "string") return typed.image[0];
 
   return fallback;
@@ -77,7 +77,7 @@ export function useCreateRoom() {
         imageId = await uploadImage(payload.imageFile);
       }
 
-      const body: Record<string, string | number> = {
+      const body: Record<string, string | number | string[]> = {
         name: payload.name.trim(),
         capacity: Number(payload.capacity),
         number: payload.number.trim(),
@@ -85,7 +85,7 @@ export function useCreateRoom() {
       };
 
       if (payload.description?.trim()) body.description = payload.description.trim();
-      if (payload.picId) body.pic = payload.picId;
+      if (payload.picIds?.length) body.pics = payload.picIds;
       if (imageId) body.image = imageId;
 
       const response = await authFetch(API_ROOMS, {

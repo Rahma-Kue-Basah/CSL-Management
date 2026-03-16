@@ -23,6 +23,7 @@ export type RoomRow = {
 
 export type RoomDetail = RoomRow & {
   imageUrl: string;
+  picIds: string[];
 };
 
 type ApiRoom = {
@@ -32,10 +33,12 @@ type ApiRoom = {
   floor?: number | string | null;
   capacity?: number | string | null;
   description?: string | null;
-  pic_detail?: {
+  pics?: Array<string | number | null> | null;
+  pics_detail?: Array<{
+    id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
-  } | null;
+  }> | null;
 };
 
 type ApiRoomsResponse = {
@@ -44,6 +47,12 @@ type ApiRoomsResponse = {
 };
 
 function mapRoom(room: ApiRoom): RoomRow {
+  const picNames = Array.isArray(room.pics_detail)
+    ? room.pics_detail
+        .map((item) => String(item?.full_name ?? item?.email ?? "").trim())
+        .filter(Boolean)
+    : [];
+
   return {
     id: room.id ?? `room-${Math.random().toString(36).slice(2, 8)}`,
     name: String(room.name ?? "-"),
@@ -51,7 +60,7 @@ function mapRoom(room: ApiRoom): RoomRow {
     floor: String(room.floor ?? "-"),
     capacity: String(room.capacity ?? "-"),
     description: String(room.description ?? ""),
-    picName: String(room.pic_detail?.full_name ?? room.pic_detail?.email ?? "-"),
+    picName: picNames.length ? picNames.join(", ") : "-",
   };
 }
 
@@ -156,6 +165,11 @@ export function useRoomDetail(id?: string | number | null) {
         setRoom({
           ...mapped,
           imageUrl: resolveAssetUrl(payload.image_detail?.url ?? ""),
+          picIds: Array.isArray(payload.pics)
+            ? payload.pics
+                .filter((item): item is string | number => item !== null && item !== undefined)
+                .map((item) => String(item))
+            : [],
         });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;

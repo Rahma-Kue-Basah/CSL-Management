@@ -110,7 +110,6 @@ export function AppSidebar() {
     { label: "Guest", href: "/admin/user-management/guest" },
   ];
   const profileItems = [
-    { label: "Profile Singkat", href: "/admin/profile/profile" },
     {
       label: "Struktur Organisasi",
       href: "/admin/profile/struktur-organisasi",

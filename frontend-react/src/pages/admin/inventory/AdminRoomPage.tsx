@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dialog";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { PicMultiSelect } from "@/components/admin/inventory/PicMultiSelect";
 import { API_BASE_URL, API_ROOM_DETAIL } from "@/constants/api";
 import { useCreateRoom } from "@/hooks/rooms/use-create-room";
 import { useDeleteRoom } from "@/hooks/rooms/use-delete-room";
@@ -40,6 +41,7 @@ import { useRooms, type RoomRow } from "@/hooks/rooms/use-rooms";
 import { useUpdateRoom } from "@/hooks/rooms/use-update-room";
 import { usePicUsers } from "@/hooks/users/use-pic-users";
 import { authFetch } from "@/lib/auth";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -51,6 +53,10 @@ function resolveAssetUrl(value: string | null | undefined) {
   if (/^https?:\/\//i.test(value)) return value;
   if (value.startsWith("/")) return `${API_BASE_URL}${value}`;
   return `${API_BASE_URL}/${value}`;
+}
+
+function joinPicNames(names: string[]) {
+  return names.length ? names.join(", ") : "-";
 }
 
 export default function AdminRoomsPage() {
@@ -119,6 +125,7 @@ export default function AdminRoomsPage() {
 
     setDeleteCandidate(null);
     setReloadKey((prev) => prev + 1);
+    toast.success("Ruangan berhasil dihapus.");
   };
 
   return (
@@ -377,7 +384,7 @@ function CreateRoomDialog({ open, onOpenChange, onCreated }: CreateRoomDialogPro
     floor: "",
     capacity: "",
     description: "",
-    picId: "",
+    picIds: [] as string[],
     imageFile: null as File | null,
   });
   const { picUsers, isLoading: isLoadingPics, error: picError } = usePicUsers();
@@ -439,13 +446,14 @@ function CreateRoomDialog({ open, onOpenChange, onCreated }: CreateRoomDialogPro
       floor: formData.floor,
       capacity: formData.capacity,
       description: formData.description,
-      picId: formData.picId || undefined,
+      picIds: formData.picIds,
       imageFile: formData.imageFile,
     });
 
     if (result.ok) {
       onCreated();
       onOpenChange(false);
+      toast.success("Ruangan berhasil ditambahkan.");
     }
   };
 
@@ -462,7 +470,7 @@ function CreateRoomDialog({ open, onOpenChange, onCreated }: CreateRoomDialogPro
             floor: "",
             capacity: "",
             description: "",
-            picId: "",
+            picIds: [],
             imageFile: null,
           });
         }
@@ -524,22 +532,14 @@ function CreateRoomDialog({ open, onOpenChange, onCreated }: CreateRoomDialogPro
 
           <div className="space-y-1">
             <label className="text-xs font-medium">PIC</label>
-            <select
-              name="picId"
-              value={formData.picId}
-              onChange={handleChange}
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            <PicMultiSelect
+              options={picOptions}
+              selectedIds={formData.picIds}
+              onChange={(nextIds) =>
+                setFormData((prev) => ({ ...prev, picIds: nextIds }))
+              }
               disabled={isLoadingPics}
-            >
-              <option value="">
-                {isLoadingPics ? "Memuat PIC..." : "Pilih PIC"}
-              </option>
-              {picOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            />
             {picError ? (
               <p className="text-xs text-destructive">{picError}</p>
             ) : null}
@@ -636,7 +636,8 @@ type RoomDetailData = {
   floor: string;
   capacity: string;
   description: string;
-  picId: string;
+  picIds: string[];
+  picNames: string[];
   picName: string;
   imageId: string | number | null;
   imageUrl: string;
@@ -661,7 +662,7 @@ function DetailRoomPanel({
     floor: "",
     capacity: "",
     description: "",
-    picId: "",
+    picIds: [] as string[],
     imageId: null as string | number | null,
     imageFile: null as File | null,
   });
@@ -726,14 +727,25 @@ function DetailRoomPanel({
           floor?: string | number | null;
           capacity?: string | number | null;
           description?: string | null;
-          pic?: string | number | null;
-          pic_detail?: {
+          pics?: Array<string | number | null> | null;
+          pics_detail?: Array<{
             full_name?: string | null;
             email?: string | null;
-          } | null;
+          }> | null;
           image?: string | number | null;
           image_detail?: { url?: string | null } | null;
         };
+
+        const picIds = Array.isArray(data.pics)
+          ? data.pics
+              .filter((item): item is string | number => item !== null && item !== undefined)
+              .map((item) => String(item))
+          : [];
+        const picNames = Array.isArray(data.pics_detail)
+          ? data.pics_detail
+              .map((item) => String(item?.full_name ?? item?.email ?? "").trim())
+              .filter(Boolean)
+          : room.picName === "-" ? [] : room.picName.split(", ").filter(Boolean);
 
         const nextDetail: RoomDetailData = {
           id: data.id ?? room.id,
@@ -742,13 +754,9 @@ function DetailRoomPanel({
           floor: String(data.floor ?? room.floor),
           capacity: String(data.capacity ?? room.capacity),
           description: String(data.description ?? room.description ?? ""),
-          picId: String(data.pic ?? ""),
-          picName: String(
-            data.pic_detail?.full_name ??
-              data.pic_detail?.email ??
-              room.picName ??
-              "-",
-          ),
+          picIds,
+          picNames,
+          picName: joinPicNames(picNames),
           imageId: data.image ?? null,
           imageUrl: resolveAssetUrl(data.image_detail?.url ?? ""),
         };
@@ -760,7 +768,7 @@ function DetailRoomPanel({
           floor: nextDetail.floor,
           capacity: nextDetail.capacity,
           description: nextDetail.description,
-          picId: nextDetail.picId,
+          picIds: nextDetail.picIds,
           imageId: nextDetail.imageId,
           imageFile: null,
         });
@@ -779,7 +787,8 @@ function DetailRoomPanel({
           floor: room.floor,
           capacity: room.capacity,
           description: room.description,
-          picId: "",
+          picIds: [],
+          picNames: room.picName === "-" ? [] : room.picName.split(", ").filter(Boolean),
           picName: room.picName,
           imageId: null,
           imageUrl: "",
@@ -845,7 +854,7 @@ function DetailRoomPanel({
       floor: formData.floor,
       capacity: formData.capacity,
       description: formData.description,
-      picId: formData.picId || undefined,
+      picIds: formData.picIds,
       imageId: formData.imageId,
       imageFile: formData.imageFile,
     });
@@ -856,12 +865,21 @@ function DetailRoomPanel({
       | {
           image?: string | number | null;
           image_detail?: { url?: string | null } | null;
-          pic_detail?: {
+          pics?: Array<string | number | null> | null;
+          pics_detail?: Array<{
             full_name?: string | null;
             email?: string | null;
-          } | null;
+          }> | null;
         }
       | undefined;
+
+    const nextPicNames = Array.isArray(responseData?.pics_detail)
+      ? responseData.pics_detail
+          .map((item) => String(item?.full_name ?? item?.email ?? "").trim())
+          .filter(Boolean)
+      : picOptions
+          .filter((option) => formData.picIds.includes(option.value))
+          .map((option) => option.label);
 
     setDetailRoom((prev) =>
       prev
@@ -872,14 +890,13 @@ function DetailRoomPanel({
             floor: formData.floor,
             capacity: formData.capacity,
             description: formData.description.trim(),
-            picId: formData.picId,
-            picName: String(
-              responseData?.pic_detail?.full_name ??
-                responseData?.pic_detail?.email ??
-                picOptions.find((option) => option.value === formData.picId)
-                  ?.label ??
-                (formData.picId ? prev.picName : "-"),
-            ),
+            picIds: Array.isArray(responseData?.pics)
+              ? responseData.pics
+                  .filter((item): item is string | number => item !== null && item !== undefined)
+                  .map((item) => String(item))
+              : formData.picIds,
+            picNames: nextPicNames,
+            picName: joinPicNames(nextPicNames),
             imageId: responseData?.image ?? prev.imageId,
             imageUrl: resolveAssetUrl(
               responseData?.image_detail?.url ?? prev.imageUrl ?? "",
@@ -890,6 +907,7 @@ function DetailRoomPanel({
     setFormData((prev) => ({ ...prev, imageFile: null }));
     setIsEditing(false);
     onUpdated();
+    toast.success("Ruangan berhasil diperbarui.");
   };
 
   if (!room) {
@@ -958,22 +976,14 @@ function DetailRoomPanel({
           <div className="space-y-1">
             <p className="text-xs font-medium text-muted-foreground">PIC</p>
             {isEditing ? (
-              <select
-                name="picId"
-                value={formData.picId}
-                onChange={handleChange}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              <PicMultiSelect
+                options={picOptions}
+                selectedIds={formData.picIds}
+                onChange={(nextIds) =>
+                  setFormData((prev) => ({ ...prev, picIds: nextIds }))
+                }
                 disabled={isLoadingPics}
-              >
-                <option value="">
-                  {isLoadingPics ? "Memuat PIC..." : "Pilih PIC"}
-                </option>
-                {picOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+              />
             ) : (
               <div className="rounded-md border bg-muted/30 px-3 py-2 text-sm">
                 {detailRoom.picName || "-"}
@@ -1081,7 +1091,7 @@ function DetailRoomPanel({
                   floor: detailRoom.floor,
                   capacity: detailRoom.capacity,
                   description: detailRoom.description,
-                  picId: detailRoom.picId,
+                  picIds: detailRoom.picIds,
                   imageId: detailRoom.imageId,
                   imageFile: null,
                 });

@@ -11,7 +11,7 @@ type UpdateRoomPayload = {
   floor: string;
   capacity: string;
   description?: string;
-  picId?: string;
+  picIds?: string[];
   imageId?: string | number | null;
   imageFile?: File | null;
 };
@@ -30,7 +30,7 @@ function parseRoomError(data: unknown, fallback = "Gagal memperbarui ruangan.") 
   if (Array.isArray(typed.capacity) && typeof typed.capacity[0] === "string") return typed.capacity[0];
   if (Array.isArray(typed.number) && typeof typed.number[0] === "string") return typed.number[0];
   if (Array.isArray(typed.floor) && typeof typed.floor[0] === "string") return typed.floor[0];
-  if (Array.isArray(typed.pic) && typeof typed.pic[0] === "string") return typed.pic[0];
+  if (Array.isArray(typed.pics) && typeof typed.pics[0] === "string") return typed.pics[0];
   if (Array.isArray(typed.image) && typeof typed.image[0] === "string") return typed.image[0];
 
   return fallback;
@@ -84,7 +84,7 @@ export function useUpdateRoom() {
         nextImageId = await uploadImage(payload.imageFile);
       }
 
-      const body: Record<string, string | number | null> = {
+      const body: Record<string, string | number | string[] | null> = {
         name: payload.name.trim(),
         number: payload.number.trim(),
         floor: Number(payload.floor),
@@ -92,7 +92,7 @@ export function useUpdateRoom() {
       };
 
       body.description = payload.description?.trim() || "";
-      body.pic = payload.picId || null;
+      body.pics = payload.picIds ?? [];
       if (nextImageId) body.image = nextImageId;
 
       const response = await authFetch(API_ROOM_DETAIL(roomId), {

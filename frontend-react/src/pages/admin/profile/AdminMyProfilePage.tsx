@@ -12,6 +12,7 @@ import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { useChangePassword } from "@/hooks/auth/use-change-password";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { authFetch } from "@/lib/auth";
+import { toast } from "sonner";
 
 function formatTime(value: string | null | undefined) {
   if (!value) return "-";
@@ -148,6 +149,7 @@ export default function AdminMyProfilePage() {
 
       setMessage("Profil berhasil diperbarui.");
       setIsEditing(false);
+      toast.success("Profil berhasil diperbarui.");
     } catch {
       setMessage("Terjadi kesalahan jaringan. Coba lagi.");
     } finally {

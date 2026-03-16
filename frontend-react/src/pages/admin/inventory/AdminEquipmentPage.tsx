@@ -48,6 +48,7 @@ import {
 import { useUpdateEquipment } from "@/hooks/equipments/use-update-equipment";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { authFetch } from "@/lib/auth";
+import { toast } from "sonner";
 
 const PAGE_SIZE = 10;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
@@ -160,6 +161,7 @@ export default function AdminEquipmentsPage() {
 
     setDeleteCandidate(null);
     setReloadKey((prev) => prev + 1);
+    toast.success("Peralatan berhasil dihapus.");
   };
 
   return (
@@ -509,6 +511,7 @@ function CreateEquipmentDialog({
     if (result.ok) {
       onCreated();
       onOpenChange(false);
+      toast.success("Peralatan berhasil ditambahkan.");
     }
   };
 
@@ -911,6 +914,7 @@ function DetailEquipmentPanel({
     setFormData((prev) => ({ ...prev, imageFile: null }));
     setIsEditing(false);
     onUpdated();
+    toast.success("Peralatan berhasil diperbarui.");
   };
 
   if (!item) {

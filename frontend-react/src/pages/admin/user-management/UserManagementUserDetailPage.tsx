@@ -32,6 +32,7 @@ import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useDeleteUser } from "@/hooks/users/use-delete-user";
 import { useUpdateUserProfile } from "@/hooks/users/use-update-user-profile";
 import { getUserInitials, useUserDetail } from "@/hooks/users/use-users";
+import { toast } from "sonner";
 
 function DetailField({
   label,
@@ -172,6 +173,7 @@ export default function UserManagementUserDetailPage() {
         userType: String(updated.user_type || form.user_type || "-"),
       });
       setIsEditing(false);
+      toast.success("User berhasil diperbarui.");
     } catch (saveError) {
       setError(
         saveError instanceof Error ? saveError.message : "Gagal update user.",
@@ -189,6 +191,7 @@ export default function UserManagementUserDetailPage() {
     }
 
     setConfirmDeleteOpen(false);
+    toast.success("User berhasil dihapus.");
     navigate(backTo, { replace: true });
   };
 

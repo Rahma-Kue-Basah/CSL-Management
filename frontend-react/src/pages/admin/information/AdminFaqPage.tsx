@@ -32,6 +32,7 @@ import { useCreateFaq } from "@/hooks/faqs/use-create-faq";
 import { useDeleteFaq } from "@/hooks/faqs/use-delete-faq";
 import { useFaqs, type Faq } from "@/hooks/faqs/use-faqs";
 import { useUpdateFaq } from "@/hooks/faqs/use-update-faq";
+import { toast } from "sonner";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
@@ -231,6 +232,7 @@ export default function AdminFaqPage() {
     setFaqs((prev) => [result.data as Faq, ...prev]);
     setIsCreateOpen(false);
     resetCreateDialog();
+    toast.success("FAQ berhasil ditambahkan.");
   };
 
   const handleEditSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -249,6 +251,7 @@ export default function AdminFaqPage() {
       ),
     );
     handleEditDialogChange(false);
+    toast.success("FAQ berhasil diperbarui.");
   };
 
   const handleDelete = async () => {
@@ -261,6 +264,7 @@ export default function AdminFaqPage() {
     }
     setFaqs((prev) => prev.filter((item) => item.id !== deleteTarget.id));
     setDeleteTarget(null);
+    toast.success("FAQ berhasil dihapus.");
   };
 
   return (

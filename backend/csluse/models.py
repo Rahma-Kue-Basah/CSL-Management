@@ -60,12 +60,10 @@ class Room(BaseModel):
     description = models.CharField(max_length=2000, blank=True, null=True)
     number = models.CharField(max_length=4)
     floor = models.PositiveIntegerField()
-    pic = models.ForeignKey(
+    pics = models.ManyToManyField(
         Profile,
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
-        related_name='room_pic_by'
+        related_name='rooms_as_pic',
     )
     image = models.ForeignKey(
         Image,
@@ -476,16 +474,3 @@ class Facility(BaseModel):
 
     def __str__(self):
         return self.name
-    
-class LabProfile(BaseModel):
-    title = models.CharField(max_length=255)
-    description = models.CharField(max_length=2000, blank=True, null=True)
-
-    images = models.ManyToManyField(
-        Image,
-        blank=True,
-        related_name='lab_profiles',
-    )
-
-    def __str__(self):
-        return self.title
