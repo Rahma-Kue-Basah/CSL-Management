@@ -18,7 +18,7 @@ type DashboardSideNavbarProps = {
   }>;
   activeMenuId: string;
   getMenuHref: (menuId: string) => string;
-  bottomMenuId?: string;
+  bottomMenuIds?: string[];
   onMenuClick: (menuId: string) => void;
   onLogoClick: () => void;
 };
@@ -27,16 +27,17 @@ export function DashboardSideNavbar({
   menus,
   activeMenuId,
   getMenuHref,
-  bottomMenuId,
+  bottomMenuIds,
   onMenuClick,
   onLogoClick,
 }: DashboardSideNavbarProps) {
-  const topMenus = bottomMenuId
-    ? menus.filter((item) => item.id !== bottomMenuId)
+  const bottomIds = bottomMenuIds ?? [];
+  const topMenus = bottomIds.length
+    ? menus.filter((item) => !bottomIds.includes(item.id))
     : menus;
-  const bottomMenu = bottomMenuId
-    ? menus.find((item) => item.id === bottomMenuId) ?? null
-    : null;
+  const bottomMenus = bottomIds
+    .map((id) => menus.find((item) => item.id === id) ?? null)
+    .filter((item): item is (typeof menus)[number] => item !== null);
 
   return (
     <TooltipProvider delayDuration={120}>
@@ -95,29 +96,31 @@ export function DashboardSideNavbar({
           })}
         </nav>
 
-        {bottomMenu && (
-          <div className="flex justify-center border-t border-[rgb(51_65_85)] p-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Link
-                  href={getMenuHref(bottomMenu.id)}
-                  aria-label={bottomMenu.label}
-                  onClick={() => onMenuClick(bottomMenu.id)}
-                  className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors ${
-                    activeMenuId === bottomMenu.id
-                      ? "bg-[rgb(24_34_53)] text-[#F8FAFC]"
-                      : "text-[#F8FAFC]/70 hover:bg-[rgb(24_34_53)] hover:text-[#F8FAFC]"
-                  }`}
-                >
-                  <bottomMenu.icon className="h-4 w-4" />
-                </Link>
-              </TooltipTrigger>
-              <TooltipContent side="right" align="center">
-                {bottomMenu.label}
-              </TooltipContent>
-            </Tooltip>
+        {bottomMenus.length ? (
+          <div className="flex flex-col items-center gap-2 border-t border-[rgb(51_65_85)] p-2">
+            {bottomMenus.map((bottomMenu) => (
+              <Tooltip key={bottomMenu.id}>
+                <TooltipTrigger asChild>
+                  <Link
+                    href={getMenuHref(bottomMenu.id)}
+                    aria-label={bottomMenu.label}
+                    onClick={() => onMenuClick(bottomMenu.id)}
+                    className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors ${
+                      activeMenuId === bottomMenu.id
+                        ? "bg-[rgb(24_34_53)] text-[#F8FAFC]"
+                        : "text-[#F8FAFC]/70 hover:bg-[rgb(24_34_53)] hover:text-[#F8FAFC]"
+                    }`}
+                  >
+                    <bottomMenu.icon className="h-4 w-4" />
+                  </Link>
+                </TooltipTrigger>
+                <TooltipContent side="right" align="center">
+                  {bottomMenu.label}
+                </TooltipContent>
+              </Tooltip>
+            ))}
           </div>
-        )}
+        ) : null}
       </aside>
     </TooltipProvider>
   );

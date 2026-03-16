@@ -35,7 +35,6 @@ import BorrowEquipmentListPage from "@/pages/dashboard/borrow-equipment/BorrowEq
 import BorrowEquipmentFormPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentFormPage";
 import BorrowEquipmentAvailablePage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentAvailablePage";
 import NotificationsPage from "@/pages/dashboard/account/NotificationsPage";
-import ActivityHistoryPage from "@/pages/dashboard/account/ActivityHistoryPage";
 import MyProfilePage from "@/pages/dashboard/account/MyProfilePage";
 import AdminHomePage from "@/pages/admin/home/AdminHomePage";
 import AdminSchedulePage from "@/pages/admin/information/AdminSchedulePage";
@@ -344,16 +343,6 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <UserLayout>
           <NotificationsPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/activity-history",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <ActivityHistoryPage />
         </UserLayout>
       </RequireAuth>
     ),

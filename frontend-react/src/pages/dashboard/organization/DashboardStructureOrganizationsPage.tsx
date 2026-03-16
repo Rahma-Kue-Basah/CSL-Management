@@ -84,7 +84,7 @@ function VerticalNode({
     <div className="relative">
       <article
         className={cn(
-          "relative overflow-hidden rounded-2xl border p-4 shadow-[0_12px_28px_rgba(15,23,42,0.06)]",
+          "relative overflow-hidden rounded-2xl border p-4",
           depth === 0
             ? "border-blue-200 bg-gradient-to-br from-blue-50 via-white to-sky-50"
             : "border-slate-200 bg-white",
@@ -203,7 +203,7 @@ export default function DashboardStructureOrganizationsPage() {
 
   return (
     <section className="space-y-5">
-      <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,#ffffff,rgba(241,245,249,0.8))] p-5 shadow-[0_16px_36px_rgba(15,23,42,0.06)]">
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
         <div className="flex items-center gap-2">
           <Network className="h-4 w-4 text-slate-600" />
           <div>

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronDown } from "lucide-react";
+import { Bell, ChevronDown, LayoutGrid } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -13,12 +13,23 @@ import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
 import { cn } from "@/lib/utils";
 import { href } from "react-router-dom";
 
+export type TopNavItem = {
+  id: string;
+  label: string;
+  href?: string;
+  children?: Array<{
+    label: string;
+    href: string;
+  }>;
+};
+
 type DashboardTopNavbarProps = {
   activeMenuId: string;
   onShortcutClick: (menuId: string) => void;
+  onMobileActionOpen?: () => void;
 };
 
-const TOP_NAV_ITEMS = [
+export const TOP_NAV_ITEMS: TopNavItem[] = [
   {
     id: "dashboard",
     label: "Dashboard",
@@ -65,22 +76,25 @@ const TOP_NAV_ITEMS = [
 export function DashboardTopNavbar({
   activeMenuId,
   onShortcutClick,
+  onMobileActionOpen,
 }: DashboardTopNavbarProps) {
   return (
     <header className="fixed top-0 left-0 right-0 z-40 flex h-16 items-center border-b border-slate-200 bg-white md:left-20">
       <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-4">
         <div className="justify-self-start">
-          {/* <Image
-            src="/logo/stem-name-2.png"
-            alt="STEM Name"
-            width={130}
-            height={34}
-            className="h-auto w-[110px] sm:w-[130px]"
-            priority
-          /> */}
-          <h1 className="text-lg font-semibold text-slate-800">
-            CSL Management
-          </h1>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={onMobileActionOpen}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 text-slate-700 transition hover:bg-slate-100 md:hidden"
+              aria-label="Open actions"
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </button>
+            <h1 className="whitespace-nowrap text-base font-semibold text-slate-800 sm:text-lg">
+              CSL Management
+            </h1>
+          </div>
         </div>
 
         <div className="justify-self-center">
@@ -116,7 +130,7 @@ export function DashboardTopNavbar({
               ) : (
                 <Link
                   key={item.id}
-                  href={item.href}
+                  href={item.href ?? "/dashboard"}
                   onClick={() => onShortcutClick(item.id)}
                   className={cn(
                     "text-sm font-medium text-slate-600 transition-colors hover:text-[#0048B4]",
@@ -131,10 +145,23 @@ export function DashboardTopNavbar({
         </div>
 
         <div className="justify-self-end">
-          <DashboardUserMenu
-            triggerClassName="h-10 rounded-lg bg-transparent px-2 text-slate-800 hover:bg-slate-100"
-            nameClassName="hidden text-slate-800 sm:block"
-          />
+          <div className="flex items-center gap-2">
+            <Link
+              href="/notifications"
+              onClick={() => onShortcutClick("notifications")}
+              className={cn(
+                "inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-700 transition hover:bg-slate-100 hover:text-[#0048B4] md:hidden",
+                activeMenuId === "notifications" && "bg-blue-50 text-[#0048B4]",
+              )}
+              aria-label="Notifications"
+            >
+              <Bell className="h-5 w-5" />
+            </Link>
+            <DashboardUserMenu
+              triggerClassName="h-10 rounded-lg bg-transparent px-2 text-slate-800 hover:bg-slate-100"
+              nameClassName="hidden text-slate-800 sm:block"
+            />
+          </div>
         </div>
       </div>
     </header>

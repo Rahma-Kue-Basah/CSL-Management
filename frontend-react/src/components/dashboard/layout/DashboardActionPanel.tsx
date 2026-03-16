@@ -19,6 +19,7 @@ import { formatDateKey, parseDateKey } from "@/lib/date";
 type DashboardActionPanelProps = {
   width: string;
   isOpen: boolean;
+  mobile?: boolean;
   menu: {
     id: string;
     label: string;
@@ -35,6 +36,7 @@ type DashboardActionPanelProps = {
 export function DashboardActionPanel({
   width,
   isOpen,
+  mobile = false,
   menu,
   menuParam,
   actionParam,
@@ -61,6 +63,12 @@ export function DashboardActionPanel({
   const equipmentCategory = searchParams.get("category") ?? "";
   const equipmentRoom = searchParams.get("room") ?? "";
   const equipmentMoveable = searchParams.get("moveable") ?? "";
+  const isBookingRequestListPage = pathname === "/booking-rooms";
+  const isBookingAllRequestsPage = pathname === "/booking-rooms/all";
+  const isRoomsListPage = pathname === "/rooms";
+  const isUseRequestListPage = pathname === "/use-equipment";
+  const isUseAllRequestsPage = pathname === "/use-equipment/all";
+  const isEquipmentListPage = pathname === "/equipment";
 
   const updateScheduleFilter = (
     key: "q" | "room" | "category",
@@ -115,28 +123,42 @@ export function DashboardActionPanel({
     router.replace(next ? `${pathname}?${next}` : pathname);
   };
 
+  const handleActionClick = () => {
+    if (mobile) onClose();
+  };
+
   return (
     <aside
       aria-hidden={!isOpen}
-      className={`fixed top-16 bottom-0 left-20 z-30 hidden border-r border-[#C5D3E8] bg-[#E8F0FB] shadow-[6px_0_24px_rgba(15,23,42,0.08)] transition-all duration-300 ease-in-out md:flex ${
-        isOpen
-          ? "translate-x-0 opacity-100"
-          : "-translate-x-full opacity-0 pointer-events-none"
-      }`}
-      style={{ width }}
+      className={
+        mobile
+          ? "flex h-full w-full flex-col bg-[#E8F0FB]"
+          : `fixed top-16 bottom-0 left-20 z-30 hidden border-r border-[#C5D3E8] bg-[#E8F0FB] shadow-[6px_0_24px_rgba(15,23,42,0.08)] transition-all duration-300 ease-in-out md:flex ${
+              isOpen
+                ? "translate-x-0 opacity-100"
+                : "-translate-x-full opacity-0 pointer-events-none"
+            }`
+      }
+      style={mobile ? undefined : { width }}
     >
       <div className="flex h-full w-full flex-col">
-        <div className="flex items-center justify-between border-b px-4 py-3">
+        <div
+          className={`flex items-center justify-between border-b px-4 py-3 ${
+            mobile ? "min-h-16" : ""
+          }`}
+        >
           <p className="text-sm font-semibold text-slate-800">{menu.label}</p>
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            onClick={onClose}
-            className="h-8 w-8"
-          >
-            <ChevronsLeft className="h-4 w-4" />
-          </Button>
+          {!mobile ? (
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              onClick={onClose}
+              className="h-8 w-8"
+            >
+              <ChevronsLeft className="h-4 w-4" />
+            </Button>
+          ) : null}
         </div>
         <div className="flex flex-col gap-3 overflow-y-auto p-3">
           <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
@@ -224,19 +246,23 @@ export function DashboardActionPanel({
               const showBookingFilters =
                 menu.id === "booking-rooms" &&
                 isActionActive &&
-                (action.id === "request-list" || action.id === "all-requests");
+                ((action.id === "request-list" && isBookingRequestListPage) ||
+                  (action.id === "all-requests" && isBookingAllRequestsPage));
               const showRoomFilters =
                 menu.id === "booking-rooms" &&
                 isActionActive &&
-                action.id === "rooms";
+                action.id === "rooms" &&
+                isRoomsListPage;
               const showUseFilters =
                 menu.id === "use-equipment" &&
                 isActionActive &&
-                (action.id === "request-list" || action.id === "all-requests");
+                ((action.id === "request-list" && isUseRequestListPage) ||
+                  (action.id === "all-requests" && isUseAllRequestsPage));
               const showEquipmentFilters =
                 menu.id === "use-equipment" &&
                 isActionActive &&
-                action.id === "equipment";
+                action.id === "equipment" &&
+                isEquipmentListPage;
 
               return (
                 <div key={action.id} className="space-y-3">
@@ -246,7 +272,10 @@ export function DashboardActionPanel({
                       if (isActionActive && event.detail === 2) {
                         event.preventDefault();
                         router.push(getMenuHref());
+                        handleActionClick();
+                        return;
                       }
+                      handleActionClick();
                     }}
                     className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition ${
                       isActionActive

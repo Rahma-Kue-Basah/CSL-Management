@@ -84,11 +84,11 @@ function SummaryCard({
       className={`rounded-xl border p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${toneClass.card}`}
     >
       <div className="flex items-start justify-between gap-3">
-        <div>
+        <div className="flex min-h-14 flex-col justify-between">
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
             {label}
           </p>
-          <p className={`mt-1 text-2xl font-semibold ${toneClass.value}`}>
+          <p className={`text-2xl font-semibold leading-none ${toneClass.value}`}>
             {value}
           </p>
         </div>
@@ -213,7 +213,7 @@ export default function BookingRoomsListContent({
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
         <SummaryCard
           label="Total Pengajuan"
           value={summaryTotalCount || summaryBookings.length}

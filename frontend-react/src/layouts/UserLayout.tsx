@@ -11,19 +11,32 @@ import {
   FilePenLine,
   FlaskConical,
   CircleHelp,
-  History,
+  LayoutGrid,
   LayoutDashboard,
   Package,
   ShieldCheck,
   UserRound,
   Wrench,
+  X,
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { DashboardTopNavbar } from "@/components/dashboard/layout/DashboardTopNavbar";
+import {
+  DashboardTopNavbar,
+  TOP_NAV_ITEMS,
+} from "@/components/dashboard/layout/DashboardTopNavbar";
 import { DashboardSideNavbar } from "@/components/dashboard/layout/DashboardSideNavbar";
 import { DashboardActionPanel } from "@/components/dashboard/layout/DashboardActionPanel";
 import { DashboardMainLayout } from "@/components/dashboard/layout/DashboardMainLayout";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import Link from "next/link";
+import { cn } from "@/lib/utils";
 
 type UserLayoutProps = {
   children: ReactNode;
@@ -85,7 +98,6 @@ function getHeaderIcon(menuId: string, actionId: string | null) {
   }
 
   if (menuId === "notifications") return Bell;
-  if (menuId === "activity-history") return History;
 
   if (menuId === "my-profile") {
     if (actionId === "change-password") return ShieldCheck;
@@ -263,14 +275,6 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
     actions: [],
   },
   {
-    id: "activity-history",
-    label: "Riwayat Aktivitas",
-    description: "Lihat histori aktivitas pengajuan yang pernah dilakukan.",
-    href: "/activity-history",
-    icon: History,
-    actions: [],
-  },
-  {
     id: "my-profile",
     label: "Profil Saya",
     description: "Kelola data profil dan informasi akun pengguna.",
@@ -365,9 +369,6 @@ function parseDashboardPath(pathname: string) {
   if (parts[0] === "notifications") {
     return { menu: "notifications", action: null };
   }
-  if (parts[0] === "activity-history") {
-    return { menu: "activity-history", action: null };
-  }
   if (parts[0] === "my-profile") {
     if (parts[1] === "edit") {
       return { menu: "my-profile", action: "edit-profile" };
@@ -403,6 +404,8 @@ function DashboardShell({ children }: UserLayoutProps) {
     menuParam || defaultMenuId,
   );
   const [isActionPanelOpen, setIsActionPanelOpen] = useState(true);
+  const [isMobileActionOpen, setIsMobileActionOpen] = useState(false);
+  const [isMobileShortcutOpen, setIsMobileShortcutOpen] = useState(false);
 
   useEffect(() => {
     if (!menuParam) return;
@@ -432,6 +435,13 @@ function DashboardShell({ children }: UserLayoutProps) {
   const pageHeaderIcon = <HeaderIcon className="h-5 w-5 text-white" />;
 
   const hasActionPanel = isActionPanelOpen && !isMobile;
+  const mobileBottomMenus = sidebarShortcuts.filter(
+    (item) => item.id !== "notifications" && item.id !== "my-profile",
+  );
+  const mobileTopShortcuts = TOP_NAV_ITEMS.map((item) => ({
+    ...item,
+    isActive: activeMenuId === item.id,
+  }));
 
   const getMenuDefaultHref = (menuId: string) => toMenuHref(menuId);
 
@@ -440,14 +450,42 @@ function DashboardShell({ children }: UserLayoutProps) {
     setIsActionPanelOpen(true);
   };
 
+  const handleTopShortcutClick = (menuId: string) => {
+    const selectedMenu = sidebarShortcuts.find((item) => item.id === menuId);
+    if (selectedMenu) handleMenuClick(selectedMenu);
+    setIsMobileShortcutOpen(false);
+  };
+
   return (
     <div className="min-h-screen bg-slate-100 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6] [--sidebar-primary:#0048B4] [--sidebar-primary-foreground:#FFFFFF] [--sidebar-ring:#3B82F6]">
+      <Sheet open={isMobileActionOpen} onOpenChange={setIsMobileActionOpen}>
+        <SheetContent side="left" className="w-[360px] max-w-[calc(100%-1rem)] p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Action Panel</SheetTitle>
+            <SheetDescription>Panel aksi dan filter dashboard pengguna.</SheetDescription>
+          </SheetHeader>
+          {activeMenu ? (
+            <DashboardActionPanel
+              width={ACTION_PANEL_WIDTH}
+              isOpen
+              mobile
+              menu={activeMenu}
+              menuParam={menuParam}
+              actionParam={actionParam}
+              getActionHref={(actionId) => toMenuHref(activeMenu.id, actionId)}
+              getMenuHref={() => toMenuHref(activeMenu.id)}
+              onClose={() => setIsMobileActionOpen(false)}
+            />
+          ) : null}
+        </SheetContent>
+      </Sheet>
+
       <DashboardTopNavbar
         activeMenuId={activeMenuId}
         onShortcutClick={(menuId) => {
-          const selectedMenu = sidebarShortcuts.find((item) => item.id === menuId);
-          if (selectedMenu) handleMenuClick(selectedMenu);
+          handleTopShortcutClick(menuId);
         }}
+        onMobileActionOpen={() => setIsMobileActionOpen(true)}
       />
 
       <div
@@ -466,7 +504,7 @@ function DashboardShell({ children }: UserLayoutProps) {
           menus={sidebarShortcuts}
           activeMenuId={activeMenuId}
           getMenuHref={getMenuDefaultHref}
-          bottomMenuId="my-profile"
+          bottomMenuIds={["notifications", "my-profile"]}
           onMenuClick={(menuId) => {
             const selectedMenu = sidebarShortcuts.find((item) => item.id === menuId);
             if (selectedMenu) handleMenuClick(selectedMenu);
@@ -500,6 +538,118 @@ function DashboardShell({ children }: UserLayoutProps) {
           {children}
         </DashboardMainLayout>
       </div>
+
+      {isMobileShortcutOpen ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-50 bg-slate-950/10 backdrop-blur-sm md:hidden"
+            aria-label="Close shortcuts"
+            onClick={() => setIsMobileShortcutOpen(false)}
+          />
+          <div className="fixed right-4 bottom-40 z-[60] w-[min(20rem,calc(100vw-2rem))] rounded-2xl border border-slate-200 bg-white/95 p-3 shadow-[0_24px_60px_rgba(15,23,42,0.18)] backdrop-blur md:hidden">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                  Shortcut Menu
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileShortcutOpen(false)}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-100"
+                aria-label="Close shortcuts"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="max-h-[min(70vh,32rem)] space-y-1 overflow-y-auto pr-1">
+              {mobileTopShortcuts.map((item) => {
+                return (
+                  <div key={item.id} className="border-b border-slate-100 pb-1 last:border-b-0">
+                    {item.href ? (
+                      <Link
+                        href={item.href}
+                        onClick={() => handleTopShortcutClick(item.id)}
+                        className={cn(
+                          "block rounded-lg px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50",
+                          item.isActive && "text-[#0048B4]",
+                        )}
+                      >
+                        {item.label}
+                      </Link>
+                    ) : (
+                      <div className="px-1 py-1">
+                        <div
+                          className={cn(
+                            "px-2 py-2 text-sm font-semibold text-slate-900",
+                            item.isActive && "text-[#0048B4]",
+                          )}
+                        >
+                          {item.label}
+                        </div>
+                        <div className="space-y-1">
+                          {item.children?.map((child) => (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              onClick={() => handleTopShortcutClick(item.id)}
+                              className="block rounded-lg px-4 py-2 text-sm text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                            >
+                              {child.label}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      ) : null}
+
+      <nav className="fixed right-0 bottom-0 left-0 z-40 border-t border-slate-200 bg-white/95 px-2 py-4 backdrop-blur md:hidden">
+        <div className="mx-auto flex w-full justify-center">
+          <div className="flex max-w-full gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {mobileBottomMenus.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeMenuId === item.id;
+              return (
+                <Link
+                  key={item.id}
+                  href={getMenuDefaultHref(item.id)}
+                  onClick={() => handleMenuClick(item)}
+                  className={cn(
+                    "flex h-10 min-w-14 shrink-0 items-center justify-center rounded-xl px-4 transition",
+                    isActive
+                      ? "bg-blue-50 text-[#0048B4]"
+                      : "text-slate-600 hover:bg-slate-50",
+                  )}
+                  aria-label={item.label}
+                >
+                  <Icon className="h-4 w-4" />
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
+      <button
+        type="button"
+        onClick={() => setIsMobileShortcutOpen((current) => !current)}
+        className="fixed right-4 bottom-20 z-[60] inline-flex h-14 w-14 items-center justify-center rounded-full bg-[#0048B4] text-white shadow-[0_18px_36px_rgba(0,72,180,0.32)] transition hover:bg-[#003b92] md:hidden"
+        aria-label="Open shortcut menu"
+      >
+        {isMobileShortcutOpen ? (
+          <X className="h-5 w-5" />
+        ) : (
+          <LayoutGrid className="h-5 w-5" />
+        )}
+      </button>
     </div>
   );
 }
