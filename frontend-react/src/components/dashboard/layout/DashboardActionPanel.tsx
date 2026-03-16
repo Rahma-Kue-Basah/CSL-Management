@@ -45,7 +45,8 @@ export function DashboardActionPanel({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { rooms } = useRoomOptions();
+  const needsRoomOptions = menu.id === "schedule";
+  const { rooms } = useRoomOptions(needsRoomOptions);
   const scheduleKeyword = searchParams.get("q") ?? "";
   const scheduleRoom = searchParams.get("room") ?? "";
   const scheduleCategory = searchParams.get("category") ?? "";

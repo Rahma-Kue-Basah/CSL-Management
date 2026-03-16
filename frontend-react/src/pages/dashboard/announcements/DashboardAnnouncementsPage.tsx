@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarDays, Megaphone, Search, UserRound } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,10 +24,6 @@ function AnnouncementCard({ announcement }: { announcement: Announcement }) {
     () => stripHtmlTags(announcement.content || ""),
     [announcement.content],
   );
-  const author =
-    announcement.created_by_detail?.full_name ||
-    announcement.created_by_detail?.email ||
-    "-";
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
@@ -37,10 +33,6 @@ function AnnouncementCard({ announcement }: { announcement: Announcement }) {
             <span className="inline-flex items-center gap-1.5">
               <CalendarDays className="h-3.5 w-3.5" />
               {formatDateTimeWib(announcement.created_at)}
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <UserRound className="h-3.5 w-3.5" />
-              {author}
             </span>
           </div>
           <h3 className="mt-3 text-base font-semibold text-slate-900">
@@ -62,7 +54,6 @@ function AnnouncementSkeleton() {
       <div className="space-y-3">
         <div className="flex flex-wrap items-center gap-3">
           <Skeleton className="h-3 w-36" />
-          <Skeleton className="h-3 w-28" />
         </div>
         <div className="space-y-2">
           <Skeleton className="h-5 w-3/4" />

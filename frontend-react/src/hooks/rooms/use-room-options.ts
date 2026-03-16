@@ -12,12 +12,19 @@ export type RoomOption = {
   label: string;
 };
 
-export function useRoomOptions() {
+export function useRoomOptions(enabled = true) {
   const [rooms, setRooms] = useState<RoomOption[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!enabled) {
+      setRooms([]);
+      setIsLoading(false);
+      setError("");
+      return;
+    }
+
     const controller = new AbortController();
     let isAborted = false;
 
@@ -57,7 +64,7 @@ export function useRoomOptions() {
       isAborted = true;
       controller.abort();
     };
-  }, []);
+  }, [enabled]);
 
   return { rooms, isLoading, error };
 }

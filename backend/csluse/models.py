@@ -371,13 +371,6 @@ class Notification(BaseModel):
 class Announcement(BaseModel):
     title = models.CharField(max_length=255)
     content = models.CharField(max_length=10000)
-    
-    image = models.ForeignKey(
-        Image,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
 
     created_by = models.ForeignKey(
         Profile,

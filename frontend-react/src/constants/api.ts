@@ -102,6 +102,7 @@ const API_SCHEDULE_DETAIL = (id: string | number) => `${API_SCHEDULES}${id}/`;
 const API_CALENDAR = `${API_BASE_URL}/calendar/`;
 const API_DASHBOARD_OVERVIEW = `${API_BASE_URL}/dashboard-overview/`;
 const API_FAQS = `${API_BASE_URL}/faqs/`;
+const API_STRUCTURE_ORGANIZATIONS = `${API_BASE_URL}/structure-organizations/`;
 
 export {
   API_BASE_URL,
@@ -171,4 +172,5 @@ export {
   API_CALENDAR,
   API_DASHBOARD_OVERVIEW,
   API_FAQS,
+  API_STRUCTURE_ORGANIZATIONS,
 };

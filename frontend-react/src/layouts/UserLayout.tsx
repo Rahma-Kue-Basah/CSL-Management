@@ -7,6 +7,7 @@ import {
   Building2,
   CalendarDays,
   ClipboardList,
+  GitBranch,
   FilePenLine,
   FlaskConical,
   CircleHelp,
@@ -48,6 +49,7 @@ function getHeaderIcon(menuId: string, actionId: string | null) {
   if (menuId === "dashboard") {
     if (actionId === "announcements") return Bell;
     if (actionId === "faq") return CircleHelp;
+    if (actionId === "organization-structure") return GitBranch;
     return LayoutDashboard;
   }
 
@@ -121,6 +123,12 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         label: "FAQ",
         description: "Temukan jawaban cepat untuk pertanyaan yang sering diajukan.",
         href: "/dashboard/faq",
+      },
+      {
+        id: "organization-structure",
+        label: "Struktur Organisasi",
+        description: "Lihat bagan struktur organisasi laboratorium.",
+        href: "/dashboard/organization-structure",
       },
     ],
   },
@@ -306,6 +314,9 @@ function parseDashboardPath(pathname: string) {
     }
     if (parts[1] === "faq") {
       return { menu: "dashboard", action: "faq" };
+    }
+    if (parts[1] === "organization-structure") {
+      return { menu: "dashboard", action: "organization-structure" };
     }
     return { menu: "dashboard", action: null };
   }

@@ -300,8 +300,18 @@ class FacilitySerializer(serializers.ModelSerializer):
         ]
 
 
+class AnnouncementListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Announcement
+        fields = [
+            "id",
+            "title",
+            "content",
+            "created_at",
+        ]
+
+
 class AnnouncementSerializer(serializers.ModelSerializer):
-    image_detail = ImageSerializer(source="image", read_only=True)
     created_by_detail = ProfileSerializer(source="created_by", read_only=True)
 
     class Meta:
@@ -310,8 +320,6 @@ class AnnouncementSerializer(serializers.ModelSerializer):
             "id",
             "title",
             "content",
-            "image",
-            "image_detail",
             "created_by",
             "created_by_detail",
             "created_at",

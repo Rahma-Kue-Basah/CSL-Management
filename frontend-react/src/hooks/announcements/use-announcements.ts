@@ -8,28 +8,12 @@ import {
   FALLBACK_ANNOUNCEMENTS_ENDPOINT,
 } from "@/hooks/announcements/utils";
 
-export type AnnouncementImage = {
-  id?: string | number;
-  name?: string | null;
-  url?: string | null;
-};
-
-export type AnnouncementCreator = {
-  full_name?: string | null;
-  email?: string | null;
-  role?: string | null;
-};
-
 export type Announcement = {
   id: string | number;
   title: string;
   content: string;
-  image?: string | number | null;
-  image_detail?: AnnouncementImage | null;
   created_by?: string | number | null;
-  created_by_detail?: AnnouncementCreator | null;
   created_at?: string | null;
-  updated_at?: string | null;
 };
 
 type AnnouncementListResponse = {

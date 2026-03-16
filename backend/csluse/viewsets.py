@@ -44,6 +44,7 @@ from .serializers import (
     BorrowListSerializer,
     LabProfileSerializer,
     FacilitySerializer,
+    AnnouncementListSerializer,
     AnnouncementSerializer,
     ScheduleSerializer,
     FAQSerializer,
@@ -811,10 +812,15 @@ class FacilityViewSet(viewsets.ModelViewSet):
 
 
 class AnnouncementViewSet(viewsets.ModelViewSet):
-    queryset = Announcement.objects.select_related('image', 'created_by').order_by('-created_at')
+    queryset = Announcement.objects.select_related('created_by').order_by('-created_at')
     serializer_class = AnnouncementSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return AnnouncementListSerializer
+        return AnnouncementSerializer
 
     def get_permissions(self):
         if self.action == "create":

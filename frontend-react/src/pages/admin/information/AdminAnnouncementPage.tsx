@@ -2,13 +2,11 @@
 
 import { useMemo, useState, type FormEvent } from "react";
 import {
-  Image as ImageIcon,
   Megaphone,
   Pencil,
   Plus,
   Search,
   Trash2,
-  User2,
 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -31,7 +29,6 @@ import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { API_BASE_URL } from "@/constants/api";
 import {
   useAnnouncements,
   type Announcement,
@@ -40,13 +37,6 @@ import { useCreateAnnouncement } from "@/hooks/announcements/use-create-announce
 import { useUpdateAnnouncement } from "@/hooks/announcements/use-update-announcement";
 import { useDeleteAnnouncement } from "@/hooks/announcements/use-delete-announcement";
 import { formatDateKey, parseDateKey } from "@/lib/date";
-
-function resolveImageUrl(value?: string | null) {
-  if (!value) return "";
-  if (/^https?:\/\//i.test(value)) return value;
-  if (value.startsWith("/")) return `${API_BASE_URL}${value}`;
-  return `${API_BASE_URL}/${value}`;
-}
 
 function normalizeText(value: string) {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
@@ -65,20 +55,6 @@ function formatTime(value?: string | null) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return new Intl.DateTimeFormat("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-}
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
     hour12: false,
@@ -110,24 +86,6 @@ function formatDateLabel(value?: string | null) {
     month: "long",
     year: "numeric",
   }).format(date);
-}
-
-const FALLBACK_TONES = [
-  "from-emerald-200 via-emerald-100 to-emerald-50",
-  "from-sky-200 via-sky-100 to-sky-50",
-  "from-amber-200 via-amber-100 to-amber-50",
-  "from-rose-200 via-rose-100 to-rose-50",
-  "from-violet-200 via-violet-100 to-violet-50",
-  "from-cyan-200 via-cyan-100 to-cyan-50",
-];
-
-function getFallbackTone(value: string | number) {
-  const raw = String(value);
-  let total = 0;
-  for (let index = 0; index < raw.length; index += 1) {
-    total += raw.charCodeAt(index);
-  }
-  return FALLBACK_TONES[total % FALLBACK_TONES.length];
 }
 
 export default function AdminPengumumanPage() {
@@ -476,51 +434,14 @@ export default function AdminPengumumanPage() {
                   </div>
                   <div className="space-y-2">
                     {items.map((announcement) => {
-                      const imageUrl = resolveImageUrl(
-                        announcement.image_detail?.url || "",
-                      );
-                      const creatorName =
-                        announcement.created_by_detail?.full_name ||
-                        announcement.created_by_detail?.email ||
-                        "Admin";
                       const content = announcement.content || "";
                       const timeLabel = formatTime(announcement.created_at);
-                      const createdAt = announcement.created_at
-                        ? new Date(announcement.created_at).getTime()
-                        : null;
-                      const updatedAt = announcement.updated_at
-                        ? new Date(announcement.updated_at).getTime()
-                        : null;
-                      const updatedLabel =
-                        updatedAt && (!createdAt || updatedAt !== createdAt)
-                          ? formatDateTime(announcement.updated_at)
-                          : "";
-                      const fallbackTone = getFallbackTone(announcement.id);
 
                       return (
                         <div
                           key={announcement.id}
                           className="group flex min-w-0 items-center gap-3 rounded-md border bg-white px-3 py-4 shadow-xs transition hover:border-slate-300 hover:shadow-sm"
                         >
-                          <div className="relative h-14 w-14 overflow-hidden rounded-md bg-slate-100">
-                            {imageUrl ? (
-                              <img
-                                src={imageUrl}
-                                alt={announcement.title}
-                                className="h-full w-full object-cover"
-                                loading="lazy"
-                              />
-                            ) : (
-                              <div
-                                className={`h-full w-full bg-linear-to-br ${fallbackTone}`}
-                              />
-                            )}
-                            {!imageUrl ? (
-                              <div className="absolute inset-0 flex items-center justify-center text-[10px] font-semibold text-slate-600/80">
-                                {/* <ImageIcon className="h-3 w-3" /> */}
-                              </div>
-                            ) : null}
-                          </div>
                           <div className="flex min-w-0 flex-1 items-center gap-3">
                             <div className="min-w-0 flex-1">
                               <p className="truncate text-base font-semibold text-slate-900">
@@ -531,21 +452,10 @@ export default function AdminPengumumanPage() {
                                 dangerouslySetInnerHTML={{ __html: content }}
                               />
                             </div>
-                            <div className="flex shrink-0 items-center gap-2 text-xs text-slate-500">
-                              <User2 className="h-3.5 w-3.5" />
-                              <span className="max-w-[120px] truncate">
-                                {creatorName}
-                              </span>
-                            </div>
                             <div className="flex shrink-0 flex-col items-end gap-1">
                               <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
                                 {timeLabel}
                               </span>
-                              {updatedLabel ? (
-                                <span className="text-[10px] text-slate-400">
-                                  Diupdate {updatedLabel}
-                                </span>
-                              ) : null}
                             </div>
                             <div className="flex shrink-0 items-center gap-1">
                               <Button

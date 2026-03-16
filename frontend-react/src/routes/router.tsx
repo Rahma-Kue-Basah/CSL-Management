@@ -15,6 +15,7 @@ import DashboardHomePage from "@/pages/dashboard/DashboardHomePage";
 import DashboardOverviewPage from "@/pages/dashboard/overview/DashboardOverviewPage";
 import DashboardAnnouncementsPage from "@/pages/dashboard/announcements/DashboardAnnouncementsPage";
 import DashboardFaqPage from "@/pages/dashboard/faq/DashboardFaqPage";
+import DashboardStructureOrganizationsPage from "@/pages/dashboard/organization/DashboardStructureOrganizationsPage";
 import SchedulePage from "@/pages/dashboard/schedule/SchedulePage";
 import BookingRoomsListPage from "@/pages/dashboard/booking-rooms/BookingRoomsListPage";
 import BookingRoomsAllListPage from "@/pages/dashboard/booking-rooms/BookingRoomsAllListPage";
@@ -53,6 +54,7 @@ import AdminEquipmentBorrowRecordDetailPage from "@/pages/admin/records/AdminEqu
 import AdminSampleTestingRecordPage from "@/pages/admin/records/AdminSampleTestingRecordPage";
 import AdminSampleTestingRecordDetailPage from "@/pages/admin/records/AdminSampleTestingRecordDetailPage";
 import AdminMyProfilePage from "@/pages/admin/profile/AdminMyProfilePage";
+import StructureOrgansPage from "@/pages/admin/lab-profile/StructureOrgansPage";
 import UserManagementAllPage from "@/pages/admin/user-management/UserManagementAllPage";
 import UserManagementStudentPage from "@/pages/admin/user-management/UserManagementStudentPage";
 import UserManagementLecturerPage from "@/pages/admin/user-management/UserManagementLecturerPage";
@@ -122,6 +124,16 @@ export const router = createBrowserRouter([
       <RequireAuth>
         <UserLayout>
           <DashboardFaqPage />
+        </UserLayout>
+      </RequireAuth>
+    ),
+  },
+  {
+    path: "/dashboard/organization-structure",
+    element: (
+      <RequireAuth>
+        <UserLayout>
+          <DashboardStructureOrganizationsPage />
         </UserLayout>
       </RequireAuth>
     ),
@@ -408,6 +420,7 @@ export const router = createBrowserRouter([
       { path: "record/pengujian-sampel", element: <AdminSampleTestingRecordPage /> },
       { path: "record/pengujian-sampel/:id", element: <AdminSampleTestingRecordDetailPage /> },
       { path: "my-profile", element: <AdminMyProfilePage /> },
+      { path: "profile/struktur-organisasi", element: <StructureOrgansPage /> },
       { path: "user-management", element: <Navigate to="/admin/user-management/all" replace /> },
       { path: "user-management/all", element: <UserManagementAllPage /> },
       { path: "user-management/student", element: <UserManagementStudentPage /> },
