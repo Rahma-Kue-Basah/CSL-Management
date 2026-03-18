@@ -59,7 +59,7 @@ function matchesSearch(booking: BookingRow, query: string) {
   return haystack.includes(query.toLowerCase());
 }
 
-export default function AdminRecordPeminjamanRuanganPage() {
+export default function AdminRoomBookingRecordPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [page, setPage] = useState(1);
@@ -150,8 +150,8 @@ export default function AdminRecordPeminjamanRuanganPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex-1 space-y-4">
           <AdminPageHeader
-            title="Record Peminjaman Ruangan"
-            description="Pantau seluruh histori peminjaman ruangan dari pengguna."
+            title="Record Booking Ruangan"
+            description="Pantau seluruh histori booking ruangan dari pengguna."
             icon={<Eye className="h-5 w-5 text-sky-200" />}
           />
 

@@ -45,8 +45,8 @@ import AdminEquipmentPage from "@/pages/admin/inventory/AdminEquipmentPage";
 import AdminEquipmentDetailPage from "@/pages/admin/inventory/AdminEquipmentDetailPage";
 import AdminRoomPage from "@/pages/admin/inventory/AdminRoomPage";
 import AdminRoomDetailPage from "@/pages/admin/inventory/AdminRoomDetailPage";
-import AdminRoomBorrowRecordPage from "@/pages/admin/records/AdminRoomBorrowRecordPage";
-import AdminRoomBorrowRecordDetailPage from "@/pages/admin/records/AdminRoomBorrowRecordDetailPage";
+import AdminRoomBookingRecordPage from "@/pages/admin/records/AdminRoomBookingRecordPage";
+import AdminRoomBookingRecordDetailPage from "@/pages/admin/records/AdminRoomBookingRecordDetailPage";
 import AdminEquipmentUsageRecordPage from "@/pages/admin/records/AdminEquipmentUsageRecordPage";
 import AdminEquipmentUsageRecordDetailPage from "@/pages/admin/records/AdminEquipmentUsageRecordDetailPage";
 import AdminEquipmentBorrowRecordPage from "@/pages/admin/records/AdminEquipmentBorrowRecordPage";
@@ -193,8 +193,8 @@ export const router = createBrowserRouter([
       {
         path: "records",
         children: [
-          { path: "room-bookings", element: <AdminRoomBorrowRecordPage /> },
-          { path: "room-bookings/:id", element: <AdminRoomBorrowRecordDetailPage /> },
+          { path: "room-bookings", element: <AdminRoomBookingRecordPage /> },
+          { path: "room-bookings/:id", element: <AdminRoomBookingRecordDetailPage /> },
           { path: "equipment-usage", element: <AdminEquipmentUsageRecordPage /> },
           { path: "equipment-usage/:id", element: <AdminEquipmentUsageRecordDetailPage /> },
           { path: "equipment-borrows", element: <AdminEquipmentBorrowRecordPage /> },

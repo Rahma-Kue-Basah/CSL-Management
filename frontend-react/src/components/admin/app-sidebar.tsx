@@ -95,7 +95,7 @@ export function AppSidebar() {
   ];
 
   const recordItems = [
-    { label: "Peminjaman Ruangan", href: "/admin/records/room-bookings" },
+    { label: "Booking Ruangan", href: "/admin/records/room-bookings" },
     { label: "Penggunaan Alat", href: "/admin/records/equipment-usage" },
     { label: "Peminjaman Alat", href: "/admin/records/equipment-borrows" },
     { label: "Pengujian Sampel", href: "/admin/records/sample-testing" },

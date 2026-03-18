@@ -254,7 +254,7 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   {
     id: "borrow-equipment",
     label: "Peminjaman Alat",
-    description: "Kelola permintaan peminjaman alat dan formulirnya.",
+    description: "Kelola pengajuan peminjaman alat dan pantau progresnya.",
     href: "/borrow-equipment/form",
     icon: Package,
     actions: [

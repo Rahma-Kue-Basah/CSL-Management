@@ -58,7 +58,7 @@ function DetailRow({
   );
 }
 
-export default function AdminRoomBorrowRecordDetailPage() {
+export default function AdminRoomBookingRecordDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
@@ -140,7 +140,7 @@ export default function AdminRoomBorrowRecordDetailPage() {
                 <ClipboardList className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-base font-semibold text-slate-900">Detail Peminjaman Ruangan</p>
+                <p className="text-base font-semibold text-slate-900">Detail Booking Ruangan</p>
                 <p className="text-sm text-slate-500">{booking.code}</p>
               </div>
             </div>
