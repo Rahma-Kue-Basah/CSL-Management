@@ -38,9 +38,9 @@ export function AppSidebar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenus, setOpenMenus] = useState({
     document: false,
-    information: true,
+    information: false,
     inventory: false,
-    profile: true,
+    profile: false,
     record: false,
     user: false,
   });

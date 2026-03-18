@@ -175,11 +175,14 @@ class EquipmentDropdownSerializer(serializers.ModelSerializer):
 
 
 class RecordProfileListSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(source="user.email", read_only=True)
+
     class Meta:
         model = ProfileSerializer.Meta.model
         fields = [
             "id",
             "full_name",
+            "email",
         ]
 
 
@@ -189,6 +192,8 @@ class RecordRoomListSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "number",
+            "capacity",
         ]
 
 

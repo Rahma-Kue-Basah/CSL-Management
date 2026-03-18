@@ -6,21 +6,29 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
+import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
 import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_PENGUJIAN_DETAIL } from "@/constants/api";
-import { usePengujians, type PengujianRow } from "@/hooks/pengujians/use-pengujians";
+import { API_PENGUJIAN_DETAIL, API_PENGUJIANS_EXPORT } from "@/constants/api";
+import {
+  mapPengujian,
+  usePengujians,
+  type PengujianRow,
+} from "@/hooks/pengujians/use-pengujians";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
+import { PENGUJIAN_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
   SAMPLE_TESTING_STATUS_OPTIONS,
 } from "@/lib/status";
+import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 const STATUS_OPTIONS = SAMPLE_TESTING_STATUS_OPTIONS;
 
 function formatDateTime(value?: string | null) {
@@ -62,13 +70,30 @@ export default function AdminRecordPengujianSampelPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<PengujianRow | null>(null);
   const { deleteRecord, isDeleting } = useDeleteRecord();
+  const {
+    exportPdf,
+    exportExcel,
+    isExportingPdf,
+    isExportingExcel,
+  } = useAdminRecordExport({
+    endpoint: API_PENGUJIANS_EXPORT,
+    filters: { q: debouncedSearch, status },
+    mapItem: mapPengujian,
+    title: "Record Pengujian Sampel",
+    pdfFilename: "record-pengujian-sampel.pdf",
+    excelFilename: "record-pengujian-sampel.xlsx",
+    columns: PENGUJIAN_EXPORT_COLUMNS,
+    emptyMessage: "Tidak ada data pengujian sampel untuk diunduh.",
+    pdfSuccessMessage: "PDF pengujian sampel berhasil diunduh.",
+    excelSuccessMessage: "Excel pengujian sampel berhasil diunduh.",
+  });
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const { pengujians, totalCount, isLoading, hasLoadedOnce, error } = usePengujians(
+  const { pengujians, totalCount, aggregates, isLoading, hasLoadedOnce, error } = usePengujians(
     page,
     PAGE_SIZE,
     {
@@ -116,6 +141,16 @@ export default function AdminRecordPengujianSampelPage() {
             title="Record Pengujian Sampel"
             description="Pantau histori pengujian sampel yang diajukan pengguna."
             icon={<Eye className="h-5 w-5 text-sky-200" />}
+          />
+
+          <AdminRecordSummaryCards
+            items={[
+              { label: "Total", value: aggregates.total, tone: "blue" },
+              { label: "Pending", value: aggregates.pending },
+              { label: "Approved", value: aggregates.approved },
+              { label: "Completed", value: aggregates.completed },
+              { label: "Rejected", value: aggregates.rejected },
+            ]}
           />
 
           <InventoryFilterCard
@@ -166,6 +201,18 @@ export default function AdminRecordPengujianSampelPage() {
               </div>
             </form>
           </InventoryFilterCard>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-500">
+              Export mengikuti filter dan pencarian yang sedang aktif.
+            </p>
+            <AdminRecordExportActions
+              onExportExcel={exportExcel}
+              onExportPdf={exportPdf}
+              isExportingExcel={isExportingExcel}
+              isExportingPdf={isExportingPdf}
+            />
+          </div>
 
           {error ? (
             <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">

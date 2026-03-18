@@ -65,6 +65,27 @@ type ApiBorrow = {
 type ApiBorrowsResponse = {
   count?: number;
   results?: ApiBorrow[];
+  aggregates?: {
+    total?: number;
+    pending?: number;
+    approved?: number;
+    rejected?: number;
+    borrowed?: number;
+    returned?: number;
+    overdue?: number;
+    lost_damaged?: number;
+  } | null;
+};
+
+export type BorrowAggregates = {
+  total: number;
+  pending: number;
+  approved: number;
+  rejected: number;
+  borrowed: number;
+  returned: number;
+  overdue: number;
+  lost_damaged: number;
 };
 
 export function mapBorrow(item: ApiBorrow): BorrowRow {
@@ -165,6 +186,16 @@ export function useBorrows(
   const [isLoading, setIsLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState("");
+  const [aggregates, setAggregates] = useState<BorrowAggregates>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    borrowed: 0,
+    returned: 0,
+    overdue: 0,
+    lost_damaged: 0,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -201,6 +232,16 @@ export function useBorrows(
 
         setBorrows(mapped);
         setTotalCount(Array.isArray(payload) ? mapped.length : (payload.count ?? mapped.length));
+        setAggregates({
+          total: Array.isArray(payload) ? mapped.length : Number(payload.aggregates?.total ?? 0),
+          pending: Array.isArray(payload) ? 0 : Number(payload.aggregates?.pending ?? 0),
+          approved: Array.isArray(payload) ? 0 : Number(payload.aggregates?.approved ?? 0),
+          rejected: Array.isArray(payload) ? 0 : Number(payload.aggregates?.rejected ?? 0),
+          borrowed: Array.isArray(payload) ? 0 : Number(payload.aggregates?.borrowed ?? 0),
+          returned: Array.isArray(payload) ? 0 : Number(payload.aggregates?.returned ?? 0),
+          overdue: Array.isArray(payload) ? 0 : Number(payload.aggregates?.overdue ?? 0),
+          lost_damaged: Array.isArray(payload) ? 0 : Number(payload.aggregates?.lost_damaged ?? 0),
+        });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
@@ -224,6 +265,7 @@ export function useBorrows(
     setBorrows,
     totalCount,
     setTotalCount,
+    aggregates,
     isLoading,
     hasLoadedOnce,
     error,

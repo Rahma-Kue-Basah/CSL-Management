@@ -36,6 +36,14 @@ type ApiUser = {
 type ApiUsersResponse = {
   count?: number;
   results?: ApiUser[];
+  aggregates?: {
+    total?: number;
+    student?: number;
+    lecturer?: number;
+    admin?: number;
+    staff?: number;
+    guest?: number;
+  } | null;
 };
 
 export type UserRow = {
@@ -50,6 +58,15 @@ export type UserRow = {
   department: string;
   idNumber: string;
   isVerified: boolean;
+};
+
+export type UserRoleAggregates = {
+  total: number;
+  student: number;
+  lecturer: number;
+  admin: number;
+  staff: number;
+  guest: number;
 };
 
 export function mapUser(item: ApiUser): UserRow {
@@ -153,6 +170,14 @@ export function useUsers(
   const [isLoading, setIsLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState("");
+  const [aggregates, setAggregates] = useState<UserRoleAggregates>({
+    total: 0,
+    student: 0,
+    lecturer: 0,
+    admin: 0,
+    staff: 0,
+    guest: 0,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -190,6 +215,14 @@ export function useUsers(
 
         setUsers(mappedUsers);
         setTotalCount(Array.isArray(payload) ? mappedUsers.length : (payload.count ?? mappedUsers.length));
+        setAggregates({
+          total: Array.isArray(payload) ? mappedUsers.length : Number(payload.aggregates?.total ?? 0),
+          student: Array.isArray(payload) ? 0 : Number(payload.aggregates?.student ?? 0),
+          lecturer: Array.isArray(payload) ? 0 : Number(payload.aggregates?.lecturer ?? 0),
+          admin: Array.isArray(payload) ? 0 : Number(payload.aggregates?.admin ?? 0),
+          staff: Array.isArray(payload) ? 0 : Number(payload.aggregates?.staff ?? 0),
+          guest: Array.isArray(payload) ? 0 : Number(payload.aggregates?.guest ?? 0),
+        });
       } catch (loadError) {
         if (loadError instanceof DOMException && loadError.name === "AbortError") return;
         setError(
@@ -226,6 +259,7 @@ export function useUsers(
     setUsers,
     totalCount,
     setTotalCount,
+    aggregates,
     isLoading,
     hasLoadedOnce,
     error,

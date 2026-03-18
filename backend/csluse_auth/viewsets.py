@@ -65,6 +65,20 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
     pagination_class = DefaultPagination
     http_method_names = ["get", "delete"]
 
+    def _append_aggregates(self, response, aggregates):
+        response.data["aggregates"] = aggregates
+        return response
+
+    def _build_role_aggregates(self, queryset):
+        return {
+            "total": queryset.count(),
+            "student": queryset.filter(profile__role__iexact="Student").count(),
+            "lecturer": queryset.filter(profile__role__iexact="Lecturer").count(),
+            "admin": queryset.filter(profile__role__iexact="Admin").count(),
+            "staff": queryset.filter(profile__role__iexact="Staff").count(),
+            "guest": queryset.filter(profile__role__iexact="Guest").count(),
+        }
+
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())
         lookup_value = self.kwargs.get(self.lookup_url_kwarg or self.lookup_field)
@@ -112,6 +126,44 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
             )
 
         return qs
+
+    def list(self, request, *args, **kwargs):
+        aggregate_qs = (
+            User.objects.select_related("profile")
+            .annotate(
+                is_verified=Exists(
+                    EmailAddress.objects.filter(user=OuterRef("pk"), verified=True)
+                )
+            )
+        )
+
+        department = request.query_params.get("department")
+        batch = request.query_params.get("batch")
+        search_term = request.query_params.get("search") or request.query_params.get("q")
+
+        base_filters = {
+            "profile__department__iexact": department,
+            "profile__batch": batch,
+        }
+        base_filters = {key: value for key, value in base_filters.items() if value}
+        if base_filters:
+            aggregate_qs = aggregate_qs.filter(**base_filters)
+
+        if search_term:
+            aggregate_qs = aggregate_qs.filter(
+                models.Q(profile__full_name__icontains=search_term)
+                | models.Q(email__icontains=search_term)
+                | models.Q(profile__id_number__icontains=search_term)
+            )
+
+        aggregates = self._build_role_aggregates(aggregate_qs)
+
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page if page is not None else queryset, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
     def destroy(self, request, *args, **kwargs):
         target = self.get_object()

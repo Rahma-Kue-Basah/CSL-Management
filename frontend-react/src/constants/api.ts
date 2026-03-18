@@ -42,6 +42,7 @@ const API_AUTH_ADMIN_DASHBOARD_KPIS = `${API_AUTH_ADMIN_DASHBOARD}kpis/`;
 const API_BOOKINGS = `${API_BASE_URL}/bookings/`;
 const API_BOOKINGS_MY = `${API_BOOKINGS}my/`;
 const API_BOOKINGS_ALL = `${API_BOOKINGS}all/`;
+const API_BOOKINGS_ALL_EXPORT = `${API_BOOKINGS}all/export/`;
 const API_BOOKING_DETAIL = (id: string | number) => `${API_BOOKINGS}${id}/`;
 const API_BOOKING_APPROVE = (id: string | number) =>
   `${API_BOOKINGS}${id}/approve/`;
@@ -53,6 +54,7 @@ const API_BOOKINGS_BY_MONTH = `${API_BOOKINGS}by-month/`;
 
 // REGION: Borrows API Endpoints
 const API_BORROWS = `${API_BASE_URL}/borrows/`;
+const API_BORROWS_EXPORT = `${API_BORROWS}all/export/`;
 const API_BORROW_DETAIL = (id: string | number) => `${API_BORROWS}${id}/`;
 const API_BORROW_APPROVE = (id: string | number) =>
   `${API_BORROWS}${id}/approve/`;
@@ -65,6 +67,7 @@ const API_BORROWS_BY_MONTH = `${API_BORROWS}by-month/`;
 // REGION: Uses API Endpoints
 const API_USES = `${API_BASE_URL}/uses/`;
 const API_USES_MY = `${API_USES}my/`;
+const API_USES_EXPORT = `${API_USES}all/export/`;
 const API_USE_DETAIL = (id: string | number) => `${API_USES}${id}/`;
 const API_USE_APPROVE = (id: string | number) => `${API_USES}${id}/approve/`;
 const API_USE_REJECT = (id: string | number) => `${API_USES}${id}/reject/`;
@@ -72,6 +75,7 @@ const API_USE_COMPLETE = (id: string | number) => `${API_USES}${id}/complete/`;
 
 // REGION: Pengujians API Endpoints
 const API_PENGUJIANS = `${API_BASE_URL}/pengujians/`;
+const API_PENGUJIANS_EXPORT = `${API_PENGUJIANS}all/export/`;
 const API_PENGUJIAN_DETAIL = (id: string | number) =>
   `${API_PENGUJIANS}${id}/`;
 const API_PENGUJIAN_APPROVE = (id: string | number) =>
@@ -139,12 +143,14 @@ export {
   API_BOOKINGS,
   API_BOOKINGS_MY,
   API_BOOKINGS_ALL,
+  API_BOOKINGS_ALL_EXPORT,
   API_BOOKING_DETAIL,
   API_BOOKING_APPROVE,
   API_BOOKING_REJECT,
   API_BOOKING_COMPLETE,
   API_BOOKINGS_BY_MONTH,
   API_BORROWS,
+  API_BORROWS_EXPORT,
   API_BORROW_DETAIL,
   API_BORROW_APPROVE,
   API_BORROW_REJECT,
@@ -152,11 +158,13 @@ export {
   API_BORROWS_BY_MONTH,
   API_USES,
   API_USES_MY,
+  API_USES_EXPORT,
   API_USE_DETAIL,
   API_USE_APPROVE,
   API_USE_REJECT,
   API_USE_COMPLETE,
   API_PENGUJIANS,
+  API_PENGUJIANS_EXPORT,
   API_PENGUJIAN_DETAIL,
   API_PENGUJIAN_APPROVE,
   API_PENGUJIAN_REJECT,

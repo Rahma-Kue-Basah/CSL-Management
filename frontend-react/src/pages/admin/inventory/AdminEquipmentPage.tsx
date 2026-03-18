@@ -50,7 +50,7 @@ import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { authFetch } from "@/lib/auth";
 import { toast } from "sonner";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 type ActionType = "create" | "detail";

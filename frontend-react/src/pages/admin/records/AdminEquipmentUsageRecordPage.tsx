@@ -6,25 +6,29 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
+import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
 import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
-import { API_USE_DETAIL } from "@/constants/api";
-import { useUses, type UseRow } from "@/hooks/uses/use-uses";
+import { API_USE_DETAIL, API_USES_EXPORT } from "@/constants/api";
+import { mapUse, useUses, type UseRow } from "@/hooks/uses/use-uses";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
+import { USE_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
   REQUEST_STATUS_OPTIONS,
 } from "@/lib/status";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
+import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 const STATUS_OPTIONS = REQUEST_STATUS_OPTIONS;
 
 function formatDateTime(value?: string | null) {
@@ -39,11 +43,6 @@ function formatDateTime(value?: string | null) {
     minute: "2-digit",
     hour12: false,
   }).format(date);
-}
-
-function formatDateRange(start?: string | null, end?: string | null) {
-  if (!start && !end) return "-";
-  return `${formatDateTime(start)} — ${formatDateTime(end)}`;
 }
 
 function matchesSearch(row: UseRow, query: string) {
@@ -72,13 +71,35 @@ export default function AdminRecordPenggunaanAlatPage() {
   } | null>(null);
   const { deleteRecord, isDeleting } = useDeleteRecord();
   const { updateUseStatus, pendingAction } = useUpdateUseStatus();
+  const {
+    exportPdf,
+    exportExcel,
+    isExportingPdf,
+    isExportingExcel,
+  } = useAdminRecordExport({
+    endpoint: API_USES_EXPORT,
+    filters: {
+      q: debouncedSearch,
+      status,
+      created_after: createdAfter ? toStartOfDay(createdAfter) : "",
+      created_before: createdBefore ? toEndOfDay(createdBefore) : "",
+    },
+    mapItem: mapUse,
+    title: "Record Penggunaan Alat",
+    pdfFilename: "record-penggunaan-alat.pdf",
+    excelFilename: "record-penggunaan-alat.xlsx",
+    columns: USE_EXPORT_COLUMNS,
+    emptyMessage: "Tidak ada data penggunaan alat untuk diunduh.",
+    pdfSuccessMessage: "PDF penggunaan alat berhasil diunduh.",
+    excelSuccessMessage: "Excel penggunaan alat berhasil diunduh.",
+  });
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const { uses, totalCount, isLoading, hasLoadedOnce, error } = useUses(
+  const { uses, totalCount, aggregates, isLoading, hasLoadedOnce, error } = useUses(
     page,
     PAGE_SIZE,
     {
@@ -148,6 +169,17 @@ export default function AdminRecordPenggunaanAlatPage() {
             icon={<Eye className="h-5 w-5 text-sky-200" />}
           />
 
+          <AdminRecordSummaryCards
+            items={[
+              { label: "Total", value: aggregates.total, tone: "blue" },
+              { label: "Pending", value: aggregates.pending },
+              { label: "Approved", value: aggregates.approved },
+              { label: "Completed", value: aggregates.completed },
+              { label: "Rejected", value: aggregates.rejected },
+              { label: "Expired", value: aggregates.expired },
+            ]}
+          />
+
           <InventoryFilterCard
             open={filterOpen}
             onToggle={() => setFilterOpen((prev) => !prev)}
@@ -205,7 +237,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                     setPage(1);
                   }}
                   clearable
-                  buttonClassName="border-slate-400 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  buttonClassName="h-9 w-full rounded-md border-slate-400 bg-white px-2 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                 />
               </div>
               <div className="min-w-0">
@@ -219,11 +251,23 @@ export default function AdminRecordPenggunaanAlatPage() {
                     setPage(1);
                   }}
                   clearable
-                  buttonClassName="border-slate-400 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  buttonClassName="h-9 w-full rounded-md border-slate-400 bg-white px-2 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                 />
               </div>
             </form>
           </InventoryFilterCard>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs text-slate-500">
+              Export mengikuti filter dan pencarian yang sedang aktif.
+            </p>
+            <AdminRecordExportActions
+              onExportExcel={exportExcel}
+              onExportPdf={exportPdf}
+              isExportingExcel={isExportingExcel}
+              isExportingPdf={isExportingPdf}
+            />
+          </div>
 
           {error ? (
             <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">

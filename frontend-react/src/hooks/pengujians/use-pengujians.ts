@@ -70,6 +70,23 @@ type ApiPengujian = {
 type ApiPengujiansResponse = {
   count?: number;
   results?: ApiPengujian[];
+  aggregates?: {
+    total?: number;
+    pending?: number;
+    approved?: number;
+    completed?: number;
+    rejected?: number;
+    expired?: number;
+  } | null;
+};
+
+export type PengujianAggregates = {
+  total: number;
+  pending: number;
+  approved: number;
+  completed: number;
+  rejected: number;
+  expired: number;
 };
 
 export function mapPengujian(item: ApiPengujian): PengujianRow {
@@ -175,6 +192,14 @@ export function usePengujians(
   const [isLoading, setIsLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState("");
+  const [aggregates, setAggregates] = useState<PengujianAggregates>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    completed: 0,
+    rejected: 0,
+    expired: 0,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -205,6 +230,14 @@ export function usePengujians(
 
         setPengujians(mapped);
         setTotalCount(Array.isArray(payload) ? mapped.length : (payload.count ?? mapped.length));
+        setAggregates({
+          total: Array.isArray(payload) ? mapped.length : Number(payload.aggregates?.total ?? 0),
+          pending: Array.isArray(payload) ? 0 : Number(payload.aggregates?.pending ?? 0),
+          approved: Array.isArray(payload) ? 0 : Number(payload.aggregates?.approved ?? 0),
+          completed: Array.isArray(payload) ? 0 : Number(payload.aggregates?.completed ?? 0),
+          rejected: Array.isArray(payload) ? 0 : Number(payload.aggregates?.rejected ?? 0),
+          expired: Array.isArray(payload) ? 0 : Number(payload.aggregates?.expired ?? 0),
+        });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
@@ -228,6 +261,7 @@ export function usePengujians(
     setPengujians,
     totalCount,
     setTotalCount,
+    aggregates,
     isLoading,
     hasLoadedOnce,
     error,

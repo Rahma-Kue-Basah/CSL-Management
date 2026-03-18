@@ -39,7 +39,7 @@ import { useUpdateSchedule } from "@/hooks/schedules/use-update-schedule";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { toast } from "sonner";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 const EMPTY_FORM: ScheduleFormState = {
   title: "",

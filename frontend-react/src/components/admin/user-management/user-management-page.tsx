@@ -22,6 +22,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import * as XLSX from "xlsx";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
 import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,7 +71,7 @@ type FiltersState = {
   batch: string;
 };
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 const HEADER_MAP: Record<string, keyof Pick<BulkRow, "full_name" | "email" | "password" | "role">> = {
   "nama lengkap": "full_name",
   nama: "full_name",
@@ -147,6 +148,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
     setUsers,
     totalCount,
     setTotalCount,
+    aggregates,
     isLoading,
     hasLoadedOnce,
     error,
@@ -235,6 +237,19 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
               ) : null
             }
           />
+
+          {!isRoleScoped ? (
+            <AdminRecordSummaryCards
+              items={[
+                { label: "Total", value: aggregates.total, tone: "blue" },
+                { label: "Student", value: aggregates.student, tone: "blue" },
+                { label: "Lecturer", value: aggregates.lecturer, tone: "emerald" },
+                { label: "Admin", value: aggregates.admin, tone: "sky" },
+                { label: "Staff", value: aggregates.staff, tone: "amber" },
+                { label: "Guest", value: aggregates.guest, tone: "slate" },
+              ]}
+            />
+          ) : null}
 
           {!isRoleScoped ? (
             <InventoryFilterCard

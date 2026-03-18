@@ -86,8 +86,20 @@ def normalize_status_value(value):
     return STATUS_VALUE_MAP.get(raw.lower(), raw)
 
 
+def is_staff_or_above(user):
+    return (
+        user
+        and user.is_authenticated
+        and (
+            has_role(user, STAFF)
+            or has_role(user, ADMINISTRATOR)
+            or has_role(user, SUPER_ADMINISTRATOR)
+        )
+    )
+
+
 class DefaultPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 100
 
@@ -124,6 +136,19 @@ def build_status_aggregates(queryset, completed_statuses=None):
         "completed": queryset.filter(status__in=completed_statuses).count(),
         "rejected": queryset.filter(status="Rejected").count(),
         "expired": queryset.filter(status="Expired").count(),
+    }
+
+
+def build_borrow_status_aggregates(queryset):
+    return {
+        "total": queryset.count(),
+        "pending": queryset.filter(status="Pending").count(),
+        "approved": queryset.filter(status="Approved").count(),
+        "rejected": queryset.filter(status="Rejected").count(),
+        "borrowed": queryset.filter(status="Borrowed").count(),
+        "returned": queryset.filter(status="Returned").count(),
+        "overdue": queryset.filter(status="Overdue").count(),
+        "lost_damaged": queryset.filter(status="Lost/Damaged").count(),
     }
 
 
@@ -488,16 +513,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     pagination_class = DefaultPagination
 
     def _is_staff_or_above(self):
-        user = self.request.user
-        return (
-            user
-            and user.is_authenticated
-            and (
-                has_role(user, STAFF)
-                or has_role(user, ADMINISTRATOR)
-                or has_role(user, SUPER_ADMINISTRATOR)
-            )
-        )
+        return is_staff_or_above(self.request.user)
 
     def _auto_update_booking_statuses(self):
         sync_booking_statuses()
@@ -563,6 +579,20 @@ class BookingViewSet(viewsets.ModelViewSet):
             qs = qs.filter(created_at__lte=created_before)
         return qs
 
+    def _apply_export_search(self, qs):
+        query = (self.request.query_params.get('q') or '').strip()
+        if not query:
+            return qs
+        return qs.filter(
+            Q(code__icontains=query)
+            | Q(room__name__icontains=query)
+            | Q(requested_by__full_name__icontains=query)
+            | Q(requested_by__user__email__icontains=query)
+            | Q(purpose__icontains=query)
+            | Q(attendee_names__icontains=query)
+            | Q(equipment_items__equipment__name__icontains=query)
+        ).distinct()
+
     def get_queryset(self):
         self._auto_update_booking_statuses()
         qs = super().get_queryset()
@@ -614,6 +644,21 @@ class BookingViewSet(viewsets.ModelViewSet):
         if page is not None:
             return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
         return Response({"results": serializer.data, "aggregates": aggregates})
+
+    @action(detail=False, methods=['get'], url_path='all/export')
+    def export_all(self, request):
+        if not self._is_staff_or_above():
+            raise PermissionDenied("Anda tidak memiliki akses untuk export data booking.")
+
+        self._auto_update_booking_statuses()
+        qs = self._apply_list_filters(super().get_queryset(), allow_requester_filter=True)
+        qs = self._apply_export_search(qs)
+        serializer = BookingListSerializer(qs, many=True)
+        return Response({
+            "count": qs.count(),
+            "generated_at": timezone.now(),
+            "results": serializer.data,
+        })
 
     @action(detail=False, methods=['get'], url_path='by-month')
     def by_month(self, request):
@@ -700,6 +745,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
             return BorrowListSerializer
         return BorrowSerializer
 
+    def _append_aggregates(self, response, aggregates):
+        response.data["aggregates"] = aggregates
+        return response
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -714,7 +763,14 @@ class BorrowViewSet(viewsets.ModelViewSet):
         ]
     )
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        aggregate_qs = super().get_queryset()
+        aggregates = build_borrow_status_aggregates(aggregate_qs)
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page if page is not None else queryset, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -745,6 +801,18 @@ class BorrowViewSet(viewsets.ModelViewSet):
         if created_before:
             qs = qs.filter(created_at__lte=created_before)
         return qs
+
+    def _apply_export_search(self, qs):
+        query = (self.request.query_params.get('q') or '').strip()
+        if not query:
+            return qs
+        return qs.filter(
+            Q(code__icontains=query)
+            | Q(equipment__name__icontains=query)
+            | Q(requested_by__full_name__icontains=query)
+            | Q(requested_by__user__email__icontains=query)
+            | Q(purpose__icontains=query)
+        ).distinct()
 
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
@@ -790,6 +858,18 @@ class BorrowViewSet(viewsets.ModelViewSet):
         )
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='all/export')
+    def export(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk export data peminjaman alat.")
+        qs = self._apply_export_search(self.get_queryset())
+        serializer = BorrowListSerializer(qs, many=True)
+        return Response({
+            "count": qs.count(),
+            "generated_at": timezone.now(),
+            "results": serializer.data,
+        })
     
     @action(detail=True, methods=['post'], url_path='return')
     def return_item(self, request, pk=None):
@@ -1327,6 +1407,10 @@ class PengujianViewSet(viewsets.ModelViewSet):
             return PengujianListSerializer
         return PengujianSerializer
 
+    def _append_aggregates(self, response, aggregates):
+        response.data["aggregates"] = aggregates
+        return response
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -1335,7 +1419,14 @@ class PengujianViewSet(viewsets.ModelViewSet):
         ]
     )
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        aggregate_qs = super().get_queryset()
+        aggregates = build_status_aggregates(aggregate_qs)
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page if page is not None else queryset, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -1350,6 +1441,18 @@ class PengujianViewSet(viewsets.ModelViewSet):
         if approved_by:
             qs = qs.filter(approved_by_id=approved_by)
         return qs
+
+    def _apply_export_search(self, qs):
+        query = (self.request.query_params.get('q') or '').strip()
+        if not query:
+            return qs
+        return qs.filter(
+            Q(code__icontains=query)
+            | Q(name__icontains=query)
+            | Q(institution__icontains=query)
+            | Q(email__icontains=query)
+            | Q(sample_type__icontains=query)
+        ).distinct()
 
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
@@ -1374,6 +1477,18 @@ class PengujianViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
         return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='all/export')
+    def export(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk export data pengujian sampel.")
+        qs = self._apply_export_search(self.get_queryset())
+        serializer = PengujianListSerializer(qs, many=True)
+        return Response({
+            "count": qs.count(),
+            "generated_at": timezone.now(),
+            "results": serializer.data,
+        })
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
@@ -1487,6 +1602,19 @@ class UseViewSet(viewsets.ModelViewSet):
             qs = qs.filter(created_at__lte=created_before)
         return qs
 
+    def _apply_export_search(self, qs):
+        query = (self.request.query_params.get('q') or '').strip()
+        if not query:
+            return qs
+        return qs.filter(
+            Q(code__icontains=query)
+            | Q(equipment__name__icontains=query)
+            | Q(equipment__room__name__icontains=query)
+            | Q(requested_by__full_name__icontains=query)
+            | Q(requested_by__user__email__icontains=query)
+            | Q(purpose__icontains=query)
+        ).distinct()
+
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
@@ -1536,6 +1664,20 @@ class UseViewSet(viewsets.ModelViewSet):
         if page is not None:
             return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
         return Response({"results": serializer.data, "aggregates": aggregates})
+
+    @action(detail=False, methods=['get'], url_path='all/export')
+    def export(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk export data penggunaan alat.")
+
+        self._auto_update_use_statuses()
+        qs = self._apply_export_search(self.get_queryset())
+        serializer = UseListSerializer(qs, many=True)
+        return Response({
+            "count": qs.count(),
+            "generated_at": timezone.now(),
+            "results": serializer.data,
+        })
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
