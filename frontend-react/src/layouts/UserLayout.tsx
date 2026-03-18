@@ -199,27 +199,27 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   },
   {
     id: "use-equipment",
-    label: "Booking Alat",
+    label: "Penggunaan Alat",
     description: "Kelola pengajuan penggunaan alat beserta formulirnya.",
     href: "/use-equipment/form",
     icon: Wrench,
     actions: [
       {
         id: "request-form",
-        label: "Ajukan Booking",
-        description: "Buat pengajuan booking alat melalui formulir.",
+        label: "Ajukan Penggunaan",
+        description: "Buat pengajuan penggunaan alat melalui formulir.",
         href: "/use-equipment/form",
       },
       {
         id: "request-list",
         label: "Pengajuan Saya",
-        description: "Lihat daftar pengajuan booking alat Anda.",
+        description: "Lihat daftar pengajuan penggunaan alat Anda.",
         href: "/use-equipment",
       },
       {
         id: "all-requests",
         label: "Daftar Pengajuan",
-        description: "Lihat seluruh daftar pengajuan booking alat.",
+        description: "Lihat seluruh daftar pengajuan penggunaan alat.",
         href: "/use-equipment/all",
       },
       {
@@ -403,6 +403,11 @@ function DashboardShell({ children }: UserLayoutProps) {
   const router = useRouter();
   const isMobile = useIsMobile();
   const { profile } = useLoadProfile();
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.sessionStorage.setItem("last_app_path", pathname);
+  }, [pathname]);
 
   const { menu: menuParam, action: actionParam } = parseDashboardPath(pathname);
   const defaultMenuId = SIDEBAR_SHORTCUTS[0].id;

@@ -74,8 +74,6 @@ STATUS_VALUE_MAP = {
     "overdue": "Overdue",
     "lost_damaged": "Lost/Damaged",
     "lost/damaged": "Lost/Damaged",
-    "in_use": "In Use",
-    "in use": "In Use",
 }
 
 
@@ -124,8 +122,37 @@ def build_status_aggregates(queryset, completed_statuses=None):
         "pending": queryset.filter(status="Pending").count(),
         "approved": queryset.filter(status="Approved").count(),
         "completed": queryset.filter(status__in=completed_statuses).count(),
-        "rejected": queryset.filter(status__in=["Rejected", "Expired"]).count(),
+        "rejected": queryset.filter(status="Rejected").count(),
+        "expired": queryset.filter(status="Expired").count(),
     }
+
+
+def sync_booking_statuses():
+    now = timezone.now()
+    (
+        Booking.objects
+        .filter(status="Pending", end_time__lt=now)
+        .update(status="Expired", updated_at=now)
+    )
+    (
+        Booking.objects
+        .filter(status="Approved", end_time__lt=now)
+        .update(status="Completed", updated_at=now)
+    )
+
+
+def sync_use_statuses():
+    now = timezone.now()
+    (
+        Use.objects
+        .filter(status="Pending", end_time__lt=now)
+        .update(status="Expired", updated_at=now)
+    )
+    (
+        Use.objects
+        .filter(status="Pending", end_time__isnull=True, start_time__lt=now)
+        .update(status="Expired", updated_at=now)
+    )
 
 
 class ImageViewSet(viewsets.ModelViewSet):
@@ -179,24 +206,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         ]
     )
     def list(self, request, *args, **kwargs):
-        requester_id = request.query_params.get('requested_by')
-        aggregate_qs = super().get_queryset()
-        if requester_id:
-            aggregate_qs = aggregate_qs.filter(requested_by_id=requester_id)
-        aggregates = build_status_aggregates(aggregate_qs)
-
-        queryset = self.filter_queryset(self.get_queryset())
-        page = self.paginate_queryset(queryset)
-        serializer = self.get_serializer(page if page is not None else queryset, many=True)
-        if page is not None:
-            response = self.get_paginated_response(serializer.data)
-            response.data["aggregates"] = aggregates
-            return response
-        return Response({"results": serializer.data, "aggregates": aggregates})
-
-    def _append_aggregates(self, response, aggregates):
-        response.data["aggregates"] = aggregates
-        return response
+        return super().list(request, *args, **kwargs)
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -490,17 +500,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         )
 
     def _auto_update_booking_statuses(self):
-        now = timezone.now()
-        (
-            Booking.objects
-            .filter(status="Pending", end_time__lt=now)
-            .update(status="Expired", updated_at=now)
-        )
-        (
-            Booking.objects
-            .filter(status="Approved", end_time__lt=now)
-            .update(status="Completed", updated_at=now)
-        )
+        sync_booking_statuses()
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -1054,7 +1054,7 @@ class CalendarViewSet(viewsets.ViewSet):
                 Use.objects
                 .filter(
                     start_time__lt=end,
-                    status__in=['Approved', 'In Use', 'Completed'],
+                    status__in=['Approved', 'Completed'],
                 )
                 .filter(Q(end_time__isnull=True) | Q(end_time__gt=start))
                 .select_related('equipment', 'equipment__room', 'requested_by')
@@ -1099,11 +1099,15 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                         "approved": 0,
                         "completed": 0,
                         "rejected": 0,
+                        "expired": 0,
                     },
                     "upcoming_approved": None,
                     "recent_activities": [],
                 }
             )
+
+        sync_booking_statuses()
+        sync_use_statuses()
 
         now = timezone.now()
 
@@ -1152,8 +1156,8 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
             if item.status == "Approved" and item.start_time and item.start_time >= now:
                 upcoming_items.append({
                     "id": f"use-{item.id}",
-                    "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Booking Alat"),
-                    "type": "Booking Alat",
+                    "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Penggunaan Alat"),
+                    "type": "Penggunaan Alat",
                     "start_time": item.start_time,
                     "end_time": item.end_time,
                     "href": f"/use-equipment/{item.id}",
@@ -1189,9 +1193,9 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
         for item in uses:
             recent_activities.append({
                 "id": f"use-{item.id}",
-                "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Booking Alat"),
+                "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Penggunaan Alat"),
                 "code": item.code or "",
-                "type": "Booking Alat",
+                "type": "Penggunaan Alat",
                 "status": item.status,
                 "created_at": item.created_at,
                 "href": f"/use-equipment/{item.id}",
@@ -1243,10 +1247,14 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                     + status_count(pengujians, "Completed")
                 ),
                 "rejected": (
-                    status_count(bookings, "Rejected", "Expired")
+                    status_count(bookings, "Rejected")
                     + status_count(uses, "Rejected")
                     + status_count(borrows, "Rejected")
                     + status_count(pengujians, "Rejected")
+                ),
+                "expired": (
+                    status_count(bookings, "Expired")
+                    + status_count(uses, "Expired")
                 ),
             },
             "upcoming_approved": upcoming_approved,
@@ -1416,17 +1424,7 @@ class UseViewSet(viewsets.ModelViewSet):
         return UseSerializer
 
     def _auto_update_use_statuses(self):
-        now = timezone.now()
-        (
-            Use.objects
-            .filter(status="Pending", end_time__lt=now)
-            .update(status="Expired", updated_at=now)
-        )
-        (
-            Use.objects
-            .filter(status="Pending", end_time__isnull=True, start_time__lt=now)
-            .update(status="Expired", updated_at=now)
-        )
+        sync_use_statuses()
 
     def _append_aggregates(self, response, aggregates):
         response.data["aggregates"] = aggregates

@@ -11,11 +11,16 @@ import {
   Loader2,
   OctagonX,
   Package,
+  X,
 } from "lucide-react";
 
 import { useDashboardOverview } from "@/hooks/dashboard/use-dashboard-overview";
 import { formatDateTimeWib } from "@/lib/date-time";
-import { getStatusBadgeClass } from "@/lib/status";
+import {
+  getStatusBadgeClass,
+  getStatusDisplayLabel,
+  getStatusSummaryTone,
+} from "@/lib/status";
 
 type OverviewItem = {
   id: string;
@@ -45,41 +50,47 @@ function SummaryCard({
   label: string;
   value: number;
   icon: ReactNode;
-  tone?: "slate" | "amber" | "emerald" | "sky" | "rose";
+  tone?: "slate" | "blue" | "amber" | "emerald" | "sky" | "rose";
 }) {
   const toneClass =
-    tone === "amber"
+    tone === "blue"
       ? {
-          card: "border-amber-200 bg-amber-50",
-          icon: "bg-amber-100 text-amber-700",
+          card: "border-blue-300 bg-blue-100",
+          icon: "bg-white/80 text-blue-800",
+          value: "text-blue-900",
+        }
+      : tone === "amber"
+      ? {
+          card: "border-amber-300 bg-amber-100",
+          icon: "bg-white/80 text-amber-800",
           value: "text-amber-900",
         }
       : tone === "emerald"
         ? {
-            card: "border-emerald-200 bg-emerald-50",
-            icon: "bg-emerald-100 text-emerald-700",
+            card: "border-emerald-300 bg-emerald-100",
+            icon: "bg-white/80 text-emerald-800",
             value: "text-emerald-900",
           }
         : tone === "sky"
           ? {
-              card: "border-sky-200 bg-sky-50",
-              icon: "bg-sky-100 text-sky-700",
+              card: "border-sky-300 bg-sky-100",
+              icon: "bg-white/80 text-sky-800",
               value: "text-sky-900",
             }
           : tone === "rose"
             ? {
-                card: "border-rose-200 bg-rose-50",
-                icon: "bg-rose-100 text-rose-700",
+                card: "border-rose-300 bg-rose-100",
+                icon: "bg-white/80 text-rose-800",
                 value: "text-rose-900",
               }
             : {
-                card: "border-slate-200 bg-white",
-                icon: "bg-slate-100 text-slate-700",
+                card: "border-slate-300 bg-slate-100",
+                icon: "bg-white/80 text-slate-800",
                 value: "text-slate-900",
               };
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-sm ${toneClass.card}`}>
+    <div className={`rounded-2xl border p-4 shadow-[0_6px_18px_rgba(15,23,42,0.08)] ${toneClass.card}`}>
       <div className="flex min-h-28 items-stretch justify-between gap-3">
         <div className="flex min-w-0 flex-1 flex-col justify-between">
           <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -112,7 +123,7 @@ function RecentActivityItem({ item }: { item: OverviewItem }) {
         <span
           className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status, { bordered: true })}`}
         >
-          {item.status}
+          {getStatusDisplayLabel(item.status)}
         </span>
       </div>
 
@@ -218,36 +229,42 @@ export default function DashboardOverviewPage() {
 
   return (
     <section className="space-y-6">
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
         <SummaryCard
           label="Total Pengajuan"
           value={overview.totals.total_requests}
           icon={<ClipboardList className="h-5 w-5" />}
-          tone="slate"
+          tone="blue"
         />
         <SummaryCard
-          label="Menunggu Proses"
+          label="Pending"
           value={overview.totals.pending}
           icon={<CalendarClock className="h-5 w-5" />}
-          tone="amber"
+          tone={getStatusSummaryTone("Pending")}
         />
         <SummaryCard
-          label="Disetujui"
+          label="Approved"
           value={overview.totals.approved}
           icon={<CheckCircle2 className="h-5 w-5" />}
-          tone="emerald"
+          tone={getStatusSummaryTone("Approved")}
         />
         <SummaryCard
-          label="Selesai"
+          label="Completed"
           value={overview.totals.completed}
           icon={<Package className="h-5 w-5" />}
-          tone="sky"
+          tone={getStatusSummaryTone("Completed")}
         />
         <SummaryCard
-          label="Ditolak"
+          label="Rejected"
           value={overview.totals.rejected}
           icon={<OctagonX className="h-5 w-5" />}
-          tone="rose"
+          tone={getStatusSummaryTone("Rejected")}
+        />
+        <SummaryCard
+          label="Expired"
+          value={overview.totals.expired}
+          icon={<X className="h-5 w-5" />}
+          tone={getStatusSummaryTone("Expired")}
         />
       </div>
 

@@ -22,7 +22,11 @@ import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useUses } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-time";
-import { getStatusBadgeClass } from "@/lib/status";
+import {
+  getStatusBadgeClass,
+  getStatusDisplayLabel,
+  getStatusSummaryTone,
+} from "@/lib/status";
 import {
   toEndOfDay,
   toStartOfDay,
@@ -43,42 +47,48 @@ function SummaryCard({
   label: string;
   value: number;
   icon: ReactNode;
-  tone: "blue" | "amber" | "emerald" | "violet" | "rose";
+  tone: "slate" | "blue" | "amber" | "emerald" | "sky" | "rose";
 }) {
   const toneClass =
     tone === "blue"
       ? {
-          card: "border-blue-200/80 bg-blue-50/70",
-          icon: "bg-blue-100 text-blue-700",
+          card: "border-blue-300 bg-blue-100/90",
+          icon: "bg-white/80 text-blue-800",
           value: "text-blue-900",
         }
       : tone === "amber"
         ? {
-            card: "border-amber-200/80 bg-amber-50/70",
-            icon: "bg-amber-100 text-amber-700",
+            card: "border-amber-300 bg-amber-100/90",
+            icon: "bg-white/80 text-amber-800",
             value: "text-amber-900",
           }
         : tone === "emerald"
           ? {
-              card: "border-emerald-200/80 bg-emerald-50/70",
-              icon: "bg-emerald-100 text-emerald-700",
-              value: "text-emerald-900",
-            }
-          : tone === "violet"
+            card: "border-emerald-300 bg-emerald-100/90",
+            icon: "bg-white/80 text-emerald-800",
+            value: "text-emerald-900",
+          }
+          : tone === "sky"
             ? {
-                card: "border-violet-200/80 bg-violet-50/70",
-                icon: "bg-violet-100 text-violet-700",
-                value: "text-violet-900",
+                card: "border-sky-300 bg-sky-100/90",
+                icon: "bg-white/80 text-sky-800",
+                value: "text-sky-900",
               }
-            : {
-                card: "border-rose-200/80 bg-rose-50/70",
-                icon: "bg-rose-100 text-rose-700",
-                value: "text-rose-900",
-              };
+            : tone === "rose"
+              ? {
+                  card: "border-rose-300 bg-rose-100/90",
+                  icon: "bg-white/80 text-rose-800",
+                  value: "text-rose-900",
+                }
+              : {
+                  card: "border-slate-300 bg-slate-100/90",
+                  icon: "bg-white/80 text-slate-800",
+                  value: "text-slate-900",
+                };
 
   return (
     <div
-      className={`rounded-xl border p-3 shadow-[0_1px_2px_rgba(15,23,42,0.04)] ${toneClass.card}`}
+      className={`rounded-xl border p-3 shadow-[0_4px_14px_rgba(15,23,42,0.08)] ${toneClass.card}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-h-14 flex-col justify-between">
@@ -169,6 +179,7 @@ export default function UseEquipmentListContent({
   const approvedCount = aggregates.approved;
   const completedCount = aggregates.completed;
   const rejectedCount = aggregates.rejected;
+  const expiredCount = aggregates.expired;
 
   const handleUseAction = async () => {
     if (!confirmState) return;
@@ -179,8 +190,8 @@ export default function UseEquipmentListContent({
     if (result.ok) {
       toast.success(
         type === "approve"
-          ? "Pengajuan booking alat berhasil disetujui."
-          : "Pengajuan booking alat berhasil ditolak.",
+          ? "Pengajuan penggunaan alat berhasil disetujui."
+          : "Pengajuan penggunaan alat berhasil ditolak.",
       );
       setReloadKey((prev) => prev + 1);
       setConfirmState(null);
@@ -192,36 +203,42 @@ export default function UseEquipmentListContent({
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
         <SummaryCard
           label="Total Pengajuan"
           value={aggregates.total}
           icon={<Package className="h-4 w-4" />}
-          tone="blue"
+          tone={getStatusSummaryTone("total")}
         />
         <SummaryCard
           label="Pending"
           value={pendingCount}
           icon={<CalendarClock className="h-4 w-4" />}
-          tone="amber"
+          tone={getStatusSummaryTone("Pending")}
         />
         <SummaryCard
           label="Approved"
           value={approvedCount}
           icon={<CheckCircle2 className="h-4 w-4" />}
-          tone="emerald"
+          tone={getStatusSummaryTone("Approved")}
         />
         <SummaryCard
           label="Completed"
           value={completedCount}
           icon={<CheckCircle2 className="h-4 w-4" />}
-          tone="violet"
+          tone={getStatusSummaryTone("Completed")}
         />
         <SummaryCard
           label="Rejected"
           value={rejectedCount}
           icon={<RotateCcw className="h-4 w-4" />}
-          tone="rose"
+          tone={getStatusSummaryTone("Rejected")}
+        />
+        <SummaryCard
+          label="Expired"
+          value={expiredCount}
+          icon={<X className="h-4 w-4" />}
+          tone={getStatusSummaryTone("Expired")}
         />
       </div>
 
@@ -276,7 +293,7 @@ export default function UseEquipmentListContent({
                     <span
                       className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                     >
-                      {item.status}
+                      {getStatusDisplayLabel(item.status)}
                     </span>
                   </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">

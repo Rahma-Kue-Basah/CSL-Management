@@ -16,7 +16,7 @@ type CreateUsePayload = {
 
 function parseUseError(
   data: unknown,
-  fallback = "Gagal membuat pengajuan booking alat.",
+  fallback = "Gagal membuat pengajuan penggunaan alat.",
 ) {
   if (!data || typeof data !== "object") return fallback;
   const typed = data as Record<string, unknown>;
@@ -79,7 +79,7 @@ export function useCreateUse() {
         return { ok: true as const };
       }
 
-      let message = "Gagal membuat pengajuan booking alat. Periksa data lalu coba lagi.";
+      let message = "Gagal membuat pengajuan penggunaan alat. Periksa data lalu coba lagi.";
       try {
         const data = (await response.json()) as unknown;
         message = parseUseError(data, message);

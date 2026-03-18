@@ -77,6 +77,7 @@ type ApiUsesResponse = {
     approved?: number;
     completed?: number;
     rejected?: number;
+    expired?: number;
   } | null;
 };
 
@@ -86,6 +87,7 @@ export type UseAggregates = {
   approved: number;
   completed: number;
   rejected: number;
+  expired: number;
 };
 
 export function mapUse(item: ApiUse): UseRow {
@@ -193,6 +195,7 @@ export function useUses(
     approved: 0,
     completed: 0,
     rejected: 0,
+    expired: 0,
   });
 
   useEffect(() => {
@@ -205,6 +208,7 @@ export function useUses(
         approved: 0,
         completed: 0,
         rejected: 0,
+        expired: 0,
       });
       setError("");
       setIsLoading(false);
@@ -256,6 +260,7 @@ export function useUses(
           approved: Array.isArray(payload) ? 0 : Number(payload.aggregates?.approved ?? 0),
           completed: Array.isArray(payload) ? 0 : Number(payload.aggregates?.completed ?? 0),
           rejected: Array.isArray(payload) ? 0 : Number(payload.aggregates?.rejected ?? 0),
+          expired: Array.isArray(payload) ? 0 : Number(payload.aggregates?.expired ?? 0),
         });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;

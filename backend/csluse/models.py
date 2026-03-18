@@ -217,7 +217,6 @@ class Use(BaseModel):
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
         ('Expired', 'Expired'),
-        ('In Use', 'In Use'),
         ('Completed', 'Completed'),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')

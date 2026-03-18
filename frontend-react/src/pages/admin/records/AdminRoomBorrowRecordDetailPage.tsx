@@ -8,6 +8,7 @@ import { useBookingDetail } from "@/hooks/bookings/use-bookings";
 import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
+import { getStatusDisplayLabel } from "@/lib/status";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
@@ -159,7 +160,7 @@ export default function AdminRoomBorrowRecordDetailPage() {
                     ) : (
                       <Check className="h-4 w-4" />
                     )}
-                    Approve
+                    Setujui
                   </Button>
                   <Button
                     type="button"
@@ -174,7 +175,7 @@ export default function AdminRoomBorrowRecordDetailPage() {
                     ) : (
                       <X className="h-4 w-4" />
                     )}
-                    Reject
+                    Tolak
                   </Button>
                 </>
               ) : null}
@@ -215,7 +216,7 @@ export default function AdminRoomBorrowRecordDetailPage() {
                   : undefined
               }
             />
-            <DetailRow label="Status" value={booking.status} />
+            <DetailRow label="Status" value={getStatusDisplayLabel(booking.status)} />
             <DetailRow label="Tujuan" value={booking.purpose} />
             <DetailRow label="Jumlah Orang" value={booking.attendeeCount} />
             <DetailRow label="Nama Orang" value={booking.attendeeNames} />

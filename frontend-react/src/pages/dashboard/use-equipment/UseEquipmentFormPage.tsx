@@ -369,7 +369,7 @@ export default function UseEquipmentFormPage() {
     });
 
     if (result.ok) {
-      toast.success("Pengajuan booking alat berhasil dikirim.");
+      toast.success("Pengajuan penggunaan alat berhasil dikirim.");
       setFormData(initialFormData);
       setStartDate(undefined);
       setStartTime("");
@@ -389,7 +389,7 @@ export default function UseEquipmentFormPage() {
         onSubmit={handleOpenConfirmation}
       >
         <div className="border-b border-slate-200 pb-4">
-          <p className="text-base font-semibold text-slate-900">Form Booking Alat</p>
+          <p className="text-base font-semibold text-slate-900">Form Penggunaan Alat</p>
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -491,7 +491,7 @@ export default function UseEquipmentFormPage() {
             className="min-w-[180px]"
             disabled={isSubmitting || isLoadingEquipments}
           >
-            Ajukan Booking
+            Ajukan Penggunaan
           </Button>
         </div>
       </form>
@@ -507,7 +507,7 @@ export default function UseEquipmentFormPage() {
           <AlertDialogHeader className="place-items-start text-left">
             <AlertDialogTitle>Konfirmasi Pengajuan</AlertDialogTitle>
             <AlertDialogDescription>
-              Periksa kembali data booking alat sebelum pengajuan dikirim.
+              Periksa kembali data penggunaan alat sebelum pengajuan dikirim.
             </AlertDialogDescription>
           </AlertDialogHeader>
 

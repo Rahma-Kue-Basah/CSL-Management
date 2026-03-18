@@ -8,6 +8,7 @@ import { useUseDetail } from "@/hooks/uses/use-uses";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
+import { getStatusDisplayLabel } from "@/lib/status";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
@@ -155,7 +156,7 @@ export default function AdminEquipmentUsageRecordDetailPage() {
                     ) : (
                       <Check className="h-4 w-4" />
                     )}
-                    Approve
+                    Setujui
                   </Button>
                   <Button
                     type="button"
@@ -170,7 +171,7 @@ export default function AdminEquipmentUsageRecordDetailPage() {
                     ) : (
                       <X className="h-4 w-4" />
                     )}
-                    Reject
+                    Tolak
                   </Button>
                 </>
               ) : null}
@@ -207,7 +208,7 @@ export default function AdminEquipmentUsageRecordDetailPage() {
                   : undefined
               }
             />
-            <DetailRow label="Status" value={item.status} />
+            <DetailRow label="Status" value={getStatusDisplayLabel(item.status)} />
             <DetailRow label="Tujuan" value={item.purpose} />
             <DetailRow label="Waktu" value={formatDateRange(item.startTime, item.endTime)} />
             <DetailRow label="Dibuat" value={formatDateTime(item.createdAt)} />

@@ -47,10 +47,10 @@ export const TOP_NAV_ITEMS: TopNavItem[] = [
   },
   {
     id: "use-equipment",
-    label: "Booking Alat",
+    label: "Penggunaan Alat",
     children: [
       { label: "Pengajuan Saya", href: "/use-equipment" },
-      { label: "Ajukan Booking Alat", href: "/use-equipment/form" },
+      { label: "Ajukan Penggunaan Alat", href: "/use-equipment/form" },
       // { label: "Daftar Alat", href: "/equipment" },
     ],
   },

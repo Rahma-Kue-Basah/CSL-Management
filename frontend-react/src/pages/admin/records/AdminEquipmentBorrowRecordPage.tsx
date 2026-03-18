@@ -16,20 +16,14 @@ import { API_BORROW_DETAIL } from "@/constants/api";
 import { useBorrows, type BorrowRow } from "@/hooks/borrows/use-borrows";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
-import { getStatusBadgeClass } from "@/lib/status";
+import {
+  BORROW_STATUS_OPTIONS,
+  getStatusBadgeClass,
+  getStatusDisplayLabel,
+} from "@/lib/status";
 
 const PAGE_SIZE = 10;
-
-const STATUS_OPTIONS = [
-  { value: "", label: "Semua Status" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "borrowed", label: "Borrowed" },
-  { value: "returned", label: "Returned" },
-  { value: "overdue", label: "Overdue" },
-  { value: "lost_damaged", label: "Lost/Damaged" },
-];
+const STATUS_OPTIONS = BORROW_STATUS_OPTIONS;
 
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
@@ -272,7 +266,7 @@ export default function AdminRecordPeminjamanAlatPage() {
                             item.status,
                           )}`}
                         >
-                          {item.status || "-"}
+                          {getStatusDisplayLabel(item.status)}
                         </span>
                       </td>
                       <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">

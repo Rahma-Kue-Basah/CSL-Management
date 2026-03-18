@@ -11,6 +11,7 @@ export type DashboardOverviewTotals = {
   approved: number;
   completed: number;
   rejected: number;
+  expired: number;
 };
 
 export type DashboardOverviewUpcoming = {
@@ -38,6 +39,16 @@ export type DashboardOverviewResponse = {
   recent_activities: DashboardOverviewActivity[];
 };
 
+type DashboardOverviewTotalsPayload = Partial<DashboardOverviewTotals> & {
+  failed?: number;
+};
+
+type DashboardOverviewPayload = {
+  totals?: DashboardOverviewTotalsPayload;
+  upcoming_approved?: DashboardOverviewUpcoming;
+  recent_activities?: DashboardOverviewActivity[];
+};
+
 const EMPTY_OVERVIEW: DashboardOverviewResponse = {
   totals: {
     total_requests: 0,
@@ -45,6 +56,7 @@ const EMPTY_OVERVIEW: DashboardOverviewResponse = {
     approved: 0,
     completed: 0,
     rejected: 0,
+    expired: 0,
   },
   upcoming_approved: null,
   recent_activities: [],
@@ -73,14 +85,15 @@ export function useDashboardOverview() {
           throw new Error(`Gagal memuat dashboard overview (${response.status})`);
         }
 
-        const payload = (await response.json()) as Partial<DashboardOverviewResponse>;
+        const payload = (await response.json()) as DashboardOverviewPayload;
         setOverview({
           totals: {
             total_requests: payload.totals?.total_requests ?? 0,
             pending: payload.totals?.pending ?? 0,
             approved: payload.totals?.approved ?? 0,
             completed: payload.totals?.completed ?? 0,
-            rejected: payload.totals?.rejected ?? 0,
+            rejected: payload.totals?.rejected ?? payload.totals?.failed ?? 0,
+            expired: payload.totals?.expired ?? 0,
           },
           upcoming_approved: payload.upcoming_approved ?? null,
           recent_activities: Array.isArray(payload.recent_activities)

@@ -2,6 +2,47 @@ type StatusClassOptions = {
   bordered?: boolean;
 };
 
+export type StatusSummaryTone =
+  | "slate"
+  | "blue"
+  | "amber"
+  | "emerald"
+  | "sky"
+  | "rose";
+
+export type StatusOption = {
+  value: string;
+  label: string;
+};
+
+export const REQUEST_STATUS_OPTIONS: StatusOption[] = [
+  { value: "", label: "Semua Status" },
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+  { value: "expired", label: "Expired" },
+  { value: "completed", label: "Completed" },
+];
+
+export const BORROW_STATUS_OPTIONS: StatusOption[] = [
+  { value: "", label: "Semua Status" },
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+  { value: "borrowed", label: "Borrowed" },
+  { value: "returned", label: "Returned" },
+  { value: "overdue", label: "Overdue" },
+  { value: "lost_damaged", label: "Lost/Damaged" },
+];
+
+export const SAMPLE_TESTING_STATUS_OPTIONS: StatusOption[] = [
+  { value: "", label: "Semua Status" },
+  { value: "pending", label: "Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "rejected", label: "Rejected" },
+  { value: "completed", label: "Completed" },
+];
+
 export function normalizeStatus(status?: string | null) {
   return String(status ?? "").trim().toLowerCase();
 }
@@ -28,11 +69,7 @@ export function getStatusBadgeClass(
       ? "border-sky-200 bg-sky-50 text-sky-700"
       : "bg-sky-100 text-sky-700";
   }
-  if (
-    normalized === "in_use" ||
-    normalized === "in use" ||
-    normalized === "borrowed"
-  ) {
+  if (normalized === "borrowed") {
     return bordered
       ? "border-indigo-200 bg-indigo-50 text-indigo-700"
       : "bg-indigo-100 text-indigo-700";
@@ -61,4 +98,32 @@ export function getStatusBadgeClass(
   return bordered
     ? "border-slate-200 bg-slate-50 text-slate-700"
     : "bg-slate-100 text-slate-600";
+}
+
+export function getStatusSummaryTone(status?: string | null): StatusSummaryTone {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "approved") return "emerald";
+  if (normalized === "pending") return "amber";
+  if (normalized === "completed" || normalized === "returned") return "sky";
+  if (normalized === "rejected" || normalized === "lost_damaged") return "rose";
+  if (normalized === "expired" || normalized === "overdue") return "slate";
+
+  return "blue";
+}
+
+export function getStatusDisplayLabel(status?: string | null) {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "pending") return "Pending";
+  if (normalized === "approved") return "Approved";
+  if (normalized === "completed") return "Completed";
+  if (normalized === "rejected") return "Rejected";
+  if (normalized === "expired") return "Expired";
+  if (normalized === "borrowed") return "Borrowed";
+  if (normalized === "returned") return "Returned";
+  if (normalized === "overdue") return "Overdue";
+  if (normalized === "lost_damaged") return "Lost/Damaged";
+
+  return String(status ?? "").trim() || "-";
 }

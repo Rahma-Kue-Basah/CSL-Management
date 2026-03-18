@@ -14,17 +14,14 @@ import { Input } from "@/components/ui/input";
 import { API_PENGUJIAN_DETAIL } from "@/constants/api";
 import { usePengujians, type PengujianRow } from "@/hooks/pengujians/use-pengujians";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
-import { getStatusBadgeClass } from "@/lib/status";
+import {
+  getStatusBadgeClass,
+  getStatusDisplayLabel,
+  SAMPLE_TESTING_STATUS_OPTIONS,
+} from "@/lib/status";
 
 const PAGE_SIZE = 10;
-
-const STATUS_OPTIONS = [
-  { value: "", label: "Semua Status" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "completed", label: "Completed" },
-];
+const STATUS_OPTIONS = SAMPLE_TESTING_STATUS_OPTIONS;
 
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
@@ -226,7 +223,7 @@ export default function AdminRecordPengujianSampelPage() {
                             item.status,
                           )}`}
                         >
-                          {item.status || "-"}
+                          {getStatusDisplayLabel(item.status)}
                         </span>
                       </td>
                       <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">

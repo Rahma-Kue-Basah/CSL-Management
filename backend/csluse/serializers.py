@@ -703,6 +703,7 @@ class DashboardOverviewTotalsSerializer(serializers.Serializer):
     approved = serializers.IntegerField()
     completed = serializers.IntegerField()
     rejected = serializers.IntegerField()
+    expired = serializers.IntegerField()
 
 
 class DashboardOverviewUpcomingSerializer(serializers.Serializer):

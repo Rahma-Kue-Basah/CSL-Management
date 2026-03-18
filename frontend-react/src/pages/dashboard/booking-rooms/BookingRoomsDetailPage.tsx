@@ -22,7 +22,7 @@ import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { formatDateTimeWib } from "@/lib/date-time";
-import { getStatusBadgeClass } from "@/lib/status";
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type BookingDetailParams = {
   id?: string | string[];
@@ -151,7 +151,7 @@ function DetailItem({
         <span
           className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(displayValue)}`}
         >
-          {displayValue}
+          {getStatusDisplayLabel(displayValue)}
         </span>
       ) : (
         <p

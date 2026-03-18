@@ -17,19 +17,15 @@ import { useBookings, type BookingRow } from "@/hooks/bookings/use-bookings";
 import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
-import { getStatusBadgeClass } from "@/lib/status";
+import {
+  getStatusBadgeClass,
+  getStatusDisplayLabel,
+  REQUEST_STATUS_OPTIONS,
+} from "@/lib/status";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 
 const PAGE_SIZE = 10;
-
-const STATUS_OPTIONS = [
-  { value: "", label: "Semua Status" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "expired", label: "Expired" },
-  { value: "completed", label: "Completed" },
-];
+const STATUS_OPTIONS = REQUEST_STATUS_OPTIONS;
 
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
@@ -313,7 +309,7 @@ export default function AdminRecordPeminjamanRuanganPage() {
                             booking.status,
                           )}`}
                         >
-                          {booking.status || "-"}
+                          {getStatusDisplayLabel(booking.status)}
                         </span>
                       </td>
                       <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">

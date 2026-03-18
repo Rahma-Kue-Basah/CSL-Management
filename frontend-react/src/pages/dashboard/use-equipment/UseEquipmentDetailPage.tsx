@@ -22,7 +22,7 @@ import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useUseDetail } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-time";
-import { getStatusBadgeClass } from "@/lib/status";
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type UseDetailParams = {
   id?: string | string[];
@@ -68,11 +68,6 @@ function getUseFlow(item: {
       state: "wait",
     },
     {
-      key: "in-use",
-      label: "Digunakan",
-      state: "wait",
-    },
-    {
       key: "completed",
       label: "Selesai",
       state: "wait",
@@ -89,21 +84,11 @@ function getUseFlow(item: {
     baseSteps[2].time = formatDateTimeWib(item.updatedAt);
     return baseSteps;
   }
-  if (status === "in use" || status === "in_use") {
-    baseSteps[1].state = "finish";
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
-    baseSteps[3].state = "process";
-    baseSteps[3].time = formatDateTimeWib(item.updatedAt);
-    return baseSteps;
-  }
   if (status === "completed") {
     baseSteps[1].state = "finish";
     baseSteps[2].state = "finish";
-    baseSteps[3].state = "finish";
+    baseSteps[3].state = "process";
     baseSteps[3].time = formatDateTimeWib(item.updatedAt);
-    baseSteps[4].state = "process";
-    baseSteps[4].time = formatDateTimeWib(item.updatedAt);
     return baseSteps;
   }
   if (status === "rejected") {
@@ -165,7 +150,7 @@ function DetailItem({
         <span
           className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(displayValue)}`}
         >
-          {displayValue}
+          {getStatusDisplayLabel(displayValue)}
         </span>
       ) : (
         <p
@@ -249,7 +234,7 @@ export default function UseEquipmentDetailPage() {
   if (!item) {
     return (
       <section className="space-y-3">
-        <p className="text-sm text-slate-600">Data pengajuan booking alat tidak ditemukan.</p>
+        <p className="text-sm text-slate-600">Data pengajuan penggunaan alat tidak ditemukan.</p>
         <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
@@ -299,8 +284,8 @@ export default function UseEquipmentDetailPage() {
 
     toast.success(
       type === "approve"
-        ? "Pengajuan booking alat berhasil disetujui."
-        : "Pengajuan booking alat berhasil ditolak.",
+        ? "Pengajuan penggunaan alat berhasil disetujui."
+        : "Pengajuan penggunaan alat berhasil ditolak.",
     );
   };
 

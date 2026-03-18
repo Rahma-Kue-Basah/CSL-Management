@@ -6,7 +6,7 @@ export default function UseEquipmentListPage() {
   return (
     <UseEquipmentListContent
       scope="my"
-      emptyMessage="Belum ada pengajuan booking alat."
+      emptyMessage="Belum ada pengajuan penggunaan alat."
     />
   );
 }
