@@ -59,7 +59,7 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
   const backTo =
     typeof location.state?.from === "string"
       ? location.state.from
-      : "/admin/record/peminjaman-alat";
+      : "/admin/records/equipment-borrows";
 
   const { borrow: item, isLoading, error } = useBorrowDetail(id);
 
@@ -104,7 +104,7 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
               onView={
                 item.equipmentId
                   ? () =>
-                      navigate(`/admin/inventarisasi/peralatan/${item.equipmentId}`, {
+                      navigate(`/admin/inventory/equipment/${item.equipmentId}`, {
                         state: { from: location.pathname },
                       })
                   : undefined

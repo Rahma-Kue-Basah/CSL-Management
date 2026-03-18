@@ -1,8 +1,13 @@
-import { ArrowLeft, ClipboardList } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Check, ClipboardList, Loader2, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useUseDetail } from "@/hooks/uses/use-uses";
+import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
@@ -56,12 +61,55 @@ export default function AdminEquipmentUsageRecordDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { profile } = useLoadProfile();
+  const { updateUseStatus, pendingAction } = useUpdateUseStatus();
+  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
+    null,
+  );
   const backTo =
     typeof location.state?.from === "string"
       ? location.state.from
-      : "/admin/record/penggunaan-alat";
+      : "/admin/records/equipment-usage";
 
-  const { useItem: item, isLoading, error } = useUseDetail(id);
+  const { useItem: item, setUseItem, isLoading, error } = useUseDetail(id);
+
+  const handleUseAction = async () => {
+    if (!item || !confirmType) return;
+
+    const type = confirmType;
+    const result = await updateUseStatus(item.id, type);
+
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    setUseItem((current) =>
+      current
+        ? {
+            ...current,
+            status: type === "approve" ? "Approved" : "Rejected",
+            updatedAt: now,
+            approvedById:
+              type === "approve"
+                ? String(profile?.id ?? current.approvedById)
+                : current.approvedById,
+            approvedByName:
+              type === "approve"
+                ? profile?.name || current.approvedByName
+                : current.approvedByName,
+          }
+        : current,
+    );
+    setConfirmType(null);
+
+    toast.success(
+      type === "approve"
+        ? "Penggunaan alat berhasil disetujui."
+        : "Penggunaan alat berhasil ditolak.",
+    );
+  };
 
   return (
     <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
@@ -91,10 +139,46 @@ export default function AdminEquipmentUsageRecordDetailPage() {
                 <p className="text-sm text-slate-500">{item.code}</p>
               </div>
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate(backTo)}>
-              <ArrowLeft className="h-4 w-4" />
-              Kembali
-            </Button>
+            <div className="flex items-center gap-2">
+              {item.status === "Pending" ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="border border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+                    onClick={() => setConfirmType("approve")}
+                    disabled={pendingAction.useId === item.id}
+                  >
+                    {pendingAction.useId === item.id &&
+                    pendingAction.type === "approve" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                    Approve
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="border border-rose-600 bg-rose-600 text-white hover:bg-rose-700"
+                    onClick={() => setConfirmType("reject")}
+                    disabled={pendingAction.useId === item.id}
+                  >
+                    {pendingAction.useId === item.id &&
+                    pendingAction.type === "reject" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
+                    Reject
+                  </Button>
+                </>
+              ) : null}
+              <Button type="button" variant="outline" size="sm" onClick={() => navigate(backTo)}>
+                <ArrowLeft className="h-4 w-4" />
+                Kembali
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
@@ -104,7 +188,7 @@ export default function AdminEquipmentUsageRecordDetailPage() {
               onView={
                 item.equipmentId
                   ? () =>
-                      navigate(`/admin/inventarisasi/peralatan/${item.equipmentId}`, {
+                      navigate(`/admin/inventory/equipment/${item.equipmentId}`, {
                         state: { from: location.pathname },
                       })
                   : undefined
@@ -144,6 +228,17 @@ export default function AdminEquipmentUsageRecordDetailPage() {
           </div>
         </div>
       )}
+
+      <StatusConfirmDialog
+        open={Boolean(confirmType)}
+        actionType={confirmType}
+        onOpenChange={(open) => {
+          if (!open) setConfirmType(null);
+        }}
+        onConfirm={handleUseAction}
+        isSubmitting={Boolean(item) && pendingAction.useId === item?.id}
+        subjectLabel="pengajuan penggunaan alat ini"
+      />
     </section>
   );
 }

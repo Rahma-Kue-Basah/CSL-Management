@@ -148,7 +148,7 @@ export default function AdminEquipmentDetailPage() {
   const backTo =
     typeof location.state?.from === "string"
       ? location.state.from
-      : "/admin/inventarisasi/peralatan";
+      : "/admin/inventory/equipment";
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -425,7 +425,7 @@ export default function AdminEquipmentDetailPage() {
                 onView={
                   detailItem.roomId
                     ? () =>
-                        navigate(`/admin/inventarisasi/ruangan/${detailItem.roomId}`, {
+                        navigate(`/admin/inventory/rooms/${detailItem.roomId}`, {
                           state: { from: location.pathname },
                         })
                     : undefined

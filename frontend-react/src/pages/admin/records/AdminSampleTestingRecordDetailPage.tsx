@@ -54,7 +54,7 @@ export default function AdminSampleTestingRecordDetailPage() {
   const backTo =
     typeof location.state?.from === "string"
       ? location.state.from
-      : "/admin/record/pengujian-sampel";
+      : "/admin/records/sample-testing";
 
   const { pengujian: item, isLoading, error } = usePengujianDetail(id);
 

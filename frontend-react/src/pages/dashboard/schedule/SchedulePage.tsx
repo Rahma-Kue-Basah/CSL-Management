@@ -414,17 +414,7 @@ export default function SchedulePage() {
       ) : null}
 
       <div className="grid items-start gap-4 xl:grid-cols-[auto_minmax(0,1fr)]">
-        <div className="w-full max-w-full justify-self-start overflow-x-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)] sm:inline-block sm:w-fit sm:p-4">
-          <RsuiteCalendar
-            compact
-            value={selectedDate}
-            onSelect={(value) => setSelectedDate(value ?? new Date())}
-            renderCell={renderCell}
-            style={{ width: "100%", maxWidth: 388 }}
-          />
-        </div>
-
-        <div className="space-y-3">
+        <div className="order-1 space-y-3 xl:order-2">
           <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
             <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-4 py-4">
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
@@ -472,6 +462,16 @@ export default function SchedulePage() {
               Agenda harian difokuskan pada tabel per jam di bawah.
             </p> */}
           </article>
+        </div>
+
+        <div className="order-2 w-full max-w-full justify-self-start overflow-x-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)] sm:inline-block sm:w-fit sm:p-4 xl:order-1">
+          <RsuiteCalendar
+            compact
+            value={selectedDate}
+            onSelect={(value) => setSelectedDate(value ?? new Date())}
+            renderCell={renderCell}
+            style={{ width: "100%", maxWidth: 388 }}
+          />
         </div>
       </div>
 

@@ -29,7 +29,6 @@ const STATUS_OPTIONS = [
   { value: "returned", label: "Returned" },
   { value: "overdue", label: "Overdue" },
   { value: "lost_damaged", label: "Lost/Damaged" },
-  { value: "cancelled", label: "Cancelled" },
 ];
 
 function formatDateTime(value?: string | null) {
@@ -123,7 +122,7 @@ export default function AdminRecordPeminjamanAlatPage() {
   };
 
   return (
-    <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
+    <section className="w-full min-w-0 space-y-4 px-4 pb-6">
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex-1 space-y-4">
           <AdminPageHeader
@@ -215,29 +214,29 @@ export default function AdminRecordPeminjamanAlatPage() {
             </div>
           ) : null}
 
-          <div className="w-full max-w-full overflow-x-auto rounded border border-slate-200 bg-card">
-            <table className="w-full min-w-[1000px] table-fixed">
+          <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
+            <table className="min-w-max w-full table-auto">
               <thead className="border-b border-slate-800 bg-slate-900">
                 <tr className="text-left text-sm">
-                  <th className="w-[140px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Kode
                   </th>
-                  <th className="w-[220px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Alat
                   </th>
-                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Peminjam
                   </th>
-                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Waktu Mulai
                   </th>
-                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Waktu Selesai
                   </th>
-                  <th className="w-[140px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Status
                   </th>
-                  <th className="sticky right-0 z-10 relative w-[120px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
+                  <th className="sticky right-0 z-10 relative whitespace-nowrap bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
                     Aksi
                   </th>
                 </tr>
@@ -254,20 +253,20 @@ export default function AdminRecordPeminjamanAlatPage() {
                 ) : filteredBorrows.length ? (
                   filteredBorrows.map((item) => (
                     <tr key={String(item.id)} className="border-b last:border-b-0">
-                      <td className="truncate px-3 py-2 font-medium">
+                      <td className="whitespace-nowrap px-3 py-2 font-medium">
                         {item.code}
                       </td>
-                      <td className="truncate px-3 py-2">{item.equipmentName}</td>
-                      <td className="truncate px-3 py-2 text-muted-foreground">
+                      <td className="whitespace-nowrap px-3 py-2">{item.equipmentName}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
                         {item.requesterName}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="whitespace-nowrap px-3 py-2">
                         {formatDateTime(item.startTime)}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="whitespace-nowrap px-3 py-2">
                         {formatDateTime(item.endTime)}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="whitespace-nowrap px-3 py-2">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
                             item.status,
@@ -282,7 +281,7 @@ export default function AdminRecordPeminjamanAlatPage() {
                             variant="outline"
                             size="icon-sm"
                             onClick={() => {
-                              navigate(`/admin/record/peminjaman-alat/${item.id}`, {
+                              navigate(`/admin/records/equipment-borrows/${item.id}`, {
                                 state: { from: location.pathname },
                               });
                             }}

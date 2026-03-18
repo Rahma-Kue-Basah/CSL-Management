@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { API_USE_DETAIL, API_USES } from "@/constants/api";
+import { API_USE_DETAIL, API_USES, API_USES_MY } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type UseFilters = {
@@ -71,6 +71,21 @@ type ApiUse = {
 type ApiUsesResponse = {
   count?: number;
   results?: ApiUse[];
+  aggregates?: {
+    total?: number;
+    pending?: number;
+    approved?: number;
+    completed?: number;
+    rejected?: number;
+  } | null;
+};
+
+export type UseAggregates = {
+  total: number;
+  pending: number;
+  approved: number;
+  completed: number;
+  rejected: number;
 };
 
 export function mapUse(item: ApiUse): UseRow {
@@ -172,11 +187,25 @@ export function useUses(
   const [isLoading, setIsLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState("");
+  const [aggregates, setAggregates] = useState<UseAggregates>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    completed: 0,
+    rejected: 0,
+  });
 
   useEffect(() => {
     if (scope === "my" && !filters.requestedBy) {
       setUses([]);
       setTotalCount(0);
+      setAggregates({
+        total: 0,
+        pending: 0,
+        approved: 0,
+        completed: 0,
+        rejected: 0,
+      });
       setError("");
       setIsLoading(false);
       setHasLoadedOnce(true);
@@ -190,11 +219,12 @@ export function useUses(
       setIsLoading(true);
       setError("");
       try {
-        const url = new URL(API_USES, window.location.origin);
+        const listEndpoint = scope === "my" ? API_USES_MY : API_USES;
+        const url = new URL(listEndpoint, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
-        if (filters.requestedBy && scope === "my") {
+        if (filters.requestedBy && scope !== "my") {
           url.searchParams.set("requested_by", filters.requestedBy);
         }
         if (filters.createdAfter) {
@@ -220,6 +250,13 @@ export function useUses(
 
         setUses(mapped);
         setTotalCount(Array.isArray(payload) ? mapped.length : (payload.count ?? mapped.length));
+        setAggregates({
+          total: Array.isArray(payload) ? mapped.length : Number(payload.aggregates?.total ?? 0),
+          pending: Array.isArray(payload) ? 0 : Number(payload.aggregates?.pending ?? 0),
+          approved: Array.isArray(payload) ? 0 : Number(payload.aggregates?.approved ?? 0),
+          completed: Array.isArray(payload) ? 0 : Number(payload.aggregates?.completed ?? 0),
+          rejected: Array.isArray(payload) ? 0 : Number(payload.aggregates?.rejected ?? 0),
+        });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
@@ -243,6 +280,7 @@ export function useUses(
     setUses,
     totalCount,
     setTotalCount,
+    aggregates,
     isLoading,
     hasLoadedOnce,
     error,

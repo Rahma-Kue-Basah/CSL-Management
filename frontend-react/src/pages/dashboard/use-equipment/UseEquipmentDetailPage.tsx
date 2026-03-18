@@ -18,7 +18,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import BookingStatusConfirmDialog from "@/pages/dashboard/booking-rooms/BookingStatusConfirmDialog";
+import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useUseDetail } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-time";
@@ -112,13 +112,12 @@ function getUseFlow(item: {
     baseSteps[1].time = formatDateTimeWib(item.updatedAt);
     return baseSteps.slice(0, 2);
   }
-  if (status === "cancelled") {
+  if (status === "expired") {
     baseSteps[1].state = "error";
-    baseSteps[1].label = "Dibatalkan";
+    baseSteps[1].label = "Kedaluwarsa";
     baseSteps[1].time = formatDateTimeWib(item.updatedAt);
     return baseSteps.slice(0, 2);
   }
-
   baseSteps[1].state = "process";
   return baseSteps;
 }
@@ -420,7 +419,7 @@ export default function UseEquipmentDetailPage() {
         </div>
       </div>
 
-      <BookingStatusConfirmDialog
+      <StatusConfirmDialog
         open={Boolean(confirmType)}
         actionType={confirmType}
         onOpenChange={(open) => {
@@ -428,6 +427,7 @@ export default function UseEquipmentDetailPage() {
         }}
         onConfirm={handleUseAction}
         isSubmitting={pendingAction.useId === item.id}
+        subjectLabel="pengajuan penggunaan alat ini"
       />
     </section>
   );

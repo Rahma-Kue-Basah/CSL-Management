@@ -99,7 +99,7 @@ export default function AdminRoomDetailPage() {
   const backTo =
     typeof location.state?.from === "string"
       ? location.state.from
-      : "/admin/inventarisasi/ruangan";
+      : "/admin/inventory/rooms";
 
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

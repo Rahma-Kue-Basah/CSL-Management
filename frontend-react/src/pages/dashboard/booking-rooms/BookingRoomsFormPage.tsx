@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
@@ -38,9 +38,13 @@ type FormData = {
   purpose: string;
   startTime: string;
   endTime: string;
+  attendeeCount: string;
+  attendeeNames: string;
   note: string;
-  equipmentId: string;
-  quantityEquipment: string;
+  equipmentItems: Array<{
+    equipmentId: string;
+    quantity: string;
+  }>;
 };
 
 type SelectOption = {
@@ -60,9 +64,10 @@ const initialFormData: FormData = {
   purpose: "Other",
   startTime: "",
   endTime: "",
+  attendeeCount: "1",
+  attendeeNames: "",
   note: "",
-  equipmentId: "",
-  quantityEquipment: "",
+  equipmentItems: [],
 };
 
 function combineDateTime(date: Date | undefined, time: string) {
@@ -112,7 +117,8 @@ function ComboboxField({
   onChange,
 }: ComboboxFieldProps) {
   const [query, setQuery] = useState("");
-  const selectedOption = options.find((option) => option.value === value) ?? null;
+  const selectedOption =
+    options.find((option) => option.value === value) ?? null;
   const filteredOptions = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
@@ -126,8 +132,7 @@ function ComboboxField({
   return (
     <div className="space-y-1.5">
       <label className="text-xs font-medium text-slate-600">
-        {label}{" "}
-        {required ? <span className="text-rose-600">*</span> : null}
+        {label} {required ? <span className="text-rose-600">*</span> : null}
       </label>
       <Combobox<SelectOption>
         items={filteredOptions}
@@ -186,7 +191,10 @@ function DateTimePickerField({
 }: DateTimePickerFieldProps) {
   return (
     <div className="w-full space-y-1.5">
-      <label htmlFor={`${id}-time`} className="text-xs font-medium text-slate-600">
+      <label
+        htmlFor={`${id}-time`}
+        className="text-xs font-medium text-slate-600"
+      >
         {label} <span className="text-rose-600">*</span>
       </label>
       <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
@@ -226,12 +234,16 @@ export default function BookingRoomsFormPage() {
   const [endTime, setEndTime] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
-  const { rooms, isLoading: isLoadingRooms, error: roomError } = useRoomOptions();
+  const {
+    rooms,
+    isLoading: isLoadingRooms,
+    error: roomError,
+  } = useRoomOptions();
   const {
     equipments: equipmentOptions,
     isLoading: isLoadingEquipments,
     error: equipmentError,
-  } = useEquipmentOptions();
+  } = useEquipmentOptions("", formData.roomId, Boolean(formData.roomId));
   const { createBookingRoom, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBookingRoom();
 
@@ -240,7 +252,9 @@ export default function BookingRoomsFormPage() {
     minEndDate.setHours(0, 0, 0, 0);
   }
   const minEndTime =
-    startDate && endDate && format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
+    startDate &&
+    endDate &&
+    format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
       ? startTime || undefined
       : undefined;
 
@@ -248,9 +262,24 @@ export default function BookingRoomsFormPage() {
     () => rooms.find((room) => room.id === formData.roomId)?.label ?? "-",
     [rooms, formData.roomId],
   );
+  const selectedRoom = useMemo(
+    () => rooms.find((room) => room.id === formData.roomId) ?? null,
+    [rooms, formData.roomId],
+  );
   const selectedEquipmentLabel = useMemo(
-    () => equipmentOptions.find((equipment) => equipment.id === formData.equipmentId)?.label ?? "-",
-    [equipmentOptions, formData.equipmentId],
+    () =>
+      formData.equipmentItems.length
+        ? formData.equipmentItems
+            .map((item) => {
+              const label =
+                equipmentOptions.find(
+                  (equipment) => equipment.id === item.equipmentId,
+                )?.label ?? "-";
+              return item.quantity ? `${label} (${item.quantity})` : label;
+            })
+            .join(", ")
+        : "-",
+    [equipmentOptions, formData.equipmentItems],
   );
   const roomOptions = useMemo<SelectOption[]>(
     () => rooms.map((room) => ({ value: room.id, label: room.label })),
@@ -260,7 +289,7 @@ export default function BookingRoomsFormPage() {
     () =>
       equipmentOptions.map((equipment) => ({
         value: equipment.id,
-        label: equipment.label,
+        label: `${equipment.label} (stok: ${equipment.quantity})`,
       })),
     [equipmentOptions],
   );
@@ -314,8 +343,50 @@ export default function BookingRoomsFormPage() {
     setErrorMessage("");
   };
 
-  const handleSelectChange = (name: "roomId" | "purpose" | "equipmentId", value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+  const handleSelectChange = (name: "roomId" | "purpose", value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === "roomId" ? { equipmentItems: [] } : {}),
+    }));
+    setValidationMessage("");
+    setErrorMessage("");
+  };
+
+  const handleEquipmentItemChange = (
+    index: number,
+    field: "equipmentId" | "quantity",
+    value: string,
+  ) => {
+    setFormData((prev) => ({
+      ...prev,
+      equipmentItems: prev.equipmentItems.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, [field]: value } : item,
+      ),
+    }));
+    setValidationMessage("");
+    setErrorMessage("");
+  };
+
+  const handleAddEquipmentItem = () => {
+    setFormData((prev) => ({
+      ...prev,
+      equipmentItems: [
+        ...prev.equipmentItems,
+        { equipmentId: "", quantity: "" },
+      ],
+    }));
+    setValidationMessage("");
+    setErrorMessage("");
+  };
+
+  const handleRemoveEquipmentItem = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      equipmentItems: prev.equipmentItems.filter(
+        (_, itemIndex) => itemIndex !== index,
+      ),
+    }));
     setValidationMessage("");
     setErrorMessage("");
   };
@@ -340,22 +411,72 @@ export default function BookingRoomsFormPage() {
       setValidationMessage("Waktu mulai dan waktu selesai wajib diisi.");
       return false;
     }
-    if (formData.quantityEquipment) {
-      const qty = Number(formData.quantityEquipment);
-      if (!Number.isInteger(qty) || qty <= 0) {
-        setValidationMessage("Jumlah peralatan harus berupa angka bulat lebih dari 0.");
+    const attendeeCount = Number(formData.attendeeCount);
+    if (!Number.isInteger(attendeeCount) || attendeeCount <= 0) {
+      setValidationMessage(
+        "Jumlah orang harus berupa angka bulat lebih dari 0.",
+      );
+      return false;
+    }
+    if (selectedRoom && attendeeCount > selectedRoom.capacity) {
+      setValidationMessage(
+        `Jumlah orang tidak boleh melebihi kapasitas ruangan (${selectedRoom.capacity} orang).`,
+      );
+      return false;
+    }
+    const selectedEquipmentIds = new Set<string>();
+    for (const item of formData.equipmentItems) {
+      const hasEquipment = item.equipmentId.trim().length > 0;
+      const hasQuantity = item.quantity.trim().length > 0;
+
+      if (!hasEquipment && !hasQuantity) {
+        setValidationMessage(
+          "Hapus baris alat yang kosong atau lengkapi datanya.",
+        );
         return false;
       }
-    }
-    if (formData.quantityEquipment && !formData.equipmentId) {
-      setValidationMessage("Pilih peralatan terlebih dahulu sebelum mengisi jumlah.");
-      return false;
+      if (!hasEquipment || !hasQuantity) {
+        setValidationMessage(
+          "Setiap alat harus memiliki pilihan alat dan jumlah.",
+        );
+        return false;
+      }
+
+      const qty = Number(item.quantity);
+      const selectedEquipment = equipmentOptions.find(
+        (equipment) => equipment.id === item.equipmentId,
+      );
+      if (!Number.isInteger(qty) || qty <= 0) {
+        setValidationMessage(
+          "Jumlah setiap alat harus berupa angka bulat lebih dari 0.",
+        );
+        return false;
+      }
+      if (selectedEquipment && qty > selectedEquipment.quantity) {
+        setValidationMessage(
+          `Jumlah ${selectedEquipment.label} melebihi stok tersedia (${selectedEquipment.quantity}).`,
+        );
+        return false;
+      }
+      if (selectedEquipmentIds.has(item.equipmentId)) {
+        setValidationMessage(
+          "Peralatan yang sama tidak boleh dipilih lebih dari sekali.",
+        );
+        return false;
+      }
+      selectedEquipmentIds.add(item.equipmentId);
     }
 
     const start = new Date(toWibIsoString(formData.startTime));
     const end = new Date(toWibIsoString(formData.endTime));
-    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start >= end) {
-      setValidationMessage("Rentang waktu tidak valid. Pastikan selesai lebih besar dari mulai.");
+    if (
+      Number.isNaN(start.getTime()) ||
+      Number.isNaN(end.getTime()) ||
+      start >= end
+    ) {
+      setValidationMessage(
+        "Rentang waktu tidak valid. Pastikan selesai lebih besar dari mulai.",
+      );
       return false;
     }
     return true;
@@ -373,11 +494,13 @@ export default function BookingRoomsFormPage() {
       purpose: formData.purpose,
       startTime: toWibIsoString(formData.startTime),
       endTime: toWibIsoString(formData.endTime),
+      attendeeCount: Number(formData.attendeeCount),
+      attendeeNames: formData.attendeeNames,
       note: formData.note,
-      equipmentId: formData.equipmentId || undefined,
-      quantityEquipment: formData.quantityEquipment
-        ? Number(formData.quantityEquipment)
-        : undefined,
+      equipmentItems: formData.equipmentItems.map((item) => ({
+        equipmentId: item.equipmentId,
+        quantity: Number(item.quantity),
+      })),
     });
 
     if (result.ok) {
@@ -401,7 +524,9 @@ export default function BookingRoomsFormPage() {
         onSubmit={handleOpenConfirmation}
       >
         <div className="border-b border-slate-200 pb-4">
-          <p className="text-base font-semibold text-slate-900">Form Booking Ruangan</p>
+          <p className="text-base font-semibold text-slate-900">
+            Form Booking Ruangan
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -427,7 +552,7 @@ export default function BookingRoomsFormPage() {
             onChange={(value) => handleSelectChange("purpose", value)}
           />
 
-          <div className="space-y-5">
+          <div className="grid gap-5 md:col-span-2 md:grid-cols-2">
             <DateTimePickerField
               id="start-time"
               label="Waktu Mulai (WIB)"
@@ -451,44 +576,136 @@ export default function BookingRoomsFormPage() {
             />
           </div>
 
-          <ComboboxField
-            label="Peralatan (Opsional)"
-            value={formData.equipmentId}
-            options={equipmentComboboxOptions}
-            placeholder="Pilih peralatan"
-            emptyText="Peralatan tidak ditemukan."
-            disabled={isSubmitting || isLoadingEquipments}
-            showClear
-            onChange={(value) => handleSelectChange("equipmentId", value)}
-          />
-
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600">
-              Jumlah Peralatan (Opsional)
+              Jumlah Orang <span className="text-rose-600">*</span>
             </label>
             <Input
               type="number"
               min={1}
               step={1}
-              name="quantityEquipment"
-              value={formData.quantityEquipment}
+              name="attendeeCount"
+              value={formData.attendeeCount}
               onChange={handleChange}
-              placeholder="Contoh: 1"
+              placeholder="Contoh: 10"
               className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
               disabled={isSubmitting}
             />
-            {formData.equipmentId && !formData.quantityEquipment ? (
-              <p className="text-[11px] text-slate-500">
-                Isi jumlah jika memilih peralatan.
-              </p>
-            ) : null}
+          </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-600">
+              Nama Orang
+            </label>
+            <Input
+              type="text"
+              name="attendeeNames"
+              value={formData.attendeeNames}
+              onChange={handleChange}
+              placeholder="Contoh: Andi, Budi, Citra"
+              className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          <div className="space-y-3 md:col-span-2">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <label className="text-xs font-medium text-slate-600">
+                  Peralatan (Opsional)
+                </label>
+                <p className="text-[11px] text-slate-500">
+                  Tambahkan satu atau lebih alat beserta jumlahnya.
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddEquipmentItem}
+                disabled={isSubmitting || isLoadingEquipments}
+              >
+                <Plus className="h-4 w-4" />
+                Tambah Alat
+              </Button>
+            </div>
+
+            {formData.equipmentItems.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-sm text-slate-500">
+                Belum ada alat yang ditambahkan.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {formData.equipmentItems.map((item, index) => (
+                  <div
+                    key={`${index}-${item.equipmentId}`}
+                    className="grid grid-cols-1 gap-3 border-b border-slate-200 pb-4 last:border-b-0 last:pb-0 md:grid-cols-[minmax(0,1fr)_180px_44px] md:items-start"
+                  >
+                    <ComboboxField
+                      label={`Alat ${index + 1}`}
+                      value={item.equipmentId}
+                      options={equipmentComboboxOptions}
+                      placeholder={
+                        formData.roomId
+                          ? "Pilih peralatan"
+                          : "Pilih ruangan terlebih dahulu"
+                      }
+                      emptyText={
+                        formData.roomId
+                          ? "Peralatan tidak ditemukan."
+                          : "Pilih ruangan terlebih dahulu."
+                      }
+                      disabled={isSubmitting || isLoadingEquipments}
+                      showClear
+                      onChange={(value) =>
+                        handleEquipmentItemChange(index, "equipmentId", value)
+                      }
+                    />
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-medium text-slate-600">
+                        Jumlah
+                      </label>
+                      <Input
+                        type="number"
+                        min={1}
+                        step={1}
+                        value={item.quantity}
+                        onChange={(event) =>
+                          handleEquipmentItemChange(
+                            index,
+                            "quantity",
+                            event.target.value,
+                          )
+                        }
+                        placeholder="Contoh: 1"
+                        className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                        disabled={isSubmitting}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <span className="block text-xs font-medium opacity-0">
+                        Hapus
+                      </span>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        onClick={() => handleRemoveEquipmentItem(index)}
+                        disabled={isSubmitting}
+                        className="h-11 w-11 border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-xs font-medium text-slate-600">
-            Catatan
-          </label>
+          <label className="text-xs font-medium text-slate-600">Catatan</label>
           <textarea
             name="note"
             value={formData.note}
@@ -499,9 +716,7 @@ export default function BookingRoomsFormPage() {
             className="min-h-[120px] w-full rounded-md border border-slate-300 bg-white px-3 py-3 text-sm outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
             disabled={isSubmitting}
           />
-          <p className="text-[11px] text-slate-500">
-            Maksimal 2000 karakter.
-          </p>
+          <p className="text-[11px] text-slate-500">Maksimal 2000 karakter.</p>
         </div>
 
         {validationMessage ? (
@@ -517,7 +732,11 @@ export default function BookingRoomsFormPage() {
         ) : null}
 
         <div className="flex justify-end border-t border-slate-200 pt-3">
-          <Button type="submit" className="min-w-[180px]" disabled={isSubmitting || isLoadingRooms}>
+          <Button
+            type="submit"
+            className="min-w-[180px]"
+            disabled={isSubmitting || isLoadingRooms}
+          >
             Ajukan Booking
           </Button>
         </div>
@@ -554,36 +773,34 @@ export default function BookingRoomsFormPage() {
               label="Waktu Selesai (WIB)"
               value={formatLocalDateTimeAsWib(formData.endTime)}
             />
+            <SummaryItem label="Jumlah Orang" value={formData.attendeeCount} />
+            <SummaryItem label="Nama Orang" value={formData.attendeeNames} />
             <SummaryItem label="Peralatan" value={selectedEquipmentLabel} />
-            <SummaryItem
-              label="Jumlah Peralatan"
-              value={formData.quantityEquipment}
-            />
             <SummaryItem label="Catatan" value={formData.note} />
           </div>
 
           <AlertDialogFooter className="border-t border-slate-200 pt-4">
-              <AlertDialogCancel
-                disabled={isSubmitting}
-                className="rounded-md border-slate-300"
-              >
-                Batal
-              </AlertDialogCancel>
-              <AlertDialogAction
-                disabled={isSubmitting}
-                onClick={() => void handleConfirmSubmit()}
-                className="rounded-md bg-[#0052C7] text-white hover:bg-[#0048B4]"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Mengirim...
-                  </>
-                ) : (
-                  "Konfirmasi"
-                )}
-              </AlertDialogAction>
-            </AlertDialogFooter>
+            <AlertDialogCancel
+              disabled={isSubmitting}
+              className="rounded-md border-slate-300"
+            >
+              Batal
+            </AlertDialogCancel>
+            <AlertDialogAction
+              disabled={isSubmitting}
+              onClick={() => void handleConfirmSubmit()}
+              className="rounded-md bg-[#0052C7] text-white hover:bg-[#0048B4]"
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Mengirim...
+                </>
+              ) : (
+                "Konfirmasi"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </section>

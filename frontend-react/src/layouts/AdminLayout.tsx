@@ -1,6 +1,7 @@
 "use client";
 
 import { Fragment } from "react";
+import { Outlet } from "react-router-dom";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/admin/app-sidebar";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,7 @@ import { CircleArrowOutUpRightIcon } from "lucide-react";
 export default function AdminLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }) {
   const pathname = usePathname();
   const uuidPattern =
@@ -100,7 +101,7 @@ export default function AdminLayout({
               </div>
             </div>
             <div className="flex-1">
-              {children}
+              {children ?? <Outlet />}
             </div>
             <footer className="border-t border-slate-200/80 bg-white/80 px-4 py-5 text-center text-xs text-slate-500 backdrop-blur">
               2026 ©

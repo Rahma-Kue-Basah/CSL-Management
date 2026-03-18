@@ -23,7 +23,7 @@ import {
 import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import BookingStatusConfirmDialog from "@/pages/dashboard/booking-rooms/BookingStatusConfirmDialog";
+import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import {
   toEndOfDay,
   toStartOfDay,
@@ -126,7 +126,7 @@ export default function BookingRoomsListContent({
     setPage(1);
   }, [status, search, createdAfter, createdBefore]);
 
-  const { bookings, totalCount, isLoading, hasLoadedOnce, error } = useBookings(
+  const { bookings, totalCount, aggregates, isLoading, hasLoadedOnce, error } = useBookings(
     page,
     PAGE_SIZE,
     {
@@ -137,8 +137,6 @@ export default function BookingRoomsListContent({
     reloadKey,
     scope,
   );
-  const { bookings: summarySourceBookings, totalCount: summaryTotalCount } =
-    useBookings(1, 1000, {}, reloadKey, scope);
 
   const normalizedRole = normalizeRoleValue(profile?.role);
   const canReviewBookings =
@@ -166,30 +164,14 @@ export default function BookingRoomsListContent({
       return haystack.includes(query);
     });
   }, [bookings, search]);
-  const summaryBookings = useMemo(
-    () =>
-      summarySourceBookings.filter(
-        (booking) => booking.roomName && booking.roomName !== "-",
-      ),
-    [summarySourceBookings],
-  );
-
   const totalPages = Math.max(
     1,
     Math.ceil((totalCount || filteredBookings.length) / PAGE_SIZE),
   );
-  const pendingCount = summaryBookings.filter(
-    (item) => isPendingStatus(item.status),
-  ).length;
-  const approvedCount = summaryBookings.filter(
-    (item) => item.status.toLowerCase() === "approved",
-  ).length;
-  const completedCount = summaryBookings.filter(
-    (item) => item.status.toLowerCase() === "completed",
-  ).length;
-  const rejectedCount = summaryBookings.filter(
-    (item) => item.status.toLowerCase() === "rejected",
-  ).length;
+  const pendingCount = aggregates.pending;
+  const approvedCount = aggregates.approved;
+  const completedCount = aggregates.completed;
+  const rejectedCount = aggregates.rejected;
 
   const handleBookingAction = async () => {
     if (!confirmState) return;
@@ -216,7 +198,7 @@ export default function BookingRoomsListContent({
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
         <SummaryCard
           label="Total Pengajuan"
-          value={summaryTotalCount || summaryBookings.length}
+          value={aggregates.total}
           icon={<Building2 className="h-4 w-4" />}
           tone="blue"
         />
@@ -400,7 +382,7 @@ export default function BookingRoomsListContent({
         onPageChange={setPage}
       />
 
-      <BookingStatusConfirmDialog
+      <StatusConfirmDialog
         open={Boolean(confirmState)}
         actionType={confirmState?.type ?? null}
         onOpenChange={(open) => {
@@ -408,6 +390,7 @@ export default function BookingRoomsListContent({
         }}
         onConfirm={handleBookingAction}
         isSubmitting={pendingAction.bookingId === confirmState?.bookingId}
+        subjectLabel="pengajuan booking ruangan ini"
       />
     </section>
   );

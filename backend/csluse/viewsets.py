@@ -67,8 +67,8 @@ STATUS_VALUE_MAP = {
     "pending": "Pending",
     "approved": "Approved",
     "rejected": "Rejected",
+    "expired": "Expired",
     "completed": "Completed",
-    "cancelled": "Cancelled",
     "borrowed": "Borrowed",
     "returned": "Returned",
     "overdue": "Overdue",
@@ -115,6 +115,17 @@ def _overview_title(value, fallback):
         return fallback
     raw = str(value).strip()
     return raw or fallback
+
+
+def build_status_aggregates(queryset, completed_statuses=None):
+    completed_statuses = completed_statuses or ["Completed"]
+    return {
+        "total": queryset.count(),
+        "pending": queryset.filter(status="Pending").count(),
+        "approved": queryset.filter(status="Approved").count(),
+        "completed": queryset.filter(status__in=completed_statuses).count(),
+        "rejected": queryset.filter(status__in=["Rejected", "Expired"]).count(),
+    }
 
 
 class ImageViewSet(viewsets.ModelViewSet):
@@ -168,7 +179,24 @@ class RoomViewSet(viewsets.ModelViewSet):
         ]
     )
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        requester_id = request.query_params.get('requested_by')
+        aggregate_qs = super().get_queryset()
+        if requester_id:
+            aggregate_qs = aggregate_qs.filter(requested_by_id=requester_id)
+        aggregates = build_status_aggregates(aggregate_qs)
+
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page if page is not None else queryset, many=True)
+        if page is not None:
+            response = self.get_paginated_response(serializer.data)
+            response.data["aggregates"] = aggregates
+            return response
+        return Response({"results": serializer.data, "aggregates": aggregates})
+
+    def _append_aggregates(self, response, aggregates):
+        response.data["aggregates"] = aggregates
+        return response
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -441,7 +469,8 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = (
         Booking.objects
-        .select_related('room', 'equipment', 'requested_by', 'approved_by')
+        .select_related('room', 'requested_by', 'approved_by')
+        .prefetch_related('equipment_items__equipment')
         .order_by('-created_at')
     )
     serializer_class = BookingSerializer
@@ -460,8 +489,13 @@ class BookingViewSet(viewsets.ModelViewSet):
             )
         )
 
-    def _auto_complete_expired_bookings(self):
+    def _auto_update_booking_statuses(self):
         now = timezone.now()
+        (
+            Booking.objects
+            .filter(status="Pending", end_time__lt=now)
+            .update(status="Expired", updated_at=now)
+        )
         (
             Booking.objects
             .filter(status="Approved", end_time__lt=now)
@@ -476,6 +510,10 @@ class BookingViewSet(viewsets.ModelViewSet):
         if self.action == "by_month":
             return BookingListSerializer
         return BookingSerializer
+
+    def _append_aggregates(self, response, aggregates):
+        response.data["aggregates"] = aggregates
+        return response
 
     @extend_schema(
         parameters=[
@@ -526,7 +564,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return qs
 
     def get_queryset(self):
-        self._auto_complete_expired_bookings()
+        self._auto_update_booking_statuses()
         qs = super().get_queryset()
         is_staff_or_above = self._is_staff_or_above()
 
@@ -550,26 +588,32 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='my')
     def my(self, request):
-        qs = super().get_queryset().filter(requested_by=getattr(request.user, "profile", None))
+        self._auto_update_booking_statuses()
+        base_qs = super().get_queryset().filter(requested_by=getattr(request.user, "profile", None))
+        aggregates = build_status_aggregates(base_qs)
+        qs = base_qs
         qs = self._apply_list_filters(qs, allow_requester_filter=False)
 
         page = self.paginate_queryset(qs)
         serializer = BookingUserListSerializer(page if page is not None else qs, many=True)
         if page is not None:
-            return self.get_paginated_response(serializer.data)
-        return Response(serializer.data)
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
     @action(detail=False, methods=['get'], url_path='all')
     def all(self, request):
         if not self._is_staff_or_above():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data booking.")
 
-        qs = self._apply_list_filters(super().get_queryset(), allow_requester_filter=True)
+        self._auto_update_booking_statuses()
+        base_qs = super().get_queryset()
+        aggregates = build_status_aggregates(base_qs)
+        qs = self._apply_list_filters(base_qs, allow_requester_filter=True)
         page = self.paginate_queryset(qs)
         serializer = BookingListSerializer(page if page is not None else qs, many=True)
         if page is not None:
-            return self.get_paginated_response(serializer.data)
-        return Response(serializer.data)
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
     @action(detail=False, methods=['get'], url_path='by-month')
     def by_month(self, request):
@@ -1199,10 +1243,10 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                     + status_count(pengujians, "Completed")
                 ),
                 "rejected": (
-                    status_count(bookings, "Rejected", "Cancelled")
-                    + status_count(uses, "Rejected", "Cancelled")
-                    + status_count(borrows, "Rejected", "Cancelled")
-                    + status_count(pengujians, "Rejected", "Cancelled")
+                    status_count(bookings, "Rejected", "Expired")
+                    + status_count(uses, "Rejected")
+                    + status_count(borrows, "Rejected")
+                    + status_count(pengujians, "Rejected")
                 ),
             },
             "upcoming_approved": upcoming_approved,
@@ -1371,6 +1415,23 @@ class UseViewSet(viewsets.ModelViewSet):
             return UseListSerializer
         return UseSerializer
 
+    def _auto_update_use_statuses(self):
+        now = timezone.now()
+        (
+            Use.objects
+            .filter(status="Pending", end_time__lt=now)
+            .update(status="Expired", updated_at=now)
+        )
+        (
+            Use.objects
+            .filter(status="Pending", end_time__isnull=True, start_time__lt=now)
+            .update(status="Expired", updated_at=now)
+        )
+
+    def _append_aggregates(self, response, aggregates):
+        response.data["aggregates"] = aggregates
+        return response
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -1384,9 +1445,22 @@ class UseViewSet(viewsets.ModelViewSet):
         ]
     )
     def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
+        self._auto_update_use_statuses()
+        requester_id = request.query_params.get('requested_by')
+        aggregate_qs = super().get_queryset()
+        if requester_id:
+            aggregate_qs = aggregate_qs.filter(requested_by_id=requester_id)
+        aggregates = build_status_aggregates(aggregate_qs)
+
+        queryset = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(queryset)
+        serializer = self.get_serializer(page if page is not None else queryset, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
     def get_queryset(self):
+        self._auto_update_use_statuses()
         qs = super().get_queryset()
         status_param = self.request.query_params.get('status')
         equipment_id = self.request.query_params.get('equipment')
@@ -1426,6 +1500,44 @@ class UseViewSet(viewsets.ModelViewSet):
             "Deleted equipment usage record via CSL Admin.",
         )
         super().perform_destroy(instance)
+
+    @action(detail=False, methods=['get'], url_path='my')
+    def my(self, request):
+        self._auto_update_use_statuses()
+        base_qs = super().get_queryset().filter(
+            requested_by=getattr(request.user, "profile", None)
+        )
+        aggregates = build_status_aggregates(base_qs)
+        qs = base_qs
+
+        status_param = request.query_params.get('status')
+        equipment_id = request.query_params.get('equipment')
+        approved_by = request.query_params.get('approved_by')
+        start_after = request.query_params.get('start_after')
+        end_before = request.query_params.get('end_before')
+        created_after = request.query_params.get('created_after')
+        created_before = request.query_params.get('created_before')
+
+        if status_param:
+            qs = qs.filter(status=normalize_status_value(status_param))
+        if equipment_id:
+            qs = qs.filter(equipment_id=equipment_id)
+        if approved_by:
+            qs = qs.filter(approved_by_id=approved_by)
+        if start_after:
+            qs = qs.filter(start_time__gte=start_after)
+        if end_before:
+            qs = qs.filter(end_time__lte=end_before)
+        if created_after:
+            qs = qs.filter(created_at__gte=created_after)
+        if created_before:
+            qs = qs.filter(created_at__lte=created_before)
+
+        page = self.paginate_queryset(qs)
+        serializer = UseListSerializer(page if page is not None else qs, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):

@@ -1,6 +1,7 @@
 "use client";
 
-import { CheckCircle2, OctagonX, Loader2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, Loader2, OctagonX } from "lucide-react";
 
 import {
   AlertDialog,
@@ -14,22 +15,34 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type BookingStatusConfirmDialogProps = {
+type StatusConfirmDialogProps = {
   open: boolean;
   actionType: "approve" | "reject" | null;
   onOpenChange: (open: boolean) => void;
   onConfirm: () => void;
   isSubmitting?: boolean;
+  subjectLabel?: string;
 };
 
-export default function BookingStatusConfirmDialog({
+export default function StatusConfirmDialog({
   open,
   actionType,
   onOpenChange,
   onConfirm,
   isSubmitting = false,
-}: BookingStatusConfirmDialogProps) {
-  const isApprove = actionType === "approve";
+  subjectLabel = "pengajuan ini",
+}: StatusConfirmDialogProps) {
+  const [resolvedActionType, setResolvedActionType] = useState<
+    "approve" | "reject" | null
+  >(actionType);
+
+  useEffect(() => {
+    if (actionType) {
+      setResolvedActionType(actionType);
+    }
+  }, [actionType]);
+
+  const isApprove = resolvedActionType === "approve";
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -49,12 +62,14 @@ export default function BookingStatusConfirmDialog({
             )}
           </AlertDialogMedia>
           <AlertDialogTitle>
-            {isApprove ? "Setujui pengajuan ini?" : "Tolak pengajuan ini?"}
+            {isApprove
+              ? `Setujui ${subjectLabel}?`
+              : `Tolak ${subjectLabel}?`}
           </AlertDialogTitle>
           <AlertDialogDescription>
             {isApprove
-              ? "Pengajuan booking akan diproses sebagai pengajuan yang disetujui."
-              : "Pengajuan booking akan diproses sebagai pengajuan yang ditolak."}
+              ? `${subjectLabel} akan diproses sebagai data yang disetujui.`
+              : `${subjectLabel} akan diproses sebagai data yang ditolak.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

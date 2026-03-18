@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ComponentType, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { Outlet } from "react-router-dom";
 import {
   Bell,
   Building2,
@@ -39,7 +40,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type UserLayoutProps = {
-  children: ReactNode;
+  children?: ReactNode;
 };
 
 type ShortcutAction = {
@@ -63,6 +64,7 @@ function getHeaderIcon(menuId: string, actionId: string | null) {
     if (actionId === "announcements") return Bell;
     if (actionId === "faq") return CircleHelp;
     if (actionId === "organization-structure") return GitBranch;
+    if (actionId === "facilities") return Building2;
     return LayoutDashboard;
   }
 
@@ -79,7 +81,8 @@ function getHeaderIcon(menuId: string, actionId: string | null) {
 
   if (menuId === "use-equipment") {
     if (actionId === "request-form") return FilePenLine;
-    if (actionId === "request-list" || actionId === "all-requests") return ClipboardList;
+    if (actionId === "request-list" || actionId === "all-requests")
+      return ClipboardList;
     if (actionId === "equipment") return Wrench;
     return Wrench;
   }
@@ -114,14 +117,16 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   {
     id: "dashboard",
     label: "Welcome, User!",
-    description: "Akses utama untuk layanan CSL, termasuk jadwal, pemesanan, pengajuan, dan informasi terbaru.",
+    description:
+      "Akses utama untuk layanan CSL, termasuk jadwal, pemesanan, pengajuan, dan informasi terbaru.",
     href: "/dashboard",
     icon: LayoutDashboard,
     actions: [
       {
         id: "overview",
         label: "Ringkasan",
-        description: "Lihat ringkasan status pengajuan dan aktivitas terbaru Anda.",
+        description:
+          "Lihat ringkasan status pengajuan dan aktivitas terbaru Anda.",
         href: "/dashboard/overview",
       },
       {
@@ -131,16 +136,23 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         href: "/dashboard/announcements",
       },
       {
-        id: "faq",
-        label: "FAQ",
-        description: "Temukan jawaban cepat untuk pertanyaan yang sering diajukan.",
-        href: "/dashboard/faq",
-      },
-      {
         id: "organization-structure",
         label: "Struktur Organisasi",
         description: "Lihat bagan struktur organisasi laboratorium.",
         href: "/dashboard/organization-structure",
+      },
+      {
+        id: "facilities",
+        label: "Fasilitas",
+        description: "Lihat daftar fasilitas laboratorium yang tersedia.",
+        href: "/dashboard/facilities",
+      },
+      {
+        id: "faq",
+        label: "FAQ",
+        description:
+          "Temukan jawaban cepat untuk pertanyaan yang sering diajukan.",
+        href: "/dashboard/faq",
       },
     ],
   },
@@ -284,7 +296,8 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
       {
         id: "edit-profile",
         label: "Edit Profil",
-        description: "Perbarui data profil seperti nama, batch, dan department.",
+        description:
+          "Perbarui data profil seperti nama, batch, dan department.",
         href: "/my-profile/edit",
       },
       {
@@ -321,6 +334,9 @@ function parseDashboardPath(pathname: string) {
     }
     if (parts[1] === "organization-structure") {
       return { menu: "dashboard", action: "organization-structure" };
+    }
+    if (parts[1] === "facilities") {
+      return { menu: "dashboard", action: "facilities" };
     }
     return { menu: "dashboard", action: null };
   }
@@ -420,15 +436,16 @@ function DashboardShell({ children }: UserLayoutProps) {
   const activeAction =
     activeMenu.id === "my-profile"
       ? null
-      : activeMenu.actions.find((action) => action.id === actionParam) ?? null;
+      : (activeMenu.actions.find((action) => action.id === actionParam) ??
+        null);
   const pageTitle =
     activeMenu.id === "my-profile"
       ? "Informasi Profil"
-      : activeAction?.label ?? activeMenu.label;
+      : (activeAction?.label ?? activeMenu.label);
   const pageDescription =
     activeMenu.id === "my-profile"
       ? "Ringkasan data akun pengguna Anda."
-      : activeAction?.description ?? activeMenu.description;
+      : (activeAction?.description ?? activeMenu.description);
   const isAllBookingRequestsPage = pathname.startsWith("/booking-rooms/all");
   const pageEyebrow = isAllBookingRequestsPage ? "CSL Management" : undefined;
   const HeaderIcon = getHeaderIcon(activeMenu.id, actionParam);
@@ -459,10 +476,15 @@ function DashboardShell({ children }: UserLayoutProps) {
   return (
     <div className="min-h-screen bg-slate-100 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6] [--sidebar-primary:#0048B4] [--sidebar-primary-foreground:#FFFFFF] [--sidebar-ring:#3B82F6]">
       <Sheet open={isMobileActionOpen} onOpenChange={setIsMobileActionOpen}>
-        <SheetContent side="left" className="w-[360px] max-w-[calc(100%-1rem)] p-0">
+        <SheetContent
+          side="left"
+          className="w-[360px] max-w-[calc(100%-1rem)] p-0"
+        >
           <SheetHeader className="sr-only">
             <SheetTitle>Action Panel</SheetTitle>
-            <SheetDescription>Panel aksi dan filter dashboard pengguna.</SheetDescription>
+            <SheetDescription>
+              Panel aksi dan filter dashboard pengguna.
+            </SheetDescription>
           </SheetHeader>
           {activeMenu ? (
             <DashboardActionPanel
@@ -506,7 +528,9 @@ function DashboardShell({ children }: UserLayoutProps) {
           getMenuHref={getMenuDefaultHref}
           bottomMenuIds={["notifications", "my-profile"]}
           onMenuClick={(menuId) => {
-            const selectedMenu = sidebarShortcuts.find((item) => item.id === menuId);
+            const selectedMenu = sidebarShortcuts.find(
+              (item) => item.id === menuId,
+            );
             if (selectedMenu) handleMenuClick(selectedMenu);
           }}
           onLogoClick={() => router.push(toMenuHref())}
@@ -567,7 +591,10 @@ function DashboardShell({ children }: UserLayoutProps) {
             <div className="max-h-[min(70vh,32rem)] space-y-1 overflow-y-auto pr-1">
               {mobileTopShortcuts.map((item) => {
                 return (
-                  <div key={item.id} className="border-b border-slate-100 pb-1 last:border-b-0">
+                  <div
+                    key={item.id}
+                    className="border-b border-slate-100 pb-1 last:border-b-0"
+                  >
                     {item.href ? (
                       <Link
                         href={item.href}
@@ -655,5 +682,5 @@ function DashboardShell({ children }: UserLayoutProps) {
 }
 
 export function UserLayout({ children }: UserLayoutProps) {
-  return <DashboardShell>{children}</DashboardShell>;
+  return <DashboardShell>{children ?? <Outlet />}</DashboardShell>;
 }

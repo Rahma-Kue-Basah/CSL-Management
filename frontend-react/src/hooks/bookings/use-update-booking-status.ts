@@ -8,7 +8,7 @@ import {
 } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
-type ActionType = "approve" | "reject";
+export type BookingStatusActionType = "approve" | "reject";
 
 type BookingStatusErrorPayload = Record<string, unknown>;
 
@@ -33,7 +33,7 @@ function parseBookingStatusError(
 export function useUpdateBookingStatus() {
   const [pendingAction, setPendingAction] = useState<{
     bookingId: string | number | null;
-    type: ActionType | null;
+    type: BookingStatusActionType | null;
   }>({
     bookingId: null,
     type: null,
@@ -41,7 +41,7 @@ export function useUpdateBookingStatus() {
 
   const updateBookingStatus = async (
     bookingId: string | number,
-    type: ActionType,
+    type: BookingStatusActionType,
   ) => {
     setPendingAction({ bookingId, type });
 

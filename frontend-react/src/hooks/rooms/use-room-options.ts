@@ -5,11 +5,16 @@ import { useEffect, useState } from "react";
 import { API_ROOMS_DROPDOWN } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
-type ApiRoomOption = { id?: string | number | null; name?: string | null };
+type ApiRoomOption = {
+  id?: string | number | null;
+  name?: string | null;
+  capacity?: number | null;
+};
 
 export type RoomOption = {
   id: string;
   label: string;
+  capacity: number;
 };
 
 export function useRoomOptions(enabled = true) {
@@ -46,6 +51,7 @@ export function useRoomOptions(enabled = true) {
           .map((room) => ({
             id: String(room.id),
             label: String(room.name ?? "-"),
+            capacity: Number(room.capacity ?? 0),
           }));
 
         setRooms(mapped);

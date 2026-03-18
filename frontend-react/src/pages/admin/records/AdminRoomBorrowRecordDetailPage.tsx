@@ -1,8 +1,13 @@
-import { ArrowLeft, ClipboardList } from "lucide-react";
+import { useState } from "react";
+import { ArrowLeft, Check, ClipboardList, Loader2, X } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { useBookingDetail } from "@/hooks/bookings/use-bookings";
+import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 
 function formatDateTime(value?: string | null) {
   if (!value) return "-";
@@ -56,12 +61,59 @@ export default function AdminRoomBorrowRecordDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { profile } = useLoadProfile();
+  const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
+  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
+    null,
+  );
   const backTo =
     typeof location.state?.from === "string"
       ? location.state.from
-      : "/admin/record/peminjaman-ruangan";
+      : "/admin/records/room-bookings";
 
-  const { booking, isLoading, error } = useBookingDetail(id);
+  const { booking, setBooking, isLoading, error } = useBookingDetail(id);
+
+  const handleBookingAction = async () => {
+    if (!booking || !confirmType) return;
+
+    const type = confirmType;
+    const result = await updateBookingStatus(booking.id, type);
+
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    setBooking((current) =>
+      current
+        ? {
+            ...current,
+            status: type === "approve" ? "Approved" : "Rejected",
+            updatedAt: now,
+            approvedById:
+              type === "approve"
+                ? String(profile?.id ?? current.approvedById)
+                : current.approvedById,
+            approvedByName:
+              type === "approve"
+                ? profile?.name || current.approvedByName
+                : current.approvedByName,
+            approvedByEmail:
+              type === "approve"
+                ? profile?.email || current.approvedByEmail
+                : current.approvedByEmail,
+          }
+        : current,
+    );
+    setConfirmType(null);
+
+    toast.success(
+      type === "approve"
+        ? "Booking ruangan berhasil disetujui."
+        : "Booking ruangan berhasil ditolak.",
+    );
+  };
 
   return (
     <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
@@ -91,10 +143,51 @@ export default function AdminRoomBorrowRecordDetailPage() {
                 <p className="text-sm text-slate-500">{booking.code}</p>
               </div>
             </div>
-            <Button type="button" variant="outline" size="sm" onClick={() => navigate(backTo)}>
-              <ArrowLeft className="h-4 w-4" />
-              Kembali
-            </Button>
+            <div className="flex items-center gap-2">
+              {booking.status === "Pending" ? (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="border border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+                    onClick={() => setConfirmType("approve")}
+                    disabled={pendingAction.bookingId === booking.id}
+                  >
+                    {pendingAction.bookingId === booking.id &&
+                    pendingAction.type === "approve" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                    Approve
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="border border-rose-600 bg-rose-600 text-white hover:bg-rose-700"
+                    onClick={() => setConfirmType("reject")}
+                    disabled={pendingAction.bookingId === booking.id}
+                  >
+                    {pendingAction.bookingId === booking.id &&
+                    pendingAction.type === "reject" ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <X className="h-4 w-4" />
+                    )}
+                    Reject
+                  </Button>
+                </>
+              ) : null}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(backTo)}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Kembali
+              </Button>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 gap-4">
@@ -104,7 +197,7 @@ export default function AdminRoomBorrowRecordDetailPage() {
               onView={
                 booking.roomId
                   ? () =>
-                      navigate(`/admin/inventarisasi/ruangan/${booking.roomId}`, {
+                      navigate(`/admin/inventory/rooms/${booking.roomId}`, {
                         state: { from: location.pathname },
                       })
                   : undefined
@@ -124,6 +217,8 @@ export default function AdminRoomBorrowRecordDetailPage() {
             />
             <DetailRow label="Status" value={booking.status} />
             <DetailRow label="Tujuan" value={booking.purpose} />
+            <DetailRow label="Jumlah Orang" value={booking.attendeeCount} />
+            <DetailRow label="Nama Orang" value={booking.attendeeNames} />
             <DetailRow label="Waktu" value={formatDateRange(booking.startTime, booking.endTime)} />
             <DetailRow label="Dibuat" value={formatDateTime(booking.createdAt)} />
             <DetailRow label="Diupdate" value={booking.updatedAt ? formatDateTime(booking.updatedAt) : "-"} />
@@ -141,21 +236,29 @@ export default function AdminRoomBorrowRecordDetailPage() {
             />
             <DetailRow
               label="Peralatan"
-              value={booking.equipmentName}
-              onView={
-                booking.equipmentId
-                  ? () =>
-                      navigate(`/admin/inventarisasi/peralatan/${booking.equipmentId}`, {
-                        state: { from: location.pathname },
-                      })
-                  : undefined
+              value={
+                booking.equipmentItems.length
+                  ? booking.equipmentItems
+                      .map((item) => `${item.equipmentName} (${item.quantity})`)
+                      .join(", ")
+                  : "-"
               }
             />
-            <DetailRow label="Jumlah Alat" value={booking.equipmentQty} />
             <DetailRow label="Catatan" value={booking.note || "-"} />
           </div>
         </div>
       )}
+
+      <StatusConfirmDialog
+        open={Boolean(confirmType)}
+        actionType={confirmType}
+        onOpenChange={(open) => {
+          if (!open) setConfirmType(null);
+        }}
+        onConfirm={handleBookingAction}
+        isSubmitting={Boolean(booking) && pendingAction.bookingId === booking?.id}
+        subjectLabel="pengajuan booking ruangan ini"
+      />
     </section>
   );
 }

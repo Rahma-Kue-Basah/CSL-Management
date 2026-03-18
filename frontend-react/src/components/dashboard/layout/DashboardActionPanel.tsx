@@ -322,8 +322,8 @@ export function DashboardActionPanel({
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
                             <option value="rejected">Rejected</option>
+                            <option value="expired">Expired</option>
                             <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
                           </select>
                         </div>
                         <div className="space-y-1">
@@ -470,9 +470,9 @@ export function DashboardActionPanel({
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
                             <option value="rejected">Rejected</option>
+                            <option value="expired">Expired</option>
                             <option value="in_use">In Use</option>
                             <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
                           </select>
                         </div>
                         <div className="space-y-1">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Eye, Loader2, Trash2 } from "lucide-react";
+import { Check, Eye, Loader2, OctagonX, Trash2 } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
@@ -14,9 +14,11 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { API_BOOKING_DETAIL } from "@/constants/api";
 import { useBookings, type BookingRow } from "@/hooks/bookings/use-bookings";
+import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 import { getStatusBadgeClass } from "@/lib/status";
+import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 
 const PAGE_SIZE = 10;
 
@@ -25,8 +27,8 @@ const STATUS_OPTIONS = [
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
+  { value: "expired", label: "Expired" },
   { value: "completed", label: "Completed" },
-  { value: "cancelled", label: "Cancelled" },
 ];
 
 function formatDateTime(value?: string | null) {
@@ -73,7 +75,12 @@ export default function AdminRecordPeminjamanRuanganPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<BookingRow | null>(null);
+  const [statusTarget, setStatusTarget] = useState<{
+    booking: BookingRow;
+    type: "approve" | "reject";
+  } | null>(null);
   const { deleteRecord, isDeleting } = useDeleteRecord();
+  const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
@@ -125,8 +132,25 @@ export default function AdminRecordPeminjamanRuanganPage() {
     toast.error(result.message);
   };
 
+  const handleUpdateStatus = async () => {
+    if (!statusTarget) return;
+    const result = await updateBookingStatus(statusTarget.booking.id, statusTarget.type);
+    if (result.ok) {
+      toast.success(
+        statusTarget.type === "approve"
+          ? "Booking ruangan berhasil disetujui."
+          : "Booking ruangan berhasil ditolak.",
+      );
+      setStatusTarget(null);
+      setReloadKey((prev) => prev + 1);
+      return;
+    }
+
+    toast.error(result.message);
+  };
+
   return (
-    <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
+    <section className="w-full min-w-0 space-y-4 px-4 pb-6">
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex-1 space-y-4">
           <AdminPageHeader
@@ -218,29 +242,35 @@ export default function AdminRecordPeminjamanRuanganPage() {
             </div>
           ) : null}
 
-          <div className="w-full max-w-full overflow-x-auto rounded border border-slate-200 bg-card">
-            <table className="w-full min-w-[1000px] table-fixed">
+          <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
+            <table className="min-w-max w-full table-auto">
               <thead className="border-b border-slate-800 bg-slate-900">
                 <tr className="text-left text-sm">
-                  <th className="w-[140px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Kode
                   </th>
-                  <th className="w-[220px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Ruangan
                   </th>
-                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Peminjam
                   </th>
-                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
+                    Orang
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
+                    Peralatan
+                  </th>
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Waktu Mulai
                   </th>
-                  <th className="w-[200px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Waktu Selesai
                   </th>
-                  <th className="w-[140px] px-3 py-3 font-medium text-slate-50">
+                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Status
                   </th>
-                  <th className="sticky right-0 z-10 relative w-[120px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
+                  <th className="sticky right-0 z-10 relative whitespace-nowrap bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
                     Aksi
                   </th>
                 </tr>
@@ -248,7 +278,7 @@ export default function AdminRecordPeminjamanRuanganPage() {
               <tbody className="text-sm">
                 {isLoading || !hasLoadedOnce ? (
                   <tr>
-                    <td colSpan={7} className="px-3 py-8 text-center">
+                    <td colSpan={9} className="px-3 py-8 text-center">
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin" />
                       </div>
@@ -257,20 +287,27 @@ export default function AdminRecordPeminjamanRuanganPage() {
                 ) : filteredBookings.length ? (
                   filteredBookings.map((booking) => (
                     <tr key={String(booking.id)} className="border-b last:border-b-0">
-                      <td className="truncate px-3 py-2 font-medium">
+                      <td className="whitespace-nowrap px-3 py-2 font-medium">
                         {booking.code}
                       </td>
-                      <td className="truncate px-3 py-2">{booking.roomName}</td>
-                      <td className="truncate px-3 py-2 text-muted-foreground">
+                      <td className="whitespace-nowrap px-3 py-2">{booking.roomName}</td>
+                      <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
                         {booking.requesterName}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="whitespace-nowrap px-3 py-2">{booking.attendeeCount}</td>
+                      <td
+                        className="whitespace-nowrap px-3 py-2 text-muted-foreground"
+                        title={booking.equipmentName}
+                      >
+                        {booking.equipmentName}
+                      </td>
+                      <td className="whitespace-nowrap px-3 py-2">
                         {formatDateTime(booking.startTime)}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="whitespace-nowrap px-3 py-2">
                         {formatDateTime(booking.endTime)}
                       </td>
-                      <td className="px-3 py-2">
+                      <td className="whitespace-nowrap px-3 py-2">
                         <span
                           className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
                             booking.status,
@@ -281,11 +318,57 @@ export default function AdminRecordPeminjamanRuanganPage() {
                       </td>
                       <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                         <div className="flex justify-center gap-2">
+                          {booking.status === "Pending" ? (
+                            <>
+                              <Button
+                                variant="outline"
+                                size="icon-sm"
+                                className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                                disabled={
+                                  pendingAction.bookingId === booking.id
+                                }
+                                onClick={() =>
+                                  setStatusTarget({
+                                    booking,
+                                    type: "approve",
+                                  })
+                                }
+                              >
+                                {pendingAction.bookingId === booking.id &&
+                                pendingAction.type === "approve" ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <Check className="h-4 w-4" />
+                                )}
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="icon-sm"
+                                className="border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                                disabled={
+                                  pendingAction.bookingId === booking.id
+                                }
+                                onClick={() =>
+                                  setStatusTarget({
+                                    booking,
+                                    type: "reject",
+                                  })
+                                }
+                              >
+                                {pendingAction.bookingId === booking.id &&
+                                pendingAction.type === "reject" ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" />
+                                ) : (
+                                  <OctagonX className="h-4 w-4" />
+                                )}
+                              </Button>
+                            </>
+                          ) : null}
                           <Button
                             variant="outline"
                             size="icon-sm"
                             onClick={() => {
-                              navigate(`/admin/record/peminjaman-ruangan/${booking.id}`, {
+                              navigate(`/admin/records/room-bookings/${booking.id}`, {
                                 state: { from: location.pathname },
                               });
                             }}
@@ -307,7 +390,7 @@ export default function AdminRecordPeminjamanRuanganPage() {
                 ) : (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={9}
                       className="px-3 py-6 text-center text-muted-foreground"
                     >
                       Tidak ada data peminjaman ruangan.
@@ -334,6 +417,21 @@ export default function AdminRecordPeminjamanRuanganPage() {
               if (!open) setDeleteTarget(null);
             }}
             onConfirm={handleDelete}
+          />
+
+          <StatusConfirmDialog
+            open={Boolean(statusTarget)}
+            actionType={statusTarget?.type ?? null}
+            onOpenChange={(open) => {
+              if (!open) setStatusTarget(null);
+            }}
+            onConfirm={handleUpdateStatus}
+            isSubmitting={
+              statusTarget
+                ? pendingAction.bookingId === statusTarget.booking.id
+                : false
+            }
+            subjectLabel="pengajuan booking ruangan ini"
           />
         </div>
       </div>

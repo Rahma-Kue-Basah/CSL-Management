@@ -5,7 +5,7 @@ from django.utils import timezone
 
 from csluse_auth.models import Profile
 
-from .models import Image, Booking, Borrow, Room, Pengujian, Use
+from .models import Image, Booking, BookingEquipmentItem, Borrow, Room, Pengujian, Use
 
 
 def validate_start_not_in_past(start_time, label="start time"):
@@ -54,38 +54,24 @@ def delete_image(sender, instance, **kwargs):
 
 @receiver(pre_save, sender=Booking)
 def validate_booking(sender, instance, **kwargs):
-    """
-    Ensure booking-equipment selection is valid (room match, stock, editable state).
-    """
-    validate_start_not_in_past(instance.start_time, "booking start time")
+    previous_instance = None
+    if instance.pk:
+        previous_instance = Booking.objects.filter(pk=instance.pk).only(
+            "start_time",
+            "end_time",
+            "status",
+        ).first()
+
+    start_time_changed = (
+        previous_instance is None
+        or previous_instance.start_time != instance.start_time
+    )
+
+    # Only validate past booking starts on create or when the requested time is changed.
+    if start_time_changed:
+        validate_start_not_in_past(instance.start_time, "booking start time")
+
     validate_booking_working_hours(instance.start_time, instance.end_time)
-
-    if not instance.equipment_id:
-        return
-
-    eq = instance.equipment
-    now = timezone.now()
-
-    # booking must still be editable
-    if instance.status != 'pending' or instance.approved_by is not None:
-        raise ValidationError("Cannot modify equipment for a booking that is not pending.")
-    if instance.start_time and instance.start_time <= now:
-        raise ValidationError("Cannot modify equipment for a booking whose start time has passed.")
-    if instance.end_time and instance.end_time <= now:
-        raise ValidationError("Cannot modify equipment for a booking whose end time has passed.")
-
-    # room match
-    if eq.room_id != instance.room_id:
-        raise ValidationError(f"{eq.name} harus berasal dari ruangan {instance.room.name}.")
-
-    # quantity check
-    qty = instance.quantity_equipment or 0
-    if qty <= 0:
-        raise ValidationError("Quantity equipment must be at least 1.")
-    if qty > eq.quantity:
-        raise ValidationError(
-            f"Quantity {qty} melebihi stok {eq.quantity} untuk {eq.name}."
-        )
 
     # approved_by must be room PIC or Admin (when set)
     if instance.approved_by_id:
@@ -95,6 +81,22 @@ def validate_booking(sender, instance, **kwargs):
                 raise ValidationError(
                     "Approver harus PIC ruangan terkait atau Admin."
                 )
+
+
+@receiver(pre_save, sender=BookingEquipmentItem)
+def validate_booking_equipment_item(sender, instance, **kwargs):
+    if instance.quantity <= 0:
+        raise ValidationError("Quantity equipment must be at least 1.")
+
+    if instance.equipment.room_id != instance.booking.room_id:
+        raise ValidationError(
+            f"{instance.equipment.name} harus berasal dari ruangan {instance.booking.room.name}."
+        )
+
+    if instance.quantity > instance.equipment.quantity:
+        raise ValidationError(
+            f"Quantity {instance.quantity} melebihi stok {instance.equipment.quantity} untuk {instance.equipment.name}."
+        )
 
 
 @receiver(pre_save, sender=Use)
@@ -107,7 +109,20 @@ def validate_use(sender, instance, **kwargs):
     if instance.quantity <= 0:
         raise ValidationError("Use quantity must be at least 1.")
 
-    validate_start_not_in_past(instance.start_time, "use start time")
+    previous_instance = None
+    if instance.pk:
+        previous_instance = Use.objects.filter(pk=instance.pk).only(
+            "start_time",
+            "status",
+        ).first()
+
+    start_time_changed = (
+        previous_instance is None
+        or previous_instance.start_time != instance.start_time
+    )
+
+    if start_time_changed:
+        validate_start_not_in_past(instance.start_time, "use start time")
 
 @receiver(pre_save, sender=Borrow)
 def validate_borrow(sender, instance, **kwargs):

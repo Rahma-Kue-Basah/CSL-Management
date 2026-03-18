@@ -31,6 +31,8 @@ export type BookingRow = {
   purpose: string;
   startTime: string;
   endTime: string;
+  attendeeCount: string;
+  attendeeNames: string;
   createdAt: string;
   updatedAt: string;
   approvedById: string;
@@ -39,6 +41,12 @@ export type BookingRow = {
   equipmentId: string;
   equipmentName: string;
   equipmentQty: string;
+  equipmentItems: Array<{
+    id: string;
+    equipmentId: string;
+    equipmentName: string;
+    quantity: string;
+  }>;
   note: string;
 };
 
@@ -50,9 +58,10 @@ type ApiBooking = {
   note?: string | null;
   start_time?: string | null;
   end_time?: string | null;
+  attendee_count?: number | string | null;
+  attendee_names?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
-  quantity_equipment?: number | string | null;
   room?: string | number | null;
   room_detail?: {
     id?: string | number | null;
@@ -71,16 +80,35 @@ type ApiBooking = {
     full_name?: string | null;
     email?: string | null;
   } | null;
-  equipment?: string | number | null;
-  equipment_detail?: {
+  equipment_items_detail?: Array<{
     id?: string | number | null;
-    name?: string | null;
-  } | null;
+    quantity?: number | string | null;
+    equipment?: string | number | null;
+    equipment_detail?: {
+      id?: string | number | null;
+      name?: string | null;
+    } | null;
+  }> | null;
 };
 
 type ApiBookingsResponse = {
   count?: number;
   results?: ApiBooking[];
+  aggregates?: {
+    total?: number;
+    pending?: number;
+    approved?: number;
+    completed?: number;
+    rejected?: number;
+  } | null;
+};
+
+export type BookingAggregates = {
+  total: number;
+  pending: number;
+  approved: number;
+  completed: number;
+  rejected: number;
 };
 
 export function mapBooking(item: ApiBooking): BookingRow {
@@ -92,6 +120,23 @@ export function mapBooking(item: ApiBooking): BookingRow {
     item.approved_by_detail?.full_name ||
     item.approved_by_detail?.email ||
     "-";
+
+  const equipmentItems = Array.isArray(item.equipment_items_detail)
+    ? item.equipment_items_detail.map((equipmentItem) => ({
+        id: String(equipmentItem.id ?? ""),
+        equipmentId: String(
+          equipmentItem.equipment_detail?.id ?? equipmentItem.equipment ?? "",
+        ),
+        equipmentName: String(equipmentItem.equipment_detail?.name ?? "-"),
+        quantity: String(equipmentItem.quantity ?? "-"),
+      }))
+    : [];
+  const primaryEquipment = equipmentItems[0];
+  const equipmentSummary = equipmentItems.length
+    ? equipmentItems
+        .map((equipmentItem) => `${equipmentItem.equipmentName} (${equipmentItem.quantity})`)
+        .join(", ")
+    : "-";
 
   return {
     id: item.id ?? `booking-${Math.random().toString(36).slice(2, 8)}`,
@@ -106,14 +151,19 @@ export function mapBooking(item: ApiBooking): BookingRow {
     purpose: String(item.purpose ?? "-"),
     startTime: String(item.start_time ?? "-"),
     endTime: String(item.end_time ?? "-"),
+    attendeeCount: String(item.attendee_count ?? "-"),
+    attendeeNames: String(item.attendee_names ?? "-"),
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     approvedByEmail: String(item.approved_by_detail?.email ?? "-"),
-    equipmentId: String(item.equipment_detail?.id ?? item.equipment ?? ""),
-    equipmentName: String(item.equipment_detail?.name ?? "-"),
-    equipmentQty: String(item.quantity_equipment ?? "-"),
+    equipmentId: primaryEquipment?.equipmentId ?? "",
+    equipmentName: equipmentSummary,
+    equipmentQty: equipmentItems.length
+      ? equipmentItems.map((equipmentItem) => equipmentItem.quantity).join(", ")
+      : "-",
+    equipmentItems,
     note: String(item.note ?? ""),
   };
 }
@@ -186,6 +236,13 @@ export function useBookings(
   const [isLoading, setIsLoading] = useState(true);
   const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState("");
+  const [aggregates, setAggregates] = useState<BookingAggregates>({
+    total: 0,
+    pending: 0,
+    approved: 0,
+    completed: 0,
+    rejected: 0,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -224,6 +281,13 @@ export function useBookings(
 
         setBookings(mapped);
         setTotalCount(Array.isArray(payload) ? mapped.length : (payload.count ?? mapped.length));
+        setAggregates({
+          total: Array.isArray(payload) ? mapped.length : Number(payload.aggregates?.total ?? 0),
+          pending: Array.isArray(payload) ? 0 : Number(payload.aggregates?.pending ?? 0),
+          approved: Array.isArray(payload) ? 0 : Number(payload.aggregates?.approved ?? 0),
+          completed: Array.isArray(payload) ? 0 : Number(payload.aggregates?.completed ?? 0),
+          rejected: Array.isArray(payload) ? 0 : Number(payload.aggregates?.rejected ?? 0),
+        });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
@@ -247,6 +311,7 @@ export function useBookings(
     setBookings,
     totalCount,
     setTotalCount,
+    aggregates,
     isLoading,
     hasLoadedOnce,
     error,

@@ -133,17 +133,10 @@ class Booking(BaseModel):
         on_delete=models.CASCADE,
         related_name='bookings',
     )
-    equipment = models.ForeignKey(
-        Equipment,
-        on_delete=models.SET_NULL,
-        related_name='equipment_bookings',
-        blank=True,
-        null=True,
-    )
-    quantity_equipment = models.PositiveIntegerField(blank=True, null=True)
-
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
+    attendee_count = models.PositiveIntegerField(default=1)
+    attendee_names = models.CharField(max_length=2000, blank=True, null=True)
 
     purpose = models.CharField(
         max_length=20,
@@ -156,8 +149,8 @@ class Booking(BaseModel):
         ('Pending', 'Pending'),
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
+        ('Expired', 'Expired'),
         ('Completed', 'Completed'),
-        ('Cancelled', 'Cancelled'),
     ]
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
@@ -180,6 +173,23 @@ class Booking(BaseModel):
 
     def __str__(self):
         return f"{self.code} - {self.requested_by.user.email} - {self.room.name} - {self.status}"
+
+
+class BookingEquipmentItem(BaseModel):
+    booking = models.ForeignKey(
+        Booking,
+        on_delete=models.CASCADE,
+        related_name='equipment_items',
+    )
+    equipment = models.ForeignKey(
+        Equipment,
+        on_delete=models.CASCADE,
+        related_name='booking_items',
+    )
+    quantity = models.PositiveIntegerField(default=1)
+
+    def __str__(self):
+        return f"{self.booking.code} - {self.equipment.name} x {self.quantity}"
 
 class Use(BaseModel):
     code = models.CharField(max_length=12, unique=True, editable=False, null=True)
@@ -206,9 +216,9 @@ class Use(BaseModel):
         ('Pending', 'Pending'),
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
+        ('Expired', 'Expired'),
         ('In Use', 'In Use'),
         ('Completed', 'Completed'),
-        ('Cancelled', 'Cancelled'),
     ]
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
 
@@ -261,7 +271,6 @@ class Borrow(BaseModel):
         ('Returned', 'Returned'),
         ('Overdue', 'Overdue'),
         ('Lost/Damaged', 'Lost/Damaged'),
-        ('Cancelled', 'Cancelled'),
     ]
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Borrowed')
@@ -323,7 +332,6 @@ class Pengujian(BaseModel):
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
         ('Completed', 'Completed'),
-        ('Cancelled', 'Cancelled'),
     ]
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from django.utils import timezone
 
 from typing import Optional
 
@@ -8,6 +9,7 @@ from .models import (
     Room,
     Equipment,
     Booking,
+    BookingEquipmentItem,
     Borrow,
     Facility,
     Announcement,
@@ -112,6 +114,7 @@ class RoomDropdownSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "capacity",
         ]
 
 
@@ -167,6 +170,7 @@ class EquipmentDropdownSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+            "quantity",
         ]
 
 
@@ -197,15 +201,167 @@ class RecordEquipmentListSerializer(serializers.ModelSerializer):
         ]
 
 
+class BookingEquipmentItemWriteSerializer(serializers.Serializer):
+    equipment = serializers.PrimaryKeyRelatedField(queryset=Equipment.objects.all())
+    quantity = serializers.IntegerField(min_value=1)
+
+
+class BookingEquipmentItemDetailSerializer(serializers.ModelSerializer):
+    equipment_detail = RecordEquipmentListSerializer(source="equipment", read_only=True)
+
+    class Meta:
+        model = BookingEquipmentItem
+        fields = [
+            "id",
+            "quantity",
+            "equipment",
+            "equipment_detail",
+        ]
+
+
 class BookingSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
     room_detail = RoomSerializer(source="room", read_only=True)
-    equipment_detail = EquipmentSerializer(source="equipment", read_only=True)
+    equipment_items = BookingEquipmentItemWriteSerializer(many=True, required=False)
+    equipment_items_detail = BookingEquipmentItemDetailSerializer(
+        source="equipment_items",
+        many=True,
+        read_only=True,
+    )
+
+    def validate(self, attrs):
+        equipment_items = attrs.get("equipment_items")
+        room = attrs.get("room") or getattr(self.instance, "room", None)
+        attendee_count = attrs.get("attendee_count", getattr(self.instance, "attendee_count", 1))
+        start_time = attrs.get("start_time", getattr(self.instance, "start_time", None))
+        end_time = attrs.get("end_time", getattr(self.instance, "end_time", None))
+        next_status = attrs.get("status", getattr(self.instance, "status", "Pending"))
+
+        if attendee_count <= 0:
+            raise serializers.ValidationError({"attendee_count": "Jumlah orang harus lebih dari 0."})
+
+        if room and attendee_count > room.capacity:
+            raise serializers.ValidationError(
+                {
+                    "attendee_count": (
+                        f"Jumlah orang tidak boleh melebihi kapasitas ruangan "
+                        f"({room.capacity} orang)."
+                    )
+                }
+            )
+
+        if start_time and end_time and start_time >= end_time:
+            raise serializers.ValidationError(
+                {"end_time": "Waktu selesai harus lebih besar dari waktu mulai."}
+            )
+
+        if room and start_time and end_time and next_status in {"Pending", "Approved"}:
+            if next_status == "Approved" and end_time <= timezone.now():
+                raise serializers.ValidationError(
+                    {
+                        "non_field_errors": [
+                            "Booking ini sudah melewati waktu yang diminta dan tidak dapat disetujui."
+                        ]
+                    }
+                )
+
+            overlapping_bookings = Booking.objects.filter(
+                room=room,
+                status="Approved",
+                start_time__lt=end_time,
+                end_time__gt=start_time,
+            )
+            if self.instance:
+                overlapping_bookings = overlapping_bookings.exclude(pk=self.instance.pk)
+
+            if overlapping_bookings.exists():
+                raise serializers.ValidationError(
+                    {
+                        "non_field_errors": [
+                            "Ruangan sudah memiliki booking yang disetujui pada rentang waktu tersebut."
+                        ]
+                    }
+                )
+
+        if equipment_items is None:
+            return attrs
+
+        if not room:
+            raise serializers.ValidationError({"room": "Ruangan wajib dipilih terlebih dahulu."})
+
+        seen_equipment_ids = set()
+        for item in equipment_items:
+            equipment = item["equipment"]
+            quantity = item["quantity"]
+
+            if equipment.id in seen_equipment_ids:
+                raise serializers.ValidationError(
+                    {"equipment_items": "Peralatan yang sama tidak boleh dipilih lebih dari sekali."}
+                )
+            seen_equipment_ids.add(equipment.id)
+
+            if equipment.room_id != room.id:
+                raise serializers.ValidationError(
+                    {"equipment_items": f"{equipment.name} harus berasal dari ruangan {room.name}."}
+                )
+
+            if quantity > equipment.quantity:
+                raise serializers.ValidationError(
+                    {"equipment_items": f"Jumlah {equipment.name} melebihi stok tersedia ({equipment.quantity})."}
+                )
+
+        return attrs
+
+    def create(self, validated_data):
+        equipment_items = validated_data.pop("equipment_items", [])
+        booking = Booking.objects.create(**validated_data)
+        self._save_equipment_items(booking, equipment_items)
+        return booking
+
+    def update(self, instance, validated_data):
+        equipment_items = validated_data.pop("equipment_items", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        if equipment_items is not None:
+            instance.equipment_items.all().delete()
+            self._save_equipment_items(instance, equipment_items)
+
+        return instance
+
+    def _save_equipment_items(self, booking, equipment_items):
+        for item in equipment_items:
+            BookingEquipmentItem.objects.create(
+                booking=booking,
+                equipment=item["equipment"],
+                quantity=item["quantity"],
+            )
 
     class Meta:
         model = Booking
-        fields = '__all__'
+        fields = [
+            "id",
+            "code",
+            "requested_by",
+            "requested_by_detail",
+            "room",
+            "room_detail",
+            "start_time",
+            "end_time",
+            "attendee_count",
+            "attendee_names",
+            "purpose",
+            "note",
+            "status",
+            "approved_by",
+            "approved_by_detail",
+            "equipment_items",
+            "equipment_items_detail",
+            "created_at",
+            "updated_at",
+        ]
         read_only_fields = ['requested_by', 'code']
 
 
@@ -213,23 +369,28 @@ class BookingListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
     approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
     room_detail = RecordRoomListSerializer(source="room", read_only=True)
-    equipment_detail = RecordEquipmentListSerializer(source="equipment", read_only=True)
+    equipment_items_detail = BookingEquipmentItemDetailSerializer(
+        source="equipment_items",
+        many=True,
+        read_only=True,
+    )
 
     class Meta:
         model = Booking
         fields = [
             "id",
             "code",
-            "quantity_equipment",
             "start_time",
             "end_time",
+            "attendee_count",
+            "attendee_names",
             "purpose",
             "note",
             "status",
             "requested_by_detail",
             "approved_by_detail",
             "room_detail",
-            "equipment_detail",
+            "equipment_items_detail",
             "created_at",
             "updated_at",
         ]
@@ -238,6 +399,11 @@ class BookingListSerializer(serializers.ModelSerializer):
 class BookingUserListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
     room_detail = RecordRoomListSerializer(source="room", read_only=True)
+    equipment_items_detail = BookingEquipmentItemDetailSerializer(
+        source="equipment_items",
+        many=True,
+        read_only=True,
+    )
 
     class Meta:
         model = Booking
@@ -246,10 +412,13 @@ class BookingUserListSerializer(serializers.ModelSerializer):
             "code",
             "start_time",
             "end_time",
+            "attendee_count",
+            "attendee_names",
             "purpose",
             "status",
             "requested_by_detail",
             "room_detail",
+            "equipment_items_detail",
             "created_at",
         ]
 
@@ -479,6 +648,24 @@ class UseSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
     equipment_detail = EquipmentSerializer(source="equipment", read_only=True)
+
+    def validate(self, attrs):
+        start_time = attrs.get("start_time", getattr(self.instance, "start_time", None))
+        end_time = attrs.get("end_time", getattr(self.instance, "end_time", None))
+        next_status = attrs.get("status", getattr(self.instance, "status", "Pending"))
+
+        if next_status == "Approved":
+            effective_deadline = end_time or start_time
+            if effective_deadline and effective_deadline <= timezone.now():
+                raise serializers.ValidationError(
+                    {
+                        "non_field_errors": [
+                            "Pengajuan penggunaan alat ini sudah melewati waktu yang diminta dan tidak dapat disetujui."
+                        ]
+                    }
+                )
+
+        return attrs
 
     class Meta:
         model = Use

@@ -8,19 +8,28 @@ import { authFetch } from "@/lib/auth";
 export type EquipmentOption = {
   id: string;
   label: string;
+  quantity: number;
 };
 
 type ApiEquipmentOption = {
   id?: string | number | null;
   name?: string | null;
+  quantity?: number | null;
 };
 
-export function useEquipmentOptions(status = "") {
+export function useEquipmentOptions(status = "", room = "", enabled = true) {
   const [equipments, setEquipments] = useState<EquipmentOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!enabled) {
+      setEquipments([]);
+      setError("");
+      setIsLoading(false);
+      return;
+    }
+
     const controller = new AbortController();
     let isAborted = false;
 
@@ -30,6 +39,7 @@ export function useEquipmentOptions(status = "") {
       try {
         const url = new URL(API_EQUIPMENTS_DROPDOWN, window.location.origin);
         if (status) url.searchParams.set("status", status);
+        if (room) url.searchParams.set("room", room);
 
         const response = await authFetch(url.toString(), {
           method: "GET",
@@ -43,6 +53,7 @@ export function useEquipmentOptions(status = "") {
         const mapped = payload.map((item) => ({
           id: String(item.id ?? ""),
           label: String(item.name ?? "-"),
+          quantity: Number(item.quantity ?? 0),
         }));
         setEquipments(mapped.filter((item) => item.id));
       } catch (err) {
@@ -60,7 +71,7 @@ export function useEquipmentOptions(status = "") {
       isAborted = true;
       controller.abort();
     };
-  }, [status]);
+  }, [status, room, enabled]);
 
   return { equipments, isLoading, error };
 }

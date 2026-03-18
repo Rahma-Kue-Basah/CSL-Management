@@ -281,7 +281,7 @@ export default function AdminRoomsPage() {
                             variant="outline"
                             size="icon-sm"
                             onClick={() => {
-                              navigate(`/admin/inventarisasi/ruangan/${room.id}`, {
+                              navigate(`/admin/inventory/rooms/${room.id}`, {
                                 state: { from: location.pathname },
                               });
                             }}

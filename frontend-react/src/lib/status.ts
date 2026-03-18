@@ -42,17 +42,20 @@ export function getStatusBadgeClass(
       ? "border-orange-200 bg-orange-50 text-orange-700"
       : "bg-orange-100 text-orange-700";
   }
+  if (normalized === "expired") {
+    return bordered
+      ? "border-zinc-200 bg-zinc-50 text-zinc-700"
+      : "bg-zinc-200 text-zinc-700";
+  }
   if (normalized === "lost_damaged") {
     return bordered
       ? "border-red-200 bg-red-50 text-red-700"
       : "bg-red-100 text-red-700";
   }
-  if (normalized === "rejected" || normalized === "cancelled") {
+  if (normalized === "rejected") {
     return bordered
       ? "border-rose-200 bg-rose-50 text-rose-700"
-      : normalized === "cancelled"
-        ? "bg-slate-200 text-slate-600"
-        : "bg-rose-100 text-rose-700";
+      : "bg-rose-100 text-rose-700";
   }
 
   return bordered

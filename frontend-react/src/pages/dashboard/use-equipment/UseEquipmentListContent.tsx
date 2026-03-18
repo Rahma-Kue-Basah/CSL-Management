@@ -17,7 +17,7 @@ import { toast } from "sonner";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import BookingStatusConfirmDialog from "@/pages/dashboard/booking-rooms/BookingStatusConfirmDialog";
+import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useUses } from "@/hooks/uses/use-uses";
@@ -121,7 +121,7 @@ export default function UseEquipmentListContent({
     setPage(1);
   }, [status, search, createdAfter, createdBefore]);
 
-  const { uses, totalCount, isLoading, hasLoadedOnce, error } = useUses(
+  const { uses, totalCount, aggregates, isLoading, hasLoadedOnce, error } = useUses(
     page,
     PAGE_SIZE,
     {
@@ -130,13 +130,6 @@ export default function UseEquipmentListContent({
       createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
       createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
-    reloadKey,
-    scope,
-  );
-  const { uses: summarySourceUses, totalCount: summaryTotalCount } = useUses(
-    1,
-    1000,
-    { requestedBy: scope === "my" ? String(profile?.id ?? "") : "" },
     reloadKey,
     scope,
   );
@@ -161,13 +154,6 @@ export default function UseEquipmentListContent({
     });
   }, [uses, search]);
 
-  const summaryUses = useMemo(
-    () =>
-      summarySourceUses.filter(
-        (item) => item.equipmentName && item.equipmentName !== "-",
-      ),
-    [summarySourceUses],
-  );
   const normalizedRole = normalizeRoleValue(profile?.role);
   const canReviewUses =
     scope === "all" &&
@@ -179,18 +165,10 @@ export default function UseEquipmentListContent({
     1,
     Math.ceil((totalCount || filteredUses.length) / PAGE_SIZE),
   );
-  const pendingCount = summaryUses.filter(
-    (item) => item.status.toLowerCase() === "pending",
-  ).length;
-  const approvedCount = summaryUses.filter(
-    (item) => item.status.toLowerCase() === "approved",
-  ).length;
-  const completedCount = summaryUses.filter(
-    (item) => item.status.toLowerCase() === "completed",
-  ).length;
-  const rejectedCount = summaryUses.filter(
-    (item) => item.status.toLowerCase() === "rejected",
-  ).length;
+  const pendingCount = aggregates.pending;
+  const approvedCount = aggregates.approved;
+  const completedCount = aggregates.completed;
+  const rejectedCount = aggregates.rejected;
 
   const handleUseAction = async () => {
     if (!confirmState) return;
@@ -217,7 +195,7 @@ export default function UseEquipmentListContent({
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-5">
         <SummaryCard
           label="Total Pengajuan"
-          value={summaryTotalCount || summaryUses.length}
+          value={aggregates.total}
           icon={<Package className="h-4 w-4" />}
           tone="blue"
         />
@@ -372,7 +350,7 @@ export default function UseEquipmentListContent({
         onPageChange={setPage}
       />
 
-      <BookingStatusConfirmDialog
+      <StatusConfirmDialog
         open={Boolean(confirmState)}
         actionType={confirmState?.type ?? null}
         onOpenChange={(open) => {
@@ -380,6 +358,7 @@ export default function UseEquipmentListContent({
         }}
         onConfirm={handleUseAction}
         isSubmitting={pendingAction.useId === confirmState?.useId}
+        subjectLabel="pengajuan penggunaan alat ini"
       />
     </section>
   );

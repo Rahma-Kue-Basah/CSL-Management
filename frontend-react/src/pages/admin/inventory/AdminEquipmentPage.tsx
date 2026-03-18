@@ -340,7 +340,7 @@ export default function AdminEquipmentsPage() {
                             variant="outline"
                             size="icon-sm"
                             onClick={() => {
-                              navigate(`/admin/inventarisasi/peralatan/${item.id}`, {
+                              navigate(`/admin/inventory/equipment/${item.id}`, {
                                 state: { from: location.pathname },
                               });
                             }}

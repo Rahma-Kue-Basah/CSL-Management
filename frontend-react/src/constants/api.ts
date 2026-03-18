@@ -64,6 +64,7 @@ const API_BORROWS_BY_MONTH = `${API_BORROWS}by-month/`;
 
 // REGION: Uses API Endpoints
 const API_USES = `${API_BASE_URL}/uses/`;
+const API_USES_MY = `${API_USES}my/`;
 const API_USE_DETAIL = (id: string | number) => `${API_USES}${id}/`;
 const API_USE_APPROVE = (id: string | number) => `${API_USES}${id}/approve/`;
 const API_USE_REJECT = (id: string | number) => `${API_USES}${id}/reject/`;
@@ -150,6 +151,7 @@ export {
   API_BORROW_RETURN,
   API_BORROWS_BY_MONTH,
   API_USES,
+  API_USES_MY,
   API_USE_DETAIL,
   API_USE_APPROVE,
   API_USE_REJECT,

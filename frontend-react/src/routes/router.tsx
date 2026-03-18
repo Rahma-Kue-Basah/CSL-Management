@@ -16,6 +16,7 @@ import DashboardOverviewPage from "@/pages/dashboard/overview/DashboardOverviewP
 import DashboardAnnouncementsPage from "@/pages/dashboard/announcements/DashboardAnnouncementsPage";
 import DashboardFaqPage from "@/pages/dashboard/faq/DashboardFaqPage";
 import DashboardStructureOrganizationsPage from "@/pages/dashboard/organization/DashboardStructureOrganizationsPage";
+import DashboardFacilitiesPage from "@/pages/dashboard/facilities/DashboardFacilitiesPage";
 import SchedulePage from "@/pages/dashboard/schedule/SchedulePage";
 import BookingRoomsListPage from "@/pages/dashboard/booking-rooms/BookingRoomsListPage";
 import BookingRoomsAllListPage from "@/pages/dashboard/booking-rooms/BookingRoomsAllListPage";
@@ -81,345 +82,147 @@ export const router = createBrowserRouter([
   {
     element: <AuthLayoutOutlet />,
     children: [
-      { path: "/login", element: <LoginPage /> },
-      { path: "/forgot-password", element: <ForgotPasswordPage /> },
-      { path: "/signup-guest", element: <SignupGuestPage /> },
-      { path: "/signup-guest/verify/:key", element: <SignupGuestVerifyPage /> },
-      { path: "/reset-password/:uid/:token", element: <ResetPasswordPage /> },
+      { path: "login", element: <LoginPage /> },
+      { path: "forgot-password", element: <ForgotPasswordPage /> },
+      { path: "signup-guest", element: <SignupGuestPage /> },
+      { path: "signup-guest/verify/:key", element: <SignupGuestVerifyPage /> },
+      { path: "reset-password/:uid/:token", element: <ResetPasswordPage /> },
     ],
   },
   {
-    path: "/dashboard",
     element: (
       <RequireAuth>
-        <UserLayout>
-          <DashboardHomePage />
-        </UserLayout>
+        <UserLayout />
       </RequireAuth>
     ),
-  },
-  {
-    path: "/dashboard/overview",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <DashboardOverviewPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/dashboard/announcements",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <DashboardAnnouncementsPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/dashboard/faq",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <DashboardFaqPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/dashboard/organization-structure",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <DashboardStructureOrganizationsPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/schedule",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <SchedulePage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/booking-rooms",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <BookingRoomsListPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/booking-rooms/all",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <BookingRoomsAllListPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/booking-rooms/all/:id",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <BookingRoomsDetailPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/booking-rooms/form",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <BookingRoomsFormPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/booking-rooms/:id",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <BookingRoomsDetailPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/rooms",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <RoomsListPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/rooms/:id",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <RoomDetailPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/use-equipment",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <UseEquipmentListPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/use-equipment/all",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <UseEquipmentAllListPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/use-equipment/form",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <UseEquipmentFormPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/use-equipment/all/:id",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <UseEquipmentDetailPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/use-equipment/:id",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <UseEquipmentDetailPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/equipment",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <EquipmentListPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/equipment/:id",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <EquipmentDetailPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/sample-testing",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <SampleTestingListPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/sample-testing/form",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <SampleTestingFormPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/borrow-equipment",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <BorrowEquipmentListPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/borrow-equipment/form",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <BorrowEquipmentFormPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/borrow-equipment/equipment",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <BorrowEquipmentAvailablePage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/notifications",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <NotificationsPage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/my-profile",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <MyProfilePage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/my-profile/edit",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <MyProfilePage />
-        </UserLayout>
-      </RequireAuth>
-    ),
-  },
-  {
-    path: "/my-profile/security",
-    element: (
-      <RequireAuth>
-        <UserLayout>
-          <MyProfilePage />
-        </UserLayout>
-      </RequireAuth>
-    ),
+    children: [
+      {
+        path: "dashboard",
+        children: [
+          { index: true, element: <DashboardHomePage /> },
+          { path: "overview", element: <DashboardOverviewPage /> },
+          { path: "announcements", element: <DashboardAnnouncementsPage /> },
+          { path: "faq", element: <DashboardFaqPage /> },
+          { path: "organization-structure", element: <DashboardStructureOrganizationsPage /> },
+          { path: "facilities", element: <DashboardFacilitiesPage /> },
+        ],
+      },
+      { path: "schedule", element: <SchedulePage /> },
+      {
+        path: "booking-rooms",
+        children: [
+          { index: true, element: <BookingRoomsListPage /> },
+          { path: "all", element: <BookingRoomsAllListPage /> },
+          { path: "all/:id", element: <BookingRoomsDetailPage /> },
+          { path: "form", element: <BookingRoomsFormPage /> },
+          { path: ":id", element: <BookingRoomsDetailPage /> },
+        ],
+      },
+      { path: "rooms", element: <RoomsListPage /> },
+      { path: "rooms/:id", element: <RoomDetailPage /> },
+      {
+        path: "use-equipment",
+        children: [
+          { index: true, element: <UseEquipmentListPage /> },
+          { path: "all", element: <UseEquipmentAllListPage /> },
+          { path: "form", element: <UseEquipmentFormPage /> },
+          { path: "all/:id", element: <UseEquipmentDetailPage /> },
+          { path: ":id", element: <UseEquipmentDetailPage /> },
+        ],
+      },
+      { path: "equipment", element: <EquipmentListPage /> },
+      { path: "equipment/:id", element: <EquipmentDetailPage /> },
+      {
+        path: "sample-testing",
+        children: [
+          { index: true, element: <SampleTestingListPage /> },
+          { path: "form", element: <SampleTestingFormPage /> },
+        ],
+      },
+      {
+        path: "borrow-equipment",
+        children: [
+          { index: true, element: <BorrowEquipmentListPage /> },
+          { path: "form", element: <BorrowEquipmentFormPage /> },
+          { path: "equipment", element: <BorrowEquipmentAvailablePage /> },
+        ],
+      },
+      { path: "notifications", element: <NotificationsPage /> },
+      {
+        path: "my-profile",
+        children: [
+          { index: true, element: <MyProfilePage /> },
+          { path: "edit", element: <MyProfilePage /> },
+          { path: "security", element: <MyProfilePage /> },
+        ],
+      },
+    ],
   },
   {
     path: "/admin",
     element: (
       <RequireAuth>
         <RequireAdmin>
-          <AdminLayout>
-            <Outlet />
-          </AdminLayout>
+          <AdminLayout />
         </RequireAdmin>
       </RequireAuth>
     ),
     children: [
-      { index: true, element: <Navigate to="/admin/home" replace /> },
+      { index: true, element: <Navigate to="home" replace /> },
       { path: "home", element: <AdminHomePage /> },
-      { path: "informasi", element: <Navigate to="/admin/informasi/jadwal" replace /> },
-      { path: "informasi/jadwal", element: <AdminSchedulePage /> },
-      { path: "informasi/pengumuman", element: <AdminAnnouncementPage /> },
-      { path: "informasi/faq", element: <AdminFaqPage /> },
-      { path: "inventarisasi", element: <Navigate to="/admin/inventarisasi/peralatan" replace /> },
-      { path: "inventarisasi/peralatan", element: <AdminEquipmentPage /> },
-      { path: "inventarisasi/peralatan/:id", element: <AdminEquipmentDetailPage /> },
-      { path: "inventarisasi/ruangan", element: <AdminRoomPage /> },
-      { path: "inventarisasi/ruangan/:id", element: <AdminRoomDetailPage /> },
-      { path: "record/peminjaman-ruangan", element: <AdminRoomBorrowRecordPage /> },
-      { path: "record/peminjaman-ruangan/:id", element: <AdminRoomBorrowRecordDetailPage /> },
-      { path: "record/penggunaan-alat", element: <AdminEquipmentUsageRecordPage /> },
-      { path: "record/penggunaan-alat/:id", element: <AdminEquipmentUsageRecordDetailPage /> },
-      { path: "record/peminjaman-alat", element: <AdminEquipmentBorrowRecordPage /> },
-      { path: "record/peminjaman-alat/:id", element: <AdminEquipmentBorrowRecordDetailPage /> },
-      { path: "record/pengujian-sampel", element: <AdminSampleTestingRecordPage /> },
-      { path: "record/pengujian-sampel/:id", element: <AdminSampleTestingRecordDetailPage /> },
       { path: "my-profile", element: <AdminMyProfilePage /> },
-      { path: "profile/organization-structure", element: <StructureOrgansPage /> },
-      { path: "profile/facilities", element: <FacilityPage /> },
-      { path: "user-management", element: <Navigate to="/admin/user-management/all" replace /> },
-      { path: "user-management/all", element: <UserManagementAllPage /> },
-      { path: "user-management/student", element: <UserManagementStudentPage /> },
-      { path: "user-management/lecturer", element: <UserManagementLecturerPage /> },
-      { path: "user-management/admin", element: <UserManagementAdminPage /> },
-      { path: "user-management/staff", element: <UserManagementStaffPage /> },
-      { path: "user-management/guest", element: <UserManagementGuestPage /> },
-      { path: "user-management/detail/:id", element: <UserManagementUserDetailPage /> },
+      {
+        path: "information",
+        children: [
+          { index: true, element: <Navigate to="schedules" replace /> },
+          { path: "schedules", element: <AdminSchedulePage /> },
+          { path: "announcements", element: <AdminAnnouncementPage /> },
+          { path: "faq", element: <AdminFaqPage /> },
+        ],
+      },
+      {
+        path: "inventory",
+        children: [
+          { index: true, element: <Navigate to="equipment" replace /> },
+          { path: "equipment", element: <AdminEquipmentPage /> },
+          { path: "equipment/:id", element: <AdminEquipmentDetailPage /> },
+          { path: "rooms", element: <AdminRoomPage /> },
+          { path: "rooms/:id", element: <AdminRoomDetailPage /> },
+        ],
+      },
+      {
+        path: "records",
+        children: [
+          { path: "room-bookings", element: <AdminRoomBorrowRecordPage /> },
+          { path: "room-bookings/:id", element: <AdminRoomBorrowRecordDetailPage /> },
+          { path: "equipment-usage", element: <AdminEquipmentUsageRecordPage /> },
+          { path: "equipment-usage/:id", element: <AdminEquipmentUsageRecordDetailPage /> },
+          { path: "equipment-borrows", element: <AdminEquipmentBorrowRecordPage /> },
+          { path: "equipment-borrows/:id", element: <AdminEquipmentBorrowRecordDetailPage /> },
+          { path: "sample-testing", element: <AdminSampleTestingRecordPage /> },
+          { path: "sample-testing/:id", element: <AdminSampleTestingRecordDetailPage /> },
+        ],
+      },
+      {
+        path: "profile",
+        children: [
+          { path: "organization-structure", element: <StructureOrgansPage /> },
+          { path: "facilities", element: <FacilityPage /> },
+        ],
+      },
+      {
+        path: "user-management",
+        children: [
+          { index: true, element: <Navigate to="all" replace /> },
+          { path: "all", element: <UserManagementAllPage /> },
+          { path: "student", element: <UserManagementStudentPage /> },
+          { path: "lecturer", element: <UserManagementLecturerPage /> },
+          { path: "admin", element: <UserManagementAdminPage /> },
+          { path: "staff", element: <UserManagementStaffPage /> },
+          { path: "guest", element: <UserManagementGuestPage /> },
+          { path: "detail/:id", element: <UserManagementUserDetailPage /> },
+        ],
+      },
     ],
   },
   { path: "*", element: <NotFoundPage /> },

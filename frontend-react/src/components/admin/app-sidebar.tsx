@@ -73,9 +73,9 @@ export function AppSidebar() {
     text.toLowerCase().includes(normalizedQuery);
 
   const inventoryItems = [
-    { label: "Ruangan", href: "/admin/inventarisasi/ruangan" },
-    { label: "Peralatan", href: "/admin/inventarisasi/peralatan" },
-    { label: "Software", href: "/admin/inventarisasi/software" },
+    { label: "Ruangan", href: "/admin/inventory/rooms" },
+    { label: "Peralatan", href: "/admin/inventory/equipment" },
+    { label: "Software", href: "/admin/inventory/software" },
   ];
 
   const documentItems = [
@@ -95,10 +95,10 @@ export function AppSidebar() {
   ];
 
   const recordItems = [
-    { label: "Peminjaman Ruangan", href: "/admin/record/peminjaman-ruangan" },
-    { label: "Penggunaan Alat", href: "/admin/record/penggunaan-alat" },
-    { label: "Peminjaman Alat", href: "/admin/record/peminjaman-alat" },
-    { label: "Pengujian Sampel", href: "/admin/record/pengujian-sampel" },
+    { label: "Peminjaman Ruangan", href: "/admin/records/room-bookings" },
+    { label: "Penggunaan Alat", href: "/admin/records/equipment-usage" },
+    { label: "Peminjaman Alat", href: "/admin/records/equipment-borrows" },
+    { label: "Pengujian Sampel", href: "/admin/records/sample-testing" },
   ];
 
   const userItems = [
@@ -117,9 +117,9 @@ export function AppSidebar() {
     { label: "Fasilitas", href: "/admin/profile/facilities" },
   ];
   const informationItems = [
-    { label: "Pengumuman", href: "/admin/informasi/pengumuman" },
-    { label: "FAQ", href: "/admin/informasi/faq" },
-    { label: "Jadwal", href: "/admin/informasi/jadwal" },
+    { label: "Pengumuman", href: "/admin/information/announcements" },
+    { label: "FAQ", href: "/admin/information/faq" },
+    { label: "Jadwal", href: "/admin/information/schedules" },
   ];
 
   const filteredDocumentItems = documentItems.filter((item) =>

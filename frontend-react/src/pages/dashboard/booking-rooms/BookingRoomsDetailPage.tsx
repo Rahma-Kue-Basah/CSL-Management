@@ -20,7 +20,7 @@ import { useBookingDetail } from "@/hooks/bookings/use-bookings";
 import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import BookingStatusConfirmDialog from "@/pages/dashboard/booking-rooms/BookingStatusConfirmDialog";
+import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { formatDateTimeWib } from "@/lib/date-time";
 import { getStatusBadgeClass } from "@/lib/status";
 
@@ -98,13 +98,12 @@ function getBookingFlow(booking: {
     baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
     return baseSteps.slice(0, 2);
   }
-  if (status === "cancelled") {
+  if (status === "expired") {
     baseSteps[1].state = "error";
-    baseSteps[1].label = "Dibatalkan";
+    baseSteps[1].label = "Kedaluwarsa";
     baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
     return baseSteps.slice(0, 2);
   }
-
   baseSteps[1].state = "process";
   return baseSteps;
 }
@@ -161,6 +160,37 @@ function DetailItem({
           {displayValue}
         </p>
       )}
+    </div>
+  );
+}
+
+function EquipmentItemsDetail({
+  items,
+}: {
+  items: Array<{
+    id: string;
+    equipmentName: string;
+    quantity: string;
+  }>;
+}) {
+  if (!items.length) {
+    return <DetailItem label="Peralatan (Opsional)" value="-" />;
+  }
+
+  return (
+    <div className="space-y-1.5 rounded-md border border-slate-200 bg-white px-4 py-3">
+      <p className="text-xs text-slate-500">Peralatan (Opsional)</p>
+      <div className="space-y-2">
+        {items.map((item) => (
+          <div
+            key={item.id || `${item.equipmentName}-${item.quantity}`}
+            className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800"
+          >
+            <span>{item.equipmentName}</span>
+            <span className="font-medium">{item.quantity}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -376,14 +406,9 @@ export default function BookingRoomsDetailPage() {
                 label="Nomor Ruangan"
                 value={booking.roomNumber || "-"}
               />
-              <DetailItem
-                label="Peralatan (Opsional)"
-                value={booking.equipmentName || "-"}
-              />
-              <DetailItem
-                label="Jumlah Peralatan"
-                value={booking.equipmentQty || "-"}
-              />
+              <DetailItem label="Jumlah Orang" value={booking.attendeeCount} />
+              <DetailItem label="Nama Orang" value={booking.attendeeNames} />
+              <EquipmentItemsDetail items={booking.equipmentItems} />
             </div>
           </DetailSection>
 
@@ -435,7 +460,7 @@ export default function BookingRoomsDetailPage() {
         </div>
       </div>
 
-      <BookingStatusConfirmDialog
+      <StatusConfirmDialog
         open={Boolean(confirmType)}
         actionType={confirmType}
         onOpenChange={(open) => {
@@ -443,6 +468,7 @@ export default function BookingRoomsDetailPage() {
         }}
         onConfirm={handleBookingAction}
         isSubmitting={pendingAction.bookingId === booking.id}
+        subjectLabel="pengajuan booking ruangan ini"
       />
     </section>
   );
