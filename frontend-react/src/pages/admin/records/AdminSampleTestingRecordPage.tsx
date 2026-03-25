@@ -15,6 +15,7 @@ import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import AdminSampleTestingRecordDetailContent from "@/components/admin/records/AdminSampleTestingRecordDetailContent";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
+import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
 import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
@@ -83,6 +84,7 @@ export default function AdminRecordPengujianSampelPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<PengujianRow | null>(null);
   const [detailTarget, setDetailTarget] = useState<PengujianRow | null>(null);
+  const [relatedUserId, setRelatedUserId] = useState<string | number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
@@ -561,10 +563,19 @@ export default function AdminRecordPengujianSampelPage() {
                   showAside={false}
                   backLabel="Tutup"
                   onBack={() => setDetailTarget(null)}
+                  onOpenUserDetail={setRelatedUserId}
                 />
               </div>
             </DialogContent>
           </Dialog>
+
+          <RelatedUserDetailDialog
+            open={Boolean(relatedUserId)}
+            userId={relatedUserId}
+            onOpenChange={(open) => {
+              if (!open) setRelatedUserId(null);
+            }}
+          />
         </div>
       </div>
     </section>

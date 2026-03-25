@@ -7,7 +7,6 @@ import {
   NotebookPen,
   Wrench,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   AdminRecordAsideCard,
@@ -28,6 +27,8 @@ type Props = {
   backLabel?: string;
   actions?: ReactNode;
   showAside?: boolean;
+  onOpenEquipmentDetail?: (equipmentId: string | number) => void;
+  onOpenUserDetail?: (userId: string | number) => void;
 };
 
 export default function AdminEquipmentUsageRecordDetailContent({
@@ -38,10 +39,9 @@ export default function AdminEquipmentUsageRecordDetailContent({
   backLabel = "Kembali",
   actions,
   showAside = true,
+  onOpenEquipmentDetail,
+  onOpenUserDetail,
 }: Props) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
   return (
     <>
       {error ? (
@@ -106,11 +106,8 @@ export default function AdminEquipmentUsageRecordDetailContent({
                 value={item.equipmentName}
                 hrefIcon={Boolean(item.equipmentId)}
                 onClick={
-                  item.equipmentId
-                    ? () =>
-                        navigate(`/admin/inventory/equipment/${item.equipmentId}`, {
-                          state: { from: location.pathname },
-                        })
+                  item.equipmentId && onOpenEquipmentDetail
+                    ? () => onOpenEquipmentDetail(item.equipmentId)
                     : undefined
                 }
               />
@@ -120,11 +117,8 @@ export default function AdminEquipmentUsageRecordDetailContent({
                 value={item.requesterName}
                 hrefIcon={Boolean(item.requesterId)}
                 onClick={
-                  item.requesterId
-                    ? () =>
-                        navigate(`/admin/user-management/detail/${item.requesterId}`, {
-                          state: { from: location.pathname },
-                        })
+                  item.requesterId && onOpenUserDetail
+                    ? () => onOpenUserDetail(item.requesterId)
                     : undefined
                 }
               />
@@ -161,11 +155,8 @@ export default function AdminEquipmentUsageRecordDetailContent({
                 value={item.approvedByName}
                 hrefIcon={Boolean(item.approvedById)}
                 onClick={
-                  item.approvedById
-                    ? () =>
-                        navigate(`/admin/user-management/detail/${item.approvedById}`, {
-                          state: { from: location.pathname },
-                        })
+                  item.approvedById && onOpenUserDetail
+                    ? () => onOpenUserDetail(item.approvedById)
                     : undefined
                 }
               />

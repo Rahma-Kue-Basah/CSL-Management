@@ -7,7 +7,6 @@ import {
   MapPinned,
   NotebookPen,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   AdminRecordAsideCard,
@@ -28,6 +27,8 @@ type Props = {
   backLabel?: string;
   actions?: ReactNode;
   showAside?: boolean;
+  onOpenRoomDetail?: (roomId: string | number) => void;
+  onOpenUserDetail?: (userId: string | number) => void;
 };
 
 export default function AdminRoomBookingRecordDetailContent({
@@ -38,10 +39,9 @@ export default function AdminRoomBookingRecordDetailContent({
   backLabel = "Kembali",
   actions,
   showAside = true,
+  onOpenRoomDetail,
+  onOpenUserDetail,
 }: Props) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
   return (
     <>
       {error ? (
@@ -106,11 +106,8 @@ export default function AdminRoomBookingRecordDetailContent({
                 value={booking.roomName}
                 hrefIcon={Boolean(booking.roomId)}
                 onClick={
-                  booking.roomId
-                    ? () =>
-                        navigate(`/admin/inventory/rooms/${booking.roomId}`, {
-                          state: { from: location.pathname },
-                        })
+                  booking.roomId && onOpenRoomDetail
+                    ? () => onOpenRoomDetail(booking.roomId)
                     : undefined
                 }
               />
@@ -119,11 +116,8 @@ export default function AdminRoomBookingRecordDetailContent({
                 value={booking.requesterName}
                 hrefIcon={Boolean(booking.requesterId)}
                 onClick={
-                  booking.requesterId
-                    ? () =>
-                        navigate(`/admin/user-management/detail/${booking.requesterId}`, {
-                          state: { from: location.pathname },
-                        })
+                  booking.requesterId && onOpenUserDetail
+                    ? () => onOpenUserDetail(booking.requesterId)
                     : undefined
                 }
               />
@@ -172,11 +166,8 @@ export default function AdminRoomBookingRecordDetailContent({
                 value={booking.approvedByName}
                 hrefIcon={Boolean(booking.approvedById)}
                 onClick={
-                  booking.approvedById
-                    ? () =>
-                        navigate(`/admin/user-management/detail/${booking.approvedById}`, {
-                          state: { from: location.pathname },
-                        })
+                  booking.approvedById && onOpenUserDetail
+                    ? () => onOpenUserDetail(booking.approvedById)
                     : undefined
                 }
               />

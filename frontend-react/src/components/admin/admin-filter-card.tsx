@@ -21,7 +21,7 @@ export function AdminFilterCard({
     <div className="w-full min-w-0 overflow-hidden rounded-lg border border-slate-400/60 bg-gradient-to-br from-slate-50 to-slate-100/75 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
       <div
         className={`flex items-center justify-between gap-3 px-4 transition-[padding] duration-250 ease-out ${
-          open ? "py-3.5" : "py-2.5"
+          open ? "py-2.5" : "py-1"
         }`}
       >
         <button
@@ -33,7 +33,7 @@ export function AdminFilterCard({
         >
           <div
             className={`rounded-md bg-white text-slate-600 shadow-xs transition-all duration-250 ease-out ${
-              open ? "scale-100 p-1.5" : "scale-95 p-1.25"
+              open ? "scale-100 p-1.25" : "scale-95 p-1"
             }`}
           >
             <SlidersHorizontal className="h-4 w-4" />

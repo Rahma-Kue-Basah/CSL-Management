@@ -53,11 +53,11 @@ export default function UserTable({
         <thead className="border-b border-slate-800 bg-slate-900">
           <tr className="text-left text-sm">
             {canManageUsers ? (
-              <th className="w-[52px] px-3 py-3 text-center font-medium text-slate-50">
+              <th className="w-[52px] px-3 py-3 text-center align-middle font-medium text-slate-50">
                 <input
                   ref={selectAllRef}
                   type="checkbox"
-                  className="h-4 w-4 rounded border-slate-300"
+                  className="h-4 w-4 rounded border-slate-300 align-middle"
                   checked={allVisibleSelected}
                   onChange={(event) => onToggleSelectAllVisible(event.target.checked)}
                   aria-label="Pilih semua user yang tampil"
@@ -92,10 +92,10 @@ export default function UserTable({
             users.map((user) => (
               <tr key={String(user.uid)} className="border-b last:border-b-0">
                 {canManageUsers ? (
-                  <td className="px-3 py-2 text-center">
+                  <td className="px-3 py-2 text-center align-middle">
                     <input
                       type="checkbox"
-                      className="h-4 w-4 rounded border-slate-300"
+                      className="h-4 w-4 rounded border-slate-300 align-middle"
                       checked={selectedIds.includes(user.id)}
                       onChange={() => onToggleItemSelection(user.id)}
                       aria-label={`Pilih user ${user.name || user.email}`}

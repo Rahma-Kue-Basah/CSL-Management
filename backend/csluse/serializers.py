@@ -94,6 +94,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class RoomListSerializer(serializers.ModelSerializer):
     pics_detail = RoomPicListSerializer(source="pics", many=True, read_only=True)
+    image_detail = ImageSerializer(source="image", read_only=True)
 
     class Meta:
         model = Room
@@ -104,7 +105,10 @@ class RoomListSerializer(serializers.ModelSerializer):
             "description",
             "number",
             "floor",
+            "pics",
             "pics_detail",
+            "image",
+            "image_detail",
         ]
 
 
@@ -150,17 +154,22 @@ class EquipmentRoomListSerializer(serializers.ModelSerializer):
 
 class EquipmentListSerializer(serializers.ModelSerializer):
     room_detail = EquipmentRoomListSerializer(source="room", read_only=True)
+    image_detail = ImageSerializer(source="image", read_only=True)
 
     class Meta:
         model = Equipment
         fields = [
             "id",
             "name",
+            "description",
             "quantity",
             "status",
             "category",
+            "room",
             "room_detail",
             "is_moveable",
+            "image",
+            "image_detail",
         ]
 
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { API_ROOM_DETAIL } from "@/constants/api";
+import { API_ROOM_DETAIL, API_ROOMS_BULK_DELETE } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 import { extractApiErrorMessage } from "@/lib/api-error";
 
@@ -52,7 +52,57 @@ export function useDeleteRoom() {
     }
   };
 
-  return { deleteRoom, isDeleting, errorMessage, setErrorMessage };
+  const deleteRooms = async (roomIds: Array<string | number>) => {
+    if (!roomIds.length) {
+      const message = "Pilih minimal satu ruangan.";
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    }
+
+    setErrorMessage("");
+    setIsDeleting(true);
+
+    try {
+      const response = await authFetch(API_ROOMS_BULK_DELETE, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: roomIds }),
+      });
+
+      const fallback = `Gagal menghapus ruangan terpilih (${response.status}).`;
+      const data = (await response.json().catch(() => null)) as
+        | {
+            detail?: string;
+            deleted_ids?: Array<string | number>;
+            deleted_count?: number;
+            failed_count?: number;
+            message?: string;
+          }
+        | null;
+
+      if (response.ok || response.status === 207) {
+        return {
+          ok: true as const,
+          deletedIds: Array.isArray(data?.deleted_ids) ? data.deleted_ids : [],
+          deletedCount: Number(data?.deleted_count ?? 0),
+          failedCount: Number(data?.failed_count ?? 0),
+          message: typeof data?.detail === "string" ? data.detail : undefined,
+        };
+      }
+
+      const message = data ? parseDeleteRoomError(data, fallback) : fallback;
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Terjadi kesalahan jaringan. Coba lagi.";
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  return { deleteRoom, deleteRooms, isDeleting, errorMessage, setErrorMessage };
 }
 
 export default useDeleteRoom;

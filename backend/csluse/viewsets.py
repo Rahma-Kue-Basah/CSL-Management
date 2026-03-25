@@ -249,6 +249,7 @@ class RoomViewSet(viewsets.ModelViewSet):
             OpenApiParameter("pic", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="PIC of the room"),
             OpenApiParameter("pic_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="Alias for pic"),
             OpenApiParameter("floor", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY),
         ]
     )
     def list(self, request, *args, **kwargs):
@@ -264,6 +265,15 @@ class RoomViewSet(viewsets.ModelViewSet):
             qs = qs.filter(pics__id=pic_id).distinct()
         if floor:
             qs = qs.filter(floor=floor)
+        query = (self.request.query_params.get('q') or self.request.query_params.get('search') or '').strip()
+        if query:
+            qs = qs.filter(
+                Q(name__icontains=query)
+                | Q(number__icontains=query)
+                | Q(description__icontains=query)
+                | Q(pics__full_name__icontains=query)
+                | Q(pics__user__email__icontains=query)
+            ).distinct()
 
         return qs
 
@@ -294,7 +304,7 @@ class RoomViewSet(viewsets.ModelViewSet):
             "Created room via CSL Admin (inventory).",
         )
 
-    def perform_destroy(self, instance):
+    def _delete_room_instance(self, instance):
         log_admin_action(
             self.request.user,
             instance,
@@ -310,10 +320,60 @@ class RoomViewSet(viewsets.ModelViewSet):
             finally:
                 image.delete()
 
+    def perform_destroy(self, instance):
+        self._delete_room_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data ruangan.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        room_map = {
+            str(item.id): item
+            for item in Room.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in room_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            room = room_map.get(str(item_id))
+            if room is None:
+                continue
+            self._delete_room_instance(room)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua ruangan terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian ruangan tidak ditemukan."
+                ),
+            },
+            status=response_status,
+        )
+
     @action(detail=False, methods=['get'], url_path='dropdown')
     def dropdown(self, request):
         queryset = self.get_queryset().order_by('name')
         serializer = RoomDropdownSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = RoomListSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'])
@@ -386,6 +446,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             OpenApiParameter("pic", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="PIC of the room"),
             OpenApiParameter("pic_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="Alias for pic"),
             OpenApiParameter("is_moveable", OpenApiTypes.BOOL, OpenApiParameter.QUERY),
+            OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY),
         ]
     )
     def list(self, request, *args, **kwargs):
@@ -414,6 +475,15 @@ class EquipmentViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(is_moveable=True)
             elif str(is_moveable).lower() in ['false', '0', 'no']:
                 qs = qs.filter(is_moveable=False)
+        query = (self.request.query_params.get('q') or self.request.query_params.get('search') or '').strip()
+        if query:
+            qs = qs.filter(
+                Q(name__icontains=query)
+                | Q(category__icontains=query)
+                | Q(status__icontains=query)
+                | Q(room__name__icontains=query)
+                | Q(description__icontains=query)
+            ).distinct()
         return qs
 
     def perform_update(self, serializer):
@@ -443,7 +513,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             "Created equipment via CSL Admin (inventory).",
         )
 
-    def perform_destroy(self, instance):
+    def _delete_equipment_instance(self, instance):
         log_admin_action(
             self.request.user,
             instance,
@@ -459,10 +529,60 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             finally:
                 image.delete()
 
+    def perform_destroy(self, instance):
+        self._delete_equipment_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data peralatan.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        equipment_map = {
+            str(item.id): item
+            for item in Equipment.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in equipment_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            equipment = equipment_map.get(str(item_id))
+            if equipment is None:
+                continue
+            self._delete_equipment_instance(equipment)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua peralatan terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian peralatan tidak ditemukan."
+                ),
+            },
+            status=response_status,
+        )
+
     @action(detail=False, methods=['get'], url_path='dropdown')
     def dropdown(self, request):
         queryset = self.get_queryset().order_by('name')
         serializer = EquipmentDropdownSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = EquipmentListSerializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=True, methods=['get'])

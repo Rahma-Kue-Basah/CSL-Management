@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, UserRound, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import { AdminDetailHeader } from "@/components/admin/AdminDetailHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { BATCH_VALUES } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { ROLE_OPTIONS } from "@/constants/roles";
@@ -26,6 +27,7 @@ import {
 type UserDetailDialogProps = {
   open: boolean;
   user: UserRow | null;
+  error?: string;
   mode: UserDetailMode;
   canManageUsers: boolean;
   onOpenChange: (open: boolean) => void;
@@ -36,6 +38,7 @@ type UserDetailDialogProps = {
 export default function UserDetailDialog({
   open,
   user,
+  error = "",
   mode,
   canManageUsers,
   onOpenChange,
@@ -92,20 +95,27 @@ export default function UserDetailDialog({
     >
       <DialogContent
         showCloseButton={false}
-        className={`${USER_MODAL_WIDTH_CLASS} [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`}
+        className={`${USER_MODAL_WIDTH_CLASS} gap-0 p-0 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`}
       >
-        <DialogHeader className="flex-row items-center justify-between">
-          <DialogTitle>Detail User</DialogTitle>
-          <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            <ArrowLeft className="h-4 w-4" />
-            Tutup
-          </Button>
-        </DialogHeader>
+        <AdminDetailHeader
+          title="Detail User"
+          description="Tinjau informasi user dan lakukan perubahan bila diperlukan."
+          icon={<UserRound className="h-5 w-5" />}
+          backLabel="Tutup"
+          onBack={() => onOpenChange(false)}
+        />
 
-        {open && !user ? <UserDetailSkeleton /> : null}
+        <div className="space-y-4 px-5 py-4 sm:px-6">
+          {error ? (
+            <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+              {error}
+            </div>
+          ) : null}
 
-        {user ? (
-          <div className="space-y-4">
+          {open && !user && !error ? <UserDetailSkeleton /> : null}
+
+          {user ? (
+            <div className="space-y-4">
             <div className="flex flex-col gap-4 border-b pb-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-3">
                 <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted text-lg font-semibold uppercase">
@@ -252,8 +262,9 @@ export default function UserDetailDialog({
                 </Button>
               ) : null}
             </DialogFooter>
-          </div>
-        ) : null}
+            </div>
+          ) : null}
+        </div>
       </DialogContent>
     </Dialog>
   );

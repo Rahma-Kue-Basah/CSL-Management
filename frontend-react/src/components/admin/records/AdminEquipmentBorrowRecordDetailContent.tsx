@@ -6,7 +6,6 @@ import {
   NotebookPen,
   Wrench,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   AdminRecordDetailGrid,
@@ -24,6 +23,8 @@ type AdminEquipmentBorrowRecordDetailContentProps = {
   error: string;
   onBack: () => void;
   backLabel?: string;
+  onOpenEquipmentDetail?: (equipmentId: string | number) => void;
+  onOpenUserDetail?: (userId: string | number) => void;
 };
 
 export default function AdminEquipmentBorrowRecordDetailContent({
@@ -32,10 +33,9 @@ export default function AdminEquipmentBorrowRecordDetailContent({
   error,
   onBack,
   backLabel = "Kembali",
+  onOpenEquipmentDetail,
+  onOpenUserDetail,
 }: AdminEquipmentBorrowRecordDetailContentProps) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
   return (
     <>
       {error ? (
@@ -132,11 +132,8 @@ export default function AdminEquipmentBorrowRecordDetailContent({
                 borderless
                 hrefIcon={Boolean(item.equipmentId)}
                 onClick={
-                  item.equipmentId
-                    ? () =>
-                        navigate(`/admin/inventory/equipment/${item.equipmentId}`, {
-                          state: { from: location.pathname },
-                        })
+                  item.equipmentId && onOpenEquipmentDetail
+                    ? () => onOpenEquipmentDetail(item.equipmentId)
                     : undefined
                 }
               />
@@ -148,11 +145,8 @@ export default function AdminEquipmentBorrowRecordDetailContent({
                 borderless
                 hrefIcon={Boolean(item.requesterId)}
                 onClick={
-                  item.requesterId
-                    ? () =>
-                        navigate(`/admin/user-management/detail/${item.requesterId}`, {
-                          state: { from: location.pathname },
-                        })
+                  item.requesterId && onOpenUserDetail
+                    ? () => onOpenUserDetail(item.requesterId)
                     : undefined
                 }
               />
@@ -197,11 +191,8 @@ export default function AdminEquipmentBorrowRecordDetailContent({
                 borderless
                 hrefIcon={Boolean(item.approvedById)}
                 onClick={
-                  item.approvedById
-                    ? () =>
-                        navigate(`/admin/user-management/detail/${item.approvedById}`, {
-                          state: { from: location.pathname },
-                        })
+                  item.approvedById && onOpenUserDetail
+                    ? () => onOpenUserDetail(item.approvedById)
                     : undefined
                 }
               />

@@ -19,12 +19,13 @@ export type RoomRow = {
   capacity: string;
   description: string;
   picName: string;
+  picIds: string[];
+  picNames: string[];
+  imageId: string | number | null;
+  imageUrl: string;
 };
 
-export type RoomDetail = RoomRow & {
-  imageUrl: string;
-  picIds: string[];
-};
+export type RoomDetail = RoomRow;
 
 type ApiRoom = {
   id?: number | string | null;
@@ -33,12 +34,14 @@ type ApiRoom = {
   floor?: number | string | null;
   capacity?: number | string | null;
   description?: string | null;
+  image?: string | number | null;
   pics?: Array<string | number | null> | null;
   pics_detail?: Array<{
     id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
   }> | null;
+  image_detail?: { url?: string | null } | null;
 };
 
 type ApiRoomsResponse = {
@@ -46,7 +49,12 @@ type ApiRoomsResponse = {
   results?: ApiRoom[];
 };
 
-function mapRoom(room: ApiRoom): RoomRow {
+export function mapRoom(room: ApiRoom): RoomRow {
+  const picIds = Array.isArray(room.pics)
+    ? room.pics
+        .filter((item): item is string | number => item !== null && item !== undefined)
+        .map((item) => String(item))
+    : [];
   const picNames = Array.isArray(room.pics_detail)
     ? room.pics_detail
         .map((item) => String(item?.full_name ?? item?.email ?? "").trim())
@@ -61,6 +69,10 @@ function mapRoom(room: ApiRoom): RoomRow {
     capacity: String(room.capacity ?? "-"),
     description: String(room.description ?? ""),
     picName: picNames.length ? picNames.join(", ") : "-",
+    picIds,
+    picNames,
+    imageId: room.image ?? null,
+    imageUrl: resolveAssetUrl(room.image_detail?.url ?? ""),
   };
 }
 
@@ -162,15 +174,7 @@ export function useRoomDetail(id?: string | number | null) {
           image_detail?: { url?: string | null } | null;
         };
         const mapped = mapRoom(payload);
-        setRoom({
-          ...mapped,
-          imageUrl: resolveAssetUrl(payload.image_detail?.url ?? ""),
-          picIds: Array.isArray(payload.pics)
-            ? payload.pics
-                .filter((item): item is string | number => item !== null && item !== undefined)
-                .map((item) => String(item))
-            : [],
-        });
+        setRoom(mapped);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Terjadi kesalahan.");

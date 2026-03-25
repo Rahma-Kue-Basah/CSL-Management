@@ -1,0 +1,605 @@
+"use client";
+
+import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { ArrowUpRight, Trash2, Wrench } from "lucide-react";
+import { toast } from "sonner";
+
+import { AdminDetailHeader } from "@/components/admin/AdminDetailHeader";
+import RelatedRoomDetailDialog from "@/components/admin/records/RelatedRoomDetailDialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+} from "@/components/ui/dialog";
+import {
+  EQUIPMENT_CATEGORY_OPTIONS,
+  MOVEABLE_OPTIONS,
+} from "@/constants/equipments";
+import { useDeleteEquipment } from "@/hooks/equipments/use-delete-equipment";
+import type { EquipmentRow } from "@/hooks/equipments/use-equipments";
+import { useUpdateEquipment } from "@/hooks/equipments/use-update-equipment";
+import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+const INVENTORY_MODAL_WIDTH_CLASS =
+  "w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-[50vw] sm:max-w-[960px] sm:min-w-[720px] sm:max-w-none";
+
+type AdminEquipmentDetailDialogProps = {
+  open: boolean;
+  equipment: EquipmentRow | null;
+  isLoading?: boolean;
+  error?: string;
+  canManage?: boolean;
+  initialMode?: "view" | "edit";
+  onOpenChange: (open: boolean) => void;
+  onUpdated: () => void;
+  onDeleted: () => void;
+};
+
+function formatStatus(value: string) {
+  return value ? value.charAt(0).toUpperCase() + value.slice(1) : "-";
+}
+
+function DetailField({
+  label,
+  value,
+  editable = false,
+  onChange,
+  type = "text",
+  onClick,
+}: {
+  label: string;
+  value: string;
+  editable?: boolean;
+  onChange?: (value: string) => void;
+  type?: "text" | "number";
+  onClick?: () => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-slate-700">{label}</p>
+      {editable ? (
+        <Input
+          type={type}
+          value={value}
+          onChange={(event) => onChange?.(event.target.value)}
+          className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
+        />
+      ) : onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:text-sky-800"
+        >
+          {value || "-"}
+          <ArrowUpRight className="ml-2 inline h-3.5 w-3.5 align-text-top text-sky-500" />
+        </button>
+      ) : (
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          {value || "-"}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SelectDetailField({
+  label,
+  value,
+  editable = false,
+  options,
+  onChange,
+  placeholder,
+  disabled,
+  onValueClick,
+}: {
+  label: string;
+  value: string;
+  editable?: boolean;
+  options: Array<{ value: string; label: string }>;
+  onChange?: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  onValueClick?: () => void;
+}) {
+  if (!editable) return <DetailField label={label} value={value} onClick={onValueClick} />;
+
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-slate-700">{label}</p>
+      <select
+        value={value}
+        onChange={(event) => onChange?.(event.target.value)}
+        className="h-9 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
+        disabled={disabled}
+      >
+        <option value="">
+          {placeholder || `Pilih ${label.toLowerCase()}`}
+        </option>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
+export default function AdminEquipmentDetailDialog({
+  open,
+  equipment,
+  isLoading = false,
+  error = "",
+  canManage = true,
+  initialMode = "view",
+  onOpenChange,
+  onUpdated,
+  onDeleted,
+}: AdminEquipmentDetailDialogProps) {
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [relatedRoomId, setRelatedRoomId] = useState<string | number | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    quantity: "",
+    category: "",
+    roomId: "",
+    isMoveable: "true",
+    description: "",
+    imageId: null as string | number | null,
+    imageFile: null as File | null,
+  });
+  const {
+    rooms,
+    isLoading: isLoadingRooms,
+    error: roomError,
+  } = useRoomOptions();
+  const {
+    updateEquipment,
+    isSubmitting,
+    errorMessage: updateErrorMessage,
+    setErrorMessage: setUpdateErrorMessage,
+  } = useUpdateEquipment();
+  const {
+    deleteEquipment,
+    isDeleting,
+    errorMessage: deleteErrorMessage,
+    setErrorMessage: setDeleteErrorMessage,
+  } = useDeleteEquipment();
+
+  const roomOptions = useMemo(
+    () => rooms.map((room) => ({ value: room.id, label: room.label })),
+    [rooms],
+  );
+  const previewUrl = useMemo(
+    () => (formData.imageFile ? URL.createObjectURL(formData.imageFile) : ""),
+    [formData.imageFile],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  useEffect(() => {
+    if (!open || !equipment) return;
+    setFormData({
+      name: equipment.name,
+      quantity: equipment.quantity,
+      category: equipment.category,
+      roomId: equipment.roomId,
+      isMoveable: String(equipment.isMoveable),
+      description: equipment.description,
+      imageId: equipment.imageId,
+      imageFile: null,
+    });
+    setIsEditing(initialMode === "edit" && canManage);
+    setConfirmDeleteOpen(false);
+    setUpdateErrorMessage("");
+    setDeleteErrorMessage("");
+  }, [canManage, equipment, initialMode, open, setDeleteErrorMessage, setUpdateErrorMessage]);
+
+  const resetState = () => {
+    setConfirmDeleteOpen(false);
+    setIsEditing(false);
+    setUpdateErrorMessage("");
+    setDeleteErrorMessage("");
+    setFormData({
+      name: "",
+      quantity: "",
+      category: "",
+      roomId: "",
+      isMoveable: "true",
+      description: "",
+      imageId: null,
+      imageFile: null,
+    });
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (file && file.size > MAX_IMAGE_SIZE) {
+      setUpdateErrorMessage("Ukuran gambar maksimal 5MB.");
+      return;
+    }
+    setUpdateErrorMessage("");
+    setFormData((prev) => ({ ...prev, imageFile: file }));
+  };
+
+  const handleSave = async () => {
+    if (!equipment) return;
+    setUpdateErrorMessage("");
+
+    if (!formData.name.trim())
+      return setUpdateErrorMessage("Nama peralatan wajib diisi.");
+    if (!formData.quantity || Number(formData.quantity) <= 0)
+      return setUpdateErrorMessage("Jumlah harus lebih dari 0.");
+    if (!formData.category)
+      return setUpdateErrorMessage("Kategori wajib dipilih.");
+    if (!formData.roomId)
+      return setUpdateErrorMessage("Ruangan wajib dipilih.");
+
+    const result = await updateEquipment(equipment.id, {
+      name: formData.name,
+      quantity: formData.quantity,
+      category: formData.category,
+      roomId: formData.roomId,
+      isMoveable: formData.isMoveable === "true",
+      description: formData.description,
+      imageId: formData.imageId,
+      imageFile: formData.imageFile,
+    });
+    if (!result.ok) return;
+
+    setFormData((prev) => ({ ...prev, imageFile: null }));
+    setIsEditing(false);
+    onUpdated();
+    toast.success("Peralatan berhasil diperbarui.");
+  };
+
+  const handleDelete = async () => {
+    if (!equipment) return;
+    setDeleteErrorMessage("");
+    const result = await deleteEquipment(equipment.id);
+    if (!result.ok) return;
+    setConfirmDeleteOpen(false);
+    onDeleted();
+    onOpenChange(false);
+    resetState();
+    toast.success("Peralatan berhasil dihapus.");
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        onOpenChange(nextOpen);
+        if (!nextOpen) {
+          resetState();
+          setRelatedRoomId(null);
+        }
+      }}
+    >
+      <DialogContent
+        showCloseButton={false}
+        className={`${INVENTORY_MODAL_WIDTH_CLASS} max-h-[90vh] min-w-0 gap-0 overflow-hidden p-0`}
+      >
+        <AdminDetailHeader
+          title="Detail Peralatan"
+          description="Tinjau informasi peralatan dan lakukan perubahan bila diperlukan."
+          icon={<Wrench className="h-5 w-5" />}
+          backLabel="Tutup"
+          onBack={() => onOpenChange(false)}
+        />
+
+        <div className="space-y-4 px-5 py-4 sm:px-6">
+          {error ? (
+            <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {error}
+            </div>
+          ) : isLoading ? (
+            <div className="space-y-4">
+            <div className="rounded-xl border bg-slate-50/80 px-4 py-3">
+              <div className="h-6 w-48 animate-pulse rounded bg-slate-200" />
+              <div className="mt-2 h-4 w-32 animate-pulse rounded bg-slate-100" />
+            </div>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div key={index} className="space-y-2">
+                  <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+                  <div className="h-10 animate-pulse rounded bg-slate-100" />
+                </div>
+              ))}
+            </div>
+            </div>
+          ) : !equipment ? (
+            <div className="rounded-xl border bg-card px-4 py-6 text-sm text-muted-foreground">
+              Data peralatan tidak ditemukan.
+            </div>
+          ) : (
+            <div className="max-h-[calc(90vh-7rem)] overflow-y-auto pr-1 pb-2">
+              <div className="space-y-4">
+                <div className="rounded-xl border bg-slate-50/80 px-4 py-3">
+                <p className="text-lg font-semibold text-slate-900">
+                  {equipment.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {formatStatus(equipment.status)}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <DetailField
+                  label="Nama"
+                  value={isEditing ? formData.name : equipment.name}
+                  editable={isEditing}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, name: value }))
+                  }
+                />
+                <DetailField
+                  label="Jumlah"
+                  value={isEditing ? formData.quantity : equipment.quantity}
+                  editable={isEditing}
+                  type="number"
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, quantity: value }))
+                  }
+                />
+                <SelectDetailField
+                  label="Kategori"
+                  value={isEditing ? formData.category : equipment.category}
+                  editable={isEditing}
+                  options={EQUIPMENT_CATEGORY_OPTIONS}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, category: value }))
+                  }
+                />
+                <SelectDetailField
+                  label="Ruangan"
+                  value={isEditing ? formData.roomId : equipment.roomName}
+                  editable={isEditing}
+                  options={roomOptions}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, roomId: value }))
+                  }
+                  placeholder={
+                    isLoadingRooms ? "Memuat ruangan..." : "Pilih ruangan"
+                  }
+                  disabled={isLoadingRooms}
+                  onValueClick={
+                    !isEditing && equipment.roomId
+                      ? () => setRelatedRoomId(equipment.roomId)
+                      : undefined
+                  }
+                />
+                {roomError ? (
+                  <p className="text-xs text-destructive md:col-span-2">
+                    {roomError}
+                  </p>
+                ) : null}
+                <SelectDetailField
+                  label="Moveable"
+                  value={
+                    isEditing
+                      ? formData.isMoveable
+                      : equipment.isMoveable
+                        ? "Ya"
+                        : "Tidak"
+                  }
+                  editable={isEditing}
+                  options={MOVEABLE_OPTIONS}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, isMoveable: value }))
+                  }
+                />
+                <DetailField
+                  label="Status"
+                  value={formatStatus(equipment.status)}
+                />
+
+                <div className="space-y-1 md:col-span-2">
+                  <p className="text-xs font-medium text-slate-700">
+                    Deskripsi
+                  </p>
+                  {isEditing ? (
+                    <textarea
+                      name="description"
+                      value={formData.description}
+                      onChange={(event) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          description: event.target.value,
+                        }))
+                      }
+                      rows={3}
+                      className="w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 py-2 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
+                    />
+                  ) : (
+                    <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                      {equipment.description || "-"}
+                    </div>
+                  )}
+                </div>
+
+                {isEditing ? (
+                  <div className="space-y-1 md:col-span-2">
+                    <p className="text-xs font-medium text-slate-700">Gambar</p>
+                    <label className="group flex cursor-pointer items-center justify-between gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm hover:border-primary/50">
+                      <span className="truncate text-muted-foreground">
+                        {formData.imageFile
+                          ? formData.imageFile.name
+                          : "Pilih gambar (opsional)"}
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="sr-only"
+                        onChange={handleFileChange}
+                      />
+                      {formData.imageFile ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          className="rounded-full text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                          onClick={() =>
+                            setFormData((prev) => ({
+                              ...prev,
+                              imageFile: null,
+                            }))
+                          }
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      ) : null}
+                    </label>
+                  </div>
+                ) : null}
+
+                {previewUrl || equipment.imageUrl ? (
+                  <div className="space-y-1 md:col-span-2">
+                    <p className="text-xs font-medium text-slate-700">Gambar</p>
+                    <div className="overflow-hidden rounded-lg border bg-muted">
+                      <img
+                        src={previewUrl || equipment.imageUrl}
+                        alt="Preview peralatan"
+                        className="h-56 w-full object-cover"
+                      />
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+
+              {updateErrorMessage ? (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {updateErrorMessage}
+                </div>
+              ) : null}
+              {deleteErrorMessage ? (
+                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {deleteErrorMessage}
+                </div>
+              ) : null}
+
+                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+                  {isEditing && canManage ? (
+                    <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setUpdateErrorMessage("");
+                      setFormData({
+                        name: equipment.name,
+                        quantity: equipment.quantity,
+                        category: equipment.category,
+                        roomId: equipment.roomId,
+                        isMoveable: String(equipment.isMoveable),
+                        description: equipment.description,
+                        imageId: equipment.imageId,
+                        imageFile: null,
+                      });
+                    }}
+                    disabled={isSubmitting}
+                  >
+                    Batal
+                    </Button>
+                  ) : null}
+                  {canManage ? (
+                    <Button
+                    type="button"
+                    variant={isEditing ? "default" : "outline"}
+                    className={
+                      isEditing
+                        ? "bg-[#0052C7] text-white hover:bg-[#0048B4]"
+                        : ""
+                    }
+                    disabled={isSubmitting}
+                    onClick={() => {
+                      if (isEditing) {
+                        void handleSave();
+                        return;
+                      }
+                      setIsEditing(true);
+                    }}
+                  >
+                    {isEditing
+                      ? isSubmitting
+                        ? "Menyimpan..."
+                        : "Simpan"
+                      : "Edit"}
+                    </Button>
+                  ) : null}
+
+                  {!isEditing && canManage ? (
+                    <AlertDialog
+                    open={confirmDeleteOpen}
+                    onOpenChange={setConfirmDeleteOpen}
+                  >
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        disabled={isDeleting || isSubmitting}
+                      >
+                        {isDeleting ? "Menghapus..." : "Hapus Peralatan"}
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent size="sm">
+                      <AlertDialogHeader className="place-items-start text-left">
+                        <AlertDialogTitle>Hapus peralatan?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Peralatan{" "}
+                          <span className="font-semibold">
+                            {equipment.name}
+                          </span>{" "}
+                          akan dihapus.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter className="sm:justify-start">
+                        <AlertDialogCancel disabled={isDeleting}>
+                          Batal
+                        </AlertDialogCancel>
+                        <AlertDialogAction
+                          variant="destructive"
+                          disabled={isDeleting}
+                          onClick={() => void handleDelete()}
+                        >
+                          {isDeleting ? "Menghapus..." : "Hapus"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                    </AlertDialog>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+
+      <RelatedRoomDetailDialog
+        open={Boolean(relatedRoomId)}
+        roomId={relatedRoomId}
+        onOpenChange={(nextOpen) => {
+          if (!nextOpen) setRelatedRoomId(null);
+        }}
+      />
+    </Dialog>
+  );
+}

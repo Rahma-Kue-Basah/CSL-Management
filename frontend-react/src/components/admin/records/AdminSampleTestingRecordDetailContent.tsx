@@ -6,7 +6,6 @@ import {
   Microscope,
   UserRound,
 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   AdminRecordAsideCard,
@@ -26,6 +25,7 @@ type Props = {
   onBack: () => void;
   backLabel?: string;
   showAside?: boolean;
+  onOpenUserDetail?: (userId: string | number) => void;
 };
 
 export default function AdminSampleTestingRecordDetailContent({
@@ -35,10 +35,8 @@ export default function AdminSampleTestingRecordDetailContent({
   onBack,
   backLabel = "Kembali",
   showAside = true,
+  onOpenUserDetail,
 }: Props) {
-  const navigate = useNavigate();
-  const location = useLocation();
-
   return (
     <>
       {error ? (
@@ -106,11 +104,8 @@ export default function AdminSampleTestingRecordDetailContent({
                 value={item.requesterName}
                 hrefIcon={Boolean(item.requesterId)}
                 onClick={
-                  item.requesterId
-                    ? () =>
-                        navigate(`/admin/user-management/detail/${item.requesterId}`, {
-                          state: { from: location.pathname },
-                        })
+                  item.requesterId && onOpenUserDetail
+                    ? () => onOpenUserDetail(item.requesterId)
                     : undefined
                 }
               />
@@ -157,11 +152,8 @@ export default function AdminSampleTestingRecordDetailContent({
                 value={item.approvedByName}
                 hrefIcon={Boolean(item.approvedById)}
                 onClick={
-                  item.approvedById
-                    ? () =>
-                        navigate(`/admin/user-management/detail/${item.approvedById}`, {
-                          state: { from: location.pathname },
-                        })
+                  item.approvedById && onOpenUserDetail
+                    ? () => onOpenUserDetail(item.approvedById)
                     : undefined
                 }
               />

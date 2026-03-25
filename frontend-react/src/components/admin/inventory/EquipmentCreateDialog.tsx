@@ -1,0 +1,251 @@
+"use client";
+
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { Plus, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { EQUIPMENT_CATEGORY_OPTIONS, MOVEABLE_OPTIONS } from "@/constants/equipments";
+import { useCreateEquipment } from "@/hooks/equipments/use-create-equipment";
+import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+
+type EquipmentCreateDialogProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreated: () => void;
+};
+
+export default function EquipmentCreateDialog({
+  open,
+  onOpenChange,
+  onCreated,
+}: EquipmentCreateDialogProps) {
+  const [formData, setFormData] = useState({
+    name: "",
+    quantity: "",
+    category: "",
+    roomId: "",
+    isMoveable: "true",
+    description: "",
+    imageFile: null as File | null,
+  });
+  const { rooms, isLoading: isLoadingRooms, error: roomError } = useRoomOptions();
+  const { createEquipment, isSubmitting, errorMessage, setErrorMessage } = useCreateEquipment();
+
+  const previewUrl = useMemo(
+    () => (formData.imageFile ? URL.createObjectURL(formData.imageFile) : ""),
+    [formData.imageFile],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  const resetForm = () => {
+    setErrorMessage("");
+    setFormData({
+      name: "",
+      quantity: "",
+      category: "",
+      roomId: "",
+      isMoveable: "true",
+      description: "",
+      imageFile: null,
+    });
+  };
+
+  const handleChange = (
+    event: ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+  ) => {
+    const { name, value } = event.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0] || null;
+    if (file && file.size > MAX_IMAGE_SIZE) {
+      setErrorMessage("Ukuran gambar maksimal 5MB.");
+      return;
+    }
+    setErrorMessage("");
+    setFormData((prev) => ({ ...prev, imageFile: file }));
+  };
+
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setErrorMessage("");
+
+    if (!formData.name.trim()) return setErrorMessage("Nama peralatan wajib diisi.");
+    if (!formData.quantity || Number(formData.quantity) <= 0) {
+      return setErrorMessage("Jumlah harus lebih dari 0.");
+    }
+    if (!formData.category) return setErrorMessage("Kategori wajib dipilih.");
+    if (!formData.roomId) return setErrorMessage("Ruangan wajib dipilih.");
+
+    const result = await createEquipment({
+      name: formData.name,
+      quantity: formData.quantity,
+      category: formData.category,
+      roomId: formData.roomId,
+      isMoveable: formData.isMoveable === "true",
+      description: formData.description,
+      imageFile: formData.imageFile,
+    });
+
+    if (result.ok) {
+      onCreated();
+      onOpenChange(false);
+      resetForm();
+      toast.success("Peralatan berhasil ditambahkan.");
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        onOpenChange(nextOpen);
+        if (!nextOpen) resetForm();
+      }}
+    >
+      <DialogContent className="w-[min(720px,calc(100%-2rem))] max-w-none sm:max-w-none [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]">
+        <DialogHeader>
+          <DialogTitle>Tambah Peralatan</DialogTitle>
+        </DialogHeader>
+        <form className="space-y-4" onSubmit={handleSubmit}>
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Nama</label>
+            <Input name="name" value={formData.name} onChange={handleChange} />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Jumlah</label>
+            <Input type="number" name="quantity" value={formData.quantity} onChange={handleChange} />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Kategori</label>
+            <select
+              name="category"
+              value={formData.category}
+              onChange={handleChange}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Pilih kategori</option>
+              {EQUIPMENT_CATEGORY_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Ruangan</label>
+            <select
+              name="roomId"
+              value={formData.roomId}
+              onChange={handleChange}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              disabled={isLoadingRooms}
+            >
+              <option value="">{isLoadingRooms ? "Memuat ruangan..." : "Pilih ruangan"}</option>
+              {rooms.map((room) => (
+                <option key={room.id} value={room.id}>
+                  {room.label}
+                </option>
+              ))}
+            </select>
+            {roomError ? <p className="text-xs text-destructive">{roomError}</p> : null}
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Moveable</label>
+            <select
+              name="isMoveable"
+              value={formData.isMoveable}
+              onChange={handleChange}
+              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              <option value="">Pilih status</option>
+              {MOVEABLE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Deskripsi</label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleChange}
+              rows={3}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Deskripsi (opsional)"
+            />
+          </div>
+
+          <div className="space-y-1">
+            <label className="text-xs font-medium">Gambar</label>
+            <label className="group flex cursor-pointer items-center justify-between gap-2 rounded-md border border-dashed border-border px-3 py-2 text-sm hover:border-primary/50">
+              <span className="truncate text-muted-foreground">
+                {formData.imageFile ? formData.imageFile.name : "Pilih gambar (opsional)"}
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={handleFileChange}
+              />
+              {formData.imageFile ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Hapus gambar yang diunggah"
+                  className="rounded-full text-rose-700 hover:bg-rose-50 hover:text-rose-800"
+                  onClick={() => setFormData((prev) => ({ ...prev, imageFile: null }))}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              ) : null}
+            </label>
+          </div>
+
+          {previewUrl ? (
+            <div className="space-y-1">
+              <div className="overflow-hidden rounded-lg border bg-muted">
+                <img src={previewUrl} alt="Preview peralatan" className="h-56 w-full object-cover" />
+              </div>
+            </div>
+          ) : null}
+
+          {errorMessage ? (
+            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {errorMessage}
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+              Batal
+            </Button>
+            <Button type="submit" disabled={isSubmitting} className="gap-2">
+              <Plus className="h-4 w-4" />
+              {isSubmitting ? "Menyimpan..." : "Simpan Peralatan"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}

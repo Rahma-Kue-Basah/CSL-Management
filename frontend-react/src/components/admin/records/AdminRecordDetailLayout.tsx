@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
-import { ArrowLeft, ArrowUpRight } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { Steps } from "rsuite";
 
-import { Button } from "@/components/ui/button";
+import { AdminDetailHeader } from "@/components/admin/AdminDetailHeader";
 import { formatDateTimeWib } from "@/lib/date-time";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
@@ -39,50 +39,15 @@ export function AdminRecordDetailShell({
   return (
     <div className={`w-full ${compact ? "space-y-3" : "space-y-5"}`}>
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div
-          className={`border-b border-slate-200 sm:px-6 ${compact ? "px-4 py-3.5" : "px-5 py-5"}`}
-        >
-          <div
-            className={`flex flex-col lg:flex-row lg:items-start lg:justify-between ${compact ? "gap-2.5" : "gap-4"}`}
-          >
-            <div
-              className={`flex items-start ${compact ? "gap-2.5" : "gap-4"}`}
-            >
-              <div
-                className={`flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 ${compact ? "h-9 w-9" : "h-10 w-10"}`}
-              >
-                {icon}
-              </div>
-              <div className={`min-w-0 ${compact ? "space-y-1" : "space-y-2"}`}>
-                <div className="space-y-1">
-                  <h1
-                    className={`${compact ? "text-lg" : "text-xl"} font-semibold tracking-tight text-slate-900`}
-                  >
-                    {title}
-                  </h1>
-                  <p
-                    className={`${compact ? "text-xs" : "text-sm"} text-slate-500`}
-                  >
-                    {code}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              {actions}
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={onBack}
-              >
-                <ArrowLeft className="h-4 w-4" />
-                {backLabel}
-              </Button>
-            </div>
-          </div>
-        </div>
+        <AdminDetailHeader
+          title={title}
+          meta={code}
+          icon={icon}
+          backLabel={backLabel}
+          onBack={onBack}
+          actions={actions}
+          compact={compact}
+        />
 
         <div
           className={`grid sm:px-6 ${aside ? "xl:grid-cols-[minmax(0,1fr)_280px]" : ""} ${compact ? "gap-2.5 px-4 py-3.5" : "gap-4 px-5 py-5"}`}

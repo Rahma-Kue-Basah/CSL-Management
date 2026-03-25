@@ -5,6 +5,8 @@ import type { UseRow } from "@/hooks/uses/use-uses";
 import type { BorrowRow } from "@/hooks/borrows/use-borrows";
 import type { PengujianRow } from "@/hooks/pengujians/use-pengujians";
 import type { UserRow } from "@/hooks/users/use-users";
+import type { RoomRow } from "@/hooks/rooms/use-rooms";
+import type { EquipmentRow } from "@/hooks/equipments/use-equipments";
 import { getStatusDisplayLabel } from "@/lib/status";
 
 export type ExportColumn<TRow> = {
@@ -107,3 +109,26 @@ export const USER_EXPORT_COLUMNS: ExportColumn<UserRow>[] = [
   { header: "Institusi", cell: (user) => user.institution || "-" },
   { header: "Verified", cell: (user) => (user.isVerified ? "Verified" : "Unverified") },
 ];
+
+export const ROOM_EXPORT_COLUMNS: ExportColumn<RoomRow>[] = [
+  { header: "Nama", cell: (room) => room.name },
+  { header: "No. Ruang", cell: (room) => room.number },
+  { header: "Lantai", cell: (room) => room.floor },
+  { header: "Kapasitas", cell: (room) => room.capacity },
+  { header: "Deskripsi", cell: (room) => room.description || "-" },
+  { header: "PIC", cell: (room) => room.picName || "-" },
+];
+
+export const EQUIPMENT_EXPORT_COLUMNS: ExportColumn<EquipmentRow>[] = [
+  { header: "Nama", cell: (item) => item.name },
+  { header: "Kategori", cell: (item) => item.category },
+  { header: "Status", cell: (item) => formatStatus(item.status) },
+  { header: "Jumlah", cell: (item) => item.quantity },
+  { header: "Ruangan", cell: (item) => item.roomName || "-" },
+  { header: "Moveable", cell: (item) => (item.isMoveable ? "Ya" : "Tidak") },
+];
+
+function formatStatus(value?: string | null) {
+  if (!value || value === "-") return "-";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}

@@ -14,9 +14,11 @@ import {
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import RelatedEquipmentDetailDialog from "@/components/admin/records/RelatedEquipmentDetailDialog";
 import AdminEquipmentUsageRecordDetailContent from "@/components/admin/records/AdminEquipmentUsageRecordDetailContent";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
+import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
 import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
@@ -98,6 +100,8 @@ export default function AdminRecordPenggunaanAlatPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<UseRow | null>(null);
   const [detailTarget, setDetailTarget] = useState<UseRow | null>(null);
+  const [relatedEquipmentId, setRelatedEquipmentId] = useState<string | number | null>(null);
+  const [relatedUserId, setRelatedUserId] = useState<string | number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
@@ -719,6 +723,8 @@ export default function AdminRecordPenggunaanAlatPage() {
                   showAside={false}
                   backLabel="Tutup"
                   onBack={() => setDetailTarget(null)}
+                  onOpenEquipmentDetail={setRelatedEquipmentId}
+                  onOpenUserDetail={setRelatedUserId}
                   actions={
                     detailTarget?.status === "Pending" ? (
                       <>
@@ -773,6 +779,22 @@ export default function AdminRecordPenggunaanAlatPage() {
               </div>
             </DialogContent>
           </Dialog>
+
+          <RelatedEquipmentDetailDialog
+            open={Boolean(relatedEquipmentId)}
+            equipmentId={relatedEquipmentId}
+            onOpenChange={(open) => {
+              if (!open) setRelatedEquipmentId(null);
+            }}
+          />
+
+          <RelatedUserDetailDialog
+            open={Boolean(relatedUserId)}
+            userId={relatedUserId}
+            onOpenChange={(open) => {
+              if (!open) setRelatedUserId(null);
+            }}
+          />
         </div>
       </div>
     </section>

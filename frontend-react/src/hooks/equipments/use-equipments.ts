@@ -16,27 +16,31 @@ export type EquipmentFilters = {
 export type EquipmentRow = {
   id: number | string;
   name: string;
+  description: string;
   category: string;
   status: string;
   quantity: string;
+  roomId: string;
   roomName: string;
   isMoveable: boolean;
-};
-
-export type EquipmentDetail = EquipmentRow & {
-  description: string;
+  imageId: string | number | null;
   imageUrl: string;
 };
+
+export type EquipmentDetail = EquipmentRow;
 
 type ApiEquipment = {
   id?: number | string | null;
   name?: string | null;
+  description?: string | null;
   category?: string | null;
   status?: string | null;
   quantity?: number | string | null;
   is_moveable?: boolean | null;
   room_detail?: { name?: string | null } | null;
   room?: string | number | null;
+  image?: string | number | null;
+  image_detail?: { url?: string | null } | null;
 };
 
 type ApiEquipmentsResponse = {
@@ -44,15 +48,19 @@ type ApiEquipmentsResponse = {
   results?: ApiEquipment[];
 };
 
-function mapEquipment(item: ApiEquipment): EquipmentRow {
+export function mapEquipment(item: ApiEquipment): EquipmentRow {
   return {
     id: item.id ?? `eq-${Math.random().toString(36).slice(2, 8)}`,
     name: String(item.name ?? "-"),
+    description: String(item.description ?? ""),
     category: String(item.category ?? "-"),
     status: String(item.status ?? "-"),
     quantity: String(item.quantity ?? "-"),
+    roomId: String(item.room ?? ""),
     roomName: String(item.room_detail?.name ?? item.room ?? "-"),
     isMoveable: Boolean(item.is_moveable),
+    imageId: item.image ?? null,
+    imageUrl: resolveAssetUrl(item.image_detail?.url ?? ""),
   };
 }
 
@@ -168,11 +176,7 @@ export function useEquipmentDetail(id?: string | number | null) {
           image_detail?: { url?: string | null } | null;
         };
         const mapped = mapEquipment(payload);
-        setEquipment({
-          ...mapped,
-          description: String(payload.description ?? ""),
-          imageUrl: resolveAssetUrl(payload.image_detail?.url ?? ""),
-        });
+        setEquipment(mapped);
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;
         setError(err instanceof Error ? err.message : "Terjadi kesalahan.");

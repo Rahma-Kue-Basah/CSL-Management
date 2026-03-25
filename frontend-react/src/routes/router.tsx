@@ -44,9 +44,7 @@ import AdminSchedulePage from "@/pages/admin/information/AdminSchedulePage";
 import AdminAnnouncementPage from "@/pages/admin/information/AdminAnnouncementPage";
 import AdminFaqPage from "@/pages/admin/information/AdminFaqPage";
 import AdminEquipmentPage from "@/pages/admin/inventory/AdminEquipmentPage";
-import AdminEquipmentDetailPage from "@/pages/admin/inventory/AdminEquipmentDetailPage";
 import AdminRoomPage from "@/pages/admin/inventory/AdminRoomPage";
-import AdminRoomDetailPage from "@/pages/admin/inventory/AdminRoomDetailPage";
 import AdminRoomBookingRecordPage from "@/pages/admin/records/AdminRoomBookingRecordPage";
 import AdminEquipmentUsageRecordPage from "@/pages/admin/records/AdminEquipmentUsageRecordPage";
 import AdminEquipmentBorrowRecordPage from "@/pages/admin/records/AdminEquipmentBorrowRecordPage";
@@ -185,9 +183,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="equipment" replace /> },
           { path: "equipment", element: <AdminEquipmentPage /> },
-          { path: "equipment/:id", element: <AdminEquipmentDetailPage /> },
           { path: "rooms", element: <AdminRoomPage /> },
-          { path: "rooms/:id", element: <AdminRoomDetailPage /> },
         ],
       },
       {

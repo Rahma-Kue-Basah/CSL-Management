@@ -14,9 +14,11 @@ import {
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import RelatedRoomDetailDialog from "@/components/admin/records/RelatedRoomDetailDialog";
 import AdminRoomBookingRecordDetailContent from "@/components/admin/records/AdminRoomBookingRecordDetailContent";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
+import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
 import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
@@ -107,6 +109,8 @@ export default function AdminRoomBookingRecordPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<BookingRow | null>(null);
   const [detailTarget, setDetailTarget] = useState<BookingRow | null>(null);
+  const [relatedRoomId, setRelatedRoomId] = useState<string | number | null>(null);
+  const [relatedUserId, setRelatedUserId] = useState<string | number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
@@ -753,6 +757,8 @@ export default function AdminRoomBookingRecordPage() {
                   showAside={false}
                   backLabel="Tutup"
                   onBack={() => setDetailTarget(null)}
+                  onOpenRoomDetail={setRelatedRoomId}
+                  onOpenUserDetail={setRelatedUserId}
                   actions={
                     detailTarget?.status === "Pending" ? (
                       <>
@@ -807,6 +813,22 @@ export default function AdminRoomBookingRecordPage() {
               </div>
             </DialogContent>
           </Dialog>
+
+          <RelatedRoomDetailDialog
+            open={Boolean(relatedRoomId)}
+            roomId={relatedRoomId}
+            onOpenChange={(open) => {
+              if (!open) setRelatedRoomId(null);
+            }}
+          />
+
+          <RelatedUserDetailDialog
+            open={Boolean(relatedUserId)}
+            userId={relatedUserId}
+            onOpenChange={(open) => {
+              if (!open) setRelatedUserId(null);
+            }}
+          />
         </div>
       </div>
     </section>
