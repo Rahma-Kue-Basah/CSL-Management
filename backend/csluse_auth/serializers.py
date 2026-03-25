@@ -22,6 +22,66 @@ ROLE_NORMALIZATION_MAP = {
     "GUEST": "Guest",
     "OTHER": "Guest",
 }
+ROLE_WITH_DEPARTMENT = {"Student", "Lecturer"}
+ROLE_WITH_BATCH = {"Student"}
+ROLE_WITH_ID_NUMBER = {"Student", "Lecturer", "Staff", "Admin"}
+
+
+def _normalize_nullable_value(value):
+    if value == "":
+        return None
+    return value
+
+
+def _apply_role_field_rules(attrs, instance=None):
+    role = attrs.get("role", getattr(instance, "role", None)) or "Guest"
+
+    department = _normalize_nullable_value(attrs.get("department", serializers.empty))
+    batch = _normalize_nullable_value(attrs.get("batch", serializers.empty))
+    id_number = _normalize_nullable_value(attrs.get("id_number", serializers.empty))
+    institution = _normalize_nullable_value(attrs.get("institution", serializers.empty))
+
+    if department is not serializers.empty and role not in ROLE_WITH_DEPARTMENT and department:
+        raise serializers.ValidationError({
+            "department": "Department hanya boleh diisi untuk Student atau Lecturer."
+        })
+
+    if batch is not serializers.empty and role not in ROLE_WITH_BATCH and batch:
+        raise serializers.ValidationError({
+            "batch": "Batch hanya boleh diisi untuk Student."
+        })
+
+    if id_number is not serializers.empty and role not in ROLE_WITH_ID_NUMBER and id_number:
+        raise serializers.ValidationError({
+            "id_number": "ID Number hanya boleh diisi untuk Student, Lecturer, Staff, atau Admin."
+        })
+
+    if institution is not serializers.empty and role != "Guest" and institution:
+        raise serializers.ValidationError({
+            "institution": "Institusi hanya boleh diisi untuk Guest."
+        })
+
+    if role not in ROLE_WITH_DEPARTMENT:
+        attrs["department"] = None
+    elif department is not serializers.empty:
+        attrs["department"] = department
+
+    if role not in ROLE_WITH_BATCH:
+        attrs["batch"] = None
+    elif batch is not serializers.empty:
+        attrs["batch"] = batch
+
+    if role not in ROLE_WITH_ID_NUMBER:
+        attrs["id_number"] = None
+    elif id_number is not serializers.empty:
+        attrs["id_number"] = id_number
+
+    if role != "Guest":
+        attrs["institution"] = None
+    elif institution is not serializers.empty:
+        attrs["institution"] = institution
+
+    return attrs
 
 
 def _can_assign_profile_fields(request):
@@ -131,7 +191,9 @@ def _generate_unique_username(base):
 class CustomRegisterSerializer(RegisterSerializer):
     username = serializers.CharField(required=False, allow_blank=True)
     full_name = serializers.CharField(write_only=True)
+    initials = serializers.CharField(required=False, allow_blank=True, max_length=3)
     role = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    institution = serializers.CharField(required=False, allow_null=True, allow_blank=True)
     department = serializers.ChoiceField(
         choices=[choice[0] for choice in Profile.DEPARTMENT_CHOICE],
         required=False,
@@ -164,12 +226,31 @@ class CustomRegisterSerializer(RegisterSerializer):
             raise serializers.ValidationError("Role tidak valid.")
         return value
 
+    def validate_initials(self, value):
+        return Profile.normalize_initials(value)
+
+    def validate_department(self, value):
+        if value in (None, ""):
+            return None if value == "" else value
+        valid_departments = {choice[0] for choice in Profile.DEPARTMENT_CHOICE}
+        if value not in valid_departments:
+            raise serializers.ValidationError("Department tidak valid.")
+        return value
+
+    def validate_batch(self, value):
+        if value in (None, ""):
+            return None if value == "" else value
+        valid_batches = {choice[0] for choice in Profile.BATCH_CHOICES}
+        if value not in valid_batches:
+            raise serializers.ValidationError("Batch tidak valid.")
+        return value
+
     def validate(self, data):
         data = super().validate(data)
         email = data.get("email") or self.initial_data.get("email") or ""
         base = email.split("@")[0] if email else "user"
         data["username"] = _generate_unique_username(base)
-        return data
+        return _apply_role_field_rules(data)
 
     def get_cleaned_data(self):
         data = super().get_cleaned_data()
@@ -191,6 +272,11 @@ class CustomRegisterSerializer(RegisterSerializer):
         }
         if full_name:
             defaults["full_name"] = full_name
+        if self.validated_data.get("initials"):
+            defaults["initials"] = self.validated_data["initials"]
+        institution = self.validated_data.get("institution")
+        if institution:
+            defaults["institution"] = institution
 
         if can_assign_profile_fields:
             role = self.validated_data.get("role")
@@ -240,7 +326,9 @@ class ProfileSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
     last_login = serializers.DateTimeField(source="user.last_login", read_only=True)
+    initials = serializers.CharField(required=False, allow_blank=True, max_length=3)
     role = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    institution = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
         model = Profile
@@ -249,7 +337,9 @@ class ProfileSerializer(serializers.ModelSerializer):
             "email",
             "last_login",
             "full_name",
+            "initials",
             "role",
+            "institution",
             "batch",
             "department",
             "id_number",
@@ -267,6 +357,29 @@ class ProfileSerializer(serializers.ModelSerializer):
         if value not in valid_roles:
             raise serializers.ValidationError("Role tidak valid.")
         return value
+
+    def validate_initials(self, value):
+        return Profile.normalize_initials(value)
+
+    def validate_department(self, value):
+        if value in (None, ""):
+            return None if value == "" else value
+        valid_departments = {choice[0] for choice in Profile.DEPARTMENT_CHOICE}
+        if value not in valid_departments:
+            raise serializers.ValidationError("Department harus sesuai dengan opsi yang tersedia.")
+        return value
+
+    def validate_batch(self, value):
+        if value in (None, ""):
+            return None if value == "" else value
+        valid_batches = {choice[0] for choice in Profile.BATCH_CHOICES}
+        if value not in valid_batches:
+            raise serializers.ValidationError("Batch harus sesuai dengan opsi yang tersedia.")
+        return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        return _apply_role_field_rules(attrs, instance=self.instance)
 
 
 class RoomPicDetailSerializer(serializers.ModelSerializer):
@@ -296,6 +409,22 @@ class UserWithProfileSerializer(serializers.ModelSerializer):
             "is_verified",
             "profile",
         )
+
+
+class UserBulkDeleteSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+        error_messages={
+            "empty": "Pilih minimal satu user untuk dihapus.",
+        },
+    )
+
+    def validate_ids(self, value):
+        unique_ids = list(dict.fromkeys(value))
+        if len(unique_ids) != len(value):
+            raise serializers.ValidationError("Terdapat ID user yang duplikat.")
+        return unique_ids
 
 
 class PicUserSerializer(serializers.ModelSerializer):

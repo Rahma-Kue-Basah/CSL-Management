@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
+import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { PicMultiSelect } from "@/components/admin/inventory/PicMultiSelect";
 import { API_BASE_URL, API_ROOM_DETAIL } from "@/constants/api";
@@ -149,7 +149,7 @@ export default function AdminRoomsPage() {
             }
           />
 
-          <InventoryFilterCard
+          <AdminFilterCard
             open={filterOpen}
             onToggle={() => setFilterOpen((prev) => !prev)}
             onReset={resetFilters}
@@ -215,7 +215,7 @@ export default function AdminRoomsPage() {
                 </select>
               </div>
             </form>
-          </InventoryFilterCard>
+          </AdminFilterCard>
 
           {error ? (
             <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">

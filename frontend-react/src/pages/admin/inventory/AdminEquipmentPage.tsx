@@ -31,7 +31,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
+import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
@@ -185,7 +185,7 @@ export default function AdminEquipmentsPage() {
             }
           />
 
-          <InventoryFilterCard
+          <AdminFilterCard
             open={filterOpen}
             onToggle={() => setFilterOpen((prev) => !prev)}
             onReset={resetFilters}
@@ -266,7 +266,7 @@ export default function AdminEquipmentsPage() {
                 </select>
               </div>
             </form>
-          </InventoryFilterCard>
+          </AdminFilterCard>
 
           {error ? (
             <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">

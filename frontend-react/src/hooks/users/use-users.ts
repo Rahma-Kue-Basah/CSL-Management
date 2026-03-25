@@ -17,12 +17,14 @@ export type UserFilters = {
 type ApiUserProfile = {
   id?: number | string | null;
   full_name?: string | null;
+  initials?: string | null;
   email?: string | null;
   role?: string | null;
   user_type?: string | null;
   batch?: string | number | null;
   department?: string | null;
   id_number?: string | null;
+  institution?: string | null;
 };
 
 type ApiUser = {
@@ -51,12 +53,14 @@ export type UserRow = {
   uid: number | string;
   profileId: number | string | null;
   name: string;
+  initials: string;
   email: string;
   role: string;
   userType: string;
   batch: string;
   department: string;
   idNumber: string;
+  institution: string;
   isVerified: boolean;
 };
 
@@ -81,12 +85,14 @@ export function mapUser(item: ApiUser): UserRow {
     uid: rawId,
     profileId: profile.id ?? null,
     name: String(name),
+    initials: String(profile.initials ?? ""),
     email: String(email),
     role: normalizeRoleValue(profile.role) || "-",
     userType: String(profile.user_type ?? "-"),
     batch: String(profile.batch ?? "-"),
     department: String(profile.department ?? "-"),
     idNumber: String(profile.id_number ?? "-"),
+    institution: String(profile.institution ?? "-"),
     isVerified: Boolean(item.is_verified),
   };
 }
@@ -152,7 +158,12 @@ export function useUserDetail(userId?: string | number | null) {
   };
 }
 
-export function getUserInitials(user?: Pick<UserRow, "name" | "email"> | null): string {
+export function getUserInitials(
+  user?: Pick<UserRow, "name" | "email" | "initials"> | null,
+): string {
+  if (user?.initials?.trim() && user.initials.trim() !== "-") {
+    return user.initials.trim().toUpperCase().slice(0, 3);
+  }
   const source = user?.name || user?.email || "";
   const parts = source.trim().split(/\s+/).slice(0, 2);
   const chars = parts.map((part) => part[0]).join("");

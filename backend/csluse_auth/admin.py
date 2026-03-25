@@ -8,13 +8,15 @@ class ProfileAdmin(admin.ModelAdmin):
     list_display = (
         "user",
         "full_name",
+        "initials",
         "role",
+        "institution",
         "user_groups",
         "user_type",
         "department",
         "batch",
     )
-    search_fields = ("user__email", "full_name", "id_number")
+    search_fields = ("user__email", "full_name", "initials", "id_number", "institution")
     list_filter = ("role", "user_type", "department", "batch")
     readonly_fields = ("user_groups",)
 

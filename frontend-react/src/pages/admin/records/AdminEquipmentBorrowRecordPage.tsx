@@ -9,7 +9,7 @@ import AdminEquipmentBorrowRecordDetailContent from "@/components/admin/records/
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
 import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
-import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
+import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
@@ -314,7 +314,7 @@ export default function AdminRecordPeminjamanAlatPage() {
             ]}
           />
 
-          <InventoryFilterCard
+          <AdminFilterCard
             open={filterOpen}
             onToggle={() => setFilterOpen((prev) => !prev)}
             onReset={resetFilters}
@@ -389,7 +389,7 @@ export default function AdminRecordPeminjamanAlatPage() {
                 />
               </div>
             </form>
-          </InventoryFilterCard>
+          </AdminFilterCard>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">

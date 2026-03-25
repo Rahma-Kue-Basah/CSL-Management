@@ -4,14 +4,12 @@ import { useState } from "react";
 
 import { API_AUTH_REGISTER } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
+import { toCreateUserPayload, type UserFormState } from "@/components/admin/user-management/user-management-fields";
 
-export type BulkRow = {
+export type BulkRow = UserFormState & {
   index: number;
-  full_name: string;
   email: string;
   password: string;
-  role: string;
-  user_type: string;
 };
 
 type BulkResult = {
@@ -30,15 +28,11 @@ export function useBulkCreateUsers() {
     try {
       for (const row of rows) {
         try {
-          const payload: Record<string, string> = {
-            full_name: row.full_name.trim(),
-            email: row.email.trim(),
-            username: row.email.trim().split("@")[0] || "user",
-            password1: row.password,
-            password2: row.password,
-            user_type: row.user_type,
-          };
-          if (row.role) payload.role = row.role;
+          const payload = toCreateUserPayload({
+            email: row.email,
+            password: row.password,
+            form: row,
+          });
 
           const response = await authFetch(API_AUTH_REGISTER, {
             method: "POST",
@@ -81,4 +75,3 @@ export function useBulkCreateUsers() {
 }
 
 export default useBulkCreateUsers;
-

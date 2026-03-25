@@ -24,6 +24,7 @@ type LoginResponse = {
 type ProfileResponse = {
   id?: string | number;
   full_name?: string;
+  initials?: string | null;
   username?: string;
   email?: string;
   role?: string | null;
@@ -31,17 +32,20 @@ type ProfileResponse = {
   batch?: string | number | null;
   id_number?: string | null;
   user_type?: string | null;
+  institution?: string | null;
 };
 
 type ProfileCookie = {
   id?: string | number;
   name: string;
+  initials: string | null;
   email: string;
   role: string | null;
   department: string | null;
   batch: string | number | null;
   id_number: string | null;
   user_type: string | null;
+  institution: string | null;
   canResetPassword: boolean;
 };
 
@@ -111,12 +115,14 @@ export function useLogin() {
             const nextProfile: ProfileCookie = {
               id: profileData.id,
               name: profileData.full_name || profileData.username || "User",
+              initials: profileData.initials ?? null,
               email: profileData.email || "",
               role: profileData.role ?? null,
               department: profileData.department ?? null,
               batch: profileData.batch ?? null,
               id_number: profileData.id_number ?? null,
               user_type: profileData.user_type ?? null,
+              institution: profileData.institution ?? null,
               canResetPassword: hasAccessToken,
             };
             window.localStorage.setItem("profile", JSON.stringify(nextProfile));

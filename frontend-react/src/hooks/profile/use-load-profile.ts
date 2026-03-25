@@ -10,6 +10,7 @@ type Batch = string | number;
 export type ProfileUserInput = {
   id?: ProfileId | null;
   name?: string | null;
+  initials?: string | null;
   email?: string | null;
   last_login?: string | null;
   role?: string | null;
@@ -17,11 +18,13 @@ export type ProfileUserInput = {
   batch?: Batch | null;
   id_number?: string | null;
   user_type?: string | null;
+  institution?: string | null;
 };
 
 export type UserProfile = {
   id?: ProfileId | null;
   name: string;
+  initials?: string | null;
   email: string;
   last_login?: string | null;
   role?: string | null;
@@ -29,6 +32,7 @@ export type UserProfile = {
   batch?: Batch | null;
   id_number?: string | null;
   user_type?: string | null;
+  institution?: string | null;
   canResetPassword: boolean;
 };
 
@@ -85,6 +89,7 @@ function parseCachedProfileValue(
   return {
     id: asProfileId(parsed.id) ?? user?.id ?? null,
     name: asString(parsed.name) ?? user?.name ?? "User",
+    initials: asString(parsed.initials) ?? user?.initials ?? null,
     email: asString(parsed.email) ?? user?.email ?? "",
     last_login: asString(parsed.last_login) ?? user?.last_login ?? null,
     role: asString(parsed.role) ?? user?.role ?? null,
@@ -92,6 +97,7 @@ function parseCachedProfileValue(
     batch: asBatch(parsed.batch) ?? user?.batch ?? null,
     id_number: asString(parsed.id_number) ?? user?.id_number ?? null,
     user_type: asString(parsed.user_type) ?? user?.user_type ?? null,
+    institution: asString(parsed.institution) ?? user?.institution ?? null,
     canResetPassword:
       authTokenPresent
         ? true
@@ -139,6 +145,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
       return {
         id: user?.id,
         name: user?.name || "User",
+        initials: user?.initials ?? null,
         email: user?.email || "",
         last_login: user?.last_login || null,
         role: user?.role,
@@ -146,6 +153,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
         batch: user?.batch,
         id_number: user?.id_number,
         user_type: user?.user_type,
+        institution: user?.institution,
         canResetPassword: true,
       };
     }
@@ -221,6 +229,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
               asString(profileData.full_name) ??
               asString(profileData.username) ??
               "User",
+            initials: asString(profileData.initials) ?? null,
             email: asString(profileData.email) ?? "",
             last_login: asString(profileData.last_login) ?? null,
             role: asString(profileData.role) ?? null,
@@ -228,6 +237,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
             batch: asBatch(profileData.batch) ?? null,
             id_number: asString(profileData.id_number) ?? null,
             user_type: asString(profileData.user_type) ?? null,
+            institution: asString(profileData.institution) ?? null,
             canResetPassword: hasAuthToken(),
           };
           persistProfileCache(nextProfile);
@@ -248,6 +258,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
   }, [user]);
 
   const initials = useMemo(() => {
+    if (profile.initials?.trim()) return profile.initials.trim().toUpperCase().slice(0, 3);
     const source = profile.name || profile.email || "U";
     const parts = source.trim().split(/\s+/);
     const letters = parts.slice(0, 2).map((part) => part[0]);

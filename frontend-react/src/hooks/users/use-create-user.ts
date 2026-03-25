@@ -8,6 +8,8 @@ import { extractApiErrorMessage } from "@/lib/api-error";
 
 type CreateUserPayload = {
   full_name: string;
+  initials?: string;
+  institution?: string;
   email: string;
   username: string;
   password1: string;
@@ -25,6 +27,11 @@ function parseCreateUserError(data: unknown, fallback = "Gagal membuat user.") {
     "username",
     "password1",
     "password2",
+    "batch",
+    "department",
+    "id_number",
+    "institution",
+    "role",
   ]);
 }
 

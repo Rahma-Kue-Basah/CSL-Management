@@ -4,6 +4,7 @@ import type { BookingRow } from "@/hooks/bookings/use-bookings";
 import type { UseRow } from "@/hooks/uses/use-uses";
 import type { BorrowRow } from "@/hooks/borrows/use-borrows";
 import type { PengujianRow } from "@/hooks/pengujians/use-pengujians";
+import type { UserRow } from "@/hooks/users/use-users";
 import { getStatusDisplayLabel } from "@/lib/status";
 
 export type ExportColumn<TRow> = {
@@ -92,4 +93,17 @@ export const PENGUJIAN_EXPORT_COLUMNS: ExportColumn<PengujianRow>[] = [
   { header: "Tipe Uji", cell: (item) => item.sampleTestingType },
   { header: "Disetujui Oleh", cell: (item) => item.approvedByName || "-" },
   { header: "Dibuat", cell: (item) => formatDateTime(item.createdAt) },
+];
+
+export const USER_EXPORT_COLUMNS: ExportColumn<UserRow>[] = [
+  { header: "Nama", cell: (user) => user.name },
+  { header: "Inisial", cell: (user) => user.initials || "-" },
+  { header: "Email", cell: (user) => user.email },
+  { header: "Role", cell: (user) => user.role || "-" },
+  { header: "User Type", cell: (user) => user.userType || "-" },
+  { header: "Department", cell: (user) => user.department || "-" },
+  { header: "Batch", cell: (user) => user.batch || "-" },
+  { header: "ID Number", cell: (user) => user.idNumber || "-" },
+  { header: "Institusi", cell: (user) => user.institution || "-" },
+  { header: "Verified", cell: (user) => (user.isVerified ? "Verified" : "Unverified") },
 ];

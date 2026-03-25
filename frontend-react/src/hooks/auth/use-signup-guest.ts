@@ -5,6 +5,7 @@ type SignupStatus = "idle" | "submitting" | "success" | "error";
 
 type SignupFormData = {
   fullName: string;
+  institution: string;
   email: string;
   password: string;
   confirmPassword: string;
@@ -20,6 +21,7 @@ type SignupErrorResponse = {
 export function useSignupGuest() {
   const [formData, setFormData] = useState<SignupFormData>({
     fullName: "",
+    institution: "",
     email: "",
     password: "",
     confirmPassword: "",
@@ -54,6 +56,7 @@ export function useSignupGuest() {
         },
         body: JSON.stringify({
           full_name: formData.fullName,
+          institution: formData.institution,
           email: formData.email,
           username: emailUsername,
           password1: formData.password,
@@ -65,6 +68,7 @@ export function useSignupGuest() {
         setStatus("success");
         setFormData({
           fullName: "",
+          institution: "",
           email: "",
           password: "",
           confirmPassword: "",

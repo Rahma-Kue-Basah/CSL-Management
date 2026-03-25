@@ -7,17 +7,21 @@ import { authFetch } from "@/lib/auth";
 
 type UpdateMyProfilePayload = {
   full_name: string;
+  initials?: string;
   department?: string | null;
   batch?: string | null;
   id_number?: string | null;
+  institution?: string | null;
 };
 
 type UpdateProfileErrorResponse = {
   detail?: string;
   full_name?: string[];
+  initials?: string[];
   department?: string[];
   batch?: string[];
   id_number?: string[];
+  institution?: string[];
 };
 
 export function useUpdateMyProfile() {
@@ -49,9 +53,11 @@ export function useUpdateMyProfile() {
         const errorMessage =
           data?.detail ||
           data?.full_name?.[0] ||
+          data?.initials?.[0] ||
           data?.department?.[0] ||
           data?.batch?.[0] ||
           data?.id_number?.[0] ||
+          data?.institution?.[0] ||
           `Gagal memperbarui profil (${response.status}).`;
         throw new Error(errorMessage);
       }
@@ -70,9 +76,11 @@ export function useUpdateMyProfile() {
           JSON.stringify({
             ...cached,
             name: payload.full_name,
+            initials: payload.initials ?? null,
             department: payload.department ?? null,
             batch: payload.batch ?? null,
             id_number: payload.id_number ?? null,
+            institution: payload.institution ?? null,
           }),
         );
         window.localStorage.setItem("profile_cached_at", String(Date.now()));

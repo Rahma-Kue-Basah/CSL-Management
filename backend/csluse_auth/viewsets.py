@@ -6,7 +6,7 @@ from django.contrib.admin.models import LogEntry
 from django.db import models
 from django.db.models import Exists, OuterRef
 from allauth.account.models import EmailAddress
-from rest_framework import viewsets
+from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import get_object_or_404
@@ -19,6 +19,7 @@ from .audit import log_admin_action
 from .serializers import (
     ProfileSerializer,
     UserWithProfileSerializer,
+    UserBulkDeleteSerializer,
     PicUserSerializer,
     PicUserDropdownSerializer,
     AdminActionSerializer,
@@ -63,7 +64,7 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated, IsAdministratorOrAbove]
     queryset = User.objects.select_related("profile").all()
     pagination_class = DefaultPagination
-    http_method_names = ["get", "delete"]
+    http_method_names = ["get", "delete", "post"]
 
     def _append_aggregates(self, response, aggregates):
         response.data["aggregates"] = aggregates
@@ -78,6 +79,22 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
             "staff": queryset.filter(profile__role__iexact="Staff").count(),
             "guest": queryset.filter(profile__role__iexact="Guest").count(),
         }
+
+    def _ensure_user_deletable(self, target):
+        is_target_super_admin = has_role(target, SUPER_ADMINISTRATOR) or getattr(
+            target, "is_superuser", False
+        )
+        if is_target_super_admin:
+            raise PermissionDenied("Tidak bisa menghapus SuperAdministrator.")
+
+    def _delete_user_instance(self, target):
+        log_admin_action(
+            self.request.user,
+            target,
+            DELETION,
+            "Deleted user via CSL Admin (user management).",
+        )
+        target.delete()
 
     def get_object(self):
         queryset = self.filter_queryset(self.get_queryset())
@@ -165,22 +182,52 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
             return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
         return Response({"results": serializer.data, "aggregates": aggregates})
 
-    def destroy(self, request, *args, **kwargs):
-        target = self.get_object()
+    @action(detail=False, methods=["get"], url_path="export")
+    def export(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
-        is_target_super_admin = has_role(target, SUPER_ADMINISTRATOR) or getattr(
-            target, "is_superuser", False
-        )
-        if is_target_super_admin:
-            raise PermissionDenied("Tidak bisa menghapus SuperAdministrator.")
+    def perform_destroy(self, instance):
+        self._ensure_user_deletable(instance)
+        self._delete_user_instance(instance)
 
-        log_admin_action(
-            request.user,
-            target,
-            DELETION,
-            "Deleted user via CSL Admin (user management).",
+    @extend_schema(request=UserBulkDeleteSerializer)
+    @action(detail=False, methods=["post"], url_path="bulk-delete")
+    def bulk_delete(self, request):
+        serializer = UserBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        requested_ids = serializer.validated_data["ids"]
+        users = self.get_queryset().filter(pk__in=requested_ids)
+        users_by_id = {user.pk: user for user in users}
+
+        deleted_ids = []
+        failed_ids = []
+
+        for user_id in requested_ids:
+            user = users_by_id.get(user_id)
+            if user is None:
+                failed_ids.append(user_id)
+                continue
+
+            try:
+                self._ensure_user_deletable(user)
+                self._delete_user_instance(user)
+                deleted_ids.append(user_id)
+            except PermissionDenied:
+                failed_ids.append(user_id)
+
+        response_status = status.HTTP_200_OK if deleted_ids else status.HTTP_400_BAD_REQUEST
+        return Response(
+            {
+                "deleted_count": len(deleted_ids),
+                "failed_count": len(failed_ids),
+                "deleted_ids": deleted_ids,
+                "failed_ids": failed_ids,
+            },
+            status=response_status,
         )
-        return super().destroy(request, *args, **kwargs)
 
 
 class PicUserViewSet(viewsets.ReadOnlyModelViewSet):

@@ -4,14 +4,17 @@ import { useState } from "react";
 
 import { API_AUTH_ADMIN_PROFILE_DETAIL } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 type UpdatePayload = {
   full_name?: string;
+  initials?: string;
   department?: string | null;
   batch?: string | null;
   id_number?: string | null;
   role?: string | null;
   user_type?: string | null;
+  institution?: string | null;
 };
 
 export function useUpdateUserProfile() {
@@ -29,7 +32,16 @@ export function useUpdateUserProfile() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!response.ok) throw new Error(`Update gagal (${response.status})`);
+      if (!response.ok) {
+        let message = `Update gagal (${response.status})`;
+        try {
+          const data = (await response.json()) as unknown;
+          message = extractApiErrorMessage(data, message, ["department", "batch", "role"]);
+        } catch {
+          // ignore parse error
+        }
+        throw new Error(message);
+      }
       const updated = (await response.json()) as Record<string, unknown>;
       setMessage("Profile updated");
       return updated;
@@ -46,4 +58,3 @@ export function useUpdateUserProfile() {
 }
 
 export default useUpdateUserProfile;
-

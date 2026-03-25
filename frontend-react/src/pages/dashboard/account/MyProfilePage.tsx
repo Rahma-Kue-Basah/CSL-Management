@@ -39,9 +39,11 @@ function getInitials(name?: string | null, email?: string | null) {
 
 type ProfileFormData = {
   full_name: string;
+  initials: string;
   department: string;
   batch: string;
   id_number: string;
+  institution: string;
 };
 
 function getVisibleProfileFields(role: string | null | undefined) {
@@ -59,6 +61,9 @@ function getVisibleProfileFields(role: string | null | undefined) {
   if (normalizedRole === "admin") {
     return { department: false, batch: false, idNumber: false };
   }
+  if (normalizedRole === "guest") {
+    return { department: false, batch: false, idNumber: false };
+  }
 
   return { department: true, batch: true, idNumber: true };
 }
@@ -73,18 +78,22 @@ export default function MyProfilePage() {
   const isEditing = pathname === "/my-profile/edit";
   const [formData, setFormData] = useState<ProfileFormData>({
     full_name: "",
+    initials: "",
     department: "",
     batch: "",
     id_number: "",
+    institution: "",
   });
 
   useEffect(() => {
     if (isEditing) return;
     setFormData({
       full_name: profile.name || "",
+      initials: profile.initials || "",
       department: profile.department || "",
       batch: profile.batch ? String(profile.batch) : "",
       id_number: profile.id_number || "",
+      institution: profile.institution || "",
     });
   }, [profile, isEditing]);
 
@@ -99,9 +108,11 @@ export default function MyProfilePage() {
     setMessage("");
     setFormData({
       full_name: profile.name || "",
+      initials: profile.initials || "",
       department: profile.department || "",
       batch: profile.batch ? String(profile.batch) : "",
       id_number: profile.id_number || "",
+      institution: profile.institution || "",
     });
     router.push("/my-profile");
   };
@@ -121,9 +132,11 @@ export default function MyProfilePage() {
 
     const success = await updateMyProfile(profile.id, {
       full_name: formData.full_name.trim(),
+      initials: formData.initials.trim(),
       department: formData.department || null,
       batch: formData.batch || null,
       id_number: formData.id_number || null,
+      institution: formData.institution || null,
     });
 
     if (success) router.push("/my-profile");
@@ -131,13 +144,15 @@ export default function MyProfilePage() {
 
   const displayProfile = {
     name: isEditing ? formData.full_name : profile.name,
+    initials: isEditing ? formData.initials : profile.initials,
     department: isEditing ? formData.department : profile.department,
     batch: isEditing ? formData.batch : profile.batch,
     id_number: isEditing ? formData.id_number : profile.id_number,
+    institution: isEditing ? formData.institution : profile.institution,
   };
   const visibleFields = getVisibleProfileFields(profile.role);
 
-  const initials = getInitials(displayProfile.name, profile.email);
+  const initials = displayProfile.initials || getInitials(displayProfile.name, profile.email);
 
   return (
     <section className="w-full min-w-0 overflow-x-hidden">
@@ -177,6 +192,21 @@ export default function MyProfilePage() {
               </EditRow>
             ) : (
               <ProfileRow label="Nama" value={displayProfile.name || "-"} />
+            )}
+
+            {isEditing ? (
+              <EditRow label="Inisial">
+                <Input
+                  name="initials"
+                  value={formData.initials}
+                  onChange={handleChange}
+                  maxLength={3}
+                  className="border-slate-300 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  placeholder="3 huruf"
+                />
+              </EditRow>
+            ) : (
+              <ProfileRow label="Inisial" value={displayProfile.initials || "-"} />
             )}
 
             {visibleFields.department &&
@@ -225,6 +255,21 @@ export default function MyProfilePage() {
                   label="Batch"
                   value={displayProfile.batch ? String(displayProfile.batch) : "-"}
                 />
+              ))}
+
+            {String(profile.role || "").toLowerCase() === "guest" &&
+              (isEditing ? (
+                <EditRow label="Institusi">
+                  <Input
+                    name="institution"
+                    value={formData.institution}
+                    onChange={handleChange}
+                    className="border-slate-300 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                    placeholder="Asal institusi"
+                  />
+                </EditRow>
+              ) : (
+                <ProfileRow label="Institusi" value={displayProfile.institution || "-"} />
               ))}
 
             {visibleFields.idNumber &&

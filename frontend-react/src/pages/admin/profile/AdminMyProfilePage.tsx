@@ -59,18 +59,22 @@ export default function AdminMyProfilePage() {
   const [message, setMessage] = useState("");
   const [formData, setFormData] = useState({
     full_name: "",
+    initials: "",
     department: "",
     batch: "",
     id_number: "",
+    institution: "",
   });
 
   useEffect(() => {
     if (isEditing) return;
     setFormData({
       full_name: profile.name || "",
+      initials: profile.initials || "",
       department: profile.department || "",
       batch: profile.batch ? String(profile.batch) : "",
       id_number: profile.id_number || "",
+      institution: profile.institution || "",
     });
   }, [profile, isEditing]);
 
@@ -86,9 +90,11 @@ export default function AdminMyProfilePage() {
     setMessage("");
     setFormData({
       full_name: profile.name || "",
+      initials: profile.initials || "",
       department: profile.department || "",
       batch: profile.batch ? String(profile.batch) : "",
       id_number: profile.id_number || "",
+      institution: profile.institution || "",
     });
   };
 
@@ -114,9 +120,11 @@ export default function AdminMyProfilePage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           full_name: formData.full_name.trim(),
+          initials: formData.initials.trim(),
           department: formData.department || null,
           batch: formData.batch || null,
           id_number: formData.id_number || null,
+          institution: formData.institution || null,
         }),
       });
 
@@ -140,9 +148,11 @@ export default function AdminMyProfilePage() {
           JSON.stringify({
             ...cached,
             name: formData.full_name.trim(),
+            initials: formData.initials.trim() || null,
             department: formData.department || null,
             batch: formData.batch || null,
             id_number: formData.id_number || null,
+            institution: formData.institution || null,
           }),
         );
       }
@@ -159,11 +169,13 @@ export default function AdminMyProfilePage() {
 
   const displayProfile = {
     name: isEditing ? formData.full_name : profile.name,
+    initials: isEditing ? formData.initials : profile.initials,
     department: isEditing ? formData.department : profile.department,
     batch: isEditing ? formData.batch : profile.batch,
     id_number: isEditing ? formData.id_number : profile.id_number,
+    institution: isEditing ? formData.institution : profile.institution,
   };
-  const initials = getInitials(displayProfile.name, profile.email);
+  const initials = displayProfile.initials || getInitials(displayProfile.name, profile.email);
   const roleLabel = formatRole(profile.role);
 
   return (
@@ -210,6 +222,20 @@ export default function AdminMyProfilePage() {
                 </EditRow>
               ) : (
                 <ProfileRow label="Nama" value={displayProfile.name || "-"} />
+              )}
+              {isEditing ? (
+                <EditRow label="Inisial">
+                  <Input
+                    name="initials"
+                    value={formData.initials}
+                    onChange={handleChange}
+                    maxLength={3}
+                    className="border-slate-300 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                    placeholder="3 huruf"
+                  />
+                </EditRow>
+              ) : (
+                <ProfileRow label="Inisial" value={displayProfile.initials || "-"} />
               )}
               {/* <ProfileRow label="Email" value={profile.email || "-"} /> */}
               {isEditing ? (
@@ -263,6 +289,20 @@ export default function AdminMyProfilePage() {
               ) : (
                 <ProfileRow label="ID Number" value={displayProfile.id_number || "-"} />
               )}
+              {String(profile.role || "").toLowerCase() === "guest" &&
+                (isEditing ? (
+                  <EditRow label="Institusi">
+                    <Input
+                      name="institution"
+                      value={formData.institution}
+                      onChange={handleChange}
+                      className="border-slate-300 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                      placeholder="Asal institusi"
+                    />
+                  </EditRow>
+                ) : (
+                  <ProfileRow label="Institusi" value={displayProfile.institution || "-"} />
+                ))}
               <ProfileRow label="Role" value={formatRole(profile.role)} />
 
               <div className="md:col-span-2">

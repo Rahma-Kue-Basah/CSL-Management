@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
+import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import {
   AnnouncementCreateDialog,
   AnnouncementEditDialog,
@@ -377,7 +377,7 @@ export default function AdminPengumumanPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <InventoryFilterCard
+      <AdminFilterCard
         open={filterOpen}
         onToggle={() => setFilterOpen((prev) => !prev)}
         onReset={() => {
@@ -404,7 +404,7 @@ export default function AdminPengumumanPage() {
             buttonClassName="h-11 rounded-lg border-slate-300 px-3 py-2.5 text-sm"
           />
         </div>
-      </InventoryFilterCard>
+      </AdminFilterCard>
 
       {errorMessage ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">

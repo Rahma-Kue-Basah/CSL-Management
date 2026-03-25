@@ -72,6 +72,20 @@ export default function SignupGuestPage({ className, ...props }: SignupGuestForm
         </Field>
 
         <Field>
+          <FieldLabel htmlFor="institution">Institusi</FieldLabel>
+          <Input
+            id="institution"
+            name="institution"
+            type="text"
+            placeholder="Asal institusi"
+            className="placeholder:text-muted-foreground/50"
+            required
+            value={formData.institution}
+            onChange={handleChange}
+          />
+        </Field>
+
+        <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
           <Input
             id="email"

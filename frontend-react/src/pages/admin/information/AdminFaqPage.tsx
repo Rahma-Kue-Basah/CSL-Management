@@ -4,7 +4,7 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { CircleHelp, Pencil, Plus, Search, Trash2, User2 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filter-card";
+import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -338,7 +338,7 @@ export default function AdminFaqPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      <InventoryFilterCard
+      <AdminFilterCard
         open={filterOpen}
         onToggle={() => setFilterOpen((prev) => !prev)}
         onReset={() => {
@@ -355,7 +355,7 @@ export default function AdminFaqPage() {
             className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
           />
         </div>
-      </InventoryFilterCard>
+      </AdminFilterCard>
 
       {error ? (
         <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
