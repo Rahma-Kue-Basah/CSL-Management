@@ -40,6 +40,7 @@ from .serializers import (
     BookingListSerializer,
     BookingUserListSerializer,
     BorrowSerializer,
+    RecordBulkDeleteSerializer,
     BorrowListSerializer,
     FacilitySerializer,
     AnnouncementListSerializer,
@@ -551,6 +552,15 @@ class BookingViewSet(viewsets.ModelViewSet):
         response.data["aggregates"] = aggregates
         return response
 
+    def _delete_booking_instance(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted booking record via CSL Admin.",
+        )
+        instance.delete()
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -628,13 +638,48 @@ class BookingViewSet(viewsets.ModelViewSet):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
     def perform_destroy(self, instance):
-        log_admin_action(
-            self.request.user,
-            instance,
-            DELETION,
-            "Deleted booking record via CSL Admin.",
+        self._delete_booking_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not self._is_staff_or_above():
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data booking.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        booking_map = {
+            str(item.id): item
+            for item in Booking.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in booking_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            booking = booking_map.get(str(item_id))
+            if booking is None:
+                continue
+            self._delete_booking_instance(booking)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
         )
-        super().perform_destroy(instance)
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua record booking ruangan terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian record booking ruangan tidak ditemukan."
+                ),
+            },
+            status=response_status,
+        )
 
     @action(detail=False, methods=['get'], url_path='my')
     def my(self, request):
@@ -823,6 +868,17 @@ class BorrowViewSet(viewsets.ModelViewSet):
         response.data["aggregates"] = aggregates
         return response
 
+    def _delete_borrow_instance(self, instance):
+        if not self._can_manage_all_borrows():
+            raise PermissionDenied("Hanya laboran/admin yang dapat menghapus record borrow.")
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted borrow record via CSL Admin.",
+        )
+        instance.delete()
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -912,15 +968,48 @@ class BorrowViewSet(viewsets.ModelViewSet):
         raise MethodNotAllowed("PATCH", detail="Gunakan action borrow yang spesifik untuk memproses lifecycle.")
 
     def perform_destroy(self, instance):
+        self._delete_borrow_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
         if not self._can_manage_all_borrows():
             raise PermissionDenied("Hanya laboran/admin yang dapat menghapus record borrow.")
-        log_admin_action(
-            self.request.user,
-            instance,
-            DELETION,
-            "Deleted borrow record via CSL Admin.",
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        borrow_map = {
+            str(item.id): item
+            for item in Borrow.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in borrow_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            borrow = borrow_map.get(str(item_id))
+            if borrow is None:
+                continue
+            self._delete_borrow_instance(borrow)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
         )
-        super().perform_destroy(instance)
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua record peminjaman alat terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian record peminjaman alat tidak ditemukan."
+                ),
+            },
+            status=response_status,
+        )
 
     @action(detail=False, methods=['get'], url_path='by-month')
     def by_month(self, request):
@@ -1614,6 +1703,15 @@ class PengujianViewSet(viewsets.ModelViewSet):
         response.data["aggregates"] = aggregates
         return response
 
+    def _delete_pengujian_instance(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted sample testing record via CSL Admin.",
+        )
+        instance.delete()
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -1661,13 +1759,48 @@ class PengujianViewSet(viewsets.ModelViewSet):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
     def perform_destroy(self, instance):
-        log_admin_action(
-            self.request.user,
-            instance,
-            DELETION,
-            "Deleted sample testing record via CSL Admin.",
+        self._delete_pengujian_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data pengujian sampel.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        pengujian_map = {
+            str(item.id): item
+            for item in Pengujian.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in pengujian_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            pengujian = pengujian_map.get(str(item_id))
+            if pengujian is None:
+                continue
+            self._delete_pengujian_instance(pengujian)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
         )
-        super().perform_destroy(instance)
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua record pengujian sampel terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian record pengujian sampel tidak ditemukan."
+                ),
+            },
+            status=response_status,
+        )
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
@@ -1748,6 +1881,15 @@ class UseViewSet(viewsets.ModelViewSet):
         response.data["aggregates"] = aggregates
         return response
 
+    def _delete_use_instance(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted equipment usage record via CSL Admin.",
+        )
+        instance.delete()
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -1822,13 +1964,48 @@ class UseViewSet(viewsets.ModelViewSet):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
     def perform_destroy(self, instance):
-        log_admin_action(
-            self.request.user,
-            instance,
-            DELETION,
-            "Deleted equipment usage record via CSL Admin.",
+        self._delete_use_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data penggunaan alat.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        use_map = {
+            str(item.id): item
+            for item in Use.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in use_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            use_item = use_map.get(str(item_id))
+            if use_item is None:
+                continue
+            self._delete_use_instance(use_item)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
         )
-        super().perform_destroy(instance)
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua record penggunaan alat terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian record penggunaan alat tidak ditemukan."
+                ),
+            },
+            status=response_status,
+        )
 
     @action(detail=False, methods=['get'], url_path='my')
     def my(self, request):

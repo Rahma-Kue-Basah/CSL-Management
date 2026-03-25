@@ -47,8 +47,55 @@ export function useDeleteRecord() {
     }
   };
 
+  const deleteRecords = async (url: string, ids: Array<number | string>) => {
+    setIsDeleting(true);
+
+    try {
+      const response = await authFetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ids }),
+      });
+
+      const data = (await response.json().catch(() => null)) as
+        | {
+            detail?: string;
+            deleted_ids?: string[];
+            deleted_count?: number;
+            failed_ids?: string[];
+            failed_count?: number;
+          }
+        | null;
+
+      if (response.ok) {
+        return {
+          ok: true as const,
+          deletedCount: data?.deleted_count ?? ids.length,
+          failedCount: data?.failed_count ?? 0,
+          message: data?.detail,
+        };
+      }
+
+      return {
+        ok: false as const,
+        message: parseDeleteError(data, "Gagal menghapus data terpilih."),
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan jaringan. Coba lagi.";
+      return { ok: false as const, message };
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   return {
     deleteRecord,
+    deleteRecords,
     isDeleting,
   };
 }

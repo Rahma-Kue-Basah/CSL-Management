@@ -1,10 +1,12 @@
+"use client";
+
 import {
   CalendarClock,
   ClipboardList,
   NotebookPen,
   Wrench,
 } from "lucide-react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   AdminRecordDetailGrid,
@@ -12,22 +14,30 @@ import {
   AdminRecordDetailSection,
   AdminRecordDetailShell,
 } from "@/components/admin/records/AdminRecordDetailLayout";
-import { useBorrowDetail } from "@/hooks/borrows/use-borrows";
+import { Skeleton } from "@/components/ui/skeleton";
+import type { BorrowRow } from "@/hooks/borrows/use-borrows";
 import { formatDateTimeWib } from "@/lib/date-time";
 
-export default function AdminEquipmentBorrowRecordDetailPage() {
-  const { id } = useParams();
+type AdminEquipmentBorrowRecordDetailContentProps = {
+  item: BorrowRow | null;
+  isLoading: boolean;
+  error: string;
+  onBack: () => void;
+  backLabel?: string;
+};
+
+export default function AdminEquipmentBorrowRecordDetailContent({
+  item,
+  isLoading,
+  error,
+  onBack,
+  backLabel = "Kembali",
+}: AdminEquipmentBorrowRecordDetailContentProps) {
   const navigate = useNavigate();
   const location = useLocation();
-  const backTo =
-    typeof location.state?.from === "string"
-      ? location.state.from
-      : "/admin/records/equipment-borrows";
-
-  const { borrow: item, isLoading, error } = useBorrowDetail(id);
 
   return (
-    <section className="mx-auto w-full max-w-3xl min-w-0 space-y-4 px-4 pb-6">
+    <>
       {error ? (
         <div className="w-full rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
@@ -35,8 +45,65 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
       ) : null}
 
       {isLoading ? (
-        <div className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-8 text-sm text-muted-foreground">
-          Memuat detail record...
+        <div className="w-full space-y-3 rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-4">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-9 w-9 rounded-lg" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-48" />
+                <Skeleton className="h-4 w-28" />
+                <Skeleton className="h-5 w-24 rounded-full" />
+              </div>
+            </div>
+            <Skeleton className="h-9 w-20" />
+          </div>
+
+          <div className="space-y-3">
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+              <div className="mb-3 flex items-center gap-2">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <Skeleton className="h-4 w-36" />
+              </div>
+              <div className="grid gap-2 md:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={`main-${index}`} className="space-y-1 px-0 py-1.5">
+                    <Skeleton className="h-3 w-24" />
+                    <Skeleton className="h-4 w-full max-w-44" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+              <div className="mb-3 flex items-center gap-2">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <Skeleton className="h-4 w-40" />
+              </div>
+              <div className="grid gap-2 md:grid-cols-2">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={`time-${index}`} className="space-y-1 px-0 py-1.5">
+                    <Skeleton className="h-3 w-28" />
+                    <Skeleton className="h-4 w-full max-w-52" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-white p-3.5">
+              <div className="mb-3 flex items-center gap-2">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <div className="space-y-2.5">
+                {Array.from({ length: 3 }).map((_, index) => (
+                  <div key={`note-${index}`} className="space-y-1 px-0 py-1.5">
+                    <Skeleton className="h-3 w-32" />
+                    <Skeleton className="h-4 w-full" />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       ) : !item ? (
         <div className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-8 text-sm text-muted-foreground">
@@ -49,7 +116,8 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
           icon={<ClipboardList className="h-5 w-5" />}
           status={item.status}
           compact
-          onBack={() => navigate(backTo)}
+          backLabel={backLabel}
+          onBack={onBack}
         >
           <AdminRecordDetailSection
             title="Informasi Utama"
@@ -62,7 +130,7 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
                 value={item.equipmentName}
                 compact
                 borderless
-                hrefLabel={item.equipmentId ? "Lihat detail" : undefined}
+                hrefIcon={Boolean(item.equipmentId)}
                 onClick={
                   item.equipmentId
                     ? () =>
@@ -78,16 +146,13 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
                 value={item.requesterName}
                 compact
                 borderless
-                hrefLabel={item.requesterId ? "Lihat user" : undefined}
+                hrefIcon={Boolean(item.requesterId)}
                 onClick={
                   item.requesterId
                     ? () =>
-                        navigate(
-                          `/admin/user-management/detail/${item.requesterId}`,
-                          {
-                            state: { from: location.pathname },
-                          },
-                        )
+                        navigate(`/admin/user-management/detail/${item.requesterId}`, {
+                          state: { from: location.pathname },
+                        })
                     : undefined
                 }
               />
@@ -130,16 +195,13 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
                 value={item.approvedByName}
                 compact
                 borderless
-                hrefLabel={item.approvedById ? "Lihat user" : undefined}
+                hrefIcon={Boolean(item.approvedById)}
                 onClick={
                   item.approvedById
                     ? () =>
-                        navigate(
-                          `/admin/user-management/detail/${item.approvedById}`,
-                          {
-                            state: { from: location.pathname },
-                          },
-                        )
+                        navigate(`/admin/user-management/detail/${item.approvedById}`, {
+                          state: { from: location.pathname },
+                        })
                     : undefined
                 }
               />
@@ -169,6 +231,6 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
           </AdminRecordDetailSection>
         </AdminRecordDetailShell>
       )}
-    </section>
+    </>
   );
 }

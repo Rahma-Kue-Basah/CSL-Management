@@ -135,7 +135,7 @@ export function useBorrowDetail(id?: string | number | null) {
   useEffect(() => {
     if (!id) {
       setBorrow(null);
-      setError("ID peminjaman tidak ditemukan.");
+      setError("");
       setIsLoading(false);
       return;
     }

@@ -48,13 +48,9 @@ import AdminEquipmentDetailPage from "@/pages/admin/inventory/AdminEquipmentDeta
 import AdminRoomPage from "@/pages/admin/inventory/AdminRoomPage";
 import AdminRoomDetailPage from "@/pages/admin/inventory/AdminRoomDetailPage";
 import AdminRoomBookingRecordPage from "@/pages/admin/records/AdminRoomBookingRecordPage";
-import AdminRoomBookingRecordDetailPage from "@/pages/admin/records/AdminRoomBookingRecordDetailPage";
 import AdminEquipmentUsageRecordPage from "@/pages/admin/records/AdminEquipmentUsageRecordPage";
-import AdminEquipmentUsageRecordDetailPage from "@/pages/admin/records/AdminEquipmentUsageRecordDetailPage";
 import AdminEquipmentBorrowRecordPage from "@/pages/admin/records/AdminEquipmentBorrowRecordPage";
-import AdminEquipmentBorrowRecordDetailPage from "@/pages/admin/records/AdminEquipmentBorrowRecordDetailPage";
 import AdminSampleTestingRecordPage from "@/pages/admin/records/AdminSampleTestingRecordPage";
-import AdminSampleTestingRecordDetailPage from "@/pages/admin/records/AdminSampleTestingRecordDetailPage";
 import AdminMyProfilePage from "@/pages/admin/profile/AdminMyProfilePage";
 import StructureOrgansPage from "@/pages/admin/lab-profile/StructureOrgansPage";
 import FacilityPage from "@/pages/admin/lab-profile/FacilityPage";
@@ -199,13 +195,9 @@ export const router = createBrowserRouter([
         path: "records",
         children: [
           { path: "room-bookings", element: <AdminRoomBookingRecordPage /> },
-          { path: "room-bookings/:id", element: <AdminRoomBookingRecordDetailPage /> },
           { path: "equipment-usage", element: <AdminEquipmentUsageRecordPage /> },
-          { path: "equipment-usage/:id", element: <AdminEquipmentUsageRecordDetailPage /> },
           { path: "equipment-borrows", element: <AdminEquipmentBorrowRecordPage /> },
-          { path: "equipment-borrows/:id", element: <AdminEquipmentBorrowRecordDetailPage /> },
           { path: "sample-testing", element: <AdminSampleTestingRecordPage /> },
-          { path: "sample-testing/:id", element: <AdminSampleTestingRecordDetailPage /> },
         ],
       },
       {

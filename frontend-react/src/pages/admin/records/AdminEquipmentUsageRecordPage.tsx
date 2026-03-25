@@ -1,11 +1,20 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { Check, Eye, Loader2, OctagonX, Trash2 } from "lucide-react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  Check,
+  ChevronDown,
+  Download,
+  Eye,
+  FileSpreadsheet,
+  Loader2,
+  OctagonX,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import AdminEquipmentUsageRecordDetailContent from "@/components/admin/records/AdminEquipmentUsageRecordDetailContent";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
 import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
@@ -13,11 +22,33 @@ import { InventoryFilterCard } from "@/components/admin/inventory/inventory-filt
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSub,
+  DropdownMenuSubContent,
+  DropdownMenuSubTrigger,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { API_USE_DETAIL, API_USES_EXPORT } from "@/constants/api";
+import {
+  API_USE_DETAIL,
+  API_USES_BULK_DELETE,
+  API_USES_EXPORT,
+} from "@/constants/api";
 import { mapUse, useUses, type UseRow } from "@/hooks/uses/use-uses";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
 import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 import { USE_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
 import {
@@ -35,7 +66,7 @@ function formatDateTime(value?: string | null) {
   if (!value) return "-";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
+  const formatted = new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
     month: "short",
     year: "numeric",
@@ -43,6 +74,7 @@ function formatDateTime(value?: string | null) {
     minute: "2-digit",
     hour12: false,
   }).format(date);
+  return `${formatted} WIB`;
 }
 
 function matchesSearch(row: UseRow, query: string) {
@@ -54,8 +86,8 @@ function matchesSearch(row: UseRow, query: string) {
 }
 
 export default function AdminRecordPenggunaanAlatPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
+  const { profile } = useLoadProfile();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -65,11 +97,16 @@ export default function AdminRecordPenggunaanAlatPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<UseRow | null>(null);
+  const [detailTarget, setDetailTarget] = useState<UseRow | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
+  const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
+  const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
   const [statusTarget, setStatusTarget] = useState<{
     item: UseRow;
     type: "approve" | "reject";
   } | null>(null);
-  const { deleteRecord, isDeleting } = useDeleteRecord();
+  const { deleteRecord, deleteRecords, isDeleting } = useDeleteRecord();
   const { updateUseStatus, pendingAction } = useUpdateUseStatus();
   const {
     exportPdf,
@@ -114,11 +151,32 @@ export default function AdminRecordPenggunaanAlatPage() {
     () => uses.filter((item) => matchesSearch(item, debouncedSearch)),
     [uses, debouncedSearch],
   );
+  const selectedRows = useMemo(() => {
+    const selectedIdSet = new Set(selectedIds.map((id) => String(id)));
+    return uses.filter((item) => selectedIdSet.has(String(item.id)));
+  }, [uses, selectedIds]);
 
   const totalPages = useMemo(
     () => Math.max(1, Math.ceil((totalCount || filteredUses.length) / PAGE_SIZE)),
     [totalCount, filteredUses.length],
   );
+  const selectedCount = selectedIds.length;
+  const allVisibleSelected =
+    filteredUses.length > 0 &&
+    filteredUses.every((item) => selectedIds.includes(item.id));
+  const someVisibleSelected =
+    filteredUses.some((item) => selectedIds.includes(item.id)) && !allVisibleSelected;
+
+  useEffect(() => {
+    setSelectedIds((prev) =>
+      prev.filter((id) => uses.some((item) => String(item.id) === String(id))),
+    );
+  }, [uses]);
+
+  useEffect(() => {
+    if (!selectAllRef.current) return;
+    selectAllRef.current.indeterminate = someVisibleSelected;
+  }, [someVisibleSelected]);
 
   const resetFilters = () => {
     setSearch("");
@@ -143,10 +201,78 @@ export default function AdminRecordPenggunaanAlatPage() {
     toast.error(result.message);
   };
 
+  const toggleItemSelection = (id: number | string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id],
+    );
+  };
+
+  const toggleSelectAllVisible = (checked: boolean) => {
+    if (!checked) {
+      setSelectedIds((prev) =>
+        prev.filter((id) => !filteredUses.some((item) => item.id === id)),
+      );
+      return;
+    }
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      filteredUses.forEach((item) => next.add(item.id));
+      return Array.from(next);
+    });
+  };
+
+  const handleBulkDelete = async () => {
+    if (!selectedIds.length) return;
+    const result = await deleteRecords(API_USES_BULK_DELETE, selectedIds);
+
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+
+    if (result.failedCount && result.deletedCount) {
+      toast.success(`${result.deletedCount} record penggunaan alat berhasil dihapus.`);
+      toast.error(
+        result.message ?? `${result.failedCount} record penggunaan alat gagal dihapus.`,
+      );
+    } else {
+      toast.success(
+        result.message ??
+          `${result.deletedCount} record penggunaan alat berhasil dihapus.`,
+      );
+    }
+
+    setIsBulkDeleteOpen(false);
+    setSelectedIds([]);
+    setReloadKey((prev) => prev + 1);
+  };
+
   const handleUpdateStatus = async () => {
     if (!statusTarget) return;
+    const currentTarget = statusTarget;
     const result = await updateUseStatus(statusTarget.item.id, statusTarget.type);
     if (result.ok) {
+      const now = new Date().toISOString();
+      if (detailTarget?.id === currentTarget.item.id) {
+        setDetailTarget((current) =>
+          current
+            ? {
+                ...current,
+                status: currentTarget.type === "approve" ? "Approved" : "Rejected",
+                updatedAt: now,
+                approvedById:
+                  currentTarget.type === "approve"
+                    ? String(profile?.id ?? current.approvedById)
+                    : current.approvedById,
+                approvedByName:
+                  currentTarget.type === "approve"
+                    ? profile?.name || current.approvedByName
+                    : current.approvedByName,
+              }
+            : current,
+        );
+      }
       toast.success(
         statusTarget.type === "approve"
           ? "Penggunaan alat berhasil disetujui."
@@ -157,6 +283,47 @@ export default function AdminRecordPenggunaanAlatPage() {
       return;
     }
     toast.error(result.message);
+  };
+
+  const handleExportSelectedPdf = async () => {
+    if (!selectedRows.length) return;
+    try {
+      setIsExportingSelectedPdf(true);
+      exportAdminRecordPdf({
+        title: "Record Penggunaan Alat Terpilih",
+        subtitle: `Total data: ${selectedRows.length}`,
+        filename: "record-penggunaan-alat-terpilih.pdf",
+        columns: USE_EXPORT_COLUMNS,
+        rows: selectedRows,
+      });
+      toast.success("PDF penggunaan alat terpilih berhasil diunduh.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Gagal mengunduh PDF data terpilih.",
+      );
+    } finally {
+      setIsExportingSelectedPdf(false);
+    }
+  };
+
+  const handleExportSelectedExcel = async () => {
+    if (!selectedRows.length) return;
+    try {
+      setIsExportingSelectedExcel(true);
+      exportAdminRecordExcel({
+        title: "Record Penggunaan Alat Terpilih",
+        filename: "record-penggunaan-alat-terpilih.xlsx",
+        columns: USE_EXPORT_COLUMNS,
+        rows: selectedRows,
+      });
+      toast.success("Excel penggunaan alat terpilih berhasil diunduh.");
+    } catch (error) {
+      toast.error(
+        error instanceof Error ? error.message : "Gagal mengunduh Excel data terpilih.",
+      );
+    } finally {
+      setIsExportingSelectedExcel(false);
+    }
   };
 
   return (
@@ -258,15 +425,71 @@ export default function AdminRecordPenggunaanAlatPage() {
           </InventoryFilterCard>
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-xs text-slate-500">
-              Export mengikuti filter dan pencarian yang sedang aktif.
-            </p>
-            <AdminRecordExportActions
-              onExportExcel={exportExcel}
-              onExportPdf={exportPdf}
-              isExportingExcel={isExportingExcel}
-              isExportingPdf={isExportingPdf}
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="disabled:border-slate-200 disabled:text-slate-400"
+                    disabled={selectedCount === 0 || isDeleting}
+                  >
+                    Aksi Terpilih
+                    {selectedCount ? ` (${selectedCount})` : ""}
+                    <ChevronDown className="ml-2 h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  side="bottom"
+                  align="start"
+                  sideOffset={6}
+                  className="min-w-38"
+                >
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger className="cursor-pointer">
+                      <Download className="h-4 w-4" />
+                      Export Terpilih
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent className="min-w-44">
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        disabled={isExportingSelectedExcel}
+                        onSelect={handleExportSelectedExcel}
+                      >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Export Excel
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        disabled={isExportingSelectedPdf}
+                        onSelect={handleExportSelectedPdf}
+                      >
+                        <Download className="h-4 w-4" />
+                        Export PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  <DropdownMenuItem
+                    className="cursor-pointer text-rose-600 focus:text-rose-700"
+                    onSelect={() => setIsBulkDeleteOpen(true)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Hapus Terpilih
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+              <p className="text-xs text-slate-500 sm:text-right">
+                Export mengikuti filter dan pencarian yang sedang aktif.
+              </p>
+              <AdminRecordExportActions
+                onExportExcel={exportExcel}
+                onExportPdf={exportPdf}
+                isExportingExcel={isExportingExcel}
+                isExportingPdf={isExportingPdf}
+              />
+            </div>
           </div>
 
           {error ? (
@@ -279,6 +502,16 @@ export default function AdminRecordPenggunaanAlatPage() {
             <table className="min-w-max w-full table-auto">
               <thead className="border-b border-slate-800 bg-slate-900">
                 <tr className="text-left text-sm">
+                  <th className="w-12 px-3 py-3 text-center font-medium text-slate-50">
+                    <input
+                      ref={selectAllRef}
+                      type="checkbox"
+                      aria-label="Pilih semua record pada halaman ini"
+                      className="h-4 w-4 rounded border-slate-300 align-middle"
+                      checked={allVisibleSelected}
+                      onChange={(event) => toggleSelectAllVisible(event.target.checked)}
+                    />
+                  </th>
                   <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
                     Kode
                   </th>
@@ -305,7 +538,7 @@ export default function AdminRecordPenggunaanAlatPage() {
               <tbody className="text-sm">
                 {isLoading || !hasLoadedOnce ? (
                   <tr>
-                    <td colSpan={7} className="px-3 py-8 text-center">
+                    <td colSpan={8} className="px-3 py-8 text-center">
                       <div className="flex items-center justify-center gap-2 text-muted-foreground">
                         <Loader2 className="h-5 w-5 animate-spin" />
                       </div>
@@ -314,6 +547,15 @@ export default function AdminRecordPenggunaanAlatPage() {
                 ) : filteredUses.length ? (
                   filteredUses.map((item) => (
                     <tr key={String(item.id)} className="border-b last:border-b-0">
+                      <td className="px-3 py-2 text-center">
+                        <input
+                          type="checkbox"
+                          aria-label={`Pilih record ${item.code}`}
+                          className="h-4 w-4 rounded border-slate-300 align-middle"
+                          checked={selectedIds.includes(item.id)}
+                          onChange={() => toggleItemSelection(item.id)}
+                        />
+                      </td>
                       <td className="whitespace-nowrap px-3 py-2 font-medium">
                         {item.code}
                       </td>
@@ -383,11 +625,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                           <Button
                             variant="outline"
                             size="icon-sm"
-                            onClick={() => {
-                              navigate(`/admin/records/equipment-usage/${item.id}`, {
-                                state: { from: location.pathname },
-                              });
-                            }}
+                            onClick={() => setDetailTarget(item)}
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
@@ -406,7 +644,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                 ) : (
                   <tr>
                     <td
-                      colSpan={7}
+                      colSpan={8}
                       className="px-3 py-6 text-center text-muted-foreground"
                     >
                       Tidak ada data penggunaan alat.
@@ -435,6 +673,15 @@ export default function AdminRecordPenggunaanAlatPage() {
             onConfirm={handleDelete}
           />
 
+          <RecordDeleteDialog
+            open={isBulkDeleteOpen}
+            title="Hapus record penggunaan alat terpilih?"
+            description={`${selectedCount} record yang dipilih akan dihapus permanen.`}
+            isDeleting={isDeleting}
+            onOpenChange={setIsBulkDeleteOpen}
+            onConfirm={handleBulkDelete}
+          />
+
           <StatusConfirmDialog
             open={Boolean(statusTarget)}
             actionType={statusTarget?.type ?? null}
@@ -447,6 +694,85 @@ export default function AdminRecordPenggunaanAlatPage() {
             }
             subjectLabel="pengajuan penggunaan alat ini"
           />
+
+          <Dialog
+            open={Boolean(detailTarget)}
+            onOpenChange={(open) => {
+              if (!open) setDetailTarget(null);
+            }}
+          >
+            <DialogContent
+              showCloseButton={false}
+              className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden border-0 bg-transparent p-0 shadow-none sm:w-[50vw] sm:max-w-[960px] sm:min-w-[720px] sm:max-w-none"
+            >
+              <DialogHeader className="sr-only">
+                <DialogTitle>Detail Penggunaan Alat</DialogTitle>
+                <DialogDescription>
+                  Detail record penggunaan alat ditampilkan dalam modal.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
+                <AdminEquipmentUsageRecordDetailContent
+                  item={detailTarget}
+                  isLoading={false}
+                  error=""
+                  showAside={false}
+                  backLabel="Tutup"
+                  onBack={() => setDetailTarget(null)}
+                  actions={
+                    detailTarget?.status === "Pending" ? (
+                      <>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="border border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
+                          onClick={() =>
+                            detailTarget &&
+                            setStatusTarget({
+                              item: detailTarget,
+                              type: "approve",
+                            })
+                          }
+                          disabled={detailTarget ? pendingAction.useId === detailTarget.id : false}
+                        >
+                          {detailTarget &&
+                          pendingAction.useId === detailTarget.id &&
+                          pendingAction.type === "approve" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                          Setujui
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="border border-rose-600 bg-rose-600 text-white hover:bg-rose-700"
+                          onClick={() =>
+                            detailTarget &&
+                            setStatusTarget({
+                              item: detailTarget,
+                              type: "reject",
+                            })
+                          }
+                          disabled={detailTarget ? pendingAction.useId === detailTarget.id : false}
+                        >
+                          {detailTarget &&
+                          pendingAction.useId === detailTarget.id &&
+                          pendingAction.type === "reject" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <OctagonX className="h-4 w-4" />
+                          )}
+                          Tolak
+                        </Button>
+                      </>
+                    ) : null
+                  }
+                />
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </section>

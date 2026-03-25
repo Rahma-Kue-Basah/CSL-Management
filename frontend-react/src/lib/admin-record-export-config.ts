@@ -69,7 +69,8 @@ export const BORROW_EXPORT_COLUMNS: ExportColumn<BorrowRow>[] = [
   { header: "Waktu Selesai", cell: (item) => formatDateTime(item.endTime) },
   { header: "Waktu Kembali Aktual", cell: (item) => formatDateTime(item.endTimeActual) },
   { header: "Disetujui Oleh", cell: (item) => item.approvedByName || "-" },
-  { header: "Catatan", cell: (item) => item.note || "-" },
+  { header: "Catatan Peminjam", cell: (item) => item.note || "-" },
+  { header: "Catatan Inspeksi", cell: (item) => item.inspectionNote || "-" },
   { header: "Dibuat", cell: (item) => formatDateTime(item.createdAt) },
 ];
 

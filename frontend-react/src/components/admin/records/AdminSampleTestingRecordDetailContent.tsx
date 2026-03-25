@@ -1,10 +1,12 @@
+"use client";
+
 import {
   ClipboardList,
   FlaskConical,
   Microscope,
   UserRound,
 } from "lucide-react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import {
   AdminRecordAsideCard,
@@ -14,22 +16,31 @@ import {
   AdminRecordDetailSection,
   AdminRecordDetailShell,
 } from "@/components/admin/records/AdminRecordDetailLayout";
-import { usePengujianDetail } from "@/hooks/pengujians/use-pengujians";
+import type { PengujianRow } from "@/hooks/pengujians/use-pengujians";
 import { formatDateTimeWib } from "@/lib/date-time";
 
-export default function AdminSampleTestingRecordDetailPage() {
-  const { id } = useParams();
+type Props = {
+  item: PengujianRow | null;
+  isLoading: boolean;
+  error: string;
+  onBack: () => void;
+  backLabel?: string;
+  showAside?: boolean;
+};
+
+export default function AdminSampleTestingRecordDetailContent({
+  item,
+  isLoading,
+  error,
+  onBack,
+  backLabel = "Kembali",
+  showAside = true,
+}: Props) {
   const navigate = useNavigate();
   const location = useLocation();
-  const backTo =
-    typeof location.state?.from === "string"
-      ? location.state.from
-      : "/admin/records/sample-testing";
-
-  const { pengujian: item, isLoading, error } = usePengujianDetail(id);
 
   return (
-    <section className="w-full min-w-0 space-y-4 px-4 pb-6">
+    <>
       {error ? (
         <div className="w-full rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
@@ -50,8 +61,11 @@ export default function AdminSampleTestingRecordDetailPage() {
           code={item.code}
           icon={<ClipboardList className="h-5 w-5" />}
           status={item.status}
-          onBack={() => navigate(backTo)}
+          onBack={onBack}
+          backLabel={backLabel}
           aside={
+            showAside
+              ? (
             <>
               <AdminRecordAsideCard title="Ringkasan Status">
                 <AdminRecordAsideItem label="Status" value={item.status} />
@@ -71,12 +85,11 @@ export default function AdminSampleTestingRecordDetailPage() {
               <AdminRecordAsideCard title="Audit Singkat">
                 <AdminRecordAsideItem label="Kode" value={item.code} />
                 <AdminRecordAsideItem label="Pemohon" value={item.name} />
-                <AdminRecordAsideItem
-                  label="Institusi"
-                  value={item.institution}
-                />
+                <AdminRecordAsideItem label="Institusi" value={item.institution} />
               </AdminRecordAsideCard>
             </>
+                )
+              : undefined
           }
         >
           <AdminRecordDetailSection
@@ -91,24 +104,17 @@ export default function AdminSampleTestingRecordDetailPage() {
               <AdminRecordDetailItem
                 label="Pemohon Internal"
                 value={item.requesterName}
-                hrefLabel={item.requesterId ? "Lihat user" : undefined}
+                hrefIcon={Boolean(item.requesterId)}
                 onClick={
                   item.requesterId
                     ? () =>
-                        navigate(
-                          `/admin/user-management/detail/${item.requesterId}`,
-                          {
-                            state: { from: location.pathname },
-                          },
-                        )
+                        navigate(`/admin/user-management/detail/${item.requesterId}`, {
+                          state: { from: location.pathname },
+                        })
                     : undefined
                 }
               />
-              <AdminRecordDetailItem
-                label="Status"
-                value={item.status}
-                status
-              />
+              <AdminRecordDetailItem label="Status" value={item.status} status />
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
 
@@ -125,10 +131,7 @@ export default function AdminSampleTestingRecordDetailPage() {
                 value={item.samplePackaging}
               />
               <AdminRecordDetailItem label="Berat Sampel" value={item.sampleWeight} />
-              <AdminRecordDetailItem
-                label="Jumlah Sampel"
-                value={item.sampleQuantity}
-              />
+              <AdminRecordDetailItem label="Jumlah Sampel" value={item.sampleQuantity} />
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
 
@@ -152,16 +155,13 @@ export default function AdminSampleTestingRecordDetailPage() {
               <AdminRecordDetailItem
                 label="Disetujui Oleh"
                 value={item.approvedByName}
-                hrefLabel={item.approvedById ? "Lihat user" : undefined}
+                hrefIcon={Boolean(item.approvedById)}
                 onClick={
                   item.approvedById
                     ? () =>
-                        navigate(
-                          `/admin/user-management/detail/${item.approvedById}`,
-                          {
-                            state: { from: location.pathname },
-                          },
-                        )
+                        navigate(`/admin/user-management/detail/${item.approvedById}`, {
+                          state: { from: location.pathname },
+                        })
                     : undefined
                 }
               />
@@ -169,6 +169,6 @@ export default function AdminSampleTestingRecordDetailPage() {
           </AdminRecordDetailSection>
         </AdminRecordDetailShell>
       )}
-    </section>
+    </>
   );
 }

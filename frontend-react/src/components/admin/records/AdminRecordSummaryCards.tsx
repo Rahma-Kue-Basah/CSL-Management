@@ -33,15 +33,15 @@ function SummaryCard({ label, value, icon, tone = "blue" }: SummaryCardItem) {
         getToneClass(tone),
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex min-h-18 items-stretch justify-between gap-3">
+        <div className="flex min-w-0 flex-1 flex-col">
           <p className="text-xs font-semibold uppercase tracking-wide opacity-80">
             {label}
           </p>
-          <p className="mt-3 text-2xl font-bold leading-none">{value}</p>
+          <p className="mt-auto text-left text-2xl font-bold leading-none">{value}</p>
         </div>
         {icon ? (
-          <div className="rounded-xl border border-current/15 bg-white/70 p-2">
+          <div className="self-start rounded-xl border border-current/15 bg-white/70 p-2">
             {icon}
           </div>
         ) : null}

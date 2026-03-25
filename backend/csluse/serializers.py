@@ -525,6 +525,22 @@ class BorrowListSerializer(serializers.ModelSerializer):
         ]
 
 
+class RecordBulkDeleteSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        allow_empty=False,
+        error_messages={
+            "empty": "Pilih minimal satu record untuk dihapus.",
+        },
+    )
+
+    def validate_ids(self, value):
+        unique_ids = list(dict.fromkeys(value))
+        if len(unique_ids) != len(value):
+            raise serializers.ValidationError("Terdapat ID record yang duplikat.")
+        return unique_ids
+
+
 class FacilitySerializer(serializers.ModelSerializer):
     image_detail = ImageSerializer(source="image", read_only=True)
 
