@@ -11,7 +11,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, MethodNotAllowed, ValidationError
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 from .models import (
@@ -68,6 +68,8 @@ STATUS_VALUE_MAP = {
     "approved": "Approved",
     "rejected": "Rejected",
     "expired": "Expired",
+    "returned_pending_inspection": "Returned Pending Inspection",
+    "returned pending inspection": "Returned Pending Inspection",
     "completed": "Completed",
     "borrowed": "Borrowed",
     "returned": "Returned",
@@ -145,7 +147,11 @@ def build_borrow_status_aggregates(queryset):
         "pending": queryset.filter(status="Pending").count(),
         "approved": queryset.filter(status="Approved").count(),
         "rejected": queryset.filter(status="Rejected").count(),
+        "expired": queryset.filter(status="Expired").count(),
         "borrowed": queryset.filter(status="Borrowed").count(),
+        "returned_pending_inspection": queryset.filter(
+            status="Returned Pending Inspection"
+        ).count(),
         "returned": queryset.filter(status="Returned").count(),
         "overdue": queryset.filter(status="Overdue").count(),
         "lost_damaged": queryset.filter(status="Lost/Damaged").count(),
@@ -177,6 +183,20 @@ def sync_use_statuses():
         Use.objects
         .filter(status="Pending", end_time__isnull=True, start_time__lt=now)
         .update(status="Expired", updated_at=now)
+    )
+
+
+def sync_borrow_statuses():
+    now = timezone.now()
+    (
+        Borrow.objects
+        .filter(status="Pending", start_time__lt=now)
+        .update(status="Expired", updated_at=now)
+    )
+    (
+        Borrow.objects
+        .filter(status="Borrowed", end_time__lt=now)
+        .update(status="Overdue", updated_at=now)
     )
 
 
@@ -745,6 +765,60 @@ class BorrowViewSet(viewsets.ModelViewSet):
             return BorrowListSerializer
         return BorrowSerializer
 
+    def _current_profile(self):
+        return getattr(self.request.user, "profile", None)
+
+    def _can_manage_all_borrows(self):
+        return is_staff_or_above(self.request.user)
+
+    def _is_room_pic_for_borrow(self, borrow):
+        profile = self._current_profile()
+        if not profile or not borrow.equipment_id:
+            return False
+        return borrow.equipment.room.pics.filter(id=profile.id).exists()
+
+    def _can_review_borrow(self, borrow):
+        return self._can_manage_all_borrows() or self._is_room_pic_for_borrow(borrow)
+
+    def _ensure_borrow_access(self, borrow):
+        profile = self._current_profile()
+        if profile and borrow.requested_by_id == profile.id:
+            return
+        if self._can_review_borrow(borrow):
+            return
+        raise PermissionDenied("Anda tidak memiliki akses ke pengajuan peminjaman alat ini.")
+
+    def _ensure_review_permission(self, borrow):
+        if self._can_review_borrow(borrow):
+            return
+        raise PermissionDenied(
+            "Hanya PIC ruangan terkait atau laboran/admin yang dapat memproses borrow ini."
+        )
+
+    def _ensure_transition(self, borrow, allowed_sources, target_status):
+        if borrow.status not in allowed_sources:
+            allowed = ", ".join(allowed_sources)
+            raise ValidationError(
+                {
+                    "status": (
+                        f"Transisi ke {target_status} hanya boleh dari status: {allowed}."
+                    )
+                }
+            )
+
+    def _transition_serializer(self, instance, data, *, allow_end_time_actual=False):
+        return self.get_serializer(
+            instance,
+            data=data,
+            partial=True,
+            context={
+                **self.get_serializer_context(),
+                "allow_status_transition": True,
+                "allowed_next_status": data.get("status"),
+                "allow_end_time_actual": allow_end_time_actual,
+            },
+        )
+
     def _append_aggregates(self, response, aggregates):
         response.data["aggregates"] = aggregates
         return response
@@ -763,9 +837,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
         ]
     )
     def list(self, request, *args, **kwargs):
-        aggregate_qs = super().get_queryset()
-        aggregates = build_borrow_status_aggregates(aggregate_qs)
         queryset = self.filter_queryset(self.get_queryset())
+        aggregates = build_borrow_status_aggregates(queryset)
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page if page is not None else queryset, many=True)
         if page is not None:
@@ -773,7 +846,16 @@ class BorrowViewSet(viewsets.ModelViewSet):
         return Response({"results": serializer.data, "aggregates": aggregates})
 
     def get_queryset(self):
+        sync_borrow_statuses()
         qs = super().get_queryset()
+        profile = self._current_profile()
+        if not self._can_manage_all_borrows():
+            if profile is None:
+                return qs.none()
+            qs = qs.filter(
+                Q(requested_by_id=profile.id) | Q(equipment__room__pics__id=profile.id)
+            ).distinct()
+
         status_param = self.request.query_params.get('status')
         equipment_id = self.request.query_params.get('equipment')
         requester_id = self.request.query_params.get('requested_by')
@@ -788,7 +870,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
             qs = qs.filter(status=normalize_status_value(status_param))
         if equipment_id:
             qs = qs.filter(equipment_id=equipment_id)
-        if requester_id:
+        if requester_id and self._can_manage_all_borrows():
             qs = qs.filter(requested_by_id=requester_id)
         if pic_id:
             qs = qs.filter(equipment__room__pics__id=pic_id).distinct()
@@ -817,7 +899,21 @@ class BorrowViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self._ensure_borrow_access(instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    def update(self, request, *args, **kwargs):
+        raise MethodNotAllowed("PUT", detail="Gunakan action borrow yang spesifik untuk memproses lifecycle.")
+
+    def partial_update(self, request, *args, **kwargs):
+        raise MethodNotAllowed("PATCH", detail="Gunakan action borrow yang spesifik untuk memproses lifecycle.")
+
     def perform_destroy(self, instance):
+        if not self._can_manage_all_borrows():
+            raise PermissionDenied("Hanya laboran/admin yang dapat menghapus record borrow.")
         log_admin_action(
             self.request.user,
             instance,
@@ -870,28 +966,16 @@ class BorrowViewSet(viewsets.ModelViewSet):
             "generated_at": timezone.now(),
             "results": serializer.data,
         })
-    
-    @action(detail=True, methods=['post'], url_path='return')
-    def return_item(self, request, pk=None):
-        instance = self.get_object()
-        end_time_actual = request.data.get('end_time_actual') or timezone.now()
-
-        serializer = self.get_serializer(
-            instance,
-            data={'status': 'Returned', 'end_time_actual': end_time_actual, **request.data},
-            partial=True,
-        )
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Pending"], "Approved")
+
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
@@ -900,14 +984,133 @@ class BorrowViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Pending"], "Rejected")
+
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def handover(self, request, pk=None):
+        instance = self.get_object()
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Approved"], "Borrowed")
+
+        serializer = self._transition_serializer(
+            instance,
+            data={'status': 'Borrowed', **request.data},
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='receive-return')
+    def receive_return(self, request, pk=None):
+        instance = self.get_object()
+        self._ensure_review_permission(instance)
+        self._ensure_transition(
+            instance,
+            ["Borrowed", "Overdue"],
+            "Returned Pending Inspection",
+        )
+        end_time_actual = request.data.get('end_time_actual') or timezone.now()
+
+        serializer = self._transition_serializer(
+            instance,
+            data={
+                'status': 'Returned Pending Inspection',
+                'end_time_actual': end_time_actual,
+                **request.data,
+            },
+            allow_end_time_actual=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='finalize-return')
+    def finalize_return(self, request, pk=None):
+        instance = self.get_object()
+        self._ensure_review_permission(instance)
+        self._ensure_transition(
+            instance,
+            ["Returned Pending Inspection"],
+            "Returned",
+        )
+
+        payload = {'status': 'Returned', **request.data}
+        if not instance.end_time_actual:
+            payload['end_time_actual'] = timezone.now()
+
+        serializer = self._transition_serializer(
+            instance,
+            data=payload,
+            allow_end_time_actual='end_time_actual' in payload,
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='mark-damaged')
+    def mark_damaged(self, request, pk=None):
+        instance = self.get_object()
+        self._ensure_review_permission(instance)
+        self._ensure_transition(
+            instance,
+            ["Returned Pending Inspection"],
+            "Lost/Damaged",
+        )
+        inspection_note = str(
+            request.data.get("inspection_note") or request.data.get("note") or ""
+        ).strip()
+        if not inspection_note:
+            raise ValidationError({"inspection_note": "Catatan kerusakan wajib diisi."})
+
+        serializer = self._transition_serializer(
+            instance,
+            data={
+                'status': 'Lost/Damaged',
+                'inspection_note': inspection_note,
+            },
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='mark-lost')
+    def mark_lost(self, request, pk=None):
+        instance = self.get_object()
+        self._ensure_review_permission(instance)
+        self._ensure_transition(
+            instance,
+            ["Returned Pending Inspection"],
+            "Lost/Damaged",
+        )
+        inspection_note = str(
+            request.data.get("inspection_note") or request.data.get("note") or ""
+        ).strip()
+        if not inspection_note:
+            raise ValidationError({"inspection_note": "Catatan kehilangan wajib diisi."})
+
+        serializer = self._transition_serializer(
+            instance,
+            data={
+                'status': 'Lost/Damaged',
+                'inspection_note': inspection_note,
+            },
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], url_path='return')
+    def return_item(self, request, pk=None):
+        return self.receive_return(request, pk=pk)
 
 
 class FacilityViewSet(viewsets.ModelViewSet):

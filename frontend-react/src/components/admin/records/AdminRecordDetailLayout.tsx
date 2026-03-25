@@ -23,6 +23,7 @@ export function AdminRecordDetailShell({
   actions,
   children,
   aside,
+  compact = false,
 }: {
   title: string;
   code: string;
@@ -33,26 +34,27 @@ export function AdminRecordDetailShell({
   actions?: ReactNode;
   children: ReactNode;
   aside?: ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <div className="w-full space-y-5">
+    <div className={`w-full ${compact ? "space-y-3" : "space-y-5"}`}>
       <section className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <div className="border-b border-slate-200 px-5 py-5 sm:px-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700">
+        <div className={`border-b border-slate-200 sm:px-6 ${compact ? "px-4 py-3.5" : "px-5 py-5"}`}>
+          <div className={`flex flex-col lg:flex-row lg:items-start lg:justify-between ${compact ? "gap-2.5" : "gap-4"}`}>
+            <div className={`flex items-start ${compact ? "gap-2.5" : "gap-4"}`}>
+              <div className={`flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 ${compact ? "h-9 w-9" : "h-10 w-10"}`}>
                 {icon}
               </div>
-              <div className="min-w-0 space-y-2">
+              <div className={`min-w-0 ${compact ? "space-y-1" : "space-y-2"}`}>
                 <div className="space-y-1">
-                  <h1 className="text-xl font-semibold tracking-tight text-slate-900">
+                  <h1 className={`${compact ? "text-lg" : "text-xl"} font-semibold tracking-tight text-slate-900`}>
                     {title}
                   </h1>
-                  <p className="text-sm text-slate-500">{code}</p>
+                  <p className={`${compact ? "text-xs" : "text-sm"} text-slate-500`}>{code}</p>
                 </div>
                 {status ? (
                   <span
-                    className={`inline-flex w-fit rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClass(status)}`}
+                    className={`inline-flex w-fit rounded-full ${compact ? "px-2.5 py-0.5" : "px-3 py-1"} text-xs font-semibold ${getStatusBadgeClass(status)}`}
                   >
                     {getStatusDisplayLabel(status)}
                   </span>
@@ -70,9 +72,13 @@ export function AdminRecordDetailShell({
           </div>
         </div>
 
-        <div className="grid gap-4 px-5 py-5 sm:px-6 xl:grid-cols-[minmax(0,1fr)_300px]">
-          <div className="space-y-5">{children}</div>
-          <div className="space-y-5">{aside}</div>
+        <div
+          className={`grid sm:px-6 ${aside ? "xl:grid-cols-[minmax(0,1fr)_280px]" : ""} ${compact ? "gap-2.5 px-4 py-3.5" : "gap-4 px-5 py-5"}`}
+        >
+          <div className={compact ? "space-y-2.5" : "space-y-5"}>{children}</div>
+          {aside ? (
+            <div className={compact ? "space-y-2.5" : "space-y-5"}>{aside}</div>
+          ) : null}
         </div>
       </section>
     </div>
@@ -84,16 +90,18 @@ export function AdminRecordDetailSection({
   description,
   icon,
   children,
+  compact = false,
 }: {
   title: string;
   description?: string;
   icon: ReactNode;
   children: ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-5">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700">
+    <section className={`rounded-xl border border-slate-200 bg-white ${compact ? "p-3.5" : "p-5"}`}>
+      <div className={`flex items-center ${compact ? "mb-2.5 gap-2" : "mb-4 gap-3"}`}>
+        <div className={`flex shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-700 ${compact ? "h-8 w-8" : "h-9 w-9"}`}>
           {icon}
         </div>
         <div className="min-w-0 flex-1">
@@ -112,10 +120,12 @@ export function AdminRecordDetailSection({
 
 export function AdminRecordDetailGrid({
   children,
+  compact = false,
 }: {
   children: ReactNode;
+  compact?: boolean;
 }) {
-  return <div className="grid gap-3 md:grid-cols-2">{children}</div>;
+  return <div className={`grid md:grid-cols-2 ${compact ? "gap-2" : "gap-3"}`}>{children}</div>;
 }
 
 export function AdminRecordDetailItem({
@@ -124,17 +134,27 @@ export function AdminRecordDetailItem({
   hrefLabel,
   onClick,
   status,
+  compact = false,
+  borderless = false,
 }: {
   label: string;
   value: string;
   hrefLabel?: string;
   onClick?: () => void;
   status?: boolean;
+  compact?: boolean;
+  borderless?: boolean;
 }) {
   const displayValue = value?.trim() ? value : "-";
 
   return (
-    <div className="space-y-1 rounded-md border border-slate-200 bg-slate-50 px-4 py-3">
+    <div
+      className={
+        borderless
+          ? `${compact ? "space-y-0.5 px-0 py-1.5" : "space-y-1 px-0 py-2"}`
+          : `rounded-md border border-slate-200 bg-slate-50 ${compact ? "space-y-0.5 px-3 py-2" : "space-y-1 px-4 py-3"}`
+      }
+    >
       <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
         {label}
       </p>
@@ -167,14 +187,16 @@ export function AdminRecordDetailItem({
 export function AdminRecordAsideCard({
   title,
   children,
+  compact = false,
 }: {
   title: string;
   children: ReactNode;
+  compact?: boolean;
 }) {
   return (
-    <section className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+    <section className={`rounded-xl border border-slate-200 bg-slate-50 ${compact ? "p-3.5" : "p-5"}`}>
       <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
-      <div className="mt-4 space-y-3">{children}</div>
+      <div className={compact ? "mt-2.5 space-y-2" : "mt-4 space-y-3"}>{children}</div>
     </section>
   );
 }

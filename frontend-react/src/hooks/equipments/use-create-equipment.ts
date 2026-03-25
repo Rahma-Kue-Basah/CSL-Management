@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { API_EQUIPMENTS, API_IMAGES } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 type CreateEquipmentPayload = {
   name: string;
@@ -16,21 +17,14 @@ type CreateEquipmentPayload = {
 };
 
 function parseEquipmentError(data: unknown, fallback = "Gagal membuat peralatan.") {
-  if (!data || typeof data !== "object") return fallback;
-  const typed = data as Record<string, unknown>;
-
-  if (typeof typed.detail === "string") return typed.detail;
-  if (Array.isArray(typed.non_field_errors) && typeof typed.non_field_errors[0] === "string") {
-    return typed.non_field_errors[0];
-  }
-  if (Array.isArray(typed.name) && typeof typed.name[0] === "string") return typed.name[0];
-  if (Array.isArray(typed.quantity) && typeof typed.quantity[0] === "string") return typed.quantity[0];
-  if (Array.isArray(typed.category) && typeof typed.category[0] === "string") return typed.category[0];
-  if (Array.isArray(typed.room) && typeof typed.room[0] === "string") return typed.room[0];
-  if (Array.isArray(typed.is_moveable) && typeof typed.is_moveable[0] === "string") return typed.is_moveable[0];
-  if (Array.isArray(typed.image) && typeof typed.image[0] === "string") return typed.image[0];
-
-  return fallback;
+  return extractApiErrorMessage(data, fallback, [
+    "name",
+    "quantity",
+    "category",
+    "room",
+    "is_moveable",
+    "image",
+  ]);
 }
 
 async function uploadImage(file: File) {

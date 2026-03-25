@@ -4,17 +4,10 @@ import { useState } from "react";
 
 import { API_ROOM_DETAIL } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 function parseDeleteRoomError(data: unknown, fallback = "Gagal menghapus ruangan.") {
-  if (!data || typeof data !== "object") return fallback;
-  const typed = data as Record<string, unknown>;
-
-  if (typeof typed.detail === "string") return typed.detail;
-  if (Array.isArray(typed.non_field_errors) && typeof typed.non_field_errors[0] === "string") {
-    return typed.non_field_errors[0];
-  }
-
-  return fallback;
+  return extractApiErrorMessage(data, fallback);
 }
 
 export function useDeleteRoom() {

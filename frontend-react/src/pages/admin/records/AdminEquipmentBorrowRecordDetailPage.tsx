@@ -7,8 +7,6 @@ import {
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import {
-  AdminRecordAsideCard,
-  AdminRecordAsideItem,
   AdminRecordDetailGrid,
   AdminRecordDetailItem,
   AdminRecordDetailSection,
@@ -29,7 +27,7 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
   const { borrow: item, isLoading, error } = useBorrowDetail(id);
 
   return (
-    <section className="w-full min-w-0 space-y-4 px-4 pb-6">
+    <section className="mx-auto w-full max-w-3xl min-w-0 space-y-4 px-4 pb-6">
       {error ? (
         <div className="w-full rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
@@ -50,43 +48,20 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
           code={item.code}
           icon={<ClipboardList className="h-5 w-5" />}
           status={item.status}
+          compact
           onBack={() => navigate(backTo)}
-          aside={
-            <>
-              <AdminRecordAsideCard title="Ringkasan Status">
-                <AdminRecordAsideItem label="Status" value={item.status} />
-                <AdminRecordAsideItem
-                  label="Diajukan"
-                  value={formatDateTimeWib(item.createdAt)}
-                />
-                <AdminRecordAsideItem
-                  label="Diupdate"
-                  value={formatDateTimeWib(item.updatedAt)}
-                />
-                <AdminRecordAsideItem
-                  label="Disetujui Oleh"
-                  value={item.approvedByName || "-"}
-                />
-              </AdminRecordAsideCard>
-              <AdminRecordAsideCard title="Audit Singkat">
-                <AdminRecordAsideItem label="Kode" value={item.code} />
-                <AdminRecordAsideItem label="Alat" value={item.equipmentName} />
-                <AdminRecordAsideItem
-                  label="Peminjam"
-                  value={item.requesterName}
-                />
-              </AdminRecordAsideCard>
-            </>
-          }
         >
           <AdminRecordDetailSection
             title="Informasi Utama"
             icon={<Wrench className="h-5 w-5" />}
+            compact
           >
-            <AdminRecordDetailGrid>
+            <AdminRecordDetailGrid compact>
               <AdminRecordDetailItem
                 label="Alat"
                 value={item.equipmentName}
+                compact
+                borderless
                 hrefLabel={item.equipmentId ? "Lihat detail" : undefined}
                 onClick={
                   item.equipmentId
@@ -97,10 +72,12 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
                     : undefined
                 }
               />
-              <AdminRecordDetailItem label="Jumlah" value={item.quantity} />
+              <AdminRecordDetailItem label="Jumlah" value={item.quantity} compact borderless />
               <AdminRecordDetailItem
                 label="Peminjam"
                 value={item.requesterName}
+                compact
+                borderless
                 hrefLabel={item.requesterId ? "Lihat user" : undefined}
                 onClick={
                   item.requesterId
@@ -118,6 +95,8 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
                 label="Status"
                 value={item.status}
                 status
+                compact
+                borderless
               />
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
@@ -125,23 +104,32 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
           <AdminRecordDetailSection
             title="Waktu Peminjaman"
             icon={<CalendarClock className="h-5 w-5" />}
+            compact
           >
-            <AdminRecordDetailGrid>
+            <AdminRecordDetailGrid compact>
               <AdminRecordDetailItem
                 label="Waktu Mulai"
                 value={formatDateTimeWib(item.startTime)}
+                compact
+                borderless
               />
               <AdminRecordDetailItem
                 label="Waktu Selesai"
                 value={formatDateTimeWib(item.endTime)}
+                compact
+                borderless
               />
               <AdminRecordDetailItem
                 label="Pengembalian Aktual"
                 value={formatDateTimeWib(item.endTimeActual)}
+                compact
+                borderless
               />
               <AdminRecordDetailItem
                 label="Disetujui Oleh"
                 value={item.approvedByName}
+                compact
+                borderless
                 hrefLabel={item.approvedById ? "Lihat user" : undefined}
                 onClick={
                   item.approvedById
@@ -161,12 +149,21 @@ export default function AdminEquipmentBorrowRecordDetailPage() {
           <AdminRecordDetailSection
             title="Keterangan"
             icon={<NotebookPen className="h-5 w-5" />}
+            compact
           >
-            <div className="space-y-3">
-              <AdminRecordDetailItem label="Tujuan" value={item.purpose} />
+            <div className="space-y-2.5">
+              <AdminRecordDetailItem label="Tujuan" value={item.purpose} compact borderless />
               <AdminRecordDetailItem
                 label="Catatan Pemohon"
                 value={item.note || "-"}
+                compact
+                borderless
+              />
+              <AdminRecordDetailItem
+                label="Catatan Inspeksi"
+                value={item.inspectionNote || "-"}
+                compact
+                borderless
               />
             </div>
           </AdminRecordDetailSection>

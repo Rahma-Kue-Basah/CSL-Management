@@ -170,6 +170,7 @@ export default function UseEquipmentListContent({
     (normalizedRole === ROLE_VALUES.ADMIN ||
       normalizedRole === ROLE_VALUES.LECTURER ||
       normalizedRole === ROLE_VALUES.STAFF);
+  const showRequesterColumn = scope === "all";
 
   const totalPages = Math.max(
     1,
@@ -254,7 +255,9 @@ export default function UseEquipmentListContent({
             <tr className="text-left text-sm">
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Alat</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Pemohon</th>
+              {showRequesterColumn ? (
+                <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Pemohon</th>
+              ) : null}
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Mulai</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Selesai</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Tujuan</th>
@@ -267,7 +270,7 @@ export default function UseEquipmentListContent({
           <tbody className="text-sm">
             {isLoading || !hasLoadedOnce ? (
               <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
+                <td colSpan={showRequesterColumn ? 8 : 7} className="px-3 py-10 text-center text-slate-500">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Memuat data...
@@ -281,7 +284,9 @@ export default function UseEquipmentListContent({
                     {item.code}
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap">{item.equipmentName}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{item.requesterName}</td>
+                  {showRequesterColumn ? (
+                    <td className="px-3 py-2.5 whitespace-nowrap">{item.requesterName}</td>
+                  ) : null}
                   <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
                     {formatDateTimeWib(item.startTime)}
                   </td>
@@ -351,7 +356,7 @@ export default function UseEquipmentListContent({
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
+                <td colSpan={showRequesterColumn ? 8 : 7} className="px-3 py-10 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>

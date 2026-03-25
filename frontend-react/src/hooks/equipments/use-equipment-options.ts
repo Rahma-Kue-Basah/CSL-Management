@@ -17,7 +17,12 @@ type ApiEquipmentOption = {
   quantity?: number | null;
 };
 
-export function useEquipmentOptions(status = "", room = "", enabled = true) {
+export function useEquipmentOptions(
+  status = "",
+  room = "",
+  enabled = true,
+  isMoveable?: boolean,
+) {
   const [equipments, setEquipments] = useState<EquipmentOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -40,6 +45,9 @@ export function useEquipmentOptions(status = "", room = "", enabled = true) {
         const url = new URL(API_EQUIPMENTS_DROPDOWN, window.location.origin);
         if (status) url.searchParams.set("status", status);
         if (room) url.searchParams.set("room", room);
+        if (typeof isMoveable === "boolean") {
+          url.searchParams.set("is_moveable", String(isMoveable));
+        }
 
         const response = await authFetch(url.toString(), {
           method: "GET",
@@ -71,7 +79,7 @@ export function useEquipmentOptions(status = "", room = "", enabled = true) {
       isAborted = true;
       controller.abort();
     };
-  }, [status, room, enabled]);
+  }, [status, room, enabled, isMoveable]);
 
   return { equipments, isLoading, error };
 }

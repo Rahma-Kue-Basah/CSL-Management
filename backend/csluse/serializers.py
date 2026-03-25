@@ -433,10 +433,70 @@ class BorrowSerializer(serializers.ModelSerializer):
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
     equipment_detail = EquipmentSerializer(source="equipment", read_only=True)
 
+    def validate(self, attrs):
+        instance = getattr(self, "instance", None)
+        start_time = attrs.get("start_time", getattr(instance, "start_time", None))
+        end_time = attrs.get("end_time", getattr(instance, "end_time", None))
+
+        if end_time is None:
+            raise serializers.ValidationError({"end_time": "Waktu selesai peminjaman wajib diisi."})
+
+        if start_time and end_time and end_time <= start_time:
+            raise serializers.ValidationError(
+                {"end_time": "Waktu selesai peminjaman harus setelah waktu mulai."}
+            )
+
+        if instance is None:
+            if attrs.get("status") not in (None, "Pending"):
+                raise serializers.ValidationError(
+                    {"status": "Status borrow hanya boleh di-set melalui action endpoint khusus."}
+                )
+            if attrs.get("approved_by") is not None:
+                raise serializers.ValidationError(
+                    {"approved_by": "approved_by tidak boleh diisi saat create."}
+                )
+            if attrs.get("end_time_actual") is not None:
+                raise serializers.ValidationError(
+                    {"end_time_actual": "end_time_actual hanya boleh diisi melalui action endpoint khusus."}
+                )
+            if attrs.get("inspection_note") is not None:
+                raise serializers.ValidationError(
+                    {"inspection_note": "inspection_note hanya boleh diisi melalui action endpoint inspeksi."}
+                )
+            return attrs
+
+        if "status" in attrs:
+            if not self.context.get("allow_status_transition"):
+                raise serializers.ValidationError(
+                    {"status": "Gunakan action status borrow yang spesifik untuk mengubah status."}
+                )
+            allowed_next_status = self.context.get("allowed_next_status")
+            if allowed_next_status and attrs["status"] != allowed_next_status:
+                raise serializers.ValidationError(
+                    {"status": f"Transisi status hanya boleh menuju {allowed_next_status}."}
+                )
+
+        if "end_time_actual" in attrs and not self.context.get("allow_end_time_actual"):
+            raise serializers.ValidationError(
+                {"end_time_actual": "Gunakan action penerimaan pengembalian untuk mengisi end_time_actual."}
+            )
+
+        if "approved_by" in attrs:
+            raise serializers.ValidationError(
+                {"approved_by": "approved_by tidak boleh diubah langsung."}
+            )
+
+        if "inspection_note" in attrs:
+            raise serializers.ValidationError(
+                {"inspection_note": "Gunakan action inspeksi borrow untuk mengisi inspection_note."}
+            )
+
+        return attrs
+
     class Meta:
         model = Borrow
         fields = '__all__'
-        read_only_fields = ['requested_by', 'code']
+        read_only_fields = ['requested_by', 'code', 'approved_by']
 
 
 class BorrowListSerializer(serializers.ModelSerializer):
@@ -455,6 +515,7 @@ class BorrowListSerializer(serializers.ModelSerializer):
             "end_time_actual",
             "purpose",
             "note",
+            "inspection_note",
             "status",
             "requested_by_detail",
             "approved_by_detail",

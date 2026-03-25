@@ -67,6 +67,7 @@ export const TOP_NAV_ITEMS: TopNavItem[] = [
     label: "Peminjaman Alat",
     children: [
       { label: "Pengajuan Saya", href: "/borrow-equipment" },
+      { label: "Daftar Pengajuan", href: "/borrow-equipment/all" },
       { label: "Ajukan Peminjaman", href: "/borrow-equipment/form" },
       // { label: "Daftar Alat", href: "/borrow-equipment/equipment" },
     ],

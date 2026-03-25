@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { API_AUTH_REGISTER } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 type CreateUserPayload = {
   full_name: string;
@@ -19,17 +20,12 @@ type CreateUserPayload = {
 };
 
 function parseCreateUserError(data: unknown, fallback = "Gagal membuat user.") {
-  if (!data || typeof data !== "object") return fallback;
-  const typed = data as Record<string, unknown>;
-  if (typeof typed.detail === "string") return typed.detail;
-  if (Array.isArray(typed.non_field_errors) && typeof typed.non_field_errors[0] === "string") {
-    return typed.non_field_errors[0];
-  }
-  if (Array.isArray(typed.email) && typeof typed.email[0] === "string") return typed.email[0];
-  if (Array.isArray(typed.username) && typeof typed.username[0] === "string") return typed.username[0];
-  if (Array.isArray(typed.password1) && typeof typed.password1[0] === "string") return typed.password1[0];
-  if (Array.isArray(typed.password2) && typeof typed.password2[0] === "string") return typed.password2[0];
-  return fallback;
+  return extractApiErrorMessage(data, fallback, [
+    "email",
+    "username",
+    "password1",
+    "password2",
+  ]);
 }
 
 export function useCreateUser() {
@@ -73,4 +69,3 @@ export function useCreateUser() {
 }
 
 export default useCreateUser;
-

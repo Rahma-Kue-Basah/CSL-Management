@@ -60,6 +60,16 @@ const API_BORROW_APPROVE = (id: string | number) =>
   `${API_BORROWS}${id}/approve/`;
 const API_BORROW_REJECT = (id: string | number) =>
   `${API_BORROWS}${id}/reject/`;
+const API_BORROW_HANDOVER = (id: string | number) =>
+  `${API_BORROWS}${id}/handover/`;
+const API_BORROW_RECEIVE_RETURN = (id: string | number) =>
+  `${API_BORROWS}${id}/receive-return/`;
+const API_BORROW_FINALIZE_RETURN = (id: string | number) =>
+  `${API_BORROWS}${id}/finalize-return/`;
+const API_BORROW_MARK_DAMAGED = (id: string | number) =>
+  `${API_BORROWS}${id}/mark-damaged/`;
+const API_BORROW_MARK_LOST = (id: string | number) =>
+  `${API_BORROWS}${id}/mark-lost/`;
 const API_BORROW_RETURN = (id: string | number) =>
   `${API_BORROWS}${id}/return/`;
 const API_BORROWS_BY_MONTH = `${API_BORROWS}by-month/`;
@@ -154,6 +164,11 @@ export {
   API_BORROW_DETAIL,
   API_BORROW_APPROVE,
   API_BORROW_REJECT,
+  API_BORROW_HANDOVER,
+  API_BORROW_RECEIVE_RETURN,
+  API_BORROW_FINALIZE_RETURN,
+  API_BORROW_MARK_DAMAGED,
+  API_BORROW_MARK_LOST,
   API_BORROW_RETURN,
   API_BORROWS_BY_MONTH,
   API_USES,

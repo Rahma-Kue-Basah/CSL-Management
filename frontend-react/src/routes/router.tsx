@@ -33,8 +33,10 @@ import UseEquipmentDetailPage from "@/pages/dashboard/use-equipment/UseEquipment
 import SampleTestingListPage from "@/pages/dashboard/sample-testing/SampleTestingListPage";
 import SampleTestingFormPage from "@/pages/dashboard/sample-testing/SampleTestingFormPage";
 import BorrowEquipmentListPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentListPage";
+import BorrowEquipmentAllListPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentAllListPage";
 import BorrowEquipmentFormPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentFormPage";
 import BorrowEquipmentAvailablePage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentAvailablePage";
+import BorrowEquipmentDetailPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentDetailPage";
 import NotificationsPage from "@/pages/dashboard/account/NotificationsPage";
 import MyProfilePage from "@/pages/dashboard/account/MyProfilePage";
 import AdminHomePage from "@/pages/admin/home/AdminHomePage";
@@ -143,8 +145,11 @@ export const router = createBrowserRouter([
         path: "borrow-equipment",
         children: [
           { index: true, element: <BorrowEquipmentListPage /> },
+          { path: "all", element: <BorrowEquipmentAllListPage /> },
           { path: "form", element: <BorrowEquipmentFormPage /> },
           { path: "equipment", element: <BorrowEquipmentAvailablePage /> },
+          { path: "all/:id", element: <BorrowEquipmentDetailPage /> },
+          { path: ":id", element: <BorrowEquipmentDetailPage /> },
         ],
       },
       { path: "notifications", element: <NotificationsPage /> },

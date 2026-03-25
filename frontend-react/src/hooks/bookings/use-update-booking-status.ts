@@ -7,27 +7,15 @@ import {
   API_BOOKING_REJECT,
 } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 export type BookingStatusActionType = "approve" | "reject";
-
-type BookingStatusErrorPayload = Record<string, unknown>;
 
 function parseBookingStatusError(
   data: unknown,
   fallback = "Gagal memperbarui status booking.",
 ) {
-  if (!data || typeof data !== "object") return fallback;
-  const typed = data as BookingStatusErrorPayload;
-
-  if (typeof typed.detail === "string") return typed.detail;
-  if (
-    Array.isArray(typed.non_field_errors) &&
-    typeof typed.non_field_errors[0] === "string"
-  ) {
-    return typed.non_field_errors[0];
-  }
-
-  return fallback;
+  return extractApiErrorMessage(data, fallback);
 }
 
 export function useUpdateBookingStatus() {

@@ -117,12 +117,9 @@ export default function AdminSampleTestingRecordDetailPage() {
             icon={<FlaskConical className="h-5 w-5" />}
           >
             <AdminRecordDetailGrid>
+              <AdminRecordDetailItem label="Nama Sampel" value={item.sampleName} />
               <AdminRecordDetailItem label="Jenis Sampel" value={item.sampleType} />
-              <AdminRecordDetailItem label="Bentuk Sampel" value={item.sampleShape} />
-              <AdminRecordDetailItem
-                label="Kondisi Sampel"
-                value={item.sampleCondition}
-              />
+              <AdminRecordDetailItem label="Merk Sampel" value={item.sampleBrand} />
               <AdminRecordDetailItem
                 label="Kemasan Sampel"
                 value={item.samplePackaging}

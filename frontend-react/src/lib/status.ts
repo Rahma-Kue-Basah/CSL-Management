@@ -29,7 +29,9 @@ export const BORROW_STATUS_OPTIONS: StatusOption[] = [
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
+  { value: "expired", label: "Expired" },
   { value: "borrowed", label: "Borrowed" },
+  { value: "returned_pending_inspection", label: "Returned Pending Inspection" },
   { value: "returned", label: "Returned" },
   { value: "overdue", label: "Overdue" },
   { value: "lost_damaged", label: "Lost/Damaged" },
@@ -74,6 +76,11 @@ export function getStatusBadgeClass(
       ? "border-indigo-200 bg-indigo-50 text-indigo-700"
       : "bg-indigo-100 text-indigo-700";
   }
+  if (normalized === "returned pending inspection" || normalized === "returned_pending_inspection") {
+    return bordered
+      ? "border-cyan-200 bg-cyan-50 text-cyan-700"
+      : "bg-cyan-100 text-cyan-700";
+  }
   if (normalized === "overdue") {
     return bordered
       ? "border-orange-200 bg-orange-50 text-orange-700"
@@ -105,6 +112,9 @@ export function getStatusSummaryTone(status?: string | null): StatusSummaryTone 
 
   if (normalized === "approved") return "emerald";
   if (normalized === "pending") return "amber";
+  if (normalized === "returned pending inspection" || normalized === "returned_pending_inspection") {
+    return "blue";
+  }
   if (normalized === "completed" || normalized === "returned") return "sky";
   if (normalized === "rejected" || normalized === "lost_damaged") return "rose";
   if (normalized === "expired" || normalized === "overdue") return "slate";
@@ -121,6 +131,9 @@ export function getStatusDisplayLabel(status?: string | null) {
   if (normalized === "rejected") return "Rejected";
   if (normalized === "expired") return "Expired";
   if (normalized === "borrowed") return "Borrowed";
+  if (normalized === "returned pending inspection" || normalized === "returned_pending_inspection") {
+    return "Returned Pending Inspection";
+  }
   if (normalized === "returned") return "Returned";
   if (normalized === "overdue") return "Overdue";
   if (normalized === "lost_damaged") return "Lost/Damaged";

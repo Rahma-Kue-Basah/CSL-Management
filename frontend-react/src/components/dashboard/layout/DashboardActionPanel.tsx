@@ -21,7 +21,7 @@ import {
 import { useChangePassword } from "@/hooks/auth/use-change-password";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { formatDateKey, parseDateKey } from "@/lib/date";
-import { REQUEST_STATUS_OPTIONS } from "@/lib/status";
+import { BORROW_STATUS_OPTIONS, REQUEST_STATUS_OPTIONS } from "@/lib/status";
 
 type DashboardActionPanelProps = {
   width: string;
@@ -55,7 +55,9 @@ export function DashboardActionPanel({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const needsRoomOptions =
-    menu.id === "schedule" || menu.id === "use-equipment";
+    menu.id === "schedule" ||
+    menu.id === "use-equipment" ||
+    menu.id === "borrow-equipment";
   const { rooms } = useRoomOptions(needsRoomOptions);
   const scheduleKeyword = searchParams.get("q") ?? "";
   const scheduleRoom = searchParams.get("room") ?? "";
@@ -64,6 +66,10 @@ export function DashboardActionPanel({
   const bookingStatus = searchParams.get("status") ?? "";
   const bookingCreatedAfter = searchParams.get("created_after") ?? "";
   const bookingCreatedBefore = searchParams.get("created_before") ?? "";
+  const borrowKeyword = searchParams.get("q") ?? "";
+  const borrowStatus = searchParams.get("status") ?? "";
+  const borrowCreatedAfter = searchParams.get("created_after") ?? "";
+  const borrowCreatedBefore = searchParams.get("created_before") ?? "";
   const roomKeyword = searchParams.get("q") ?? "";
   const roomFloor = searchParams.get("floor") ?? "";
   const equipmentKeyword = searchParams.get("q") ?? "";
@@ -77,6 +83,9 @@ export function DashboardActionPanel({
   const isUseRequestListPage = pathname === "/use-equipment";
   const isUseAllRequestsPage = pathname === "/use-equipment/all";
   const isEquipmentListPage = pathname === "/equipment";
+  const isBorrowRequestListPage = pathname === "/borrow-equipment";
+  const isBorrowAllRequestsPage = pathname === "/borrow-equipment/all";
+  const isBorrowEquipmentListPage = pathname === "/borrow-equipment/equipment";
 
   const updateScheduleFilter = (
     key: "q" | "room" | "category",
@@ -93,6 +102,20 @@ export function DashboardActionPanel({
   };
 
   const updateBookingFilter = (
+    key: "q" | "status" | "created_after" | "created_before",
+    value: string,
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname);
+  };
+
+  const updateBorrowFilter = (
     key: "q" | "status" | "created_after" | "created_before",
     value: string,
   ) => {
@@ -271,6 +294,16 @@ export function DashboardActionPanel({
                   isActionActive &&
                   action.id === "equipment" &&
                   isEquipmentListPage;
+                const showBorrowFilters =
+                  menu.id === "borrow-equipment" &&
+                  isActionActive &&
+                  ((action.id === "request-list" && isBorrowRequestListPage) ||
+                    (action.id === "all-requests" && isBorrowAllRequestsPage));
+                const showBorrowEquipmentFilters =
+                  menu.id === "borrow-equipment" &&
+                  isActionActive &&
+                  action.id === "equipment" &&
+                  isBorrowEquipmentListPage;
 
                 return (
                   <div key={action.id} className="space-y-3">
@@ -671,6 +704,187 @@ export function DashboardActionPanel({
                               params.delete("category");
                               params.delete("room");
                               params.delete("moveable");
+                              const next = params.toString();
+                              router.replace(
+                                next ? `${pathname}?${next}` : pathname,
+                              );
+                            }}
+                          >
+                            Reset Filter
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {showBorrowFilters ? (
+                      <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Filter Pengajuan
+                        </p>
+                        <div className="mt-2 space-y-2">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-600">
+                              Cari
+                            </label>
+                            <Input
+                              value={borrowKeyword}
+                              onChange={(event) =>
+                                updateBorrowFilter("q", event.target.value)
+                              }
+                              type="search"
+                              placeholder="Kode, alat"
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-600">
+                              Status
+                            </label>
+                            <select
+                              value={borrowStatus}
+                              onChange={(event) =>
+                                updateBorrowFilter("status", event.target.value)
+                              }
+                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                            >
+                              {BORROW_STATUS_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-600">
+                              Dibuat Dari
+                            </label>
+                            <DatePicker
+                              value={parseDateKey(borrowCreatedAfter)}
+                              onChange={(value) =>
+                                updateBorrowFilter(
+                                  "created_after",
+                                  value ? formatDateKey(value) : "",
+                                )
+                              }
+                              clearable
+                              buttonClassName="h-9 border-slate-200 px-3"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-600">
+                              Dibuat Sampai
+                            </label>
+                            <DatePicker
+                              value={parseDateKey(borrowCreatedBefore)}
+                              onChange={(value) =>
+                                updateBorrowFilter(
+                                  "created_before",
+                                  value ? formatDateKey(value) : "",
+                                )
+                              }
+                              clearable
+                              buttonClassName="h-9 border-slate-200 px-3"
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              const params = new URLSearchParams(
+                                searchParams.toString(),
+                              );
+                              params.delete("q");
+                              params.delete("status");
+                              params.delete("created_after");
+                              params.delete("created_before");
+                              const next = params.toString();
+                              router.replace(
+                                next ? `${pathname}?${next}` : pathname,
+                              );
+                            }}
+                          >
+                            Reset Filter
+                          </Button>
+                        </div>
+                      </div>
+                    ) : null}
+
+                    {showBorrowEquipmentFilters ? (
+                      <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
+                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Filter Peralatan
+                        </p>
+                        <div className="mt-2 space-y-2">
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-600">
+                              Cari
+                            </label>
+                            <Input
+                              value={equipmentKeyword}
+                              onChange={(event) =>
+                                updateEquipmentFilter("q", event.target.value)
+                              }
+                              type="search"
+                              placeholder="Nama atau kategori"
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-600">
+                              Kategori
+                            </label>
+                            <select
+                              value={equipmentCategory}
+                              onChange={(event) =>
+                                updateEquipmentFilter(
+                                  "category",
+                                  event.target.value,
+                                )
+                              }
+                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                            >
+                              <option value="">Semua Kategori</option>
+                              {EQUIPMENT_CATEGORY_OPTIONS.map((option) => (
+                                <option key={option.value} value={option.value}>
+                                  {option.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="space-y-1">
+                            <label className="text-xs font-medium text-slate-600">
+                              Ruangan
+                            </label>
+                            <select
+                              value={equipmentRoom}
+                              onChange={(event) =>
+                                updateEquipmentFilter(
+                                  "room",
+                                  event.target.value,
+                                )
+                              }
+                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                            >
+                              <option value="">Semua Ruangan</option>
+                              {rooms.map((room) => (
+                                <option key={room.id} value={room.id}>
+                                  {room.label}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => {
+                              const params = new URLSearchParams(
+                                searchParams.toString(),
+                              );
+                              params.delete("q");
+                              params.delete("category");
+                              params.delete("room");
                               const next = params.toString();
                               router.replace(
                                 next ? `${pathname}?${next}` : pathname,

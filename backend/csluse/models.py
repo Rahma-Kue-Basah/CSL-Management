@@ -153,7 +153,7 @@ class Booking(BaseModel):
         ('Completed', 'Completed'),
     ]
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Pending')
 
     approved_by = models.ForeignKey(
         Profile,
@@ -219,7 +219,7 @@ class Use(BaseModel):
         ('Expired', 'Expired'),
         ('Completed', 'Completed'),
     ]
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Pending')
 
     approved_by = models.ForeignKey(
         Profile,
@@ -261,18 +261,21 @@ class Borrow(BaseModel):
 
     purpose = models.CharField(max_length=20, choices=PURPOSE_CHOICES, default='Other')
     note = models.CharField(max_length=2000, blank=True, null=True)
+    inspection_note = models.CharField(max_length=2000, blank=True, null=True)
 
     STATUS_CHOICES = [
         ('Pending', 'Pending'),
         ('Approved', 'Approved'),
         ('Rejected', 'Rejected'),
+        ('Expired', 'Expired'),
         ('Borrowed', 'Borrowed'),
+        ('Returned Pending Inspection', 'Returned Pending Inspection'),
         ('Returned', 'Returned'),
         ('Overdue', 'Overdue'),
         ('Lost/Damaged', 'Lost/Damaged'),
     ]
 
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Borrowed')
+    status = models.CharField(max_length=32, choices=STATUS_CHOICES, default='Pending')
 
     approved_by = models.ForeignKey(
         Profile,

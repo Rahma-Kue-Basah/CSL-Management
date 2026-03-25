@@ -8,7 +8,7 @@ import { InventoryPagination } from "@/components/admin/inventory/inventory-pagi
 import { Button } from "@/components/ui/button";
 import { useRooms } from "@/hooks/rooms/use-rooms";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 export default function RoomsListPage() {
   const router = useRouter();

@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { API_IMAGES, API_IMAGE_DETAIL, API_ROOM_DETAIL } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 type UpdateRoomPayload = {
   name: string;
@@ -16,24 +17,15 @@ type UpdateRoomPayload = {
   imageFile?: File | null;
 };
 
-type RoomErrorPayload = Record<string, unknown>;
-
 function parseRoomError(data: unknown, fallback = "Gagal memperbarui ruangan.") {
-  if (!data || typeof data !== "object") return fallback;
-  const typed = data as RoomErrorPayload;
-
-  if (typeof typed.detail === "string") return typed.detail;
-  if (Array.isArray(typed.non_field_errors) && typeof typed.non_field_errors[0] === "string") {
-    return typed.non_field_errors[0];
-  }
-  if (Array.isArray(typed.name) && typeof typed.name[0] === "string") return typed.name[0];
-  if (Array.isArray(typed.capacity) && typeof typed.capacity[0] === "string") return typed.capacity[0];
-  if (Array.isArray(typed.number) && typeof typed.number[0] === "string") return typed.number[0];
-  if (Array.isArray(typed.floor) && typeof typed.floor[0] === "string") return typed.floor[0];
-  if (Array.isArray(typed.pics) && typeof typed.pics[0] === "string") return typed.pics[0];
-  if (Array.isArray(typed.image) && typeof typed.image[0] === "string") return typed.image[0];
-
-  return fallback;
+  return extractApiErrorMessage(data, fallback, [
+    "name",
+    "capacity",
+    "number",
+    "floor",
+    "pics",
+    "image",
+  ]);
 }
 
 async function uploadImage(file: File) {

@@ -16,9 +16,9 @@ export type PengujianRow = {
   institution: string;
   email: string;
   phoneNumber: string;
+  sampleName: string;
   sampleType: string;
-  sampleShape: string;
-  sampleCondition: string;
+  sampleBrand: string;
   samplePackaging: string;
   sampleWeight: string;
   sampleQuantity: string;
@@ -41,9 +41,9 @@ type ApiPengujian = {
   institution?: string | null;
   email?: string | null;
   phone_number?: string | null;
+  sample_name?: string | null;
   sample_type?: string | null;
-  sample_shape?: string | null;
-  sample_condition?: string | null;
+  sample_brand?: string | null;
   sample_packaging?: string | null;
   sample_weight?: string | null;
   sample_quantity?: string | null;
@@ -106,9 +106,9 @@ export function mapPengujian(item: ApiPengujian): PengujianRow {
     institution: String(item.institution ?? "-"),
     email: String(item.email ?? "-"),
     phoneNumber: String(item.phone_number ?? "-"),
+    sampleName: String(item.sample_name ?? "-"),
     sampleType: String(item.sample_type ?? "-"),
-    sampleShape: String(item.sample_shape ?? "-"),
-    sampleCondition: String(item.sample_condition ?? "-"),
+    sampleBrand: String(item.sample_brand ?? "-"),
     samplePackaging: String(item.sample_packaging ?? "-"),
     sampleWeight: String(item.sample_weight ?? "-"),
     sampleQuantity: String(item.sample_quantity ?? "-"),

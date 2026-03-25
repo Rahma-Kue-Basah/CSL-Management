@@ -152,6 +152,7 @@ export default function AdminRecordPeminjamanAlatPage() {
               { label: "Pending", value: aggregates.pending },
               { label: "Approved", value: aggregates.approved },
               { label: "Rejected", value: aggregates.rejected },
+              { label: "Expired", value: aggregates.expired },
               { label: "Borrowed", value: aggregates.borrowed, tone: "blue" },
               { label: "Returned", value: aggregates.returned },
               { label: "Overdue", value: aggregates.overdue },

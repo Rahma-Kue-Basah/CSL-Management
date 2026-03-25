@@ -8,7 +8,7 @@ import { InventoryPagination } from "@/components/admin/inventory/inventory-pagi
 import { Button } from "@/components/ui/button";
 import { useEquipments } from "@/hooks/equipments/use-equipments";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 const STATUS_STYLES: Record<string, string> = {
   available: "bg-emerald-500/10 text-emerald-600",

@@ -4,27 +4,15 @@ import { useState } from "react";
 
 import { API_USE_APPROVE, API_USE_REJECT } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 type ActionType = "approve" | "reject";
-
-type UseStatusErrorPayload = Record<string, unknown>;
 
 function parseUseStatusError(
   data: unknown,
   fallback = "Gagal memperbarui status pengajuan alat.",
 ) {
-  if (!data || typeof data !== "object") return fallback;
-  const typed = data as UseStatusErrorPayload;
-
-  if (typeof typed.detail === "string") return typed.detail;
-  if (
-    Array.isArray(typed.non_field_errors) &&
-    typeof typed.non_field_errors[0] === "string"
-  ) {
-    return typed.non_field_errors[0];
-  }
-
-  return fallback;
+  return extractApiErrorMessage(data, fallback);
 }
 
 export function useUpdateUseStatus() {

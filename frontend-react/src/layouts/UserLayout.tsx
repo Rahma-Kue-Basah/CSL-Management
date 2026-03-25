@@ -271,6 +271,12 @@ const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         href: "/borrow-equipment",
       },
       {
+        id: "all-requests",
+        label: "Daftar Pengajuan",
+        description: "Lihat seluruh daftar pengajuan peminjaman alat.",
+        href: "/borrow-equipment/all",
+      },
+      {
         id: "equipment",
         label: "Alat yang Bisa Dipinjam",
         description: "Lihat daftar alat yang tersedia untuk dipinjam.",
@@ -376,6 +382,9 @@ function parseDashboardPath(pathname: string) {
   if (parts[0] === "borrow-equipment") {
     if (parts[1] === "equipment") {
       return { menu: "borrow-equipment", action: "equipment" };
+    }
+    if (parts[1] === "all") {
+      return { menu: "borrow-equipment", action: "all-requests" };
     }
     if (parts[1] === "form") {
       return { menu: "borrow-equipment", action: "request-form" };

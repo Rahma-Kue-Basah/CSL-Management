@@ -488,10 +488,17 @@ export default function UseEquipmentFormPage() {
         <div className="flex justify-end border-t border-slate-200 pt-3">
           <Button
             type="submit"
-            className="min-w-[180px]"
+            className="min-w-[180px] gap-2"
             disabled={isSubmitting || isLoadingEquipments}
           >
-            Ajukan Penggunaan
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Mengirim...
+              </>
+            ) : (
+              "Ajukan Penggunaan"
+            )}
           </Button>
         </div>
       </form>

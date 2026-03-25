@@ -734,10 +734,17 @@ export default function BookingRoomsFormPage() {
         <div className="flex justify-end border-t border-slate-200 pt-3">
           <Button
             type="submit"
-            className="min-w-[180px]"
+            className="min-w-[180px] gap-2"
             disabled={isSubmitting || isLoadingRooms}
           >
-            Ajukan Booking
+            {isSubmitting ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Mengirim...
+              </>
+            ) : (
+              "Ajukan Booking"
+            )}
           </Button>
         </div>
       </form>

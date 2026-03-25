@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { API_BOOKINGS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 type CreateBookingRoomPayload = {
   roomId: string;
@@ -19,33 +20,16 @@ type CreateBookingRoomPayload = {
   }>;
 };
 
-type BookingErrorPayload = Record<string, unknown>;
-
 function parseBookingError(data: unknown, fallback = "Gagal membuat booking ruangan.") {
-  if (!data || typeof data !== "object") return fallback;
-  const typed = data as BookingErrorPayload;
-
-  if (typeof typed.detail === "string") return typed.detail;
-  if (Array.isArray(typed.non_field_errors) && typeof typed.non_field_errors[0] === "string") {
-    return typed.non_field_errors[0];
-  }
-  if (Array.isArray(typed.attendee_count) && typeof typed.attendee_count[0] === "string") {
-    return typed.attendee_count[0];
-  }
-  if (Array.isArray(typed.room) && typeof typed.room[0] === "string") return typed.room[0];
-  if (Array.isArray(typed.purpose) && typeof typed.purpose[0] === "string") return typed.purpose[0];
-  if (Array.isArray(typed.start_time) && typeof typed.start_time[0] === "string") {
-    return typed.start_time[0];
-  }
-  if (Array.isArray(typed.end_time) && typeof typed.end_time[0] === "string") {
-    return typed.end_time[0];
-  }
-  if (Array.isArray(typed.note) && typeof typed.note[0] === "string") return typed.note[0];
-  if (Array.isArray(typed.equipment_items) && typeof typed.equipment_items[0] === "string") {
-    return typed.equipment_items[0];
-  }
-
-  return fallback;
+  return extractApiErrorMessage(data, fallback, [
+    "attendee_count",
+    "room",
+    "purpose",
+    "start_time",
+    "end_time",
+    "note",
+    "equipment_items",
+  ]);
 }
 
 export function useCreateBookingRoom() {

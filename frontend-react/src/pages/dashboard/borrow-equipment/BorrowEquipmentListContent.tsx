@@ -2,32 +2,30 @@
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
-  Building2,
   CalendarClock,
+  Check,
   CheckCircle2,
   Eye,
+  Handshake,
+  Hourglass,
   Loader2,
-  Check,
+  Package,
   RotateCcw,
+  Truck,
+  Undo2,
   X,
 } from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
-import { Button } from "@/components/ui/button";
-import {
-  useBookings,
-  type BookingListScope,
-} from "@/hooks/bookings/use-bookings";
-import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
-import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
-import {
-  toEndOfDay,
-  toStartOfDay,
-} from "@/lib/date";
+import { Button } from "@/components/ui/button";
+import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
+import { useBorrows } from "@/hooks/borrows/use-borrows";
+import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import { toEndOfDay, toStartOfDay } from "@/lib/date";
 import { formatDateTimeWib } from "@/lib/date-time";
 import {
   getStatusBadgeClass,
@@ -39,6 +37,10 @@ const PAGE_SIZE = 10;
 
 function isPendingStatus(status: string) {
   return status.toLowerCase() === "pending";
+}
+
+function isApprovedStatus(status: string) {
+  return status.toLowerCase() === "approved";
 }
 
 function SummaryCard({
@@ -67,10 +69,10 @@ function SummaryCard({
           }
         : tone === "emerald"
           ? {
-            card: "border-emerald-300 bg-emerald-100/90",
-            icon: "bg-white/80 text-emerald-800",
-            value: "text-emerald-900",
-          }
+              card: "border-emerald-300 bg-emerald-100/90",
+              icon: "bg-white/80 text-emerald-800",
+              value: "text-emerald-900",
+            }
           : tone === "sky"
             ? {
                 card: "border-sky-300 bg-sky-100/90",
@@ -108,24 +110,22 @@ function SummaryCard({
   );
 }
 
-type BookingRoomsListContentProps = {
-  scope: BookingListScope;
-  emptyMessage: string;
-};
-
-export default function BookingRoomsListContent({
+export default function BorrowEquipmentListContent({
   scope,
   emptyMessage,
-}: BookingRoomsListContentProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+}: {
+  scope: "my" | "all";
+  emptyMessage: string;
+}) {
+  const navigate = useNavigate();
   const { profile } = useLoadProfile();
-  const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
+  const [searchParams] = useSearchParams();
+  const { updateBorrowStatus, pendingAction } = useUpdateBorrowStatus();
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [confirmState, setConfirmState] = useState<{
-    bookingId: string | number;
-    type: "approve" | "reject";
+    borrowId: string | number;
+    type: "approve" | "reject" | "handover";
   } | null>(null);
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("q") ?? "";
@@ -136,66 +136,64 @@ export default function BookingRoomsListContent({
     setPage(1);
   }, [status, search, createdAfter, createdBefore]);
 
-  const { bookings, totalCount, aggregates, isLoading, hasLoadedOnce, error } = useBookings(
-    page,
-    PAGE_SIZE,
-    {
-      status,
-      createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
-      createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
-    },
-    reloadKey,
-    scope,
+  const { borrows, totalCount, aggregates, isLoading, hasLoadedOnce, error } =
+    useBorrows(
+      page,
+      PAGE_SIZE,
+      {
+        status,
+        requestedBy: scope === "my" ? String(profile.id ?? "") : "",
+        createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
+        createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
+      },
+      reloadKey,
+    );
+
+  const filteredBorrows = useMemo(
+    () =>
+      borrows.filter((item) => {
+        if (!item.equipmentName || item.equipmentName === "-") return false;
+        const query = search.trim().toLowerCase();
+        if (!query) return true;
+        const haystack = [
+          item.code,
+          item.equipmentName,
+          item.requesterName,
+          item.purpose,
+        ]
+          .join(" ")
+          .toLowerCase();
+        return haystack.includes(query);
+      }),
+    [borrows, search],
   );
 
   const normalizedRole = normalizeRoleValue(profile?.role);
-  const canReviewBookings =
+  const canReviewBorrows =
     scope === "all" &&
     (normalizedRole === ROLE_VALUES.ADMIN ||
       normalizedRole === ROLE_VALUES.LECTURER ||
       normalizedRole === ROLE_VALUES.STAFF);
   const showRequesterColumn = scope === "all";
 
-  const filteredBookings = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const roomBookings = bookings.filter(
-      (booking) => booking.roomName && booking.roomName !== "-",
-    );
-
-    if (!query) return roomBookings;
-    return roomBookings.filter((booking) => {
-      const haystack = [
-        booking.code,
-        booking.roomName,
-        booking.requesterName,
-        booking.purpose,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [bookings, search]);
   const totalPages = Math.max(
     1,
-    Math.ceil((totalCount || filteredBookings.length) / PAGE_SIZE),
+    Math.ceil((totalCount || filteredBorrows.length) / PAGE_SIZE),
   );
-  const pendingCount = aggregates.pending;
-  const approvedCount = aggregates.approved;
-  const completedCount = aggregates.completed;
-  const rejectedCount = aggregates.rejected;
-  const expiredCount = aggregates.expired;
 
-  const handleBookingAction = async () => {
+  const handleBorrowAction = async () => {
     if (!confirmState) return;
 
-    const { bookingId, type } = confirmState;
-    const result = await updateBookingStatus(bookingId, type);
+    const { borrowId, type } = confirmState;
+    const result = await updateBorrowStatus(borrowId, type);
 
     if (result.ok) {
       toast.success(
         type === "approve"
-          ? "Pengajuan booking berhasil disetujui."
-          : "Pengajuan booking berhasil ditolak.",
+          ? "Pengajuan peminjaman alat berhasil disetujui."
+          : type === "reject"
+            ? "Pengajuan peminjaman alat berhasil ditolak."
+            : "Alat berhasil ditandai sudah diserahkan ke peminjam.",
       );
       setReloadKey((prev) => prev + 1);
       setConfirmState(null);
@@ -207,41 +205,47 @@ export default function BookingRoomsListContent({
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-7">
         <SummaryCard
           label="Total Pengajuan"
           value={aggregates.total}
-          icon={<Building2 className="h-4 w-4" />}
+          icon={<Package className="h-4 w-4" />}
           tone={getStatusSummaryTone("total")}
         />
         <SummaryCard
           label="Pending"
-          value={pendingCount}
+          value={aggregates.pending}
           icon={<CalendarClock className="h-4 w-4" />}
           tone={getStatusSummaryTone("Pending")}
         />
         <SummaryCard
           label="Approved"
-          value={approvedCount}
+          value={aggregates.approved}
           icon={<CheckCircle2 className="h-4 w-4" />}
           tone={getStatusSummaryTone("Approved")}
         />
         <SummaryCard
-          label="Completed"
-          value={completedCount}
-          icon={<CheckCircle2 className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Completed")}
+          label="Borrowed"
+          value={aggregates.borrowed}
+          icon={<Truck className="h-4 w-4" />}
+          tone={getStatusSummaryTone("Borrowed")}
+        />
+        <SummaryCard
+          label="Returned"
+          value={aggregates.returned}
+          icon={<Undo2 className="h-4 w-4" />}
+          tone={getStatusSummaryTone("Returned")}
         />
         <SummaryCard
           label="Rejected"
-          value={rejectedCount}
+          value={aggregates.rejected}
           icon={<RotateCcw className="h-4 w-4" />}
           tone={getStatusSummaryTone("Rejected")}
         />
         <SummaryCard
           label="Expired"
-          value={expiredCount}
-          icon={<X className="h-4 w-4" />}
+          value={aggregates.expired}
+          icon={<Hourglass className="h-4 w-4" />}
           tone={getStatusSummaryTone("Expired")}
         />
       </div>
@@ -256,32 +260,17 @@ export default function BookingRoomsListContent({
         <table className="w-full min-w-[1120px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Kode
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Ruangan
-              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Alat</th>
               {showRequesterColumn ? (
-                <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                  Pemohon
-                </th>
+                <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Pemohon</th>
               ) : null}
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Waktu Mulai
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Waktu Selesai
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Tujuan
-              </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Status
-              </th>
-              <th
-                className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 whitespace-nowrap shadow-[-1px_0_0_0_rgba(51,65,85,1)]"
-              >
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Jumlah</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Mulai</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Selesai</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Tujuan</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Status</th>
+              <th className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
                 Aksi
               </th>
             </tr>
@@ -289,50 +278,41 @@ export default function BookingRoomsListContent({
           <tbody className="text-sm">
             {isLoading || !hasLoadedOnce ? (
               <tr>
-                <td
-                  colSpan={showRequesterColumn ? 8 : 7}
-                  className="px-3 py-10 text-center text-slate-500"
-                >
+                <td colSpan={showRequesterColumn ? 9 : 8} className="px-3 py-10 text-center text-slate-500">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Memuat data...
                   </div>
                 </td>
               </tr>
-            ) : filteredBookings.length ? (
-              filteredBookings.map((booking) => (
-                <tr
-                  key={String(booking.id)}
-                  className="border-b last:border-b-0"
-                >
-                  <td className="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap">
-                    {booking.code}
+            ) : filteredBorrows.length ? (
+              filteredBorrows.map((item) => (
+                <tr key={String(item.id)} className="border-b last:border-b-0">
+                  <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
+                    {item.code}
                   </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{booking.roomName}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">{item.equipmentName}</td>
                   {showRequesterColumn ? (
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      {booking.requesterName}
-                    </td>
+                    <td className="px-3 py-2.5 whitespace-nowrap">{item.requesterName}</td>
                   ) : null}
-                  <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
-                    {formatDateTimeWib(booking.startTime)}
+                  <td className="px-3 py-2.5 whitespace-nowrap">{item.quantity}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {formatDateTimeWib(item.startTime)}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
-                    {formatDateTimeWib(booking.endTime)}
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {formatDateTimeWib(item.endTime)}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700">
-                    {booking.purpose}
-                  </td>
+                  <td className="px-3 py-2.5 text-slate-700">{item.purpose}</td>
                   <td className="px-3 py-2.5">
                     <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(booking.status)}`}
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                     >
-                      {getStatusDisplayLabel(booking.status)}
+                      {getStatusDisplayLabel(item.status)}
                     </span>
                   </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
-                      {canReviewBookings && isPendingStatus(booking.status) ? (
+                      {canReviewBorrows && isPendingStatus(item.status) ? (
                         <>
                           <Button
                             type="button"
@@ -340,11 +320,11 @@ export default function BookingRoomsListContent({
                             className="h-8 w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
                             onClick={() =>
                               setConfirmState({
-                                bookingId: booking.id,
+                                borrowId: item.id,
                                 type: "approve",
                               })
                             }
-                            disabled={pendingAction.bookingId === booking.id}
+                            disabled={pendingAction.borrowId === item.id}
                           >
                             <Check className="h-3.5 w-3.5" />
                           </Button>
@@ -354,15 +334,31 @@ export default function BookingRoomsListContent({
                             className="h-8 w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
                             onClick={() =>
                               setConfirmState({
-                                bookingId: booking.id,
+                                borrowId: item.id,
                                 type: "reject",
                               })
                             }
-                            disabled={pendingAction.bookingId === booking.id}
+                            disabled={pendingAction.borrowId === item.id}
                           >
                             <X className="h-3.5 w-3.5" />
                           </Button>
                         </>
+                      ) : null}
+                      {canReviewBorrows && isApprovedStatus(item.status) ? (
+                        <Button
+                          type="button"
+                          size="sm"
+                          className="h-8 w-8 rounded-md border border-sky-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
+                          onClick={() =>
+                            setConfirmState({
+                              borrowId: item.id,
+                              type: "handover",
+                            })
+                          }
+                          disabled={pendingAction.borrowId === item.id}
+                        >
+                          <Handshake className="h-3.5 w-3.5" />
+                        </Button>
                       ) : null}
                       <Button
                         type="button"
@@ -370,10 +366,10 @@ export default function BookingRoomsListContent({
                         size="sm"
                         className="h-8 border-slate-300 text-slate-700"
                         onClick={() =>
-                          router.push(
+                          navigate(
                             scope === "all"
-                              ? `/booking-rooms/all/${booking.id}`
-                              : `/booking-rooms/${booking.id}`,
+                              ? `/borrow-equipment/all/${item.id}`
+                              : `/borrow-equipment/${item.id}`,
                           )
                         }
                       >
@@ -385,10 +381,7 @@ export default function BookingRoomsListContent({
               ))
             ) : (
               <tr>
-                <td
-                  colSpan={showRequesterColumn ? 8 : 7}
-                  className="px-3 py-10 text-center text-slate-500"
-                >
+                <td colSpan={showRequesterColumn ? 9 : 8} className="px-3 py-10 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>
@@ -406,13 +399,23 @@ export default function BookingRoomsListContent({
 
       <StatusConfirmDialog
         open={Boolean(confirmState)}
-        actionType={confirmState?.type ?? null}
+        actionType={
+          confirmState?.type === "reject"
+            ? "reject"
+            : confirmState?.type
+              ? "approve"
+              : null
+        }
         onOpenChange={(open) => {
           if (!open) setConfirmState(null);
         }}
-        onConfirm={handleBookingAction}
-        isSubmitting={pendingAction.bookingId === confirmState?.bookingId}
-        subjectLabel="pengajuan booking ruangan ini"
+        onConfirm={handleBorrowAction}
+        isSubmitting={pendingAction.borrowId === confirmState?.borrowId}
+        subjectLabel={
+          confirmState?.type === "handover"
+            ? "serah-terima alat ini"
+            : "pengajuan peminjaman alat ini"
+        }
       />
     </section>
   );

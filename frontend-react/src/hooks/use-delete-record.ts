@@ -3,25 +3,13 @@
 import { useState } from "react";
 
 import { authFetch } from "@/lib/auth";
-
-type DeleteErrorPayload = Record<string, unknown>;
+import { extractApiErrorMessage } from "@/lib/api-error";
 
 function parseDeleteError(
   data: unknown,
   fallback = "Gagal menghapus data.",
 ) {
-  if (!data || typeof data !== "object") return fallback;
-  const typed = data as DeleteErrorPayload;
-
-  if (typeof typed.detail === "string") return typed.detail;
-  if (
-    Array.isArray(typed.non_field_errors) &&
-    typeof typed.non_field_errors[0] === "string"
-  ) {
-    return typed.non_field_errors[0];
-  }
-
-  return fallback;
+  return extractApiErrorMessage(data, fallback);
 }
 
 export function useDeleteRecord() {

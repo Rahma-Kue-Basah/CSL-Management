@@ -129,13 +129,24 @@ def validate_borrow(sender, instance, **kwargs):
     """
     Borrow rules:
     - Quantity > 0 and <= equipment stock.
-    - Only editable while pending, not approved, and before start/end time.
+    - Start time cannot be moved into the past.
     """
+    previous_instance = None
+    if instance.pk:
+        previous_instance = Borrow.objects.filter(pk=instance.pk).only(
+            "start_time",
+        ).first()
+
     # quantity checks (apply to create/update)
     if instance.quantity <= 0:
         raise ValidationError("Borrow quantity must be at least 1.")
 
-    validate_start_not_in_past(instance.start_time, "borrow start time")
+    start_time_changed = (
+        previous_instance is None
+        or previous_instance.start_time != instance.start_time
+    )
+    if start_time_changed:
+        validate_start_not_in_past(instance.start_time, "borrow start time")
 
     if instance.equipment_id:
         equipment_qty = instance.equipment.quantity
@@ -146,14 +157,6 @@ def validate_borrow(sender, instance, **kwargs):
 
         if not instance.equipment.is_moveable:
             raise ValidationError("Only moveable equipment can be borrowed.")
-
-    now = timezone.now()
-    if instance.status != 'pending' or instance.approved_by is not None:
-        raise ValidationError("Cannot modify equipment for a borrow that is not pending.")
-    if instance.start_time and instance.start_time <= now:
-        raise ValidationError("Cannot modify a borrow whose start time has passed.")
-    if instance.end_time and instance.end_time <= now:
-        raise ValidationError("Cannot modify a borrow whose end time has passed.")
 
     # approved_by must be equipment room PIC or Admin (when set)
     if instance.approved_by_id:

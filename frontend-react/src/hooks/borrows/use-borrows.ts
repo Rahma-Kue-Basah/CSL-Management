@@ -7,6 +7,7 @@ import { authFetch } from "@/lib/auth";
 
 export type BorrowFilters = {
   status?: string;
+  requestedBy?: string;
   createdAfter?: string;
   createdBefore?: string;
 };
@@ -29,6 +30,7 @@ export type BorrowRow = {
   createdAt: string;
   updatedAt: string;
   note: string;
+  inspectionNote: string;
 };
 
 type ApiBorrow = {
@@ -37,6 +39,7 @@ type ApiBorrow = {
   status?: string | null;
   purpose?: string | null;
   note?: string | null;
+  inspection_note?: string | null;
   quantity?: number | string | null;
   start_time?: string | null;
   end_time?: string | null;
@@ -70,7 +73,9 @@ type ApiBorrowsResponse = {
     pending?: number;
     approved?: number;
     rejected?: number;
+    expired?: number;
     borrowed?: number;
+    returned_pending_inspection?: number;
     returned?: number;
     overdue?: number;
     lost_damaged?: number;
@@ -82,7 +87,9 @@ export type BorrowAggregates = {
   pending: number;
   approved: number;
   rejected: number;
+  expired: number;
   borrowed: number;
+  returned_pending_inspection: number;
   returned: number;
   overdue: number;
   lost_damaged: number;
@@ -116,6 +123,7 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
     note: String(item.note ?? ""),
+    inspectionNote: String(item.inspection_note ?? ""),
   };
 }
 
@@ -191,7 +199,9 @@ export function useBorrows(
     pending: 0,
     approved: 0,
     rejected: 0,
+    expired: 0,
     borrowed: 0,
+    returned_pending_inspection: 0,
     returned: 0,
     overdue: 0,
     lost_damaged: 0,
@@ -209,6 +219,9 @@ export function useBorrows(
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
+        if (filters.requestedBy) {
+          url.searchParams.set("requested_by", filters.requestedBy);
+        }
         if (filters.createdAfter) {
           url.searchParams.set("created_after", filters.createdAfter);
         }
@@ -237,7 +250,11 @@ export function useBorrows(
           pending: Array.isArray(payload) ? 0 : Number(payload.aggregates?.pending ?? 0),
           approved: Array.isArray(payload) ? 0 : Number(payload.aggregates?.approved ?? 0),
           rejected: Array.isArray(payload) ? 0 : Number(payload.aggregates?.rejected ?? 0),
+          expired: Array.isArray(payload) ? 0 : Number(payload.aggregates?.expired ?? 0),
           borrowed: Array.isArray(payload) ? 0 : Number(payload.aggregates?.borrowed ?? 0),
+          returned_pending_inspection: Array.isArray(payload)
+            ? 0
+            : Number(payload.aggregates?.returned_pending_inspection ?? 0),
           returned: Array.isArray(payload) ? 0 : Number(payload.aggregates?.returned ?? 0),
           overdue: Array.isArray(payload) ? 0 : Number(payload.aggregates?.overdue ?? 0),
           lost_damaged: Array.isArray(payload) ? 0 : Number(payload.aggregates?.lost_damaged ?? 0),
@@ -258,7 +275,7 @@ export function useBorrows(
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, filters.createdAfter, filters.createdBefore, reloadKey]);
+  }, [page, pageSize, filters.status, filters.requestedBy, filters.createdAfter, filters.createdBefore, reloadKey]);
 
   return {
     borrows,

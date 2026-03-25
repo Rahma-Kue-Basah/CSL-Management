@@ -2,11 +2,11 @@
 
 import BorrowEquipmentListContent from "@/pages/dashboard/borrow-equipment/BorrowEquipmentListContent";
 
-export default function BorrowEquipmentListPage() {
+export default function BorrowEquipmentAllListPage() {
   return (
     <BorrowEquipmentListContent
-      scope="my"
-      emptyMessage="Belum ada pengajuan peminjaman alat."
+      scope="all"
+      emptyMessage="Belum ada pengajuan peminjaman alat yang tersedia."
     />
   );
 }
