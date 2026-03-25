@@ -295,7 +295,7 @@ export default function AdminRecordPengujianSampelPage() {
               }}
             >
               <div className="min-w-0 md:col-span-2">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Cari
                 </label>
                 <Input
@@ -310,7 +310,7 @@ export default function AdminRecordPengujianSampelPage() {
                 />
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Status
                 </label>
                 <select

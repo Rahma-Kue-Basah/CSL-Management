@@ -24,12 +24,25 @@ type FaqListResponse = {
   results?: Faq[];
 };
 
-export function useFaqs() {
+export type FaqFilters = {
+  search?: string;
+  ordering?: "created_at" | "-created_at";
+};
+
+export function useFaqs(
+  page = 1,
+  pageSize = 10,
+  filters: FaqFilters = {},
+  reloadKey = 0,
+) {
   const [faqs, setFaqs] = useState<Faq[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const controller = new AbortController();
     let isMounted = true;
 
     const loadFaqs = async () => {
@@ -37,7 +50,15 @@ export function useFaqs() {
       setError("");
 
       try {
-        const response = await authFetch(API_FAQS);
+        const url = new URL(API_FAQS, window.location.origin);
+        url.searchParams.set("page", String(page));
+        url.searchParams.set("page_size", String(pageSize));
+        if (filters.search) url.searchParams.set("search", filters.search);
+        if (filters.ordering) url.searchParams.set("ordering", filters.ordering);
+
+        const response = await authFetch(url.toString(), {
+          signal: controller.signal,
+        });
         if (!response.ok) {
           const errorPayload = await response.json().catch(() => ({}));
           const detail =
@@ -58,11 +79,20 @@ export function useFaqs() {
             ? payload.results
             : [];
 
-        if (isMounted) setFaqs(items);
-      } catch {
-        if (isMounted) setError("Terjadi kesalahan saat memuat FAQ.");
+        if (isMounted) {
+          setFaqs(items);
+          setTotalCount(Array.isArray(payload) ? items.length : (payload?.count ?? items.length));
+        }
+      } catch (loadError) {
+        if (loadError instanceof DOMException && loadError.name === "AbortError") return;
+        if (isMounted) {
+          setError("Terjadi kesalahan saat memuat FAQ.");
+        }
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          setHasLoadedOnce(true);
+        }
       }
     };
 
@@ -70,13 +100,17 @@ export function useFaqs() {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, []);
+  }, [filters.ordering, filters.search, page, pageSize, reloadKey]);
 
   return {
     faqs,
     setFaqs,
+    totalCount,
+    setTotalCount,
     isLoading,
+    hasLoadedOnce,
     error,
     setError,
   };

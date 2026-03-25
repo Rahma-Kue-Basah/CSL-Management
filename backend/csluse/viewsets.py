@@ -1768,6 +1768,23 @@ class FAQViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsStaffOrAbove()]
         return super().get_permissions()
 
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        search = str(self.request.query_params.get("search", "")).strip()
+        ordering = str(self.request.query_params.get("ordering", "")).strip()
+
+        if search:
+            queryset = queryset.filter(
+                Q(question__icontains=search) | Q(answer__icontains=search)
+            )
+
+        if ordering == "created_at":
+            queryset = queryset.order_by("created_at")
+        else:
+            queryset = queryset.order_by("-created_at")
+
+        return queryset
+
     def perform_create(self, serializer):
         instance = serializer.save(created_by=getattr(self.request.user, 'profile', None))
         log_admin_action(
@@ -1786,7 +1803,7 @@ class FAQViewSet(viewsets.ModelViewSet):
             "Updated FAQ via CSL Admin.",
         )
 
-    def perform_destroy(self, instance):
+    def _delete_faq_instance(self, instance):
         log_admin_action(
             self.request.user,
             instance,
@@ -1794,6 +1811,50 @@ class FAQViewSet(viewsets.ModelViewSet):
             "Deleted FAQ via CSL Admin.",
         )
         super().perform_destroy(instance)
+
+    def perform_destroy(self, instance):
+        self._delete_faq_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus FAQ.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        faq_map = {
+            str(item.id): item
+            for item in FAQ.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in faq_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            faq = faq_map.get(str(item_id))
+            if faq is None:
+                continue
+            self._delete_faq_instance(faq)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua FAQ terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian FAQ berhasil dihapus."
+                ),
+            },
+            status=response_status,
+        )
 
 
 class StructureOrganizationViewSet(viewsets.ModelViewSet):

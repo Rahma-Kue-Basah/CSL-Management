@@ -331,7 +331,7 @@ export default function AdminRecordPeminjamanAlatPage() {
               }}
             >
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Cari
                 </label>
                 <Input
@@ -346,7 +346,7 @@ export default function AdminRecordPeminjamanAlatPage() {
                 />
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Status
                 </label>
                 <select
@@ -365,7 +365,7 @@ export default function AdminRecordPeminjamanAlatPage() {
                 </select>
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Dibuat Dari
                 </label>
                 <DatePicker
@@ -379,7 +379,7 @@ export default function AdminRecordPeminjamanAlatPage() {
                 />
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Dibuat Sampai
                 </label>
                 <DatePicker

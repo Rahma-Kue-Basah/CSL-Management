@@ -55,7 +55,7 @@ function FilterSelectField({
 }) {
   return (
     <div className="min-w-0">
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+      <label className="mb-1 block text-xs font-semibold text-slate-900/90">
         {label}
       </label>
       <select
@@ -261,17 +261,6 @@ export default function AdminEquipmentsPage() {
             title="Inventarisasi Peralatan"
             description={`Total ${totalEquipments} peralatan terdaftar.`}
             icon={<Plus className="h-5 w-5 text-sky-200" />}
-            actions={
-              <Button
-                type="button"
-                size="sm"
-                className="bg-white text-slate-900 hover:bg-slate-100"
-                onClick={() => setCreateOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Tambah Peralatan
-              </Button>
-            }
           />
 
           <AdminFilterCard
@@ -287,7 +276,7 @@ export default function AdminEquipmentsPage() {
               }}
             >
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Cari
                 </label>
                 <Input
@@ -330,7 +319,7 @@ export default function AdminEquipmentsPage() {
                 }}
               />
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Ruangan
                 </label>
                 <select
@@ -389,6 +378,10 @@ export default function AdminEquipmentsPage() {
                 isExportingExcel={isExportingExcel}
                 isExportingPdf={isExportingPdf}
               />
+              <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+                <Plus className="h-4 w-4" />
+                Tambah Peralatan
+              </Button>
             </div>
           </div>
 

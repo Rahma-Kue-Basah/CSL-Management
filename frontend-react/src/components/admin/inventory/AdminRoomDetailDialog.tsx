@@ -262,19 +262,46 @@ export default function AdminRoomDetailDialog({
               {error}
             </div>
           ) : isLoading ? (
-            <div className="space-y-4">
-            <div className="rounded-xl border bg-slate-50/80 px-4 py-3">
-              <div className="h-6 w-48 animate-pulse rounded bg-slate-200" />
-              <div className="mt-2 h-4 w-32 animate-pulse rounded bg-slate-100" />
-            </div>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <div key={index} className="space-y-2">
-                  <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
-                  <div className="h-10 animate-pulse rounded bg-slate-100" />
+            <div className="max-h-[calc(90vh-7rem)] overflow-y-auto pr-1 pb-2">
+              <div className="space-y-4">
+                <div className="rounded-xl border bg-slate-50/80 px-4 py-3">
+                  <div className="h-6 w-56 animate-pulse rounded bg-slate-200" />
+                  <div className="mt-2 h-4 w-28 animate-pulse rounded bg-slate-100" />
                 </div>
-              ))}
-            </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {Array.from({ length: 4 }).map((_, index) => (
+                    <div key={index} className="space-y-2">
+                      <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+                      <div className="h-10 rounded-md border border-slate-200 bg-slate-100 animate-pulse" />
+                    </div>
+                  ))}
+
+                  <div className="space-y-2 md:col-span-2">
+                    <div className="h-3 w-16 animate-pulse rounded bg-slate-100" />
+                    <div className="rounded-md border border-slate-200 bg-slate-100 p-3">
+                      <div className="flex flex-wrap gap-2">
+                        {Array.from({ length: 3 }).map((_, index) => (
+                          <div
+                            key={index}
+                            className="h-8 w-24 animate-pulse rounded-full bg-slate-200"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+                    <div className="h-24 rounded-md border border-slate-200 bg-slate-100 animate-pulse" />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <div className="h-3 w-16 animate-pulse rounded bg-slate-100" />
+                    <div className="h-56 rounded-lg border border-slate-200 bg-slate-100 animate-pulse" />
+                  </div>
+                </div>
+              </div>
             </div>
           ) : !room ? (
             <div className="rounded-xl border bg-card px-4 py-6 text-sm text-muted-foreground">

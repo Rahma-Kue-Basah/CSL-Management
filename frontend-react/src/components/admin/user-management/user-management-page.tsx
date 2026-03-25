@@ -212,30 +212,6 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
             title="User Management"
             description={`Total ${totalUsers} user terdaftar.`}
             icon={<UserPlus className="h-5 w-5 text-sky-200" />}
-            actions={
-              canManageUsers ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    className="border-white/25 bg-white/10 text-white hover:bg-white/20 hover:text-white"
-                    onClick={() => setBulkOpen(true)}
-                  >
-                    <FileUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    className="bg-white text-slate-900 hover:bg-slate-100"
-                    onClick={() => setCreateOpen(true)}
-                  >
-                    <Plus className="h-4 w-4" />
-                    Buat User
-                  </Button>
-                </>
-              ) : null
-            }
           />
 
           {!isRoleScoped ? (
@@ -268,7 +244,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                 }}
               >
                 <div className="min-w-0">
-                  <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+                  <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                     Cari
                   </label>
                   <Input
@@ -352,6 +328,23 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                 isExportingExcel={isExportingExcel}
                 isExportingPdf={isExportingPdf}
               />
+              {canManageUsers ? (
+                <>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkOpen(true)}
+                  >
+                    <FileUp className="h-4 w-4" />
+                    Import User
+                  </Button>
+                  <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+                    <Plus className="h-4 w-4" />
+                    Buat User
+                  </Button>
+                </>
+              ) : null}
             </div>
           </div>
 
@@ -506,7 +499,7 @@ type SelectFieldProps = {
 function SelectField({ label, value, options, onChange }: SelectFieldProps) {
   return (
     <div className="min-w-0">
-      <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-900/90">
+      <label className="mb-1 block text-xs font-semibold text-slate-900/90">
         {label}
       </label>
       <select
