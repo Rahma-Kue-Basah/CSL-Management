@@ -16,7 +16,8 @@ import {
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { toWibIsoString } from "@/lib/date-time";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import { toWibIsoString } from "@/lib/date-format";
 
 export type ScheduleCategory =
   | "Practicum"
@@ -302,9 +303,7 @@ export function ScheduleFormDialog({
           </label>
 
           {error ? (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              {error}
-            </div>
+            <InlineErrorAlert>{error}</InlineErrorAlert>
           ) : null}
 
           <DialogFooter>

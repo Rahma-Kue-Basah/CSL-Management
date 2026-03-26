@@ -18,3 +18,10 @@ export function toStartOfDay(value: string) {
 export function toEndOfDay(value: string) {
   return value ? `${value}T23:59:59` : "";
 }
+
+export function getDateKeyFromValue(value?: string | null) {
+  if (!value) return "unknown";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "unknown";
+  return date.toISOString().slice(0, 10);
+}

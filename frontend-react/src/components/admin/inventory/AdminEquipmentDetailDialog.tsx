@@ -4,25 +4,13 @@ import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { ArrowUpRight, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
-import { AdminDetailHeader } from "@/components/admin/AdminDetailHeader";
 import RelatedRoomDetailDialog from "@/components/admin/records/RelatedRoomDetailDialog";
+import AdminDetailActions from "@/components/shared/admin-detail-actions";
+import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
   MOVEABLE_OPTIONS,
@@ -284,28 +272,18 @@ export default function AdminEquipmentDetailDialog({
   };
 
   return (
-    <Dialog
+    <AdminDetailDialogShell
       open={open}
-      onOpenChange={(nextOpen) => {
-        onOpenChange(nextOpen);
-        if (!nextOpen) {
-          resetState();
-          setRelatedRoomId(null);
-        }
+      onOpenChange={onOpenChange}
+      onCloseReset={() => {
+        resetState();
+        setRelatedRoomId(null);
       }}
+      title="Detail Peralatan"
+      description="Tinjau informasi peralatan dan lakukan perubahan bila diperlukan."
+      icon={<Wrench className="h-5 w-5" />}
+      contentClassName={`${INVENTORY_MODAL_WIDTH_CLASS} max-h-[90vh] min-w-0 gap-0 overflow-hidden p-0`}
     >
-      <DialogContent
-        showCloseButton={false}
-        className={`${INVENTORY_MODAL_WIDTH_CLASS} max-h-[90vh] min-w-0 gap-0 overflow-hidden p-0`}
-      >
-        <AdminDetailHeader
-          title="Detail Peralatan"
-          description="Tinjau informasi peralatan dan lakukan perubahan bila diperlukan."
-          icon={<Wrench className="h-5 w-5" />}
-          backLabel="Tutup"
-          onBack={() => onOpenChange(false)}
-        />
-
         <div className="space-y-4 px-5 py-4 sm:px-6">
           {error ? (
             <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
@@ -486,112 +464,55 @@ export default function AdminEquipmentDetailDialog({
               </div>
 
               {updateErrorMessage ? (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {updateErrorMessage}
-                </div>
+                <InlineErrorAlert>{updateErrorMessage}</InlineErrorAlert>
               ) : null}
               {deleteErrorMessage ? (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {deleteErrorMessage}
-                </div>
+                <InlineErrorAlert>{deleteErrorMessage}</InlineErrorAlert>
               ) : null}
 
-                <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                  {isEditing && canManage ? (
-                    <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setUpdateErrorMessage("");
-                      setFormData({
-                        name: equipment.name,
-                        quantity: equipment.quantity,
-                        category: equipment.category,
-                        roomId: equipment.roomId,
-                        isMoveable: String(equipment.isMoveable),
-                        description: equipment.description,
-                        imageId: equipment.imageId,
-                        imageFile: null,
-                      });
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    Batal
-                    </Button>
-                  ) : null}
-                  {canManage ? (
-                    <Button
-                    type="button"
-                    variant={isEditing ? "default" : "outline"}
-                    className={
-                      isEditing
-                        ? "bg-[#0052C7] text-white hover:bg-[#0048B4]"
-                        : ""
-                    }
-                    disabled={isSubmitting}
-                    onClick={() => {
-                      if (isEditing) {
-                        void handleSave();
-                        return;
-                      }
-                      setIsEditing(true);
-                    }}
-                  >
-                    {isEditing
-                      ? isSubmitting
-                        ? "Menyimpan..."
-                        : "Simpan"
-                      : "Edit"}
-                    </Button>
-                  ) : null}
+              {canManage ? (
+                <AdminDetailActions
+                  isEditing={isEditing}
+                  isSubmitting={isSubmitting}
+                  showDeleteAction
+                  deleteLabel="Hapus Peralatan"
+                  onEdit={() => setIsEditing(true)}
+                  onCancelEdit={() => {
+                    setIsEditing(false);
+                    setUpdateErrorMessage("");
+                    setFormData({
+                      name: equipment.name,
+                      quantity: equipment.quantity,
+                      category: equipment.category,
+                      roomId: equipment.roomId,
+                      isMoveable: String(equipment.isMoveable),
+                      description: equipment.description,
+                      imageId: equipment.imageId,
+                      imageFile: null,
+                    });
+                  }}
+                  onSave={() => void handleSave()}
+                  onDelete={() => setConfirmDeleteOpen(true)}
+                />
+              ) : null}
 
-                  {!isEditing && canManage ? (
-                    <AlertDialog
-                    open={confirmDeleteOpen}
-                    onOpenChange={setConfirmDeleteOpen}
-                  >
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={isDeleting || isSubmitting}
-                      >
-                        {isDeleting ? "Menghapus..." : "Hapus Peralatan"}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent size="sm">
-                      <AlertDialogHeader className="place-items-start text-left">
-                        <AlertDialogTitle>Hapus peralatan?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Peralatan{" "}
-                          <span className="font-semibold">
-                            {equipment.name}
-                          </span>{" "}
-                          akan dihapus.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter className="sm:justify-start">
-                        <AlertDialogCancel disabled={isDeleting}>
-                          Batal
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          variant="destructive"
-                          disabled={isDeleting}
-                          onClick={() => void handleDelete()}
-                        >
-                          {isDeleting ? "Menghapus..." : "Hapus"}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                    </AlertDialog>
-                  ) : null}
-                </div>
+              {!isEditing && canManage ? (
+                    <ConfirmDeleteDialog
+                      open={confirmDeleteOpen}
+                      onOpenChange={setConfirmDeleteOpen}
+                      size="sm"
+                      headerClassName="place-items-start text-left"
+                      footerClassName="sm:justify-start"
+                      title="Hapus peralatan?"
+                      description={`Peralatan ${equipment.name} akan dihapus.`}
+                      isDeleting={isDeleting}
+                      onConfirm={() => void handleDelete()}
+                    />
+              ) : null}
               </div>
             </div>
           )}
         </div>
-      </DialogContent>
 
       <RelatedRoomDetailDialog
         open={Boolean(relatedRoomId)}
@@ -600,6 +521,6 @@ export default function AdminEquipmentDetailDialog({
           if (!nextOpen) setRelatedRoomId(null);
         }}
       />
-    </Dialog>
+    </AdminDetailDialogShell>
   );
 }

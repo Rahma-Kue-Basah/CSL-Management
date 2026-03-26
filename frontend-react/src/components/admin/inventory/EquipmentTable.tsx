@@ -3,18 +3,8 @@
 import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import type { EquipmentRow } from "@/hooks/equipments/use-equipments";
 
 type EquipmentTableProps = {
@@ -121,34 +111,22 @@ export default function EquipmentTable({
                     <Button variant="outline" size="icon-sm" onClick={() => onOpenDetail(item, "edit")}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <AlertDialog
+                    <ConfirmDeleteDialog
                       open={deleteCandidate?.id === item.id}
                       onOpenChange={(open) => onDeleteCandidateChange(open ? item : null)}
-                    >
-                      <AlertDialogTrigger asChild>
+                      size="sm"
+                      headerClassName="place-items-start text-left"
+                      footerClassName="sm:justify-start"
+                      title="Hapus peralatan?"
+                      description={`Peralatan ${item.name} akan dihapus.`}
+                      isDeleting={isDeleting}
+                      onConfirm={() => onDelete(item)}
+                      trigger={
                         <Button variant="outline" size="icon-sm" disabled={isDeleting}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent size="sm">
-                        <AlertDialogHeader className="place-items-start text-left">
-                          <AlertDialogTitle>Hapus peralatan?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Peralatan <span className="font-semibold">{item.name}</span> akan dihapus.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="sm:justify-start">
-                          <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
-                          <AlertDialogAction
-                            variant="destructive"
-                            disabled={isDeleting}
-                            onClick={() => onDelete(item)}
-                          >
-                            {isDeleting ? "Menghapus..." : "Hapus"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                      }
+                    />
                   </div>
                 </td>
               </tr>

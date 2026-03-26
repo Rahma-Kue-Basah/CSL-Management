@@ -13,16 +13,7 @@ import {
 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -588,37 +579,21 @@ export default function StructureOrgansPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}
-      >
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader className="place-items-start text-left">
-            <AlertDialogTitle>Hapus struktur organisasi?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTarget ? (
-                <>
-                  Data <strong>{deleteTarget.title}</strong> untuk{" "}
-                  <strong>{deleteTarget.name}</strong> akan dihapus. Jika posisi ini punya
-                  turunan, data turunannya juga bisa ikut terhapus.
-                </>
-              ) : (
-                "Data struktur organisasi ini akan dihapus."
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-start">
-            <AlertDialogCancel disabled={deletingId != null}>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={deletingId != null}
-              onClick={() => void handleDelete()}
-            >
-              {deletingId != null ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        size="sm"
+        headerClassName="place-items-start text-left"
+        footerClassName="sm:justify-start"
+        title="Hapus struktur organisasi?"
+        description={
+          deleteTarget
+            ? `Data ${deleteTarget.title} untuk ${deleteTarget.name} akan dihapus. Jika posisi ini punya turunan, data turunannya juga bisa ikut terhapus.`
+            : "Data struktur organisasi ini akan dihapus."
+        }
+        isDeleting={deletingId != null}
+        onConfirm={() => void handleDelete()}
+      />
 
       <AdminPageHeader
         title="Struktur Organisasi"

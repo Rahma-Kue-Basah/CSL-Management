@@ -1,34 +1,28 @@
 "use client";
 
-import { useMemo, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
+  Loader2,
   Megaphone,
-  Pencil,
   Plus,
   Search,
-  Trash2,
 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
+import AnnouncementBulkActions from "@/components/admin/information/AnnouncementBulkActions";
+import AnnouncementTable from "@/components/admin/information/AnnouncementTable";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import { DataPagination } from "@/components/shared/data-pagination";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import {
   AnnouncementCreateDialog,
   AnnouncementEditDialog,
+  type AnnouncementDetailMode,
 } from "@/components/admin/pengumuman/announcement-dialogs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAnnouncements,
   type Announcement,
@@ -37,71 +31,39 @@ import { useCreateAnnouncement } from "@/hooks/announcements/use-create-announce
 import { useUpdateAnnouncement } from "@/hooks/announcements/use-update-announcement";
 import { useDeleteAnnouncement } from "@/hooks/announcements/use-delete-announcement";
 import { formatDateKey, parseDateKey } from "@/lib/date";
+import { stripHtmlTags } from "@/lib/text";
 import { toast } from "sonner";
 
-function normalizeText(value: string) {
-  return value.toLowerCase().replace(/\s+/g, " ").trim();
-}
+const PAGE_SIZE = 10;
+type SortOrder = "newest" | "oldest";
 
-function stripHtmlTags(value: string) {
-  return value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function formatTime(value?: string | null) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-}
-
-function getDateKey(value?: string | null) {
-  if (!value) return "unknown";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "unknown";
-  return date.toISOString().slice(0, 10);
-}
-
-function formatDateLabel(value?: string | null) {
-  if (!value) return "Tanggal tidak diketahui";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-
-  const today = new Date();
-  const isSameDate =
-    date.getFullYear() === today.getFullYear() &&
-    date.getMonth() === today.getMonth() &&
-    date.getDate() === today.getDate();
-
-  if (isSameDate) return "Hari ini";
-
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "long",
-    year: "numeric",
-  }).format(date);
-}
-
-export default function AdminPengumumanPage() {
+export default function AdminAnnouncementPage() {
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [sortOrder, setSortOrder] = useState<SortOrder>("newest");
+  const [page, setPage] = useState(1);
   const [filterOpen, setFilterOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
   const {
     announcements,
     setAnnouncements,
+    totalCount,
+    setTotalCount,
     isLoading,
     error: errorMessage,
     setError: setErrorMessage,
-    endpoint: announcementEndpoint,
-    setEndpoint: setAnnouncementEndpoint,
-  } = useAnnouncements();
+  } = useAnnouncements(
+    page,
+    PAGE_SIZE,
+    {
+      search: debouncedSearchQuery,
+      ordering: sortOrder === "oldest" ? "created_at" : "-created_at",
+      date: dateFilter || undefined,
+    },
+    reloadKey,
+  );
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const {
     createAnnouncement,
@@ -113,8 +75,9 @@ export default function AdminPengumumanPage() {
     title: "",
     content: "",
   });
-  const [editTarget, setEditTarget] = useState<Announcement | null>(null);
-  const [editForm, setEditForm] = useState({ title: "", content: "" });
+  const [detailTarget, setDetailTarget] = useState<Announcement | null>(null);
+  const [detailMode, setDetailMode] = useState<AnnouncementDetailMode>("view");
+  const [detailForm, setDetailForm] = useState({ title: "", content: "" });
   const {
     updateAnnouncement,
     isSubmitting: isEditing,
@@ -122,7 +85,41 @@ export default function AdminPengumumanPage() {
     setErrorMessage: setEditError,
   } = useUpdateAnnouncement();
   const [deleteTarget, setDeleteTarget] = useState<Announcement | null>(null);
-  const { deleteAnnouncement, isDeleting } = useDeleteAnnouncement();
+  const [selectedIds, setSelectedIds] = useState<Array<string | number>>([]);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const {
+    deleteAnnouncement,
+    bulkDeleteAnnouncements,
+    isDeleting,
+  } = useDeleteAnnouncement();
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 500);
+    return () => clearTimeout(timeoutId);
+  }, [searchQuery]);
+
+  const isSearchDebouncing = searchQuery.trim() !== debouncedSearchQuery;
+
+  useEffect(() => {
+    setSelectedIds((current) =>
+      current.filter((id) => announcements.some((item) => item.id === id)),
+    );
+  }, [announcements]);
+
+  const allVisibleSelected =
+    announcements.length > 0 &&
+    announcements.every((item) => selectedIds.includes(item.id));
+  const someVisibleSelected =
+    announcements.some((item) => selectedIds.includes(item.id)) &&
+    !allVisibleSelected;
+  const selectedCount = selectedIds.length;
+
+  useEffect(() => {
+    if (!selectAllRef.current) return;
+    selectAllRef.current.indeterminate = someVisibleSelected;
+  }, [someVisibleSelected]);
 
   const handleDialogChange = (open: boolean) => {
     setIsDialogOpen(open);
@@ -132,18 +129,23 @@ export default function AdminPengumumanPage() {
     }
   };
 
-  const handleEditOpen = (announcement: Announcement) => {
-    setEditTarget(announcement);
-    setEditForm({
+  const handleDetailOpen = (
+    announcement: Announcement,
+    mode: AnnouncementDetailMode,
+  ) => {
+    setDetailTarget(announcement);
+    setDetailMode(mode);
+    setDetailForm({
       title: announcement.title || "",
       content: announcement.content || "",
     });
     setEditError("");
   };
 
-  const handleEditClose = () => {
-    setEditTarget(null);
-    setEditForm({ title: "", content: "" });
+  const handleDetailClose = () => {
+    setDetailTarget(null);
+    setDetailMode("view");
+    setDetailForm({ title: "", content: "" });
     setEditError("");
   };
 
@@ -168,23 +170,14 @@ export default function AdminPengumumanPage() {
     }
 
     try {
-      const result = await createAnnouncement(
-        { title, content },
-        announcementEndpoint,
-      );
+      const result = await createAnnouncement({ title, content });
 
       if (!result.ok) return;
 
-      if (result.endpoint && result.endpoint !== announcementEndpoint) {
-        setAnnouncementEndpoint(result.endpoint);
-      }
-
-      if (result.data) {
-        setAnnouncements((prev) => [result.data as Announcement, ...prev]);
-      }
-
       setFormData({ title: "", content: "" });
       setIsDialogOpen(false);
+      setPage(1);
+      setReloadKey((prev) => prev + 1);
       toast.success("Pengumuman berhasil ditambahkan.");
     } finally {
       // handled in hook
@@ -193,11 +186,11 @@ export default function AdminPengumumanPage() {
 
   const handleEditSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!editTarget) return;
+    if (!detailTarget) return;
     setEditError("");
 
-    const title = editForm.title.trim();
-    const content = editForm.content.trim();
+    const title = detailForm.title.trim();
+    const content = detailForm.content.trim();
     const plainContent = stripHtmlTags(content);
 
     if (!title) {
@@ -211,17 +204,9 @@ export default function AdminPengumumanPage() {
     }
 
     try {
-      const result = await updateAnnouncement(
-        editTarget.id,
-        { title, content },
-        announcementEndpoint,
-      );
+      const result = await updateAnnouncement(detailTarget.id, { title, content });
 
       if (!result.ok) return;
-
-      if (result.endpoint && result.endpoint !== announcementEndpoint) {
-        setAnnouncementEndpoint(result.endpoint);
-      }
 
       if (result.data) {
         setAnnouncements((prev) =>
@@ -231,7 +216,7 @@ export default function AdminPengumumanPage() {
         );
       }
 
-      handleEditClose();
+      handleDetailClose();
       toast.success("Pengumuman berhasil diperbarui.");
     } finally {
       // handled in hook
@@ -241,66 +226,108 @@ export default function AdminPengumumanPage() {
   const handleDeleteAnnouncement = async () => {
     if (!deleteTarget) return;
     try {
-      const result = await deleteAnnouncement(
-        deleteTarget.id,
-        announcementEndpoint,
-      );
+      const result = await deleteAnnouncement(deleteTarget.id);
 
       if (!result.ok) {
         setErrorMessage(result.message || "Gagal menghapus pengumuman.");
         return;
       }
 
-      if (result.endpoint && result.endpoint !== announcementEndpoint) {
-        setAnnouncementEndpoint(result.endpoint);
-      }
-
       setAnnouncements((prev) =>
         prev.filter((item) => item.id !== deleteTarget.id),
       );
+      setTotalCount((prev) => Math.max(0, prev - 1));
+      setSelectedIds((prev) => prev.filter((id) => id !== deleteTarget.id));
       setDeleteTarget(null);
+
+      if (announcements.length === 1 && page > 1) {
+        setPage((prev) => Math.max(1, prev - 1));
+      } else {
+        setReloadKey((prev) => prev + 1);
+      }
+
       toast.success("Pengumuman berhasil dihapus.");
     } finally {
       // handled in hook
     }
   };
 
-  const filteredAnnouncements = useMemo(() => {
-    const query = normalizeText(searchQuery);
-    return announcements.filter((announcement) => {
-      if (dateFilter && getDateKey(announcement.created_at) !== dateFilter) {
-        return false;
-      }
-      if (!query) return true;
-      const title = normalizeText(announcement.title || "");
-      const content = normalizeText(stripHtmlTags(announcement.content || ""));
-      return title.includes(query) || content.includes(query);
-    });
-  }, [announcements, searchQuery, dateFilter]);
+  const handleToggleItemSelection = (announcement: Announcement) => {
+    setSelectedIds((current) =>
+      current.includes(announcement.id)
+        ? current.filter((id) => id !== announcement.id)
+        : [...current, announcement.id],
+    );
+  };
 
-  const groupedAnnouncements = useMemo(() => {
-    const sorted = [...filteredAnnouncements].sort((first, second) => {
-      const firstDate = first.created_at
-        ? new Date(first.created_at).getTime()
-        : 0;
-      const secondDate = second.created_at
-        ? new Date(second.created_at).getTime()
-        : 0;
-      return secondDate - firstDate;
-    });
+  const handleToggleSelectAllVisible = (checked: boolean) => {
+    if (checked) {
+      setSelectedIds((current) => {
+        const next = new Set(current);
+        announcements.forEach((item) => next.add(item.id));
+        return Array.from(next);
+      });
+      return;
+    }
 
-    const map = new Map<string, Announcement[]>();
-    sorted.forEach((item) => {
-      const key = getDateKey(item.created_at);
-      const existing = map.get(key);
-      if (existing) {
-        existing.push(item);
-      } else {
-        map.set(key, [item]);
-      }
-    });
-    return Array.from(map.entries());
-  }, [filteredAnnouncements]);
+    setSelectedIds((current) =>
+      current.filter((id) => !announcements.some((item) => item.id === id)),
+    );
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!selectedIds.length) return;
+    const idsToDelete = [...selectedIds];
+    const result = await bulkDeleteAnnouncements(idsToDelete);
+
+    if (!result.ok) {
+      setErrorMessage(result.message || "Gagal menghapus pengumuman terpilih.");
+      return;
+    }
+
+    const failedIds = (result.failedIds ?? []).map((id) => String(id));
+    const deletedIds = (result.deletedIds ?? []).map((id) => String(id));
+
+    if (failedIds.length) {
+      setErrorMessage(result.message || "Sebagian pengumuman gagal dihapus.");
+      setSelectedIds(failedIds);
+      setAnnouncements((prev) =>
+        prev.filter(
+          (item) =>
+            failedIds.includes(String(item.id)) ||
+            !deletedIds.includes(String(item.id)),
+        ),
+      );
+      setTotalCount((prev) => Math.max(0, prev - deletedIds.length));
+      setBulkDeleteOpen(false);
+      return;
+    }
+
+    setAnnouncements((prev) =>
+      prev.filter((item) => !deletedIds.includes(String(item.id))),
+    );
+    setTotalCount((prev) => Math.max(0, prev - deletedIds.length));
+    setSelectedIds([]);
+    setBulkDeleteOpen(false);
+
+    if (announcements.length === deletedIds.length && page > 1) {
+      setPage((prev) => Math.max(1, prev - 1));
+    } else {
+      setReloadKey((prev) => prev + 1);
+    }
+
+    toast.success(result.message || "Pengumuman terpilih berhasil dihapus.");
+  };
+
+  useEffect(() => {
+    setPage(1);
+  }, [dateFilter, debouncedSearchQuery, sortOrder]);
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  useEffect(() => {
+    setPage((current) => Math.min(current, totalPages));
+  }, [totalPages]);
 
   return (
     <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
@@ -308,194 +335,182 @@ export default function AdminPengumumanPage() {
         title="Pengumuman"
         description="Kelola informasi terbaru untuk semua pengguna CSL."
         icon={<Megaphone className="h-5 w-5 text-sky-100" />}
-        actions={
-          <AnnouncementCreateDialog
-            open={isDialogOpen}
-            onOpenChange={handleDialogChange}
-            titleValue={formData.title}
-            contentValue={formData.content}
-            onTitleChange={(value) =>
-              setFormData((prev) => ({ ...prev, title: value }))
-            }
-            onContentChange={(value) =>
-              setFormData((prev) => ({ ...prev, content: value }))
-            }
-            onSubmit={handleCreateAnnouncement}
-            isSubmitting={isSubmitting}
-            error={formError}
-            trigger={
-              <Button
-                type="button"
-                size="sm"
-                className="bg-white text-slate-900 hover:bg-slate-100"
-              >
-                <Plus className="h-4 w-4" />
-                Tambah Pengumuman
-              </Button>
-            }
-          />
-        }
       />
 
       <AnnouncementEditDialog
-        open={Boolean(editTarget)}
-        onOpenChange={(open) => (!open ? handleEditClose() : null)}
-        titleValue={editForm.title}
-        contentValue={editForm.content}
+        open={Boolean(detailTarget)}
+        onOpenChange={(open) => (!open ? handleDetailClose() : null)}
+        initialMode={detailMode}
+        onCancelEdit={() => {
+          if (!detailTarget) return;
+          setDetailForm({
+            title: detailTarget.title || "",
+            content: detailTarget.content || "",
+          });
+          setEditError("");
+        }}
+        onDeleteRequest={() => {
+          if (!detailTarget) return;
+          setDeleteTarget(detailTarget);
+        }}
+        titleValue={detailForm.title}
+        contentValue={detailForm.content}
         onTitleChange={(value) =>
-          setEditForm((prev) => ({ ...prev, title: value }))
+          setDetailForm((prev) => ({ ...prev, title: value }))
         }
         onContentChange={(value) =>
-          setEditForm((prev) => ({ ...prev, content: value }))
+          setDetailForm((prev) => ({ ...prev, content: value }))
         }
         onSubmit={handleEditSubmit}
         isSubmitting={isEditing}
         error={editError}
       />
 
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus pengumuman?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Pengumuman yang dihapus tidak bisa dikembalikan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteAnnouncement}
-              disabled={isDeleting}
-              className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
-            >
-              {isDeleting ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="Hapus pengumuman?"
+        description="Pengumuman yang dihapus tidak bisa dikembalikan."
+        isDeleting={isDeleting}
+        onConfirm={handleDeleteAnnouncement}
+      />
+
+      <ConfirmDeleteDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title="Hapus pengumuman terpilih?"
+        description={`${selectedCount} pengumuman yang dipilih akan dihapus permanen.`}
+        isDeleting={selectedCount === 0 || isDeleting}
+        onConfirm={handleDeleteSelected}
+      />
 
       <AdminFilterCard
         open={filterOpen}
         onToggle={() => setFilterOpen((prev) => !prev)}
         onReset={() => {
           setSearchQuery("");
+          setDebouncedSearchQuery("");
           setDateFilter("");
+          setSortOrder("newest");
+          setPage(1);
           setFilterOpen(false);
         }}
       >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5">
-            <Search className="h-4 w-4 text-slate-400" />
-            <Input
-              value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
-              placeholder="Cari judul atau isi pengumuman"
-              className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-800">
+              Pencarian
+            </label>
+            <div className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5">
+              {isSearchDebouncing ? (
+                <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+              ) : (
+                <Search className="h-4 w-4 text-slate-400" />
+              )}
+              <Input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Cari judul atau isi pengumuman"
+                className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-800">
+              Tanggal
+            </label>
+            <DatePicker
+              value={parseDateKey(dateFilter)}
+              onChange={(value) => setDateFilter(value ? formatDateKey(value) : "")}
+              clearable
+              className="w-full"
+              buttonClassName="h-11 rounded-lg border-slate-300 px-3 py-2.5 text-sm"
             />
           </div>
-          <DatePicker
-            value={parseDateKey(dateFilter)}
-            onChange={(value) => setDateFilter(value ? formatDateKey(value) : "")}
-            clearable
-            className="w-full"
-            buttonClassName="h-11 rounded-lg border-slate-300 px-3 py-2.5 text-sm"
-          />
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-slate-800">
+              Urutkan
+            </label>
+            <select
+              value={sortOrder}
+              onChange={(event) =>
+                setSortOrder(event.target.value as SortOrder)
+              }
+              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
+            >
+              <option value="newest">Terbaru</option>
+              <option value="oldest">Terlama</option>
+            </select>
+          </div>
         </div>
       </AdminFilterCard>
 
       {errorMessage ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {errorMessage}
-        </div>
+        <InlineErrorAlert>{errorMessage}</InlineErrorAlert>
       ) : null}
 
-      <div className="space-y-6">
-        {isLoading
-          ? Array.from({ length: 5 }).map((_, index) => (
-              <div key={`announcement-skeleton-${index}`} className="space-y-3">
-                <Skeleton className="h-4 w-40" />
-                <div className="space-y-2">
-                  {Array.from({ length: 3 }).map((__, rowIndex) => (
-                    <Skeleton key={rowIndex} className="h-10 w-full" />
-                  ))}
-                </div>
-              </div>
-            ))
-          : groupedAnnouncements.map(([dateKey, items]) => {
-              const label = formatDateLabel(
-                dateKey === "unknown" ? null : `${dateKey}T00:00:00`,
-              );
-              return (
-                <div key={dateKey} className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-semibold text-slate-800">
-                      {label}
-                    </span>
-                    <span className="h-px flex-1 bg-slate-200" />
-                  </div>
-                  <div className="space-y-2">
-                    {items.map((announcement) => {
-                      const content = announcement.content || "";
-                      const timeLabel = formatTime(announcement.created_at);
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <AnnouncementBulkActions
+            selectedCount={selectedCount}
+            isDeleting={isDeleting}
+            onDeleteSelected={() => setBulkDeleteOpen(true)}
+          />
+          <Button
+            type="button"
+            size="sm"
+            className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
+            onClick={() => setIsDialogOpen(true)}
+          >
+            <Plus className="h-4 w-4" />
+            Tambah Pengumuman
+          </Button>
+        </div>
 
-                      return (
-                        <div
-                          key={announcement.id}
-                          className="group flex min-w-0 items-center gap-3 rounded-md border bg-white px-3 py-4 shadow-xs transition hover:border-slate-300 hover:shadow-sm"
-                        >
-                          <div className="flex min-w-0 flex-1 items-center gap-3">
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-base font-semibold text-slate-900">
-                                {announcement.title}
-                              </p>
-                              <div
-                                className="text-sm text-slate-500 leading-relaxed [&_p]:mb-2 [&_ul]:list-disc [&_ol]:list-decimal [&_li]:ml-5"
-                                dangerouslySetInnerHTML={{ __html: content }}
-                              />
-                            </div>
-                            <div className="flex shrink-0 flex-col items-end gap-1">
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-600">
-                                {timeLabel}
-                              </span>
-                            </div>
-                            <div className="flex shrink-0 items-center gap-1">
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                className="text-slate-600 hover:text-slate-900"
-                                onClick={() => handleEditOpen(announcement)}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
-                              <Button
-                                type="button"
-                                variant="ghost"
-                                size="icon-sm"
-                                className="text-rose-600 hover:text-rose-700"
-                                onClick={() => setDeleteTarget(announcement)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+        <AnnouncementCreateDialog
+          open={isDialogOpen}
+          onOpenChange={handleDialogChange}
+          titleValue={formData.title}
+          contentValue={formData.content}
+          onTitleChange={(value) =>
+            setFormData((prev) => ({ ...prev, title: value }))
+          }
+          onContentChange={(value) =>
+            setFormData((prev) => ({ ...prev, content: value }))
+          }
+          onSubmit={handleCreateAnnouncement}
+          isSubmitting={isSubmitting}
+          error={formError}
+        />
+
+        <AnnouncementTable
+          announcements={announcements}
+          isLoading={isLoading}
+          emptyMessage={
+            totalCount
+              ? "Tidak ada pengumuman yang cocok dengan filter."
+              : "Belum ada data pengumuman."
+          }
+          selectedIds={selectedIds}
+          allVisibleSelected={allVisibleSelected}
+          selectAllRef={selectAllRef}
+          onToggleSelectAllVisible={handleToggleSelectAllVisible}
+          onToggleItemSelection={handleToggleItemSelection}
+          onView={(announcement) => handleDetailOpen(announcement, "view")}
+          onEdit={(announcement) => handleDetailOpen(announcement, "edit")}
+          onDelete={(announcement) => setDeleteTarget(announcement)}
+        />
+
+        <DataPagination
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          pageSize={PAGE_SIZE}
+          itemLabel="pengumuman"
+          isLoading={isLoading}
+          onPageChange={setPage}
+        />
       </div>
-
-      {!isLoading && filteredAnnouncements.length === 0 && !errorMessage ? (
-        <div className="rounded-xl border border-dashed bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-          Belum ada pengumuman yang sesuai dengan filter. Coba kata kunci lain.
-        </div>
-      ) : null}
     </section>
   );
 }

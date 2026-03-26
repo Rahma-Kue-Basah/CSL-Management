@@ -16,6 +16,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import {
   Combobox,
@@ -30,7 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateBorrow } from "@/hooks/borrows/use-create-borrow";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
-import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-time";
+import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import { cn } from "@/lib/utils";
 
 type FormData = {
@@ -505,9 +506,7 @@ export default function BorrowEquipmentFormPage() {
         ) : null}
 
         {errorMessage ? (
-          <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-            {errorMessage}
-          </div>
+          <InlineErrorAlert className="mt-4">{errorMessage}</InlineErrorAlert>
         ) : null}
 
         <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">

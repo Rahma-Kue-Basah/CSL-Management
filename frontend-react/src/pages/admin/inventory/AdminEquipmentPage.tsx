@@ -10,9 +10,10 @@ import EquipmentCreateDialog from "@/components/admin/inventory/EquipmentCreateD
 import AdminEquipmentDetailDialog from "@/components/admin/inventory/AdminEquipmentDetailDialog";
 import EquipmentTable from "@/components/admin/inventory/EquipmentTable";
 import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { DataPagination } from "@/components/shared/data-pagination";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
-import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -345,9 +346,7 @@ export default function AdminEquipmentsPage() {
           </AdminFilterCard>
 
           {error ? (
-            <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
+            <InlineErrorAlert>{error}</InlineErrorAlert>
           ) : null}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -424,9 +423,12 @@ export default function AdminEquipmentsPage() {
             onDelete={handleDelete}
           />
 
-          <InventoryPagination
+          <DataPagination
             page={page}
             totalPages={totalPages}
+            totalCount={totalEquipments}
+            pageSize={PAGE_SIZE}
+            itemLabel="peralatan"
             isLoading={isLoading}
             onPageChange={setPage}
           />
@@ -439,7 +441,7 @@ export default function AdminEquipmentsPage() {
         onCreated={handleCreatedOrUpdated}
       />
 
-      <RecordDeleteDialog
+      <ConfirmDeleteDialog
         open={isBulkDeleteOpen}
         title="Hapus peralatan terpilih?"
         description={`${selectedCount} peralatan yang dipilih akan dihapus permanen.`}

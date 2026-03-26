@@ -21,7 +21,7 @@ import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-stat
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type BookingDetailParams = {

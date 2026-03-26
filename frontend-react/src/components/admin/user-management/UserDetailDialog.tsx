@@ -4,10 +4,9 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, UserRound, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
-import { AdminDetailHeader } from "@/components/admin/AdminDetailHeader";
-import { Button } from "@/components/ui/button";
+import AdminDetailActions from "@/components/shared/admin-detail-actions";
+import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter } from "@/components/ui/dialog";
 import { BATCH_VALUES } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { ROLE_OPTIONS } from "@/constants/roles";
@@ -82,29 +81,19 @@ export default function UserDetailDialog({
   };
 
   return (
-    <Dialog
+    <AdminDetailDialogShell
       open={open}
-      onOpenChange={(nextOpen) => {
-        onOpenChange(nextOpen);
-        if (!nextOpen) {
-          setIsEditing(false);
-          setErrorMessage("");
-          setMessage("");
-        }
+      onOpenChange={onOpenChange}
+      onCloseReset={() => {
+        setIsEditing(false);
+        setErrorMessage("");
+        setMessage("");
       }}
+      title="Detail User"
+      description="Tinjau informasi user dan lakukan perubahan bila diperlukan."
+      icon={<UserRound className="h-5 w-5" />}
+      contentClassName={`${USER_MODAL_WIDTH_CLASS} gap-0 p-0 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`}
     >
-      <DialogContent
-        showCloseButton={false}
-        className={`${USER_MODAL_WIDTH_CLASS} gap-0 p-0 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`}
-      >
-        <AdminDetailHeader
-          title="Detail User"
-          description="Tinjau informasi user dan lakukan perubahan bila diperlukan."
-          icon={<UserRound className="h-5 w-5" />}
-          backLabel="Tutup"
-          onBack={() => onOpenChange(false)}
-        />
-
         <div className="space-y-4 px-5 py-4 sm:px-6">
           {error ? (
             <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
@@ -220,53 +209,26 @@ export default function UserDetailDialog({
               </div>
             ) : null}
 
-            <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-              {isEditing ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setErrorMessage("");
-                    if (openedInEditMode) onOpenChange(false);
-                  }}
-                  disabled={isSubmitting}
-                >
-                  Batal
-                </Button>
-              ) : null}
-              {canManageUsers ? (
-                <Button
-                  type="button"
-                  variant={isEditing ? "default" : "outline"}
-                  onClick={() => {
-                    if (isEditing) {
-                      void handleSave();
-                      return;
-                    }
-                    setIsEditing(true);
-                  }}
-                  disabled={isSubmitting}
-                >
-                  {isEditing ? (isSubmitting ? "Menyimpan..." : "Simpan") : "Edit"}
-                </Button>
-              ) : null}
-              {showDeleteAction ? (
-                <Button
-                  type="button"
-                  variant="destructive"
-                  disabled={isSubmitting}
-                  onClick={() => onDeleteRequest(user)}
-                >
-                  Hapus User
-                </Button>
-              ) : null}
-            </DialogFooter>
+            {canManageUsers ? (
+              <AdminDetailActions
+                isEditing={isEditing}
+                isSubmitting={isSubmitting}
+                showDeleteAction={showDeleteAction}
+                deleteLabel="Hapus User"
+                onEdit={() => setIsEditing(true)}
+                onCancelEdit={() => {
+                  setIsEditing(false);
+                  setErrorMessage("");
+                  if (openedInEditMode) onOpenChange(false);
+                }}
+                onSave={() => void handleSave()}
+                onDelete={() => onDeleteRequest(user)}
+              />
+            ) : null}
             </div>
           ) : null}
         </div>
-      </DialogContent>
-    </Dialog>
+    </AdminDetailDialogShell>
   );
 }
 

@@ -2,11 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { API_ANNOUNCEMENTS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
-import {
-  ANNOUNCEMENTS_ENDPOINT,
-  FALLBACK_ANNOUNCEMENTS_ENDPOINT,
-} from "@/hooks/announcements/utils";
 
 export type Announcement = {
   id: string | number;
@@ -21,29 +18,46 @@ type AnnouncementListResponse = {
   results?: Announcement[];
 };
 
-export function useAnnouncements() {
+export type AnnouncementFilters = {
+  search?: string;
+  ordering?: "created_at" | "-created_at";
+  date?: string;
+};
+
+export function useAnnouncements(
+  page = 1,
+  pageSize = 10,
+  filters: AnnouncementFilters = {},
+  reloadKey = 0,
+) {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
   const [error, setError] = useState("");
-  const [endpoint, setEndpoint] = useState(ANNOUNCEMENTS_ENDPOINT);
 
   useEffect(() => {
+    const controller = new AbortController();
     let isMounted = true;
+
+    const buildListUrl = (baseEndpoint: string) => {
+      const url = new URL(baseEndpoint, window.location.origin);
+      url.searchParams.set("page", String(page));
+      url.searchParams.set("page_size", String(pageSize));
+      if (filters.search) url.searchParams.set("search", filters.search);
+      if (filters.ordering) url.searchParams.set("ordering", filters.ordering);
+      if (filters.date) url.searchParams.set("date", filters.date);
+      return url.toString();
+    };
 
     const loadAnnouncements = async () => {
       setIsLoading(true);
       setError("");
 
       try {
-        let response = await authFetch(ANNOUNCEMENTS_ENDPOINT);
-        if (response.status === 404) {
-          response = await authFetch(FALLBACK_ANNOUNCEMENTS_ENDPOINT);
-          if (response.ok && isMounted) {
-            setEndpoint(FALLBACK_ANNOUNCEMENTS_ENDPOINT);
-          }
-        } else if (response.ok && isMounted) {
-          setEndpoint(ANNOUNCEMENTS_ENDPOINT);
-        }
+        const response = await authFetch(buildListUrl(API_ANNOUNCEMENTS), {
+          signal: controller.signal,
+        });
 
         if (!response.ok) {
           const errorPayload = await response.json().catch(() => ({}));
@@ -65,13 +79,24 @@ export function useAnnouncements() {
             ? payload.results
             : [];
 
-        if (isMounted) setAnnouncements(items);
+        if (isMounted) {
+          setAnnouncements(items);
+          setTotalCount(
+            Array.isArray(payload) ? items.length : (payload?.count ?? items.length),
+          );
+        }
       } catch (loadError) {
+        if (loadError instanceof DOMException && loadError.name === "AbortError") {
+          return;
+        }
         if (isMounted) {
           setError("Terjadi kesalahan saat memuat pengumuman.");
         }
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (isMounted) {
+          setIsLoading(false);
+          setHasLoadedOnce(true);
+        }
       }
     };
 
@@ -79,17 +104,19 @@ export function useAnnouncements() {
 
     return () => {
       isMounted = false;
+      controller.abort();
     };
-  }, []);
+  }, [filters.date, filters.ordering, filters.search, page, pageSize, reloadKey]);
 
   return {
     announcements,
     setAnnouncements,
+    totalCount,
+    setTotalCount,
     isLoading,
+    hasLoadedOnce,
     error,
     setError,
-    endpoint,
-    setEndpoint,
   };
 }
 

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { API_AUTH_ADMIN_DASHBOARD_KPIS } from "@/constants/api";
 import {
@@ -24,6 +25,11 @@ import {
 } from "@/hooks/admin/use-admin-actions";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { authFetch } from "@/lib/auth";
+import {
+  formatDateId,
+  formatDateTimeIdWithZone,
+  formatTimeIdWithZone,
+} from "@/lib/date-format";
 
 type AdminKpis = {
   totalUsers: number;
@@ -65,41 +71,6 @@ function getActionAccentClass(action: AdminAction["action"]) {
   return "bg-slate-400";
 }
 
-function formatTime(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZoneName: "short",
-  }).format(date);
-}
-
-function formatActionDate(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  }).format(date);
-}
-
-function formatActionClock(value: string) {
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZoneName: "short",
-  }).format(date);
-}
-
 function ActionList({
   title,
   actions,
@@ -133,9 +104,9 @@ function ActionList({
                     </span>
                     {/* <span className="inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-700">
                       <CalendarCheck2 className="h-3 w-3 text-slate-500" />
-                      {formatActionDate(item.action_time)}
+                      {formatDateId(item.action_time)}
                       <Clock3 className="h-3 w-3 text-slate-500" />
-                      {formatActionClock(item.action_time)}
+                      {formatTimeIdWithZone(item.action_time)}
                     </span> */}
                   </div>
                 </div>
@@ -150,8 +121,8 @@ function ActionList({
                     </span>
                     <span className="flex max-w-full flex-wrap items-center gap-1 break-words text-[11px] sm:text-xs">
                       <CalendarCheck2 className="h-3 w-3 text-slate-500" />
-                      {formatActionDate(item.action_time)} {", "}
-                      {formatActionClock(item.action_time)}
+                      {formatDateId(item.action_time)} {", "}
+                      {formatTimeIdWithZone(item.action_time)}
                     </span>
                   </p>
                   {/* <p className="flex min-w-0 items-center gap-2">
@@ -248,7 +219,7 @@ export default function Page() {
   }, []);
 
   const lastLoginText = profile.last_login
-    ? formatTime(profile.last_login)
+    ? formatDateTimeIdWithZone(profile.last_login)
     : "-";
   const displayName = profile.name || "User";
 
@@ -273,9 +244,7 @@ export default function Page() {
       />
 
       {kpisError ? (
-        <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {kpisError}
-        </div>
+        <InlineErrorAlert>{kpisError}</InlineErrorAlert>
       ) : null}
 
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4 xl:grid-cols-7">
@@ -317,9 +286,7 @@ export default function Page() {
       </div>
 
       {error ? (
-        <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
+        <InlineErrorAlert>{error}</InlineErrorAlert>
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">

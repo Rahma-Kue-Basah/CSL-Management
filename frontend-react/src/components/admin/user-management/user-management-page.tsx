@@ -1,20 +1,22 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight, FileUp, Plus, UserPlus } from "lucide-react";
+import { FileUp, Plus, UserPlus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
-import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import BulkCreateDialog from "@/components/admin/user-management/BulkCreateDialog";
 import CreateUserDialog from "@/components/admin/user-management/CreateUserDialog";
 import UserBulkActions from "@/components/admin/user-management/UserBulkActions";
 import UserDetailDialog from "@/components/admin/user-management/UserDetailDialog";
 import UserTable from "@/components/admin/user-management/UserTable";
+import { DataPagination } from "@/components/shared/data-pagination";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_AUTH_USERS_EXPORT } from "@/constants/api";
@@ -140,13 +142,6 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
     () => Math.max(1, Math.ceil((totalCount || users.length) / PAGE_SIZE)),
     [totalCount, users.length],
   );
-  const visiblePages = useMemo(() => {
-    const maxVisible = 5;
-    let start = Math.max(1, page - Math.floor(maxVisible / 2));
-    const end = Math.min(totalPages, start + maxVisible - 1);
-    start = Math.max(1, end - maxVisible + 1);
-    return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
-  }, [page, totalPages]);
 
   const columnCount = isRoleScoped
     ? canManageUsers
@@ -291,9 +286,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
           ) : null}
 
           {error ? (
-            <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
+            <InlineErrorAlert>{error}</InlineErrorAlert>
           ) : null}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -365,67 +358,15 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
             selectAllRef={selectAllRef}
           />
 
-          <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p className="text-sm text-muted-foreground">
-              Halaman {page} dari {totalPages}
-            </p>
-            <div className="flex w-fit max-w-full self-start flex-wrap items-center gap-1 rounded-lg border bg-card p-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                disabled={page <= 1 || isLoading}
-                onClick={() => setPage(1)}
-                aria-label="Halaman pertama"
-              >
-                <ChevronsLeft className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                disabled={page <= 1 || isLoading}
-                onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-                aria-label="Halaman sebelumnya"
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              {visiblePages.map((pageNumber) => (
-                <Button
-                  key={pageNumber}
-                  type="button"
-                  variant={pageNumber === page ? "default" : "ghost"}
-                  size="sm"
-                  className="min-w-8 px-2"
-                  disabled={isLoading}
-                  onClick={() => setPage(pageNumber)}
-                  aria-label={`Halaman ${pageNumber}`}
-                >
-                  {pageNumber}
-                </Button>
-              ))}
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                disabled={page >= totalPages || isLoading}
-                onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
-                aria-label="Halaman berikutnya"
-              >
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                disabled={page >= totalPages || isLoading}
-                onClick={() => setPage(totalPages)}
-                aria-label="Halaman terakhir"
-              >
-                <ChevronsRight className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
+          <DataPagination
+            page={page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            pageSize={PAGE_SIZE}
+            itemLabel="user"
+            isLoading={isLoading}
+            onPageChange={setPage}
+          />
         </div>
       </div>
 
@@ -459,7 +400,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
           actions.openDetail(updatedUser, actions.detailState.mode);
         }}
       />
-      <RecordDeleteDialog
+      <ConfirmDeleteDialog
         open={Boolean(actions.deleteCandidate)}
         title="Hapus user?"
         description={
@@ -475,7 +416,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
           void actions.handleDelete();
         }}
       />
-      <RecordDeleteDialog
+      <ConfirmDeleteDialog
         open={actions.isBulkDeleteOpen}
         title="Hapus user terpilih?"
         description={`${actions.selectedCount} user yang dipilih akan dihapus permanen.`}

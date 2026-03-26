@@ -15,17 +15,9 @@ import {
   validateScheduleForm,
 } from "@/components/admin/information/schedule-form-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { DataPagination } from "@/components/shared/data-pagination";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCalendarEvents } from "@/hooks/calendar/use-calendar-events";
@@ -37,6 +29,7 @@ import {
 } from "@/hooks/schedules/use-schedules";
 import { useUpdateSchedule } from "@/hooks/schedules/use-update-schedule";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { normalizeText } from "@/lib/text";
 import { toast } from "sonner";
 
 const PAGE_SIZE = 20;
@@ -72,10 +65,6 @@ function isSameMonth(left: Date, right: Date) {
     left.getFullYear() === right.getFullYear() &&
     left.getMonth() === right.getMonth()
   );
-}
-
-function normalizeText(value: string) {
-  return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 function getCalendarDotClass(source: string) {
@@ -346,29 +335,14 @@ export default function CalendarClient() {
         isSubmitting={isUpdating}
       />
 
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus jadwal?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Jadwal manual yang dihapus tidak bisa dikembalikan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
-            >
-              {isDeleting ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="Hapus jadwal?"
+        description="Jadwal manual yang dihapus tidak bisa dikembalikan."
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+      />
 
       <AdminFilterCard
         open={filterOpen}
@@ -425,19 +399,13 @@ export default function CalendarClient() {
       </AdminFilterCard>
 
       {calendarError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {calendarError}
-        </div>
+        <InlineErrorAlert>{calendarError}</InlineErrorAlert>
       ) : null}
       {schedulesError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {schedulesError}
-        </div>
+        <InlineErrorAlert>{schedulesError}</InlineErrorAlert>
       ) : null}
       {deleteError ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {deleteError}
-        </div>
+        <InlineErrorAlert>{deleteError}</InlineErrorAlert>
       ) : null}
 
       <div className="grid items-start gap-4 xl:grid-cols-[auto_minmax(0,1fr)]">
@@ -527,9 +495,12 @@ export default function CalendarClient() {
           onDelete={(item) => setDeleteTarget(item)}
         />
 
-        <InventoryPagination
+        <DataPagination
           page={page}
           totalPages={totalPages}
+          totalCount={totalCount || schedules.length}
+          pageSize={PAGE_SIZE}
+          itemLabel="jadwal"
           isLoading={isSchedulesLoading}
           onPageChange={setPage}
         />

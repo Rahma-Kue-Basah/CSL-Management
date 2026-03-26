@@ -2,11 +2,8 @@
 
 import { useState } from "react";
 
+import { API_ANNOUNCEMENTS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
-import {
-  ANNOUNCEMENTS_ENDPOINT,
-  FALLBACK_ANNOUNCEMENTS_ENDPOINT,
-} from "@/hooks/announcements/utils";
 import type { Announcement } from "@/hooks/announcements/use-announcements";
 
 type CreateAnnouncementPayload = {
@@ -18,34 +15,16 @@ export function useCreateAnnouncement() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  const createAnnouncement = async (
-    payload: CreateAnnouncementPayload,
-    endpoint = ANNOUNCEMENTS_ENDPOINT,
-  ) => {
+  const createAnnouncement = async (payload: CreateAnnouncementPayload) => {
     setIsSubmitting(true);
     setErrorMessage("");
 
     try {
-      let response = await authFetch(endpoint, {
+      const response = await authFetch(API_ANNOUNCEMENTS, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (response.status === 404) {
-        response = await authFetch(FALLBACK_ANNOUNCEMENTS_ENDPOINT, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (response.ok) {
-          return {
-            ok: true as const,
-            data: (await response.json().catch(() => null)) as Announcement | null,
-            endpoint: FALLBACK_ANNOUNCEMENTS_ENDPOINT,
-          };
-        }
-      }
 
       if (!response.ok) {
         const payloadData = await response.json().catch(() => ({}));
@@ -59,7 +38,7 @@ export function useCreateAnnouncement() {
       }
 
       const data = (await response.json().catch(() => null)) as Announcement | null;
-      return { ok: true as const, data, endpoint };
+      return { ok: true as const, data };
     } catch (error) {
       const message =
         error instanceof Error

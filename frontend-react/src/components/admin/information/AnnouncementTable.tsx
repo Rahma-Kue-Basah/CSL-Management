@@ -4,28 +4,28 @@ import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import type { Faq } from "@/hooks/faqs/use-faqs";
-import { formatDateTimeId } from "@/lib/date-format";
+import type { Announcement } from "@/hooks/announcements/use-announcements";
+import { formatDateTimeWib } from "@/lib/date-format";
 import { summarizeText } from "@/lib/text";
 
-type FaqTableProps = {
-  faqs: Faq[];
+type AnnouncementTableProps = {
+  announcements: Announcement[];
   isLoading: boolean;
   emptyMessage?: string;
   selectedIds: Array<string | number>;
   allVisibleSelected: boolean;
   selectAllRef: RefObject<HTMLInputElement | null>;
   onToggleSelectAllVisible: (checked: boolean) => void;
-  onToggleItemSelection: (faq: Faq) => void;
-  onView: (faq: Faq) => void;
-  onEdit: (faq: Faq) => void;
-  onDelete: (faq: Faq) => void;
+  onToggleItemSelection: (announcement: Announcement) => void;
+  onView: (announcement: Announcement) => void;
+  onEdit: (announcement: Announcement) => void;
+  onDelete: (announcement: Announcement) => void;
 };
 
-export default function FaqTable({
-  faqs,
+export default function AnnouncementTable({
+  announcements,
   isLoading,
-  emptyMessage = "Tidak ada data FAQ.",
+  emptyMessage = "Tidak ada data pengumuman.",
   selectedIds,
   allVisibleSelected,
   selectAllRef,
@@ -34,10 +34,10 @@ export default function FaqTable({
   onView,
   onEdit,
   onDelete,
-}: FaqTableProps) {
+}: AnnouncementTableProps) {
   return (
     <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
-      <table className="w-full min-w-[988px] table-fixed">
+      <table className="w-full min-w-[980px] table-fixed">
         <thead className="border-b border-slate-800 bg-slate-900">
           <tr className="text-left text-sm">
             <th className="w-12 px-3 py-3 text-center font-medium text-slate-50">
@@ -47,16 +47,16 @@ export default function FaqTable({
                 className="h-4 w-4 rounded border-slate-300 align-middle"
                 checked={allVisibleSelected}
                 onChange={(event) => onToggleSelectAllVisible(event.target.checked)}
-                aria-label="Pilih semua FAQ yang tampil"
+                aria-label="Pilih semua pengumuman yang tampil"
               />
             </th>
-            <th className="w-[280px] px-3 py-3 font-medium text-slate-50">
-              Pertanyaan
+            <th className="w-[260px] px-3 py-3 font-medium text-slate-50">
+              Judul
             </th>
-            <th className="w-[500px] px-3 py-3 font-medium text-slate-50">
-              Jawaban
+            <th className="w-[440px] px-3 py-3 font-medium text-slate-50">
+              Isi
             </th>
-            <th className="w-[120px] px-3 py-3 font-medium text-slate-50">
+            <th className="w-[140px] px-3 py-3 font-medium text-slate-50">
               Dibuat
             </th>
             <th className="sticky right-0 z-10 relative w-[144px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.35)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
@@ -73,30 +73,30 @@ export default function FaqTable({
                 </div>
               </td>
             </tr>
-          ) : faqs.length ? (
-            faqs.map((item) => (
-              <tr key={String(item.id)} className="border-b last:border-b-0">
+          ) : announcements.length ? (
+            announcements.map((announcement) => (
+              <tr key={String(announcement.id)} className="border-b last:border-b-0">
                 <td className="px-3 py-2 text-center align-top">
                   <input
                     type="checkbox"
                     className="mt-0.5 h-4 w-4 rounded border-slate-300 align-middle"
-                    checked={selectedIds.includes(item.id)}
-                    onChange={() => onToggleItemSelection(item)}
-                    aria-label={`Pilih FAQ ${item.question}`}
+                    checked={selectedIds.includes(announcement.id)}
+                    onChange={() => onToggleItemSelection(announcement)}
+                    aria-label={`Pilih pengumuman ${announcement.title}`}
                   />
                 </td>
                 <td className="px-3 py-2 align-top">
                   <div className="whitespace-normal break-words font-medium text-slate-900">
-                    {summarizeText(item.question, 180)}
+                    {summarizeText(announcement.title || "", 160)}
                   </div>
                 </td>
                 <td className="px-3 py-2 align-top">
                   <div className="whitespace-normal break-words text-muted-foreground">
-                    {summarizeText(item.answer, 320)}
+                    {summarizeText(announcement.content || "", 320)}
                   </div>
                 </td>
                 <td className="px-3 py-2 align-top text-muted-foreground">
-                  {formatDateTimeId(item.created_at)}
+                  {formatDateTimeWib(announcement.created_at)}
                 </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 align-top shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.18)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
@@ -104,7 +104,7 @@ export default function FaqTable({
                       type="button"
                       variant="outline"
                       size="icon-sm"
-                      onClick={() => onView(item)}
+                      onClick={() => onView(announcement)}
                     >
                       <Eye className="h-4 w-4" />
                     </Button>
@@ -112,7 +112,7 @@ export default function FaqTable({
                       type="button"
                       variant="outline"
                       size="icon-sm"
-                      onClick={() => onEdit(item)}
+                      onClick={() => onEdit(announcement)}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -121,7 +121,7 @@ export default function FaqTable({
                       variant="outline"
                       size="icon-sm"
                       className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                      onClick={() => onDelete(item)}
+                      onClick={() => onDelete(announcement)}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

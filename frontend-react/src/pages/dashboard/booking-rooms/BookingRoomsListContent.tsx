@@ -14,7 +14,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { DataPagination } from "@/components/shared/data-pagination";
 import { Button } from "@/components/ui/button";
 import {
   useBookings,
@@ -28,7 +28,7 @@ import {
   toEndOfDay,
   toStartOfDay,
 } from "@/lib/date";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
@@ -397,9 +397,12 @@ export default function BookingRoomsListContent({
         </table>
       </div>
 
-      <InventoryPagination
+      <DataPagination
         page={page}
         totalPages={totalPages}
+        totalCount={totalCount || filteredBookings.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="booking ruangan"
         isLoading={isLoading}
         onPageChange={setPage}
       />

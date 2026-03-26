@@ -18,7 +18,7 @@ import {
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { DataPagination } from "@/components/shared/data-pagination";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { Button } from "@/components/ui/button";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
@@ -26,7 +26,7 @@ import { useBorrows } from "@/hooks/borrows/use-borrows";
 import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { toEndOfDay, toStartOfDay } from "@/lib/date";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
@@ -390,9 +390,12 @@ export default function BorrowEquipmentListContent({
         </table>
       </div>
 
-      <InventoryPagination
+      <DataPagination
         page={page}
         totalPages={totalPages}
+        totalCount={totalCount || filteredBorrows.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="peminjaman alat"
         isLoading={isLoading}
         onPageChange={setPage}
       />

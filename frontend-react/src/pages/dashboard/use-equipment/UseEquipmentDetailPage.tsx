@@ -21,7 +21,7 @@ import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useUseDetail } from "@/hooks/uses/use-uses";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type UseDetailParams = {

@@ -5,16 +5,8 @@ import { Building2, Pencil, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -397,28 +389,21 @@ export default function FacilityPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={Boolean(deleteTarget)} onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}>
-        <AlertDialogContent size="sm">
-          <AlertDialogHeader className="place-items-start text-left">
-            <AlertDialogTitle>Hapus fasilitas?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTarget
-                ? `Fasilitas ${deleteTarget.name} akan dihapus permanen.`
-                : "Data fasilitas ini akan dihapus."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="sm:justify-start">
-            <AlertDialogCancel disabled={deletingId != null}>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              variant="destructive"
-              disabled={deletingId != null}
-              onClick={() => void handleDelete()}
-            >
-              {deletingId != null ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}
+        size="sm"
+        headerClassName="place-items-start text-left"
+        footerClassName="sm:justify-start"
+        title="Hapus fasilitas?"
+        description={
+          deleteTarget
+            ? `Fasilitas ${deleteTarget.name} akan dihapus permanen.`
+            : "Data fasilitas ini akan dihapus."
+        }
+        isDeleting={deletingId != null}
+        onConfirm={() => void handleDelete()}
+      />
 
       <AdminPageHeader
         title="Fasilitas"
@@ -438,9 +423,7 @@ export default function FacilityPage() {
       />
 
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {error}
-        </div>
+        <InlineErrorAlert>{error}</InlineErrorAlert>
       ) : null}
 
       {isLoading ? (

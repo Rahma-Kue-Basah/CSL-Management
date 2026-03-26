@@ -12,34 +12,9 @@ import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { useChangePassword } from "@/hooks/auth/use-change-password";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { authFetch } from "@/lib/auth";
+import { formatDateTimeIdWithZone } from "@/lib/date-format";
+import { formatRoleLabel, getInitialsFromNameOrEmail } from "@/lib/formatters";
 import { toast } from "sonner";
-
-function formatTime(value: string | null | undefined) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZoneName: "short",
-  }).format(date);
-}
-
-function formatRole(value: string | null | undefined) {
-  if (!value) return "-";
-  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-}
-
-function getInitials(name?: string | null, email?: string | null) {
-  const source = (name || email || "U").trim();
-  const parts = source.split(/\s+/).slice(0, 2);
-  const initials = parts.map((part) => part[0]).join("");
-  return initials.toUpperCase() || "U";
-}
 
 export default function AdminMyProfilePage() {
   const { profile } = useLoadProfile();
@@ -175,8 +150,10 @@ export default function AdminMyProfilePage() {
     id_number: isEditing ? formData.id_number : profile.id_number,
     institution: isEditing ? formData.institution : profile.institution,
   };
-  const initials = displayProfile.initials || getInitials(displayProfile.name, profile.email);
-  const roleLabel = formatRole(profile.role);
+  const initials =
+    displayProfile.initials ||
+    getInitialsFromNameOrEmail(displayProfile.name, profile.email);
+  const roleLabel = formatRoleLabel(profile.role);
 
   return (
     <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
@@ -303,10 +280,10 @@ export default function AdminMyProfilePage() {
                 ) : (
                   <ProfileRow label="Institusi" value={displayProfile.institution || "-"} />
                 ))}
-              <ProfileRow label="Role" value={formatRole(profile.role)} />
+              <ProfileRow label="Role" value={formatRoleLabel(profile.role)} />
 
               <div className="md:col-span-2">
-                <ProfileRow label="Last Login" value={formatTime(profile.last_login)} />
+                <ProfileRow label="Last Login" value={formatDateTimeIdWithZone(profile.last_login)} />
               </div>
             </div>
 

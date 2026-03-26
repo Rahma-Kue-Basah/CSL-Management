@@ -14,14 +14,14 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { DataPagination } from "@/components/shared/data-pagination";
 import { Button } from "@/components/ui/button";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useUses } from "@/hooks/uses/use-uses";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
@@ -365,9 +365,12 @@ export default function UseEquipmentListContent({
         </table>
       </div>
 
-      <InventoryPagination
+      <DataPagination
         page={page}
         totalPages={totalPages}
+        totalCount={totalCount || filteredUses.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="penggunaan alat"
         isLoading={isLoading}
         onPageChange={setPage}
       />

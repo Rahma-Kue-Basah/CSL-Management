@@ -9,15 +9,8 @@ import {
   useAnnouncements,
   type Announcement,
 } from "@/hooks/announcements/use-announcements";
-import { formatDateTimeWib } from "@/lib/date-time";
-
-function stripHtmlTags(value: string) {
-  return value
-    .replace(/<[^>]*>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
+import { formatDateTimeWib } from "@/lib/date-format";
+import { stripHtmlTags } from "@/lib/text";
 
 function AnnouncementCard({ announcement }: { announcement: Announcement }) {
   const content = useMemo(

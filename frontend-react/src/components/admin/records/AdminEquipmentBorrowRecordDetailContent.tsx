@@ -15,7 +15,7 @@ import {
 } from "@/components/admin/records/AdminRecordDetailLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BorrowRow } from "@/hooks/borrows/use-borrows";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 
 type AdminEquipmentBorrowRecordDetailContentProps = {
   item: BorrowRow | null;

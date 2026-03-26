@@ -4,9 +4,11 @@ import { useState } from "react";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
+import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogFooter } from "@/components/ui/dialog";
 import { BATCH_VALUES } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { ROLE_FILTER_OPTIONS, ROLE_OPTIONS, normalizeRoleValue } from "@/constants/roles";
@@ -71,25 +73,24 @@ export default function CreateUserDialog({
   };
 
   return (
-    <Dialog
+    <AdminDetailDialogShell
       open={open}
-      onOpenChange={(nextOpen) => {
-        onOpenChange(nextOpen);
-        if (!nextOpen) resetState();
-      }}
+      onOpenChange={onOpenChange}
+      onCloseReset={resetState}
+      title="Buat User"
+      description="Tambahkan user baru dan lengkapi informasi akun yang dibutuhkan."
+      icon={<UserPlus className="h-5 w-5" />}
+      contentClassName={`${USER_MODAL_WIDTH_CLASS} gap-0 p-0 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`}
     >
-      <DialogContent className={`${USER_MODAL_WIDTH_CLASS} [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`}>
-        <DialogHeader>
-          <DialogTitle>Buat User</DialogTitle>
-        </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 gap-4">
+      <form className="space-y-4 px-5 py-4 sm:px-6" onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 gap-4">
             <div className="space-y-1">
               <label className="text-xs font-medium">Nama Lengkap</label>
               <Input
                 value={form.full_name}
                 onChange={(event) => setForm((prev) => ({ ...prev, full_name: event.target.value }))}
                 placeholder="Nama lengkap"
+                className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
                 required
               />
             </div>
@@ -101,6 +102,7 @@ export default function CreateUserDialog({
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 placeholder="nim@student.prasetiyamulya.ac.id"
+                className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
                 required
               />
             </div>
@@ -111,6 +113,7 @@ export default function CreateUserDialog({
                 value={form.initials}
                 onChange={(event) => setForm((prev) => ({ ...prev, initials: event.target.value.slice(0, 3) }))}
                 placeholder="Opsional, 3 huruf"
+                className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
                 maxLength={3}
               />
             </div>
@@ -123,7 +126,7 @@ export default function CreateUserDialog({
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                   placeholder="Minimal 8 karakter"
-                  className="pr-10"
+                  className="border-sky-300 bg-sky-50/60 pr-10 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
                   required
                 />
                 <button
@@ -142,7 +145,7 @@ export default function CreateUserDialog({
               <select
                 value={form.role}
                 onChange={(event) => setForm((prev) => ({ ...createEmptyUserForm(event.target.value), full_name: prev.full_name, initials: prev.initials }))}
-                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                className="h-9 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
                 disabled={Boolean(normalizedRoleParam)}
               >
                 {ROLE_OPTIONS.map((option) => (
@@ -160,6 +163,7 @@ export default function CreateUserDialog({
                   value={form.id_number}
                   onChange={(event) => setForm((prev) => ({ ...prev, id_number: event.target.value }))}
                   placeholder="Nomor identitas"
+                  className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
                 />
               </div>
             ) : null}
@@ -170,7 +174,7 @@ export default function CreateUserDialog({
                 <select
                   value={form.department}
                   onChange={(event) => setForm((prev) => ({ ...prev, department: event.target.value }))}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-9 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
                 >
                   <option value="">Pilih department</option>
                   {DEPARTMENT_VALUES.map((opt) => (
@@ -188,7 +192,7 @@ export default function CreateUserDialog({
                 <select
                   value={form.batch}
                   onChange={(event) => setForm((prev) => ({ ...prev, batch: event.target.value }))}
-                  className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                  className="h-9 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
                 >
                   <option value="">Pilih batch</option>
                   {BATCH_VALUES.map((opt) => (
@@ -207,28 +211,24 @@ export default function CreateUserDialog({
                   value={form.institution}
                   onChange={(event) => setForm((prev) => ({ ...prev, institution: event.target.value }))}
                   placeholder="Asal institusi"
+                  className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
                 />
               </div>
             ) : null}
-          </div>
+        </div>
 
-          {errorMessage ? (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errorMessage}
-            </div>
-          ) : null}
+        {errorMessage ? <InlineErrorAlert>{errorMessage}</InlineErrorAlert> : null}
 
-          <DialogFooter>
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Batal
-            </Button>
-            <Button type="submit" disabled={isSubmitting} className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              {isSubmitting ? "Menyimpan..." : "Buat User"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        <DialogFooter>
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            Batal
+          </Button>
+          <Button type="submit" disabled={isSubmitting} className="gap-2">
+            <UserPlus className="h-4 w-4" />
+            {isSubmitting ? "Menyimpan..." : "Buat User"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </AdminDetailDialogShell>
   );
 }

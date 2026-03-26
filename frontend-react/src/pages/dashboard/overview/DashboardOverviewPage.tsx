@@ -15,7 +15,7 @@ import {
 } from "lucide-react";
 
 import { useDashboardOverview } from "@/hooks/dashboard/use-dashboard-overview";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,

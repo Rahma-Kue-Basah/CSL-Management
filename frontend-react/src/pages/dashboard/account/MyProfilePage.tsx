@@ -9,33 +9,8 @@ import { BATCH_OPTIONS } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useUpdateMyProfile } from "@/hooks/profile/use-update-my-profile";
-
-function formatTime(value: string | null | undefined) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZoneName: "short",
-  }).format(date);
-}
-
-function formatRole(value: string | null | undefined) {
-  if (!value) return "-";
-  return value.charAt(0).toUpperCase() + value.slice(1).toLowerCase();
-}
-
-function getInitials(name?: string | null, email?: string | null) {
-  const source = (name || email || "U").trim();
-  const parts = source.split(/\s+/).slice(0, 2);
-  const initials = parts.map((part) => part[0]).join("");
-  return initials.toUpperCase() || "U";
-}
+import { formatDateTimeIdWithZone } from "@/lib/date-format";
+import { formatRoleLabel, getInitialsFromNameOrEmail } from "@/lib/formatters";
 
 type ProfileFormData = {
   full_name: string;
@@ -152,7 +127,9 @@ export default function MyProfilePage() {
   };
   const visibleFields = getVisibleProfileFields(profile.role);
 
-  const initials = displayProfile.initials || getInitials(displayProfile.name, profile.email);
+  const initials =
+    displayProfile.initials ||
+    getInitialsFromNameOrEmail(displayProfile.name, profile.email);
 
   return (
     <section className="w-full min-w-0 overflow-x-hidden">
@@ -170,7 +147,7 @@ export default function MyProfilePage() {
               <p className="truncate text-sm text-slate-500">{profile.email || "-"}</p>
             </div>
             <span className="ml-auto inline-flex rounded-full border border-slate-300 bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">
-              {formatRole(profile.role)}
+              {formatRoleLabel(profile.role)}
             </span>
           </div>
         </div>
@@ -290,11 +267,11 @@ export default function MyProfilePage() {
                 />
               ))}
 
-            <ProfileRow label="Role" value={formatRole(profile.role)} />
+            <ProfileRow label="Role" value={formatRoleLabel(profile.role)} />
             <div className="md:col-span-2">
               <ProfileRow
                 label="Last Login"
-                value={formatTime(profile.last_login)}
+                value={formatDateTimeIdWithZone(profile.last_login)}
               />
             </div>
           </div>

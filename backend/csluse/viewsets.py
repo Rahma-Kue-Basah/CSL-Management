@@ -3,7 +3,7 @@ from datetime import datetime
 
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.utils import timezone
-from django.utils.dateparse import parse_datetime
+from django.utils.dateparse import parse_date, parse_datetime
 from django.db.models import Q
 from rest_framework import viewsets, status
 from rest_framework.parsers import MultiPartParser, FormParser
@@ -1340,6 +1340,27 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        search = (self.request.query_params.get('search') or '').strip()
+        ordering = (self.request.query_params.get('ordering') or '-created_at').strip()
+        date_value = (self.request.query_params.get('date') or '').strip()
+
+        if search:
+            qs = qs.filter(Q(title__icontains=search) | Q(content__icontains=search))
+
+        if date_value:
+            parsed_date = parse_date(date_value)
+            if not parsed_date:
+                raise ValidationError({'date': 'Format tanggal tidak valid. Gunakan YYYY-MM-DD.'})
+            qs = qs.filter(created_at__date=parsed_date)
+
+        allowed_ordering = {'created_at', '-created_at'}
+        if ordering in allowed_ordering:
+            qs = qs.order_by(ordering)
+
+        return qs
+
     def get_serializer_class(self):
         if self.action == "list":
             return AnnouncementListSerializer
@@ -1368,7 +1389,7 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             "Updated announcement via CSL Admin.",
         )
 
-    def perform_destroy(self, instance):
+    def _delete_announcement_instance(self, instance):
         log_admin_action(
             self.request.user,
             instance,
@@ -1376,6 +1397,50 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             "Deleted announcement via CSL Admin.",
         )
         super().perform_destroy(instance)
+
+    def perform_destroy(self, instance):
+        self._delete_announcement_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus pengumuman.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        announcement_map = {
+            str(item.id): item
+            for item in Announcement.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in announcement_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            announcement = announcement_map.get(str(item_id))
+            if announcement is None:
+                continue
+            self._delete_announcement_instance(announcement)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua pengumuman terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian pengumuman berhasil dihapus."
+                ),
+            },
+            status=response_status,
+        )
 
 
 class ScheduleViewSet(viewsets.ModelViewSet):

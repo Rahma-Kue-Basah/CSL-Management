@@ -7,12 +7,13 @@ import { toast } from "sonner";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { DataPagination } from "@/components/shared/data-pagination";
 import AdminRoomDetailDialog from "@/components/admin/inventory/AdminRoomDetailDialog";
 import RoomCreateDialog from "@/components/admin/inventory/RoomCreateDialog";
 import RoomTable from "@/components/admin/inventory/RoomTable";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
-import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { API_ROOMS_EXPORT } from "@/constants/api";
@@ -277,9 +278,7 @@ export default function AdminRoomsPage() {
           </AdminFilterCard>
 
           {error ? (
-            <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
+            <InlineErrorAlert>{error}</InlineErrorAlert>
           ) : null}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -354,9 +353,12 @@ export default function AdminRoomsPage() {
             onDelete={handleDelete}
           />
 
-          <InventoryPagination
+          <DataPagination
             page={page}
             totalPages={totalPages}
+            totalCount={totalRooms}
+            pageSize={PAGE_SIZE}
+            itemLabel="ruangan"
             isLoading={isLoading}
             onPageChange={setPage}
           />
@@ -369,7 +371,7 @@ export default function AdminRoomsPage() {
         onCreated={handleCreated}
       />
 
-      <RecordDeleteDialog
+      <ConfirmDeleteDialog
         open={isBulkDeleteOpen}
         title="Hapus ruangan terpilih?"
         description={`${selectedCount} ruangan yang dipilih akan dihapus permanen.`}

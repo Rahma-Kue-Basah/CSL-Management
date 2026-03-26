@@ -17,7 +17,7 @@ import {
   AdminRecordDetailShell,
 } from "@/components/admin/records/AdminRecordDetailLayout";
 import type { BookingRow } from "@/hooks/bookings/use-bookings";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 
 type Props = {
   booking: BookingRow | null;

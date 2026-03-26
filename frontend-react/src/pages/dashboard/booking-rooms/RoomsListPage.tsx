@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Eye, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { DataPagination } from "@/components/shared/data-pagination";
 import { Button } from "@/components/ui/button";
 import { useRooms } from "@/hooks/rooms/use-rooms";
 
@@ -94,9 +94,12 @@ export default function RoomsListPage() {
         </table>
       </div>
 
-      <InventoryPagination
+      <DataPagination
         page={page}
         totalPages={totalPages}
+        totalCount={totalCount || rooms.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="ruangan"
         isLoading={isLoading}
         onPageChange={setPage}
       />

@@ -39,7 +39,7 @@ import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import { useBorrowDetail } from "@/hooks/borrows/use-borrows";
 import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type BorrowFlowStep = {

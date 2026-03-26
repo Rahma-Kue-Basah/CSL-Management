@@ -3,18 +3,8 @@
 import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import type { RoomRow } from "@/hooks/rooms/use-rooms";
 
 type RoomTableProps = {
@@ -113,34 +103,22 @@ export default function RoomTable({
                     <Button variant="outline" size="icon-sm" onClick={() => onOpenDetail(room, "edit")}>
                       <Pencil className="h-4 w-4" />
                     </Button>
-                    <AlertDialog
+                    <ConfirmDeleteDialog
                       open={deleteCandidate?.id === room.id}
                       onOpenChange={(open) => onDeleteCandidateChange(open ? room : null)}
-                    >
-                      <AlertDialogTrigger asChild>
+                      size="sm"
+                      headerClassName="place-items-start text-left"
+                      footerClassName="sm:justify-start"
+                      title="Hapus ruangan?"
+                      description={`Ruangan ${room.name} akan dihapus.`}
+                      isDeleting={isDeleting}
+                      onConfirm={() => onDelete(room)}
+                      trigger={
                         <Button variant="outline" size="icon-sm" disabled={isDeleting}>
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent size="sm">
-                        <AlertDialogHeader className="place-items-start text-left">
-                          <AlertDialogTitle>Hapus ruangan?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Ruangan <span className="font-semibold">{room.name}</span> akan dihapus.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter className="sm:justify-start">
-                          <AlertDialogCancel disabled={isDeleting}>Batal</AlertDialogCancel>
-                          <AlertDialogAction
-                            variant="destructive"
-                            disabled={isDeleting}
-                            onClick={() => onDelete(room)}
-                          >
-                            {isDeleting ? "Menghapus..." : "Hapus"}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                      }
+                    />
                   </div>
                 </td>
               </tr>

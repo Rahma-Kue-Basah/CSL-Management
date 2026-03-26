@@ -1,50 +1,37 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, CircleHelp, Loader2, Plus, Search } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
+import {
+  CircleHelp,
+  Loader2,
+  Plus,
+  Search,
+} from "lucide-react";
 
-import { AdminDetailHeader } from "@/components/admin/AdminDetailHeader";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import FaqBulkActions from "@/components/admin/information/FaqBulkActions";
+import FaqFormDialog, {
+  type FaqDetailMode,
+  type FaqFormState,
+} from "@/components/admin/information/FaqFormDialog";
 import FaqTable from "@/components/admin/information/FaqTable";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import { DataPagination } from "@/components/shared/data-pagination";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { useCreateFaq } from "@/hooks/faqs/use-create-faq";
 import { useDeleteFaq } from "@/hooks/faqs/use-delete-faq";
 import { useFaqs, type Faq } from "@/hooks/faqs/use-faqs";
 import { useUpdateFaq } from "@/hooks/faqs/use-update-faq";
-import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/user-management-fields";
+import { normalizeText } from "@/lib/text";
 import { toast } from "sonner";
-
-function normalizeText(value: string) {
-  return value.toLowerCase().replace(/\s+/g, " ").trim();
-}
-
-type FaqFormState = {
-  question: string;
-  answer: string;
-};
 
 const EMPTY_FORM: FaqFormState = {
   question: "",
@@ -53,138 +40,6 @@ const EMPTY_FORM: FaqFormState = {
 const PAGE_SIZE = 10;
 
 type SortOrder = "newest" | "oldest";
-
-function FaqDetailField({
-  label,
-  value,
-  multiline = false,
-}: {
-  label: string;
-  value: string;
-  multiline?: boolean;
-}) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-medium text-slate-700">{label}</p>
-      <div
-        className={`rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 ${
-          multiline ? "min-h-36 whitespace-pre-wrap break-words" : ""
-        }`}
-      >
-        {value || "-"}
-      </div>
-    </div>
-  );
-}
-
-function FaqFormDialog({
-  open,
-  onOpenChange,
-  title,
-  description,
-  form,
-  onChange,
-  onSubmit,
-  isSubmitting,
-  error,
-  trigger,
-  useDetailHeader = false,
-  readOnly = false,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  title: string;
-  description: string;
-  form: FaqFormState;
-  onChange: (field: keyof FaqFormState, value: string) => void;
-  onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  isSubmitting: boolean;
-  error: string;
-  trigger?: ReactNode;
-  useDetailHeader?: boolean;
-  readOnly?: boolean;
-}) {
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent
-        showCloseButton={!useDetailHeader}
-        className={`${USER_MODAL_WIDTH_CLASS} gap-0 p-0 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`}
-      >
-        {useDetailHeader ? (
-          <AdminDetailHeader
-            title={title}
-            description={description}
-            icon={<CircleHelp className="h-5 w-5" />}
-            backLabel="Tutup"
-            onBack={() => onOpenChange(false)}
-          />
-        ) : (
-          <DialogHeader className="px-6 pt-6">
-            <DialogTitle>{title}</DialogTitle>
-            <DialogDescription>{description}</DialogDescription>
-          </DialogHeader>
-        )}
-
-        <form
-          className={`space-y-4 ${useDetailHeader ? "px-5 py-4 sm:px-6" : "px-6 pb-6"}`}
-          onSubmit={onSubmit}
-        >
-          {readOnly ? (
-            <>
-              <FaqDetailField label="Pertanyaan" value={form.question} />
-              <FaqDetailField label="Jawaban" value={form.answer} multiline />
-            </>
-          ) : (
-            <>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-800">
-                  Pertanyaan
-                </label>
-                <Input
-                  value={form.question}
-                  onChange={(event) => onChange("question", event.target.value)}
-                  placeholder="Masukkan pertanyaan yang sering diajukan"
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-800">
-                  Jawaban
-                </label>
-                <Textarea
-                  value={form.answer}
-                  onChange={(event) => onChange("answer", event.target.value)}
-                  placeholder="Masukkan jawaban FAQ"
-                  className="min-h-36 resize-y"
-                />
-              </div>
-            </>
-          )}
-
-          {error ? (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              {error}
-            </div>
-          ) : null}
-
-          {!readOnly ? (
-            <DialogFooter>
-              <Button
-                type="submit"
-                className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Menyimpan..." : "Simpan"}
-              </Button>
-            </DialogFooter>
-          ) : null}
-        </form>
-      </DialogContent>
-    </Dialog>
-  );
-}
 
 export default function AdminFaqPage() {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
@@ -214,9 +69,9 @@ export default function AdminFaqPage() {
   );
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<FaqFormState>(EMPTY_FORM);
-  const [viewTarget, setViewTarget] = useState<Faq | null>(null);
-  const [editTarget, setEditTarget] = useState<Faq | null>(null);
-  const [editForm, setEditForm] = useState<FaqFormState>(EMPTY_FORM);
+  const [detailTarget, setDetailTarget] = useState<Faq | null>(null);
+  const [detailMode, setDetailMode] = useState<FaqDetailMode>("view");
+  const [detailForm, setDetailForm] = useState<FaqFormState>(EMPTY_FORM);
   const [deleteTarget, setDeleteTarget] = useState<Faq | null>(null);
   const [selectedIds, setSelectedIds] = useState<Array<string | number>>([]);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -254,13 +109,6 @@ export default function AdminFaqPage() {
   }, [debouncedSearchQuery, sortOrder]);
 
   const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
-  const visiblePages = useMemo(() => {
-    const maxVisible = 5;
-    let start = Math.max(1, page - Math.floor(maxVisible / 2));
-    const end = Math.min(totalPages, start + maxVisible - 1);
-    start = Math.max(1, end - maxVisible + 1);
-    return Array.from({ length: end - start + 1 }, (_, idx) => start + idx);
-  }, [page, totalPages]);
 
   useEffect(() => {
     setPage((current) => Math.min(current, totalPages));
@@ -273,11 +121,9 @@ export default function AdminFaqPage() {
   }, [faqs]);
 
   const allVisibleSelected =
-    faqs.length > 0 &&
-    faqs.every((item) => selectedIds.includes(item.id));
+    faqs.length > 0 && faqs.every((item) => selectedIds.includes(item.id));
   const someVisibleSelected =
-    faqs.some((item) => selectedIds.includes(item.id)) &&
-    !allVisibleSelected;
+    faqs.some((item) => selectedIds.includes(item.id)) && !allVisibleSelected;
   const selectedCount = selectedIds.length;
 
   useEffect(() => {
@@ -295,12 +141,23 @@ export default function AdminFaqPage() {
     if (!open) resetCreateDialog();
   };
 
-  const handleEditDialogChange = (open: boolean) => {
+  const handleDetailDialogChange = (open: boolean) => {
     if (!open) {
-      setEditTarget(null);
-      setEditForm(EMPTY_FORM);
+      setDetailTarget(null);
+      setDetailMode("view");
+      setDetailForm(EMPTY_FORM);
       setUpdateError("");
     }
+  };
+
+  const handleDetailOpen = (item: Faq, mode: FaqDetailMode) => {
+    setDetailTarget(item);
+    setDetailMode(mode);
+    setDetailForm({
+      question: item.question || "",
+      answer: item.answer || "",
+    });
+    setUpdateError("");
   };
 
   const validateForm = (
@@ -341,12 +198,12 @@ export default function AdminFaqPage() {
 
   const handleEditSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!editTarget) return;
+    if (!detailTarget) return;
     setUpdateError("");
-    const payload = validateForm(editForm, setUpdateError);
+    const payload = validateForm(detailForm, setUpdateError);
     if (!payload) return;
 
-    const result = await updateFaq(editTarget.id, payload);
+    const result = await updateFaq(detailTarget.id, payload);
     if (!result.ok || !result.data) return;
 
     setFaqs((prev) =>
@@ -354,7 +211,7 @@ export default function AdminFaqPage() {
         item.id === result.data?.id ? (result.data as Faq) : item,
       ),
     );
-    handleEditDialogChange(false);
+    handleDetailDialogChange(false);
     toast.success("FAQ berhasil diperbarui.");
   };
 
@@ -442,30 +299,28 @@ export default function AdminFaqPage() {
       />
 
       <FaqFormDialog
-        open={Boolean(viewTarget)}
-        onOpenChange={(open) => (!open ? setViewTarget(null) : null)}
-        title="Detail FAQ"
-        description="Tinjau pertanyaan dan jawaban FAQ."
-        form={{
-          question: viewTarget?.question || "",
-          answer: viewTarget?.answer || "",
-        }}
-        onChange={() => undefined}
-        onSubmit={(event) => event.preventDefault()}
-        isSubmitting={false}
-        error=""
-        useDetailHeader
-        readOnly
-      />
-
-      <FaqFormDialog
-        open={Boolean(editTarget)}
-        onOpenChange={handleEditDialogChange}
+        open={Boolean(detailTarget)}
+        onOpenChange={handleDetailDialogChange}
         title="Edit FAQ"
         description="Perbarui pertanyaan dan jawaban FAQ."
-        form={editForm}
+        readOnlyTitle="Detail FAQ"
+        readOnlyDescription="Tinjau pertanyaan dan jawaban FAQ."
+        initialMode={detailMode}
+        onCancelEdit={() => {
+          if (!detailTarget) return;
+          setDetailForm({
+            question: detailTarget.question || "",
+            answer: detailTarget.answer || "",
+          });
+          setUpdateError("");
+        }}
+        onDeleteRequest={() => {
+          if (!detailTarget) return;
+          setDeleteTarget(detailTarget);
+        }}
+        form={detailForm}
         onChange={(field, value) =>
-          setEditForm((prev) => ({ ...prev, [field]: value }))
+          setDetailForm((prev) => ({ ...prev, [field]: value }))
         }
         onSubmit={handleEditSubmit}
         isSubmitting={isUpdating}
@@ -473,50 +328,23 @@ export default function AdminFaqPage() {
         useDetailHeader
       />
 
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
         onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus FAQ?</AlertDialogTitle>
-            <AlertDialogDescription>
-              FAQ yang dihapus tidak bisa dikembalikan.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={isDeleting}
-              className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
-            >
-              {isDeleting ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="Hapus FAQ?"
+        description="FAQ yang dihapus tidak bisa dikembalikan."
+        isDeleting={isDeleting}
+        onConfirm={handleDelete}
+      />
 
-      <AlertDialog open={bulkDeleteOpen} onOpenChange={setBulkDeleteOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Hapus FAQ terpilih?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {selectedCount} FAQ yang dipilih akan dihapus permanen.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeleteSelected}
-              disabled={selectedCount === 0 || isDeleting}
-              className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
-            >
-              {isDeleting ? "Menghapus..." : "Hapus"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title="Hapus FAQ terpilih?"
+        description={`${selectedCount} FAQ yang dipilih akan dihapus permanen.`}
+        isDeleting={selectedCount === 0 || isDeleting}
+        onConfirm={handleDeleteSelected}
+      />
 
       <AdminFilterCard
         open={filterOpen}
@@ -554,7 +382,9 @@ export default function AdminFaqPage() {
             </label>
             <select
               value={sortOrder}
-              onChange={(event) => setSortOrder(event.target.value as SortOrder)}
+              onChange={(event) =>
+                setSortOrder(event.target.value as SortOrder)
+              }
               className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
             >
               <option value="newest">Terbaru</option>
@@ -565,15 +395,11 @@ export default function AdminFaqPage() {
       </AdminFilterCard>
 
       {error ? (
-        <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
+        <InlineErrorAlert>{error}</InlineErrorAlert>
       ) : null}
 
       {deleteError ? (
-        <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {deleteError}
-        </div>
+        <InlineErrorAlert>{deleteError}</InlineErrorAlert>
       ) : null}
 
       <div className="space-y-3">
@@ -609,7 +435,7 @@ export default function AdminFaqPage() {
           />
         </div>
 
-          <FaqTable
+        <FaqTable
           faqs={faqs}
           isLoading={isLoading}
           emptyMessage={
@@ -622,79 +448,20 @@ export default function AdminFaqPage() {
           selectAllRef={selectAllRef}
           onToggleSelectAllVisible={handleToggleSelectAllVisible}
           onToggleItemSelection={handleToggleItemSelection}
-          onView={(item) => setViewTarget(item)}
-          onEdit={(item) => {
-            setEditTarget(item);
-            setEditForm({
-              question: item.question || "",
-              answer: item.answer || "",
-            });
-            setUpdateError("");
-          }}
+          onView={(item) => handleDetailOpen(item, "view")}
+          onEdit={(item) => handleDetailOpen(item, "edit")}
           onDelete={(item) => setDeleteTarget(item)}
         />
 
-        <div className="flex w-full min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Halaman {page} dari {totalPages}
-          </p>
-          <div className="flex w-fit max-w-full self-start flex-wrap items-center gap-1 rounded-lg border bg-card p-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              disabled={page <= 1 || isLoading}
-              onClick={() => setPage(1)}
-              aria-label="Halaman pertama"
-            >
-              <ChevronsLeft className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              disabled={page <= 1 || isLoading}
-              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              aria-label="Halaman sebelumnya"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </Button>
-            {visiblePages.map((pageNumber) => (
-              <Button
-                key={pageNumber}
-                type="button"
-                variant={pageNumber === page ? "default" : "ghost"}
-                size="sm"
-                className="min-w-8 px-2"
-                disabled={isLoading}
-                onClick={() => setPage(pageNumber)}
-                aria-label={`Halaman ${pageNumber}`}
-              >
-                {pageNumber}
-              </Button>
-            ))}
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              disabled={page >= totalPages || isLoading}
-              onClick={() => setPage((prev) => (prev < totalPages ? prev + 1 : prev))}
-              aria-label="Halaman berikutnya"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              disabled={page >= totalPages || isLoading}
-              onClick={() => setPage(totalPages)}
-              aria-label="Halaman terakhir"
-            >
-              <ChevronsRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
+        <DataPagination
+          page={page}
+          totalPages={totalPages}
+          totalCount={totalCount}
+          pageSize={PAGE_SIZE}
+          itemLabel="FAQ"
+          isLoading={isLoading}
+          onPageChange={setPage}
+        />
       </div>
     </section>
   );

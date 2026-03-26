@@ -1,13 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { MapPinned, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PicMultiSelect } from "@/components/admin/inventory/PicMultiSelect";
+import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogFooter } from "@/components/ui/dialog";
 import { useCreateRoom } from "@/hooks/rooms/use-create-room";
 import { usePicUsers } from "@/hooks/users/use-pic-users";
 
@@ -114,18 +116,16 @@ export default function RoomCreateDialog({
   };
 
   return (
-    <Dialog
+    <AdminDetailDialogShell
       open={open}
-      onOpenChange={(nextOpen) => {
-        onOpenChange(nextOpen);
-        if (!nextOpen) resetForm();
-      }}
+      onOpenChange={onOpenChange}
+      onCloseReset={resetForm}
+      title="Tambah Ruangan"
+      description="Tambahkan data ruangan baru untuk inventaris laboratorium."
+      icon={<MapPinned className="h-5 w-5" />}
+      contentClassName="w-[min(720px,calc(100%-2rem))] max-w-none gap-0 p-0 sm:max-w-none [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]"
     >
-      <DialogContent className="w-[min(720px,calc(100%-2rem))] max-w-none sm:max-w-none [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]">
-        <DialogHeader>
-          <DialogTitle>Tambah Ruangan</DialogTitle>
-        </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-4 px-5 py-4 sm:px-6" onSubmit={handleSubmit}>
           <div className="space-y-1">
             <label className="text-xs font-medium">Nama Ruangan</label>
             <Input
@@ -133,6 +133,7 @@ export default function RoomCreateDialog({
               value={formData.name}
               onChange={handleChange}
               placeholder="Contoh: Lab Kimia Dasar"
+              className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
               required
             />
           </div>
@@ -145,6 +146,7 @@ export default function RoomCreateDialog({
                 value={formData.number}
                 onChange={handleChange}
                 placeholder="A101"
+                className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
                 required
               />
             </div>
@@ -157,6 +159,7 @@ export default function RoomCreateDialog({
                 value={formData.floor}
                 onChange={handleChange}
                 placeholder="1"
+                className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
                 min="1"
                 required
               />
@@ -170,6 +173,7 @@ export default function RoomCreateDialog({
                 value={formData.capacity}
                 onChange={handleChange}
                 placeholder="32"
+                className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
                 min="1"
                 required
               />
@@ -197,7 +201,7 @@ export default function RoomCreateDialog({
               onChange={handleChange}
               rows={3}
               placeholder="Deskripsi ruangan (opsional)"
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 py-2 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
             />
           </div>
 
@@ -236,11 +240,7 @@ export default function RoomCreateDialog({
             </div>
           ) : null}
 
-          {errorMessage ? (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errorMessage}
-            </div>
-          ) : null}
+          {errorMessage ? <InlineErrorAlert>{errorMessage}</InlineErrorAlert> : null}
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
@@ -251,8 +251,7 @@ export default function RoomCreateDialog({
               {isSubmitting ? "Menyimpan..." : "Simpan Ruangan"}
             </Button>
           </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      </form>
+    </AdminDetailDialogShell>
   );
 }

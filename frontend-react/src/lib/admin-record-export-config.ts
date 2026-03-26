@@ -7,26 +7,13 @@ import type { PengujianRow } from "@/hooks/pengujians/use-pengujians";
 import type { UserRow } from "@/hooks/users/use-users";
 import type { RoomRow } from "@/hooks/rooms/use-rooms";
 import type { EquipmentRow } from "@/hooks/equipments/use-equipments";
+import { formatDateTimeId } from "@/lib/date-format";
 import { getStatusDisplayLabel } from "@/lib/status";
 
 export type ExportColumn<TRow> = {
   header: string;
   cell: (row: TRow) => string;
 };
-
-function formatDateTime(value?: string | null) {
-  if (!value || value === "-") return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-}
 
 export const BOOKING_EXPORT_COLUMNS: ExportColumn<BookingRow>[] = [
   { header: "Kode", cell: (booking) => booking.code },
@@ -39,11 +26,11 @@ export const BOOKING_EXPORT_COLUMNS: ExportColumn<BookingRow>[] = [
   { header: "Nama Orang", cell: (booking) => booking.attendeeNames || "-" },
   { header: "Peralatan", cell: (booking) => booking.equipmentName },
   { header: "Keperluan", cell: (booking) => booking.purpose },
-  { header: "Waktu Mulai", cell: (booking) => formatDateTime(booking.startTime) },
-  { header: "Waktu Selesai", cell: (booking) => formatDateTime(booking.endTime) },
+  { header: "Waktu Mulai", cell: (booking) => formatDateTimeId(booking.startTime) },
+  { header: "Waktu Selesai", cell: (booking) => formatDateTimeId(booking.endTime) },
   { header: "Disetujui Oleh", cell: (booking) => booking.approvedByName || "-" },
   { header: "Catatan", cell: (booking) => booking.note || "-" },
-  { header: "Dibuat", cell: (booking) => formatDateTime(booking.createdAt) },
+  { header: "Dibuat", cell: (booking) => formatDateTimeId(booking.createdAt) },
 ];
 
 export const USE_EXPORT_COLUMNS: ExportColumn<UseRow>[] = [
@@ -54,11 +41,11 @@ export const USE_EXPORT_COLUMNS: ExportColumn<UseRow>[] = [
   { header: "Pengguna", cell: (item) => item.requesterName },
   { header: "Jumlah", cell: (item) => item.quantity },
   { header: "Keperluan", cell: (item) => item.purpose },
-  { header: "Waktu Mulai", cell: (item) => formatDateTime(item.startTime) },
-  { header: "Waktu Selesai", cell: (item) => formatDateTime(item.endTime) },
+  { header: "Waktu Mulai", cell: (item) => formatDateTimeId(item.startTime) },
+  { header: "Waktu Selesai", cell: (item) => formatDateTimeId(item.endTime) },
   { header: "Disetujui Oleh", cell: (item) => item.approvedByName || "-" },
   { header: "Catatan", cell: (item) => item.note || "-" },
-  { header: "Dibuat", cell: (item) => formatDateTime(item.createdAt) },
+  { header: "Dibuat", cell: (item) => formatDateTimeId(item.createdAt) },
 ];
 
 export const BORROW_EXPORT_COLUMNS: ExportColumn<BorrowRow>[] = [
@@ -68,13 +55,13 @@ export const BORROW_EXPORT_COLUMNS: ExportColumn<BorrowRow>[] = [
   { header: "Peminjam", cell: (item) => item.requesterName },
   { header: "Jumlah", cell: (item) => item.quantity },
   { header: "Keperluan", cell: (item) => item.purpose },
-  { header: "Waktu Mulai", cell: (item) => formatDateTime(item.startTime) },
-  { header: "Waktu Selesai", cell: (item) => formatDateTime(item.endTime) },
-  { header: "Waktu Kembali Aktual", cell: (item) => formatDateTime(item.endTimeActual) },
+  { header: "Waktu Mulai", cell: (item) => formatDateTimeId(item.startTime) },
+  { header: "Waktu Selesai", cell: (item) => formatDateTimeId(item.endTime) },
+  { header: "Waktu Kembali Aktual", cell: (item) => formatDateTimeId(item.endTimeActual) },
   { header: "Disetujui Oleh", cell: (item) => item.approvedByName || "-" },
   { header: "Catatan Peminjam", cell: (item) => item.note || "-" },
   { header: "Catatan Inspeksi", cell: (item) => item.inspectionNote || "-" },
-  { header: "Dibuat", cell: (item) => formatDateTime(item.createdAt) },
+  { header: "Dibuat", cell: (item) => formatDateTimeId(item.createdAt) },
 ];
 
 export const PENGUJIAN_EXPORT_COLUMNS: ExportColumn<PengujianRow>[] = [
@@ -94,7 +81,7 @@ export const PENGUJIAN_EXPORT_COLUMNS: ExportColumn<PengujianRow>[] = [
   { header: "Metode Uji", cell: (item) => item.sampleTestingMethod },
   { header: "Tipe Uji", cell: (item) => item.sampleTestingType },
   { header: "Disetujui Oleh", cell: (item) => item.approvedByName || "-" },
-  { header: "Dibuat", cell: (item) => formatDateTime(item.createdAt) },
+  { header: "Dibuat", cell: (item) => formatDateTimeId(item.createdAt) },
 ];
 
 export const USER_EXPORT_COLUMNS: ExportColumn<UserRow>[] = [

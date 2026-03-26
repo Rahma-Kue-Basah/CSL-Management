@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
+import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { DialogFooter } from "@/components/ui/dialog";
 import { EQUIPMENT_CATEGORY_OPTIONS, MOVEABLE_OPTIONS } from "@/constants/equipments";
 import { useCreateEquipment } from "@/hooks/equipments/use-create-equipment";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
@@ -107,26 +109,35 @@ export default function EquipmentCreateDialog({
   };
 
   return (
-    <Dialog
+    <AdminDetailDialogShell
       open={open}
-      onOpenChange={(nextOpen) => {
-        onOpenChange(nextOpen);
-        if (!nextOpen) resetForm();
-      }}
+      onOpenChange={onOpenChange}
+      onCloseReset={resetForm}
+      title="Tambah Peralatan"
+      description="Tambahkan data peralatan baru untuk inventaris laboratorium."
+      icon={<Wrench className="h-5 w-5" />}
+      contentClassName="w-[min(720px,calc(100%-2rem))] max-w-none gap-0 p-0 sm:max-w-none [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]"
     >
-      <DialogContent className="w-[min(720px,calc(100%-2rem))] max-w-none sm:max-w-none [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]">
-        <DialogHeader>
-          <DialogTitle>Tambah Peralatan</DialogTitle>
-        </DialogHeader>
-        <form className="space-y-4" onSubmit={handleSubmit}>
+      <form className="space-y-4 px-5 py-4 sm:px-6" onSubmit={handleSubmit}>
           <div className="space-y-1">
             <label className="text-xs font-medium">Nama</label>
-            <Input name="name" value={formData.name} onChange={handleChange} />
+            <Input
+              name="name"
+              value={formData.name}
+              onChange={handleChange}
+              className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
+            />
           </div>
 
           <div className="space-y-1">
             <label className="text-xs font-medium">Jumlah</label>
-            <Input type="number" name="quantity" value={formData.quantity} onChange={handleChange} />
+            <Input
+              type="number"
+              name="quantity"
+              value={formData.quantity}
+              onChange={handleChange}
+              className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
+            />
           </div>
 
           <div className="space-y-1">
@@ -135,7 +146,7 @@ export default function EquipmentCreateDialog({
               name="category"
               value={formData.category}
               onChange={handleChange}
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-9 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
             >
               <option value="">Pilih kategori</option>
               {EQUIPMENT_CATEGORY_OPTIONS.map((option) => (
@@ -152,7 +163,7 @@ export default function EquipmentCreateDialog({
               name="roomId"
               value={formData.roomId}
               onChange={handleChange}
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-9 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
               disabled={isLoadingRooms}
             >
               <option value="">{isLoadingRooms ? "Memuat ruangan..." : "Pilih ruangan"}</option>
@@ -171,7 +182,7 @@ export default function EquipmentCreateDialog({
               name="isMoveable"
               value={formData.isMoveable}
               onChange={handleChange}
-              className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              className="h-9 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
             >
               <option value="">Pilih status</option>
               {MOVEABLE_OPTIONS.map((option) => (
@@ -189,7 +200,7 @@ export default function EquipmentCreateDialog({
               value={formData.description}
               onChange={handleChange}
               rows={3}
-              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              className="w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 py-2 text-sm shadow-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
               placeholder="Deskripsi (opsional)"
             />
           </div>
@@ -229,11 +240,7 @@ export default function EquipmentCreateDialog({
             </div>
           ) : null}
 
-          {errorMessage ? (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errorMessage}
-            </div>
-          ) : null}
+          {errorMessage ? <InlineErrorAlert>{errorMessage}</InlineErrorAlert> : null}
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
@@ -244,8 +251,7 @@ export default function EquipmentCreateDialog({
               {isSubmitting ? "Menyimpan..." : "Simpan Peralatan"}
             </Button>
           </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+      </form>
+    </AdminDetailDialogShell>
   );
 }

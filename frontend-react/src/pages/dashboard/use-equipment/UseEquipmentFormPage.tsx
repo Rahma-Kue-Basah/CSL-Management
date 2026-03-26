@@ -29,7 +29,7 @@ import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useCreateUse } from "@/hooks/uses/use-create-use";
-import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-time";
+import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import { cn } from "@/lib/utils";
 
 type FormData = {

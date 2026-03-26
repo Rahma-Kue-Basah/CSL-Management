@@ -16,9 +16,10 @@ import AdminSampleTestingRecordDetailContent from "@/components/admin/records/Ad
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
 import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
-import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { DataPagination } from "@/components/shared/data-pagination";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -400,9 +401,7 @@ export default function AdminRecordPengujianSampelPage() {
           </div>
 
           {error ? (
-            <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
+            <InlineErrorAlert>{error}</InlineErrorAlert>
           ) : null}
 
           <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
@@ -512,14 +511,17 @@ export default function AdminRecordPengujianSampelPage() {
             </table>
           </div>
 
-          <InventoryPagination
+          <DataPagination
             page={page}
             totalPages={totalPages}
+            totalCount={totalCount || filteredItems.length}
+            pageSize={PAGE_SIZE}
+            itemLabel="pengujian sampel"
             isLoading={isLoading}
             onPageChange={setPage}
           />
 
-          <RecordDeleteDialog
+          <ConfirmDeleteDialog
             open={Boolean(deleteTarget)}
             title="Hapus record pengujian sampel?"
             description={`Record ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
@@ -530,7 +532,7 @@ export default function AdminRecordPengujianSampelPage() {
             onConfirm={handleDelete}
           />
 
-          <RecordDeleteDialog
+          <ConfirmDeleteDialog
             open={isBulkDeleteOpen}
             title="Hapus record pengujian sampel terpilih?"
             description={`${selectedCount} record yang dipilih akan dihapus permanen.`}

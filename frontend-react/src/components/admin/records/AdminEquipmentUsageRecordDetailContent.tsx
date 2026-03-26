@@ -17,7 +17,7 @@ import {
   AdminRecordDetailShell,
 } from "@/components/admin/records/AdminRecordDetailLayout";
 import type { UseRow } from "@/hooks/uses/use-uses";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 
 type Props = {
   item: UseRow | null;

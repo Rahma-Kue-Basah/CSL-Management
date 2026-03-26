@@ -4,26 +4,14 @@ import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { ArrowUpRight, MapPinned, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { AdminDetailHeader } from "@/components/admin/AdminDetailHeader";
 import { PicMultiSelect } from "@/components/admin/inventory/PicMultiSelect";
 import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
+import AdminDetailActions from "@/components/shared/admin-detail-actions";
+import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
 import { useDeleteRoom } from "@/hooks/rooms/use-delete-room";
 import type { RoomRow } from "@/hooks/rooms/use-rooms";
 import { useUpdateRoom } from "@/hooks/rooms/use-update-room";
@@ -234,28 +222,18 @@ export default function AdminRoomDetailDialog({
   };
 
   return (
-    <Dialog
+    <AdminDetailDialogShell
       open={open}
-      onOpenChange={(nextOpen) => {
-        onOpenChange(nextOpen);
-        if (!nextOpen) {
-          resetState();
-          setRelatedUserId(null);
-        }
+      onOpenChange={onOpenChange}
+      onCloseReset={() => {
+        resetState();
+        setRelatedUserId(null);
       }}
+      title="Detail Ruangan"
+      description="Tinjau informasi ruangan dan lakukan perubahan bila diperlukan."
+      icon={<MapPinned className="h-5 w-5" />}
+      contentClassName={`${INVENTORY_MODAL_WIDTH_CLASS} max-h-[90vh] min-w-0 gap-0 overflow-hidden p-0`}
     >
-      <DialogContent
-        showCloseButton={false}
-        className={`${INVENTORY_MODAL_WIDTH_CLASS} max-h-[90vh] min-w-0 gap-0 overflow-hidden p-0`}
-      >
-        <AdminDetailHeader
-          title="Detail Ruangan"
-          description="Tinjau informasi ruangan dan lakukan perubahan bila diperlukan."
-          icon={<MapPinned className="h-5 w-5" />}
-          backLabel="Tutup"
-          onBack={() => onOpenChange(false)}
-        />
-
         <div className="space-y-4 px-5 py-4 sm:px-6">
           {error ? (
             <div className="rounded-xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
@@ -479,110 +457,55 @@ export default function AdminRoomDetailDialog({
               </div>
 
               {updateErrorMessage ? (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {updateErrorMessage}
-                </div>
+                <InlineErrorAlert>{updateErrorMessage}</InlineErrorAlert>
               ) : null}
               {deleteErrorMessage ? (
-                <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {deleteErrorMessage}
-                </div>
+                <InlineErrorAlert>{deleteErrorMessage}</InlineErrorAlert>
               ) : null}
 
-              <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
-                {isEditing && canManage ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setUpdateErrorMessage("");
-                      setFormData({
-                        name: room.name,
-                        number: room.number,
-                        floor: room.floor,
-                        capacity: room.capacity,
-                        description: room.description,
-                        picIds: room.picIds,
-                        imageId: room.imageId,
-                        imageFile: null,
-                      });
-                    }}
-                    disabled={isSubmitting}
-                  >
-                    Batal
-                  </Button>
-                ) : null}
-                {canManage ? (
-                  <Button
-                    type="button"
-                    variant={isEditing ? "default" : "outline"}
-                    className={
-                      isEditing
-                        ? "bg-[#0052C7] text-white hover:bg-[#0048B4]"
-                        : ""
-                    }
-                    disabled={isSubmitting}
-                    onClick={() => {
-                      if (isEditing) {
-                        void handleSave();
-                        return;
-                      }
-                      setIsEditing(true);
-                    }}
-                  >
-                    {isEditing
-                      ? isSubmitting
-                        ? "Menyimpan..."
-                        : "Simpan"
-                      : "Edit"}
-                  </Button>
-                ) : null}
+              {canManage ? (
+                <AdminDetailActions
+                  isEditing={isEditing}
+                  isSubmitting={isSubmitting}
+                  showDeleteAction
+                  deleteLabel="Hapus Ruangan"
+                  onEdit={() => setIsEditing(true)}
+                  onCancelEdit={() => {
+                    setIsEditing(false);
+                    setUpdateErrorMessage("");
+                    setFormData({
+                      name: room.name,
+                      number: room.number,
+                      floor: room.floor,
+                      capacity: room.capacity,
+                      description: room.description,
+                      picIds: room.picIds,
+                      imageId: room.imageId,
+                      imageFile: null,
+                    });
+                  }}
+                  onSave={() => void handleSave()}
+                  onDelete={() => setConfirmDeleteOpen(true)}
+                />
+              ) : null}
 
-                {!isEditing && canManage ? (
-                  <AlertDialog
+              {!isEditing && canManage ? (
+                  <ConfirmDeleteDialog
                     open={confirmDeleteOpen}
                     onOpenChange={setConfirmDeleteOpen}
-                  >
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        disabled={isDeleting || isSubmitting}
-                      >
-                        {isDeleting ? "Menghapus..." : "Hapus Ruangan"}
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent size="sm">
-                      <AlertDialogHeader className="place-items-start text-left">
-                        <AlertDialogTitle>Hapus ruangan?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Ruangan{" "}
-                          <span className="font-semibold">{room.name}</span>{" "}
-                          akan dihapus.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter className="sm:justify-start">
-                        <AlertDialogCancel disabled={isDeleting}>
-                          Batal
-                        </AlertDialogCancel>
-                        <AlertDialogAction
-                          variant="destructive"
-                          disabled={isDeleting}
-                          onClick={() => void handleDelete()}
-                        >
-                          {isDeleting ? "Menghapus..." : "Hapus"}
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                ) : null}
-              </div>
+                    size="sm"
+                    headerClassName="place-items-start text-left"
+                    footerClassName="sm:justify-start"
+                    title="Hapus ruangan?"
+                    description={`Ruangan ${room.name} akan dihapus.`}
+                    isDeleting={isDeleting}
+                    onConfirm={() => void handleDelete()}
+                  />
+              ) : null}
             </div>
           </div>
           )}
         </div>
-      </DialogContent>
 
       <RelatedUserDetailDialog
         open={Boolean(relatedUserId)}
@@ -591,6 +514,6 @@ export default function AdminRoomDetailDialog({
           if (!nextOpen) setRelatedUserId(null);
         }}
       />
-    </Dialog>
+    </AdminDetailDialogShell>
   );
 }

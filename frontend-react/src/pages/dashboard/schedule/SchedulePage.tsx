@@ -5,8 +5,12 @@ import { useSearchParams } from "next/navigation";
 import { Badge, Calendar as RsuiteCalendar } from "rsuite";
 import { CalendarDays, Clock3 } from "lucide-react";
 
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCalendarEvents } from "@/hooks/calendar/use-calendar-events";
+import { formatHourLabel } from "@/lib/date-format";
+import { getInitialsFromText } from "@/lib/formatters";
+import { normalizeText } from "@/lib/text";
 
 function getYearBounds(date: Date) {
   const year = date.getFullYear();
@@ -29,10 +33,6 @@ function isSameMonth(left: Date, right: Date) {
     left.getFullYear() === right.getFullYear() &&
     left.getMonth() === right.getMonth()
   );
-}
-
-function normalizeText(value: string) {
-  return value.toLowerCase().replace(/\s+/g, " ").trim();
 }
 
 function mapSourceLabel(source: string) {
@@ -73,21 +73,6 @@ function getStickyNoteTone(source: string) {
     chip: "ring-amber-300/60 bg-white/85 text-slate-700",
     meta: "text-amber-800/70",
   };
-}
-
-function getInitials(value?: string | null) {
-  const source = String(value ?? "").trim();
-  if (!source) return "NA";
-  return source
-    .split(/\s+/)
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 3)
-    .toUpperCase();
-}
-
-function formatHourLabel(hour: number) {
-  return `${String(hour).padStart(2, "0")}:00`;
 }
 
 function getEventHourRange(event: {
@@ -284,7 +269,7 @@ function HourlyScheduleTable({
                             {event.source !== "schedule" &&
                             event.requested_by_name ? (
                               <p className={`inline-flex w-fit rounded-full px-2 py-1 ring-1 ${noteTone.chip}`}>
-                                {`Oleh ${getInitials(event.requested_by_name)} `}
+                                {`Oleh ${getInitialsFromText(event.requested_by_name)} `}
                                 ({event.requested_by_role || "User"})
                               </p>
                             ) : null}
@@ -408,9 +393,7 @@ export default function SchedulePage() {
   return (
     <section className="space-y-4">
       {error ? (
-        <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {error}
-        </div>
+        <InlineErrorAlert>{error}</InlineErrorAlert>
       ) : null}
 
       <div className="grid items-start gap-4 xl:grid-cols-[auto_minmax(0,1fr)]">

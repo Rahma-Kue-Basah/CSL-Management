@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Eye, Loader2 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { DataPagination } from "@/components/shared/data-pagination";
 import { Button } from "@/components/ui/button";
 import { useEquipments } from "@/hooks/equipments/use-equipments";
 
@@ -120,9 +120,12 @@ export default function BorrowEquipmentAvailablePage() {
         </table>
       </div>
 
-      <InventoryPagination
+      <DataPagination
         page={page}
         totalPages={totalPages}
+        totalCount={totalCount || equipments.length}
+        pageSize={PAGE_SIZE}
+        itemLabel="peralatan"
         isLoading={isLoading}
         onPageChange={setPage}
       />

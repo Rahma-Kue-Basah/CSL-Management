@@ -3,7 +3,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Steps } from "rsuite";
 
 import { AdminDetailHeader } from "@/components/admin/AdminDetailHeader";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type AdminRecordFlowStep = {

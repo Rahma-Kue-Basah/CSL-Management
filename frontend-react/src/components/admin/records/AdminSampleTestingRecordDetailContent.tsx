@@ -16,7 +16,7 @@ import {
   AdminRecordDetailShell,
 } from "@/components/admin/records/AdminRecordDetailLayout";
 import type { PengujianRow } from "@/hooks/pengujians/use-pengujians";
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib } from "@/lib/date-format";
 
 type Props = {
   item: PengujianRow | null;

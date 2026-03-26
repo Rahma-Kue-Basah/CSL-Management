@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateTimeWib } from "@/lib/date-time";
+import { formatDateTimeWib, formatHourLabel } from "@/lib/date-format";
 
 type HourlyScheduleEvent = {
   id: string | number;
@@ -23,10 +23,6 @@ function sourceTone(source: string) {
   if (source === "booking") return "bg-emerald-100 text-emerald-700";
   if (source === "use") return "bg-amber-100 text-amber-700";
   return "bg-slate-100 text-slate-700";
-}
-
-function formatHourLabel(hour: number) {
-  return `${String(hour).padStart(2, "0")}:00`;
 }
 
 function getEventHourRange(event: {

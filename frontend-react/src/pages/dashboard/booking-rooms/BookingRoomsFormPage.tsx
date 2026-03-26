@@ -30,7 +30,7 @@ import { Input } from "@/components/ui/input";
 import { useCreateBookingRoom } from "@/hooks/bookings/use-create-booking-room";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
-import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-time";
+import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import { cn } from "@/lib/utils";
 
 type FormData = {

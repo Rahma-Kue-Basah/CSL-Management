@@ -19,9 +19,10 @@ import AdminEquipmentUsageRecordDetailContent from "@/components/admin/records/A
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
 import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
-import RecordDeleteDialog from "@/components/admin/records/RecordDeleteDialog";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
-import { InventoryPagination } from "@/components/admin/inventory/inventory-pagination";
+import { DataPagination } from "@/components/shared/data-pagination";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -52,6 +53,7 @@ import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
 import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
+import { formatDateTimeWib } from "@/lib/date-format";
 import { USE_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
 import {
   getStatusBadgeClass,
@@ -63,21 +65,6 @@ import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = REQUEST_STATUS_OPTIONS;
-
-function formatDateTime(value?: string | null) {
-  if (!value) return "-";
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return value;
-  const formatted = new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
-  return `${formatted} WIB`;
-}
 
 function matchesSearch(row: UseRow, query: string) {
   if (!query) return true;
@@ -497,9 +484,7 @@ export default function AdminRecordPenggunaanAlatPage() {
           </div>
 
           {error ? (
-            <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-              {error}
-            </div>
+            <InlineErrorAlert>{error}</InlineErrorAlert>
           ) : null}
 
           <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
@@ -568,10 +553,10 @@ export default function AdminRecordPenggunaanAlatPage() {
                         {item.requesterName}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2">
-                        {formatDateTime(item.startTime)}
+                        {formatDateTimeWib(item.startTime)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2">
-                        {formatDateTime(item.endTime)}
+                        {formatDateTimeWib(item.endTime)}
                       </td>
                       <td className="whitespace-nowrap px-3 py-2">
                         <span
@@ -659,14 +644,17 @@ export default function AdminRecordPenggunaanAlatPage() {
             </table>
           </div>
 
-          <InventoryPagination
+          <DataPagination
             page={page}
             totalPages={totalPages}
+            totalCount={totalCount || filteredUses.length}
+            pageSize={PAGE_SIZE}
+            itemLabel="penggunaan alat"
             isLoading={isLoading}
             onPageChange={setPage}
           />
 
-          <RecordDeleteDialog
+          <ConfirmDeleteDialog
             open={Boolean(deleteTarget)}
             title="Hapus record penggunaan alat?"
             description={`Record ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
@@ -677,7 +665,7 @@ export default function AdminRecordPenggunaanAlatPage() {
             onConfirm={handleDelete}
           />
 
-          <RecordDeleteDialog
+          <ConfirmDeleteDialog
             open={isBulkDeleteOpen}
             title="Hapus record penggunaan alat terpilih?"
             description={`${selectedCount} record yang dipilih akan dihapus permanen.`}
