@@ -17,6 +17,7 @@ import AdminEquipmentUsageRecordDetailContent from "@/components/admin/records/A
 import AdminRecordBulkActions from "@/components/admin/records/AdminRecordBulkActions";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
+import AdminRecordTable from "@/components/admin/records/AdminRecordTable";
 import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
@@ -55,6 +56,10 @@ import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = REQUEST_STATUS_OPTIONS;
+const ORDERING_OPTIONS = [
+  { value: "newest", label: "Terbaru" },
+  { value: "oldest", label: "Terlama" },
+];
 
 function matchesSearch(row: UseRow, query: string) {
   if (!query) return true;
@@ -71,6 +76,7 @@ export default function AdminRecordPenggunaanAlatPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [ordering, setOrdering] = useState("newest");
   const [createdRange, setCreatedRange] = useState<DateRange | undefined>();
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -137,6 +143,21 @@ export default function AdminRecordPenggunaanAlatPage() {
     () => uses.filter((item) => matchesSearch(item, debouncedSearch)),
     [uses, debouncedSearch],
   );
+  const visibleUses = useMemo(() => {
+    const items = [...filteredUses];
+
+    if (ordering === "oldest") {
+      items.sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+      return items;
+    }
+
+    items.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    return items;
+  }, [filteredUses, ordering]);
   const selectedRows = useMemo(() => {
     const selectedIdSet = new Set(selectedIds.map((id) => String(id)));
     return uses.filter((item) => selectedIdSet.has(String(item.id)));
@@ -148,10 +169,10 @@ export default function AdminRecordPenggunaanAlatPage() {
   );
   const selectedCount = selectedIds.length;
   const allVisibleSelected =
-    filteredUses.length > 0 &&
-    filteredUses.every((item) => selectedIds.includes(item.id));
+    visibleUses.length > 0 &&
+    visibleUses.every((item) => selectedIds.includes(item.id));
   const someVisibleSelected =
-    filteredUses.some((item) => selectedIds.includes(item.id)) && !allVisibleSelected;
+    visibleUses.some((item) => selectedIds.includes(item.id)) && !allVisibleSelected;
 
   useEffect(() => {
     setSelectedIds((prev) =>
@@ -168,6 +189,7 @@ export default function AdminRecordPenggunaanAlatPage() {
     setSearch("");
     setDebouncedSearch("");
     setStatus("");
+    setOrdering("newest");
     setCreatedRange(undefined);
     setPage(1);
     setReloadKey((prev) => prev + 1);
@@ -194,14 +216,14 @@ export default function AdminRecordPenggunaanAlatPage() {
   const toggleSelectAllVisible = (checked: boolean) => {
     if (!checked) {
       setSelectedIds((prev) =>
-        prev.filter((id) => !filteredUses.some((item) => item.id === id)),
+        prev.filter((id) => !visibleUses.some((item) => item.id === id)),
       );
       return;
     }
 
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      filteredUses.forEach((item) => next.add(item.id));
+      visibleUses.forEach((item) => next.add(item.id));
       return Array.from(next);
     });
   };
@@ -377,7 +399,26 @@ export default function AdminRecordPenggunaanAlatPage() {
                   ))}
                 </select>
               </div>
-              <div className="min-w-0 xl:col-span-2">
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                  Urutkan
+                </label>
+                <select
+                  value={ordering}
+                  onChange={(event) => {
+                    setOrdering(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  {ORDERING_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
                 <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Tanggal Dibuat
                 </label>
@@ -424,162 +465,126 @@ export default function AdminRecordPenggunaanAlatPage() {
             <InlineErrorAlert>{error}</InlineErrorAlert>
           ) : null}
 
-          <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
-            <table className="min-w-max w-full table-auto">
-              <thead className="border-b border-slate-800 bg-slate-900">
-                <tr className="text-left text-sm">
-                  <th className="w-12 px-3 py-3 text-center font-medium text-slate-50">
-                    <input
-                      ref={selectAllRef}
-                      type="checkbox"
-                      aria-label="Pilih semua record pada halaman ini"
-                      className="h-4 w-4 rounded border-slate-300 align-middle"
-                      checked={allVisibleSelected}
-                      onChange={(event) => toggleSelectAllVisible(event.target.checked)}
-                    />
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Kode
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Alat
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Pengguna
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Waktu Mulai
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Waktu Selesai
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Status
-                  </th>
-                  <th className="sticky right-0 z-10 relative whitespace-nowrap bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {isLoading || !hasLoadedOnce ? (
-                  <tr>
-                    <td colSpan={8} className="px-3 py-8 text-center">
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      </div>
-                    </td>
-                  </tr>
-                ) : filteredUses.length ? (
-                  filteredUses.map((item) => (
-                    <tr key={String(item.id)} className="border-b last:border-b-0">
-                      <td className="px-3 py-2 text-center">
-                        <input
-                          type="checkbox"
-                          aria-label={`Pilih record ${item.code}`}
-                          className="h-4 w-4 rounded border-slate-300 align-middle"
-                          checked={selectedIds.includes(item.id)}
-                          onChange={() => toggleItemSelection(item.id)}
-                        />
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 font-medium">
-                        {item.code}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2">{item.equipmentName}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-                        {item.requesterName}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2">
-                        {formatDateTimeWib(item.startTime)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2">
-                        {formatDateTimeWib(item.endTime)}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
-                            item.status,
-                          )}`}
+          <AdminRecordTable
+            columns={[
+              { label: "Kode" },
+              { label: "Alat" },
+              { label: "Pemohon" },
+              { label: "Waktu Mulai" },
+              { label: "Waktu Selesai" },
+              { label: "Status" },
+              {
+                label: "Aksi",
+                className:
+                  "sticky right-0 z-10 relative whitespace-nowrap bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700",
+              },
+            ]}
+            colSpan={8}
+            hasRows={visibleUses.length > 0}
+            isLoading={isLoading}
+            hasLoadedOnce={hasLoadedOnce}
+            emptyMessage="Tidak ada data penggunaan alat."
+            allVisibleSelected={allVisibleSelected}
+            onToggleSelectAll={toggleSelectAllVisible}
+            selectAllRef={selectAllRef}
+          >
+            {visibleUses.map((item) => (
+              <tr key={String(item.id)} className="border-b last:border-b-0">
+                <td className="px-3 py-2 text-center">
+                  <input
+                    type="checkbox"
+                    aria-label={`Pilih record ${item.code}`}
+                    className="h-4 w-4 rounded border-slate-300 align-middle"
+                    checked={selectedIds.includes(item.id)}
+                    onChange={() => toggleItemSelection(item.id)}
+                  />
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 font-medium">
+                  {item.code}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">{item.equipmentName}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                  {item.requesterName}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {formatDateTimeWib(item.startTime)}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {formatDateTimeWib(item.endTime)}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
+                      item.status,
+                    )}`}
+                  >
+                    {getStatusDisplayLabel(item.status)}
+                  </span>
+                </td>
+                <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
+                  <div className="flex justify-center gap-2">
+                    {item.status === "Pending" ? (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                          disabled={pendingAction.useId === item.id}
+                          onClick={() =>
+                            setStatusTarget({
+                              item,
+                              type: "approve",
+                            })
+                          }
                         >
-                          {getStatusDisplayLabel(item.status)}
-                        </span>
-                      </td>
-                      <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
-                        <div className="flex justify-center gap-2">
-                          {item.status === "Pending" ? (
-                            <>
-                              <Button
-                                variant="outline"
-                                size="icon-sm"
-                                className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-                                disabled={pendingAction.useId === item.id}
-                                onClick={() =>
-                                  setStatusTarget({
-                                    item,
-                                    type: "approve",
-                                  })
-                                }
-                              >
-                                {pendingAction.useId === item.id &&
-                                pendingAction.type === "approve" ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <Check className="h-4 w-4" />
-                                )}
-                              </Button>
-                              <Button
-                                variant="outline"
-                                size="icon-sm"
-                                className="border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-                                disabled={pendingAction.useId === item.id}
-                                onClick={() =>
-                                  setStatusTarget({
-                                    item,
-                                    type: "reject",
-                                  })
-                                }
-                              >
-                                {pendingAction.useId === item.id &&
-                                pendingAction.type === "reject" ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                  <OctagonX className="h-4 w-4" />
-                                )}
-                              </Button>
-                            </>
-                          ) : null}
-                          <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={() => setDetailTarget(item)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon-sm"
-                            className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                            onClick={() => setDeleteTarget(item)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={8}
-                      className="px-3 py-6 text-center text-muted-foreground"
+                          {pendingAction.useId === item.id &&
+                          pendingAction.type === "approve" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Check className="h-4 w-4" />
+                          )}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          className="border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
+                          disabled={pendingAction.useId === item.id}
+                          onClick={() =>
+                            setStatusTarget({
+                              item,
+                              type: "reject",
+                            })
+                          }
+                        >
+                          {pendingAction.useId === item.id &&
+                          pendingAction.type === "reject" ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <OctagonX className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </>
+                    ) : null}
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      onClick={() => setDetailTarget(item)}
                     >
-                      Tidak ada data penggunaan alat.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      onClick={() => setDeleteTarget(item)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </AdminRecordTable>
 
           <DataPagination
             page={page}

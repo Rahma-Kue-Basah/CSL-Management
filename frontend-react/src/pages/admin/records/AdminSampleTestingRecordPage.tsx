@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Eye, Loader2, Trash2 } from "lucide-react";
+import type { DateRange } from "react-day-picker";
+import { Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -9,12 +10,14 @@ import AdminSampleTestingRecordDetailContent from "@/components/admin/records/Ad
 import AdminRecordBulkActions from "@/components/admin/records/AdminRecordBulkActions";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
+import AdminRecordTable from "@/components/admin/records/AdminRecordTable";
 import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { DataPagination } from "@/components/shared/data-pagination";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Dialog,
   DialogContent,
@@ -35,7 +38,11 @@ import {
 } from "@/hooks/pengujians/use-pengujians";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { PENGUJIAN_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
-import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
+import { formatDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
+import {
+  exportAdminRecordExcel,
+  exportAdminRecordPdf,
+} from "@/lib/admin-record-pdf";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
@@ -45,6 +52,10 @@ import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = SAMPLE_TESTING_STATUS_OPTIONS;
+const ORDERING_OPTIONS = [
+  { value: "newest", label: "Terbaru" },
+  { value: "oldest", label: "Terlama" },
+];
 
 function matchesSearch(row: PengujianRow, query: string) {
   if (!query) return true;
@@ -66,44 +77,65 @@ export default function AdminRecordPengujianSampelPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [ordering, setOrdering] = useState("newest");
+  const [createdRange, setCreatedRange] = useState<DateRange | undefined>();
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<PengujianRow | null>(null);
   const [detailTarget, setDetailTarget] = useState<PengujianRow | null>(null);
-  const [relatedUserId, setRelatedUserId] = useState<string | number | null>(null);
+  const [relatedUserId, setRelatedUserId] = useState<string | number | null>(
+    null,
+  );
   const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
-  const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
+  const [isExportingSelectedExcel, setIsExportingSelectedExcel] =
+    useState(false);
+  const createdAfter = createdRange?.from ? formatDateKey(createdRange.from) : "";
+  const createdBefore = createdRange?.to
+    ? formatDateKey(createdRange.to)
+    : createdRange?.from
+      ? formatDateKey(createdRange.from)
+      : "";
   const { deleteRecord, deleteRecords, isDeleting } = useDeleteRecord();
-  const {
-    exportPdf,
-    exportExcel,
-    isExportingPdf,
-    isExportingExcel,
-  } = useAdminRecordExport({
-    endpoint: API_PENGUJIANS_EXPORT,
-    filters: { q: debouncedSearch, status },
-    mapItem: mapPengujian,
-    title: "Record Pengujian Sampel",
-    pdfFilename: "record-pengujian-sampel.pdf",
-    excelFilename: "record-pengujian-sampel.xlsx",
-    columns: PENGUJIAN_EXPORT_COLUMNS,
-    emptyMessage: "Tidak ada data pengujian sampel untuk diunduh.",
-    pdfSuccessMessage: "PDF pengujian sampel berhasil diunduh.",
-    excelSuccessMessage: "Excel pengujian sampel berhasil diunduh.",
-  });
+  const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } =
+    useAdminRecordExport({
+      endpoint: API_PENGUJIANS_EXPORT,
+      filters: {
+        q: debouncedSearch,
+        status,
+        created_after: createdAfter ? toStartOfDay(createdAfter) : "",
+        created_before: createdBefore ? toEndOfDay(createdBefore) : "",
+      },
+      mapItem: mapPengujian,
+      title: "Record Pengujian Sampel",
+      pdfFilename: "record-pengujian-sampel.pdf",
+      excelFilename: "record-pengujian-sampel.xlsx",
+      columns: PENGUJIAN_EXPORT_COLUMNS,
+      emptyMessage: "Tidak ada data pengujian sampel untuk diunduh.",
+      pdfSuccessMessage: "PDF pengujian sampel berhasil diunduh.",
+      excelSuccessMessage: "Excel pengujian sampel berhasil diunduh.",
+    });
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const { pengujians, totalCount, aggregates, isLoading, hasLoadedOnce, error } = usePengujians(
+  const {
+    pengujians,
+    totalCount,
+    aggregates,
+    isLoading,
+    hasLoadedOnce,
+    error,
+  } = usePengujians(
     page,
     PAGE_SIZE,
     {
       status,
+      createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
+      createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
     reloadKey,
   );
@@ -112,25 +144,44 @@ export default function AdminRecordPengujianSampelPage() {
     () => pengujians.filter((item) => matchesSearch(item, debouncedSearch)),
     [pengujians, debouncedSearch],
   );
+  const visibleItems = useMemo(() => {
+    const items = [...filteredItems];
+
+    if (ordering === "oldest") {
+      items.sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime(),
+      );
+      return items;
+    }
+
+    items.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+    return items;
+  }, [filteredItems, ordering]);
   const selectedRows = useMemo(() => {
     const selectedIdSet = new Set(selectedIds.map((id) => String(id)));
     return pengujians.filter((item) => selectedIdSet.has(String(item.id)));
   }, [pengujians, selectedIds]);
 
   const totalPages = useMemo(
-    () => Math.max(1, Math.ceil((totalCount || filteredItems.length) / PAGE_SIZE)),
+    () =>
+      Math.max(1, Math.ceil((totalCount || filteredItems.length) / PAGE_SIZE)),
     [totalCount, filteredItems.length],
   );
   const selectedCount = selectedIds.length;
   const allVisibleSelected =
-    filteredItems.length > 0 &&
-    filteredItems.every((item) => selectedIds.includes(item.id));
+    visibleItems.length > 0 &&
+    visibleItems.every((item) => selectedIds.includes(item.id));
   const someVisibleSelected =
-    filteredItems.some((item) => selectedIds.includes(item.id)) && !allVisibleSelected;
+    visibleItems.some((item) => selectedIds.includes(item.id)) &&
+    !allVisibleSelected;
 
   useEffect(() => {
     setSelectedIds((prev) =>
-      prev.filter((id) => pengujians.some((item) => String(item.id) === String(id))),
+      prev.filter((id) =>
+        pengujians.some((item) => String(item.id) === String(id)),
+      ),
     );
   }, [pengujians]);
 
@@ -143,6 +194,8 @@ export default function AdminRecordPengujianSampelPage() {
     setSearch("");
     setDebouncedSearch("");
     setStatus("");
+    setOrdering("newest");
+    setCreatedRange(undefined);
     setPage(1);
     setReloadKey((prev) => prev + 1);
   };
@@ -161,21 +214,23 @@ export default function AdminRecordPengujianSampelPage() {
 
   const toggleItemSelection = (id: number | string) => {
     setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id],
+      prev.includes(id)
+        ? prev.filter((itemId) => itemId !== id)
+        : [...prev, id],
     );
   };
 
   const toggleSelectAllVisible = (checked: boolean) => {
     if (!checked) {
       setSelectedIds((prev) =>
-        prev.filter((id) => !filteredItems.some((item) => item.id === id)),
+        prev.filter((id) => !visibleItems.some((item) => item.id === id)),
       );
       return;
     }
 
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      filteredItems.forEach((item) => next.add(item.id));
+      visibleItems.forEach((item) => next.add(item.id));
       return Array.from(next);
     });
   };
@@ -190,9 +245,12 @@ export default function AdminRecordPengujianSampelPage() {
     }
 
     if (result.failedCount && result.deletedCount) {
-      toast.success(`${result.deletedCount} record pengujian sampel berhasil dihapus.`);
+      toast.success(
+        `${result.deletedCount} record pengujian sampel berhasil dihapus.`,
+      );
       toast.error(
-        result.message ?? `${result.failedCount} record pengujian sampel gagal dihapus.`,
+        result.message ??
+          `${result.failedCount} record pengujian sampel gagal dihapus.`,
       );
     } else {
       toast.success(
@@ -220,7 +278,9 @@ export default function AdminRecordPengujianSampelPage() {
       toast.success("PDF pengujian sampel terpilih berhasil diunduh.");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Gagal mengunduh PDF data terpilih.",
+        error instanceof Error
+          ? error.message
+          : "Gagal mengunduh PDF data terpilih.",
       );
     } finally {
       setIsExportingSelectedPdf(false);
@@ -240,7 +300,9 @@ export default function AdminRecordPengujianSampelPage() {
       toast.success("Excel pengujian sampel terpilih berhasil diunduh.");
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : "Gagal mengunduh Excel data terpilih.",
+        error instanceof Error
+          ? error.message
+          : "Gagal mengunduh Excel data terpilih.",
       );
     } finally {
       setIsExportingSelectedExcel(false);
@@ -279,7 +341,7 @@ export default function AdminRecordPengujianSampelPage() {
                 setPage(1);
               }}
             >
-              <div className="min-w-0 md:col-span-2">
+              <div className="min-w-0">
                 <label className="mb-1 block text-xs font-semibold text-slate-900/90">
                   Cari
                 </label>
@@ -313,6 +375,39 @@ export default function AdminRecordPengujianSampelPage() {
                   ))}
                 </select>
               </div>
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                  Urutkan
+                </label>
+                <select
+                  value={ordering}
+                  onChange={(event) => {
+                    setOrdering(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  {ORDERING_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                  Tanggal Dibuat
+                </label>
+                <DateRangePicker
+                  value={createdRange}
+                  onChange={(value) => {
+                    setCreatedRange(value);
+                    setPage(1);
+                  }}
+                  clearable
+                  buttonClassName="h-9 w-full rounded-md border-slate-400 bg-white px-2 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                />
+              </div>
             </form>
           </AdminFilterCard>
 
@@ -342,116 +437,82 @@ export default function AdminRecordPengujianSampelPage() {
             </div>
           </div>
 
-          {error ? (
-            <InlineErrorAlert>{error}</InlineErrorAlert>
-          ) : null}
+          {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
-          <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
-            <table className="min-w-max w-full table-auto">
-              <thead className="border-b border-slate-800 bg-slate-900">
-                <tr className="text-left text-sm">
-                  <th className="w-12 px-3 py-3 text-center font-medium text-slate-50">
-                    <input
-                      ref={selectAllRef}
-                      type="checkbox"
-                      aria-label="Pilih semua record pada halaman ini"
-                      className="h-4 w-4 rounded border-slate-300 align-middle"
-                      checked={allVisibleSelected}
-                      onChange={(event) => toggleSelectAllVisible(event.target.checked)}
-                    />
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Kode
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Pemohon
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Institusi
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Jenis Sampel
-                  </th>
-                  <th className="whitespace-nowrap px-3 py-3 font-medium text-slate-50">
-                    Status
-                  </th>
-                  <th className="sticky right-0 z-10 relative whitespace-nowrap bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
-                    Aksi
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="text-sm">
-                {isLoading || !hasLoadedOnce ? (
-                  <tr>
-                    <td colSpan={7} className="px-3 py-8 text-center">
-                      <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      </div>
-                    </td>
-                  </tr>
-                ) : filteredItems.length ? (
-                  filteredItems.map((item) => (
-                    <tr key={String(item.id)} className="border-b last:border-b-0">
-                      <td className="px-3 py-2 text-center">
-                        <input
-                          type="checkbox"
-                          aria-label={`Pilih record ${item.code}`}
-                          className="h-4 w-4 rounded border-slate-300 align-middle"
-                          checked={selectedIds.includes(item.id)}
-                          onChange={() => toggleItemSelection(item.id)}
-                        />
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2 font-medium">
-                        {item.code}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2">{item.name}</td>
-                      <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-                        {item.institution || "-"}
-                      </td>
-                      <td className="whitespace-nowrap px-3 py-2">{item.sampleType}</td>
-                      <td className="whitespace-nowrap px-3 py-2">
-                        <span
-                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
-                            item.status,
-                          )}`}
-                        >
-                          {getStatusDisplayLabel(item.status)}
-                        </span>
-                      </td>
-                      <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
-                        <div className="flex justify-center gap-2">
-                          <Button
-                            variant="outline"
-                            size="icon-sm"
-                            onClick={() => setDetailTarget(item)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon-sm"
-                            className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                            onClick={() => setDeleteTarget(item)}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td
-                      colSpan={7}
-                      className="px-3 py-6 text-center text-muted-foreground"
+          <AdminRecordTable
+            columns={[
+              { label: "Kode" },
+              { label: "Pemohon" },
+              { label: "Institusi" },
+              { label: "Jenis Sampel" },
+              { label: "Status" },
+              {
+                label: "Aksi",
+                className:
+                  "sticky right-0 z-10 relative whitespace-nowrap bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700",
+              },
+            ]}
+            colSpan={7}
+            hasRows={visibleItems.length > 0}
+            isLoading={isLoading}
+            hasLoadedOnce={hasLoadedOnce}
+            emptyMessage="Tidak ada data pengujian sampel."
+            allVisibleSelected={allVisibleSelected}
+            onToggleSelectAll={toggleSelectAllVisible}
+            selectAllRef={selectAllRef}
+          >
+            {visibleItems.map((item) => (
+              <tr key={String(item.id)} className="border-b last:border-b-0">
+                <td className="px-3 py-2 text-center">
+                  <input
+                    type="checkbox"
+                    aria-label={`Pilih record ${item.code}`}
+                    className="h-4 w-4 rounded border-slate-300 align-middle"
+                    checked={selectedIds.includes(item.id)}
+                    onChange={() => toggleItemSelection(item.id)}
+                  />
+                </td>
+                <td className="whitespace-nowrap px-3 py-2 font-medium">
+                  {item.code}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">{item.name}</td>
+                <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
+                  {item.institution || "-"}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {item.sampleType}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  <span
+                    className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusBadgeClass(
+                      item.status,
+                    )}`}
+                  >
+                    {getStatusDisplayLabel(item.status)}
+                  </span>
+                </td>
+                <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
+                  <div className="flex justify-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      onClick={() => setDetailTarget(item)}
                     >
-                      Tidak ada data pengujian sampel.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                      onClick={() => setDeleteTarget(item)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </AdminRecordTable>
 
           <DataPagination
             page={page}

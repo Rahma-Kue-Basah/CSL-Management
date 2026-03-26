@@ -7,6 +7,8 @@ import { authFetch } from "@/lib/auth";
 
 export type PengujianFilters = {
   status?: string;
+  createdAfter?: string;
+  createdBefore?: string;
 };
 
 export type PengujianRow = {
@@ -213,6 +215,12 @@ export function usePengujians(
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
+        if (filters.createdAfter) {
+          url.searchParams.set("created_after", filters.createdAfter);
+        }
+        if (filters.createdBefore) {
+          url.searchParams.set("created_before", filters.createdBefore);
+        }
 
         const response = await authFetch(url.toString(), {
           method: "GET",
@@ -254,7 +262,14 @@ export function usePengujians(
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, reloadKey]);
+  }, [
+    page,
+    pageSize,
+    filters.status,
+    filters.createdAfter,
+    filters.createdBefore,
+    reloadKey,
+  ]);
 
   return {
     pengujians,

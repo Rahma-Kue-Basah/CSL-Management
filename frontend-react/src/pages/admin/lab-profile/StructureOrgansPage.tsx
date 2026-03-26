@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import type { ReactNode } from "react";
 import {
-  Building2,
   GitBranch,
   Network,
   Pencil,
@@ -13,16 +11,12 @@ import {
 } from "lucide-react";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminFilterCard } from "@/components/admin/admin-filter-card";
+import StructureOrganizationFormDialog, {
+  type StructureOrganizationFormData,
+} from "@/components/admin/lab-profile/structure-organization-form-dialog";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { API_STRUCTURE_ORGANIZATIONS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
@@ -116,20 +110,27 @@ function buildTree(items: StructureOrganizationItem[]) {
   return roots;
 }
 
-function countLeafNodes(nodes: StructureNode[]): number {
-  return nodes.reduce((total, node) => {
-    if (node.children.length === 0) return total + 1;
-    return total + countLeafNodes(node.children);
-  }, 0);
-}
+function filterHierarchy(nodes: StructureNode[], query: string): StructureNode[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return nodes;
 
-function countDepth(nodes: StructureNode[]): number {
-  if (nodes.length === 0) return 0;
-  return Math.max(
-    ...nodes.map(
-      (node) => 1 + (node.children.length ? countDepth(node.children) : 0),
-    ),
-  );
+  return nodes.reduce<StructureNode[]>((acc, node) => {
+    const filteredChildren = filterHierarchy(node.children, normalizedQuery);
+    const matchesSelf = [node.title, node.name]
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery);
+
+    if (!matchesSelf && filteredChildren.length === 0) {
+      return acc;
+    }
+
+    acc.push({
+      ...node,
+      children: filteredChildren,
+    });
+    return acc;
+  }, []);
 }
 
 type HierarchyNodeProps = {
@@ -153,40 +154,30 @@ function HierarchyNode({
     <div className="relative">
       <article
         className={cn(
-          "relative overflow-hidden rounded-2xl border p-4 shadow-xs",
+          "rounded-xl border p-3.5",
           depth === 0
-            ? "border-blue-200 bg-gradient-to-br from-blue-50 via-white to-sky-50"
+            ? "border-blue-200 bg-blue-50/60"
             : "border-slate-200 bg-white",
         )}
       >
-        <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-slate-100/70 blur-2xl" />
-        <div className="relative flex items-start gap-3">
+        <div className="flex items-start gap-3">
           <div
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border",
               depth === 0
-                ? "bg-blue-600 text-white"
-                : "bg-slate-100 text-slate-700",
+                ? "border-blue-200 bg-blue-100 text-blue-700"
+                : "border-slate-200 bg-slate-50 text-slate-600",
             )}
           >
-            {depth === 0 ? (
-              <Building2 className="h-5 w-5" />
-            ) : (
-              <UserRound className="h-5 w-5" />
-            )}
+            <UserRound className="h-4.5 w-4.5" />
           </div>
           <div className="min-w-0">
-            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold tracking-wide text-slate-600 uppercase">
+            <span className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
               {node.title}
             </span>
-            <h2 className="mt-2 text-base font-semibold text-slate-900">
+            <h2 className="mt-1 text-sm font-semibold text-slate-900 sm:text-base">
               {node.name}
             </h2>
-            {hasChildren ? (
-              <p className="mt-1 text-xs text-slate-500">
-                {node.children.length} posisi turunan
-              </p>
-            ) : null}
           </div>
           <div className="ml-auto flex shrink-0 gap-2">
             <Button
@@ -197,7 +188,6 @@ function HierarchyNode({
               disabled={isDeleting}
             >
               <Pencil className="h-3.5 w-3.5" />
-              Edit
             </Button>
             <Button
               type="button"
@@ -238,19 +228,57 @@ function HierarchyNode({
   );
 }
 
+function HierarchyNodeSkeleton({ depth = 0 }: { depth?: number }) {
+  return (
+    <div className="relative">
+      <article
+        className={cn(
+          "rounded-xl border p-3.5",
+          depth === 0
+            ? "border-blue-200 bg-blue-50/60"
+            : "border-slate-200 bg-white",
+        )}
+      >
+        <div className="flex items-start gap-3">
+          <div
+            className={cn(
+              "h-9 w-9 shrink-0 animate-pulse rounded-lg border",
+              depth === 0
+                ? "border-blue-200 bg-blue-100"
+                : "border-slate-200 bg-slate-100",
+            )}
+          />
+          <div className="min-w-0 flex-1">
+            <div className="h-3 w-24 animate-pulse rounded bg-slate-200" />
+            <div className="mt-2 h-4 w-40 animate-pulse rounded bg-slate-300/70" />
+          </div>
+          <div className="ml-auto flex shrink-0 gap-2">
+            <div className="h-9 w-9 animate-pulse rounded-md border border-slate-200 bg-slate-100" />
+            <div className="h-9 w-9 animate-pulse rounded-md border border-slate-200 bg-slate-100" />
+          </div>
+        </div>
+      </article>
+    </div>
+  );
+}
+
 export default function StructureOrgansPage() {
   const [items, setItems] = useState<StructureOrganizationItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [search, setSearch] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<string | number | null>(null);
   const [submitMessage, setSubmitMessage] = useState("");
   const [deleteTarget, setDeleteTarget] =
     useState<StructureOrganizationItem | null>(null);
+  const [deleteDialogSnapshot, setDeleteDialogSnapshot] =
+    useState<StructureOrganizationItem | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editTarget, setEditTarget] =
     useState<StructureOrganizationItem | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<StructureOrganizationFormData>({
     title: "",
     name: "",
     parent: "",
@@ -289,7 +317,17 @@ export default function StructureOrgansPage() {
     void loadStructureOrganizations();
   }, []);
 
+  useEffect(() => {
+    if (deleteTarget) {
+      setDeleteDialogSnapshot(deleteTarget);
+    }
+  }, [deleteTarget]);
+
   const hierarchy = useMemo(() => buildTree(items), [items]);
+  const visibleHierarchy = useMemo(
+    () => filterHierarchy(hierarchy, search),
+    [hierarchy, search],
+  );
   const parentOptions = useMemo(
     () =>
       items
@@ -303,16 +341,6 @@ export default function StructureOrgansPage() {
           return left.name.localeCompare(right.name, "id-ID");
         }),
     [editTarget, items],
-  );
-
-  const summary = useMemo(
-    () => ({
-      totalNodes: items.length,
-      totalRoots: hierarchy.length,
-      totalLeafs: countLeafNodes(hierarchy),
-      maxDepth: countDepth(hierarchy),
-    }),
-    [hierarchy, items.length],
   );
 
   const handleInputChange = (
@@ -395,6 +423,7 @@ export default function StructureOrgansPage() {
   };
 
   const handleEdit = (node: StructureOrganizationItem) => {
+    setDeleteTarget(null);
     setIsFormOpen(true);
     setEditTarget(node);
     setSubmitMessage("");
@@ -417,6 +446,7 @@ export default function StructureOrgansPage() {
   };
 
   const handleCreateOpen = () => {
+    setDeleteTarget(null);
     setEditTarget(null);
     setSubmitMessage("");
     setFormData({
@@ -438,6 +468,10 @@ export default function StructureOrgansPage() {
         parent: "",
       });
     }
+  };
+
+  const resetFilters = () => {
+    setSearch("");
   };
 
   const handleDelete = async () => {
@@ -483,112 +517,34 @@ export default function StructureOrgansPage() {
     }
   };
 
+  const handleDeleteDialogChange = (open: boolean) => {
+    if (!open) {
+      setDeleteTarget(null);
+    }
+  };
+
   return (
     <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
-      <Dialog open={isFormOpen} onOpenChange={handleFormDialogChange}>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{editTarget ? "Edit Struktur" : "Tambah Struktur"}</DialogTitle>
-            <DialogDescription>
-              {editTarget
-                ? `Perbarui data ${editTarget.title} - ${editTarget.name}.`
-                : "Tambahkan posisi baru ke bagan struktur organisasi laboratorium."}
-            </DialogDescription>
-          </DialogHeader>
-
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-1.5">
-              <label htmlFor="title" className="text-xs font-medium text-slate-600">
-                Jabatan
-              </label>
-              <Input
-                id="title"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                placeholder="Contoh: Kepala Laboratorium"
-                className="border-slate-300 bg-white focus-visible:border-slate-500 focus-visible:ring-slate-200"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="name" className="text-xs font-medium text-slate-600">
-                Nama Personel
-              </label>
-              <Input
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Masukkan nama pengisi posisi"
-                className="border-slate-300 bg-white focus-visible:border-slate-500 focus-visible:ring-slate-200"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <label htmlFor="parent" className="text-xs font-medium text-slate-600">
-                Atasan Langsung
-              </label>
-              <select
-                id="parent"
-                name="parent"
-                value={formData.parent}
-                onChange={handleInputChange}
-                className="h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 outline-none shadow-xs focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
-              >
-                <option value="">Tidak ada parent / posisi paling atas</option>
-                {parentOptions.map((item) => (
-                  <option key={item.id} value={String(item.id)}>
-                    {item.title} - {item.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {submitMessage ? (
-              <div
-                className={cn(
-                  "rounded-md border px-3 py-2 text-sm",
-                  submitMessage.includes("berhasil")
-                    ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                    : "border-red-200 bg-red-50 text-red-700",
-                )}
-              >
-                {submitMessage}
-              </div>
-            ) : null}
-
-            <DialogFooter>
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => handleFormDialogChange(false)}
-                disabled={isSubmitting}
-              >
-                Batal
-              </Button>
-              <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting
-                  ? "Menyimpan..."
-                  : editTarget
-                    ? "Simpan Perubahan"
-                    : "Tambah Struktur"}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <StructureOrganizationFormDialog
+        open={isFormOpen}
+        editTarget={editTarget}
+        formData={formData}
+        parentOptions={parentOptions}
+        submitMessage={submitMessage}
+        isSubmitting={isSubmitting}
+        onOpenChange={handleFormDialogChange}
+        onCloseReset={handleCancelEdit}
+        onSubmit={handleSubmit}
+        onInputChange={handleInputChange}
+      />
 
       <ConfirmDeleteDialog
         open={Boolean(deleteTarget)}
-        onOpenChange={(open) => (!open ? setDeleteTarget(null) : null)}
-        size="sm"
-        headerClassName="place-items-start text-left"
-        footerClassName="sm:justify-start"
+        onOpenChange={handleDeleteDialogChange}
         title="Hapus struktur organisasi?"
         description={
-          deleteTarget
-            ? `Data ${deleteTarget.title} untuk ${deleteTarget.name} akan dihapus. Jika posisi ini punya turunan, data turunannya juga bisa ikut terhapus.`
+          deleteDialogSnapshot
+            ? `Data ${deleteDialogSnapshot.title} untuk ${deleteDialogSnapshot.name} akan dihapus. Jika posisi ini punya turunan, data turunannya juga bisa ikut terhapus.`
             : "Data struktur organisasi ini akan dihapus."
         }
         isDeleting={deletingId != null}
@@ -601,32 +557,29 @@ export default function StructureOrgansPage() {
         icon={<Network className="h-5 w-5 text-sky-200" />}
       />
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <SummaryCard
-          icon={<Building2 className="h-4 w-4" />}
-          label="Total Posisi"
-          value={summary.totalNodes}
-          tone="blue"
-        />
-        <SummaryCard
-          icon={<GitBranch className="h-4 w-4" />}
-          label="Pucuk Struktur"
-          value={summary.totalRoots}
-          tone="slate"
-        />
-        <SummaryCard
-          icon={<UserRound className="h-4 w-4" />}
-          label="Posisi Daun"
-          value={summary.totalLeafs}
-          tone="emerald"
-        />
-        <SummaryCard
-          icon={<Network className="h-4 w-4" />}
-          label="Kedalaman Hierarki"
-          value={summary.maxDepth}
-          tone="amber"
-        />
-      </div>
+      <AdminFilterCard
+        open={filterOpen}
+        onToggle={() => setFilterOpen((prev) => !prev)}
+        onReset={resetFilters}
+      >
+        <form
+          className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
+          onSubmit={(event) => event.preventDefault()}
+        >
+          <div className="min-w-0">
+            <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+              Cari
+            </label>
+            <Input
+              type="search"
+              value={search}
+              placeholder="Cari jabatan atau nama"
+              className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+              onChange={(event) => setSearch(event.target.value)}
+            />
+          </div>
+        </form>
+      </AdminFilterCard>
 
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px]">
         <div className="order-1 rounded-2xl border border-slate-200 bg-gradient-to-b from-slate-50 to-white p-4 shadow-xs xl:order-1">
@@ -640,8 +593,9 @@ export default function StructureOrgansPage() {
           </div>
 
           {isLoading ? (
-            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-8 text-sm text-slate-500">
-              Memuat struktur organisasi...
+            <div className="space-y-4">
+              <HierarchyNodeSkeleton depth={0} />
+              <HierarchyNodeSkeleton depth={1} />
             </div>
           ) : error ? (
             <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-8 text-sm text-red-700">
@@ -652,9 +606,13 @@ export default function StructureOrgansPage() {
               Belum ada data struktur organisasi. Tambahkan data dengan field
               `title`, `name`, dan `parent` agar bagan hierarki tampil.
             </div>
+          ) : visibleHierarchy.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 bg-white px-4 py-8 text-sm text-slate-500">
+              Tidak ada struktur organisasi yang cocok dengan filter saat ini.
+            </div>
           ) : (
             <div className="space-y-6">
-              {hierarchy.map((node) => (
+              {visibleHierarchy.map((node) => (
                 <HierarchyNode
                   key={node.id}
                   node={node}
@@ -701,40 +659,5 @@ export default function StructureOrgansPage() {
         </aside>
       </div>
     </section>
-  );
-}
-
-type SummaryCardProps = {
-  icon: ReactNode;
-  label: string;
-  value: number;
-  tone: "blue" | "slate" | "emerald" | "amber";
-};
-
-function SummaryCard({ icon, label, value, tone }: SummaryCardProps) {
-  const toneClassName = {
-    blue: "border-blue-200 bg-blue-50 text-blue-700",
-    slate: "border-slate-200 bg-slate-50 text-slate-700",
-    emerald: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    amber: "border-amber-200 bg-amber-50 text-amber-700",
-  }[tone];
-
-  return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-xs">
-      <div className="flex items-center gap-3">
-        <div
-          className={cn(
-            "flex h-10 w-10 items-center justify-center rounded-xl border",
-            toneClassName,
-          )}
-        >
-          {icon}
-        </div>
-        <div>
-          <p className="text-xs font-medium text-slate-500">{label}</p>
-          <p className="text-xl font-semibold text-slate-900">{value}</p>
-        </div>
-      </div>
-    </div>
   );
 }
