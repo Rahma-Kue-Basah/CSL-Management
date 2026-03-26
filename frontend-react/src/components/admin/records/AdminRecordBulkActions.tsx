@@ -14,59 +14,65 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type InventoryBulkActionsProps = {
+type AdminRecordBulkActionsProps = {
   selectedCount: number;
   isDeleting: boolean;
-  isExportingSelectedPdf: boolean;
   isExportingSelectedExcel: boolean;
-  onClearSelection: () => void;
-  onDeleteSelected: () => void;
-  onExportSelectedPdf: () => void;
+  isExportingSelectedPdf: boolean;
   onExportSelectedExcel: () => void;
+  onExportSelectedPdf: () => void;
+  onDeleteSelected: () => void;
+  onClearSelection: () => void;
 };
 
-export default function InventoryBulkActions({
+export default function AdminRecordBulkActions({
   selectedCount,
   isDeleting,
-  isExportingSelectedPdf,
   isExportingSelectedExcel,
-  onClearSelection,
-  onDeleteSelected,
-  onExportSelectedPdf,
+  isExportingSelectedPdf,
   onExportSelectedExcel,
-}: InventoryBulkActionsProps) {
+  onExportSelectedPdf,
+  onDeleteSelected,
+  onClearSelection,
+}: AdminRecordBulkActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           type="button"
           variant="outline"
-          size="sm"
-          className="gap-2"
+          className="disabled:border-slate-200 disabled:text-slate-400"
           disabled={selectedCount === 0 || isDeleting}
         >
           Aksi Terpilih
           {selectedCount ? ` (${selectedCount})` : ""}
-          <ChevronDown className="h-4 w-4" />
+          <ChevronDown className="ml-2 h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="bottom" align="end" className="w-48">
+      <DropdownMenuContent
+        side="bottom"
+        align="start"
+        sideOffset={6}
+        className="min-w-38"
+      >
         <DropdownMenuSub>
-          <DropdownMenuSubTrigger disabled={selectedCount === 0 || isExportingSelectedPdf || isExportingSelectedExcel}>
+          <DropdownMenuSubTrigger className="cursor-pointer">
             <Download className="h-4 w-4" />
             Export Terpilih
           </DropdownMenuSubTrigger>
-          <DropdownMenuSubContent className="w-44">
+          <DropdownMenuSubContent className="min-w-44">
             <DropdownMenuItem
-              disabled={selectedCount === 0 || isExportingSelectedExcel}
-              onClick={onExportSelectedExcel}
+              className="cursor-pointer"
+              disabled={isExportingSelectedExcel}
+              onSelect={onExportSelectedExcel}
             >
               <FileSpreadsheet className="h-4 w-4" />
               Export Excel
             </DropdownMenuItem>
             <DropdownMenuItem
-              disabled={selectedCount === 0 || isExportingSelectedPdf}
-              onClick={onExportSelectedPdf}
+              className="cursor-pointer"
+              disabled={isExportingSelectedPdf}
+              onSelect={onExportSelectedPdf}
             >
               <Download className="h-4 w-4" />
               Export PDF
@@ -75,18 +81,17 @@ export default function InventoryBulkActions({
         </DropdownMenuSub>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          variant="destructive"
-          disabled={selectedCount === 0 || isDeleting}
-          onClick={onDeleteSelected}
+          className="cursor-pointer text-rose-600 focus:text-rose-700"
+          onSelect={onDeleteSelected}
         >
           <Trash2 className="h-4 w-4" />
           Hapus Terpilih
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
+          className="cursor-pointer text-xs text-slate-500"
           disabled={selectedCount === 0}
-          onClick={onClearSelection}
-          className="text-xs text-slate-500"
+          onSelect={onClearSelection}
         >
           <X className="h-3.5 w-3.5" />
           Clear selection

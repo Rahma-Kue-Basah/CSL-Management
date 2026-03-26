@@ -226,10 +226,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
             <AdminFilterCard
               open={filterOpen}
               onToggle={() => setFilterOpen((prev) => !prev)}
-              onReset={() => {
-                resetFilters();
-                setFilterOpen(false);
-              }}
+              onReset={resetFilters}
             >
               <form
                 className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
@@ -296,6 +293,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                 isDeleting={actions.isDeleting}
                 isExportingSelectedPdf={isExportingSelectedPdf}
                 isExportingSelectedExcel={isExportingSelectedExcel}
+                onClearSelection={() => actions.setSelectedIds([])}
                 onDeleteSelected={() => actions.setIsBulkDeleteOpen(true)}
                 onExportSelectedPdf={() => {
                   void handleExportSelectedPdf();

@@ -1,12 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { DateRange } from "react-day-picker";
 import {
   Check,
-  ChevronDown,
-  Download,
   Eye,
-  FileSpreadsheet,
   Loader2,
   OctagonX,
   Trash2,
@@ -16,6 +14,7 @@ import { toast } from "sonner";
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import RelatedEquipmentDetailDialog from "@/components/admin/records/RelatedEquipmentDetailDialog";
 import AdminEquipmentUsageRecordDetailContent from "@/components/admin/records/AdminEquipmentUsageRecordDetailContent";
+import AdminRecordBulkActions from "@/components/admin/records/AdminRecordBulkActions";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
 import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
@@ -24,7 +23,7 @@ import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { DataPagination } from "@/components/shared/data-pagination";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import {
   Dialog,
   DialogContent,
@@ -32,15 +31,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   API_USE_DETAIL,
@@ -52,7 +42,7 @@ import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
-import { formatDateKey, parseDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
+import { formatDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { USE_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
 import {
@@ -81,8 +71,7 @@ export default function AdminRecordPenggunaanAlatPage() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("");
-  const [createdAfter, setCreatedAfter] = useState("");
-  const [createdBefore, setCreatedBefore] = useState("");
+  const [createdRange, setCreatedRange] = useState<DateRange | undefined>();
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<UseRow | null>(null);
@@ -97,6 +86,12 @@ export default function AdminRecordPenggunaanAlatPage() {
     item: UseRow;
     type: "approve" | "reject";
   } | null>(null);
+  const createdAfter = createdRange?.from ? formatDateKey(createdRange.from) : "";
+  const createdBefore = createdRange?.to
+    ? formatDateKey(createdRange.to)
+    : createdRange?.from
+      ? formatDateKey(createdRange.from)
+      : "";
   const { deleteRecord, deleteRecords, isDeleting } = useDeleteRecord();
   const { updateUseStatus, pendingAction } = useUpdateUseStatus();
   const {
@@ -173,10 +168,8 @@ export default function AdminRecordPenggunaanAlatPage() {
     setSearch("");
     setDebouncedSearch("");
     setStatus("");
-    setCreatedAfter("");
-    setCreatedBefore("");
+    setCreatedRange(undefined);
     setPage(1);
-    setFilterOpen(false);
     setReloadKey((prev) => prev + 1);
   };
 
@@ -384,28 +377,14 @@ export default function AdminRecordPenggunaanAlatPage() {
                   ))}
                 </select>
               </div>
-              <div className="min-w-0">
+              <div className="min-w-0 xl:col-span-2">
                 <label className="mb-1 block text-xs font-semibold text-slate-900/90">
-                  Dibuat Dari
+                  Tanggal Dibuat
                 </label>
-                <DatePicker
-                  value={parseDateKey(createdAfter)}
+                <DateRangePicker
+                  value={createdRange}
                   onChange={(value) => {
-                    setCreatedAfter(value ? formatDateKey(value) : "");
-                    setPage(1);
-                  }}
-                  clearable
-                  buttonClassName="h-9 w-full rounded-md border-slate-400 bg-white px-2 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
-                />
-              </div>
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
-                  Dibuat Sampai
-                </label>
-                <DatePicker
-                  value={parseDateKey(createdBefore)}
-                  onChange={(value) => {
-                    setCreatedBefore(value ? formatDateKey(value) : "");
+                    setCreatedRange(value);
                     setPage(1);
                   }}
                   clearable
@@ -417,58 +396,16 @@ export default function AdminRecordPenggunaanAlatPage() {
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="disabled:border-slate-200 disabled:text-slate-400"
-                    disabled={selectedCount === 0 || isDeleting}
-                  >
-                    Aksi Terpilih
-                    {selectedCount ? ` (${selectedCount})` : ""}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="bottom"
-                  align="start"
-                  sideOffset={6}
-                  className="min-w-38"
-                >
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="cursor-pointer">
-                      <Download className="h-4 w-4" />
-                      Export Terpilih
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-44">
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        disabled={isExportingSelectedExcel}
-                        onSelect={handleExportSelectedExcel}
-                      >
-                        <FileSpreadsheet className="h-4 w-4" />
-                        Export Excel
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        disabled={isExportingSelectedPdf}
-                        onSelect={handleExportSelectedPdf}
-                      >
-                        <Download className="h-4 w-4" />
-                        Export PDF
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                  <DropdownMenuItem
-                    className="cursor-pointer text-rose-600 focus:text-rose-700"
-                    onSelect={() => setIsBulkDeleteOpen(true)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Hapus Terpilih
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <AdminRecordBulkActions
+                selectedCount={selectedCount}
+                isDeleting={isDeleting}
+                isExportingSelectedExcel={isExportingSelectedExcel}
+                isExportingSelectedPdf={isExportingSelectedPdf}
+                onExportSelectedExcel={handleExportSelectedExcel}
+                onExportSelectedPdf={handleExportSelectedPdf}
+                onDeleteSelected={() => setIsBulkDeleteOpen(true)}
+                onClearSelection={() => setSelectedIds([])}
+              />
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <p className="text-xs text-slate-500 sm:text-right">

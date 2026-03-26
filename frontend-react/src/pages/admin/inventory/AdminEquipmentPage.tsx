@@ -171,7 +171,6 @@ export default function AdminEquipmentsPage() {
     setRoom("");
     setMoveable("");
     setPage(1);
-    setFilterOpen(false);
   };
 
   const handleCreatedOrUpdated = () => {
@@ -355,6 +354,7 @@ export default function AdminEquipmentsPage() {
               isDeleting={isDeleting}
               isExportingSelectedPdf={isExportingSelectedPdf}
               isExportingSelectedExcel={isExportingSelectedExcel}
+              onClearSelection={() => setSelectedIds([])}
               onDeleteSelected={() => setIsBulkDeleteOpen(true)}
               onExportSelectedPdf={() => {
                 void handleExportSelectedPdf();

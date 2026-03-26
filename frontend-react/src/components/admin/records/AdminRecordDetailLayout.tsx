@@ -78,9 +78,7 @@ export function AdminRecordDetailSection({
   compact?: boolean;
 }) {
   return (
-    <section
-      className={`rounded-xl border border-slate-200 bg-white ${compact ? "p-3.5" : "p-5"}`}
-    >
+    <section>
       <div
         className={`flex items-center ${compact ? "mb-2.5 gap-2" : "mb-4 gap-3"}`}
       >
@@ -111,7 +109,7 @@ export function AdminRecordDetailGrid({
   compact?: boolean;
 }) {
   return (
-    <div className={`grid md:grid-cols-2 ${compact ? "gap-2" : "gap-3"}`}>
+    <div className={`grid md:grid-cols-2 ${compact ? "gap-2.5" : "gap-4"}`}>
       {children}
     </div>
   );
@@ -139,27 +137,21 @@ export function AdminRecordDetailItem({
   const displayValue = value?.trim() ? value : "-";
 
   return (
-    <div
-      className={
-        borderless
-          ? `${compact ? "space-y-0.5 px-0 py-1.5" : "space-y-1 px-0 py-2"}`
-          : `rounded-md border border-slate-200 bg-slate-50 ${compact ? "space-y-0.5 px-3 py-2" : "space-y-1 px-4 py-3"}`
-      }
-    >
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
+    <div className={borderless ? "space-y-1" : compact ? "space-y-1" : "space-y-1.5"}>
+      <p className="text-xs font-medium text-slate-700">{label}</p>
       {status ? (
-        <span
-          className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(displayValue)}`}
-        >
-          {getStatusDisplayLabel(displayValue)}
-        </span>
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2">
+          <span
+            className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-semibold ${getStatusBadgeClass(displayValue)}`}
+          >
+            {getStatusDisplayLabel(displayValue)}
+          </span>
+        </div>
       ) : onClick ? (
         <button
           type="button"
           onClick={onClick}
-          className="text-left text-sm font-medium leading-relaxed text-sky-700 transition hover:text-sky-800"
+          className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:text-sky-800"
         >
           {displayValue}
           {hrefIcon ? (
@@ -171,7 +163,9 @@ export function AdminRecordDetailItem({
           ) : null}
         </button>
       ) : (
-        <p className="text-sm leading-relaxed text-slate-800">{displayValue}</p>
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-700">
+          {displayValue}
+        </div>
       )}
     </div>
   );
@@ -187,9 +181,7 @@ export function AdminRecordAsideCard({
   compact?: boolean;
 }) {
   return (
-    <section
-      className={`rounded-xl border border-slate-200 bg-slate-50 ${compact ? "p-3.5" : "p-5"}`}
-    >
+    <section>
       <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
       <div className={compact ? "mt-2.5 space-y-2" : "mt-4 space-y-3"}>
         {children}
@@ -207,10 +199,10 @@ export function AdminRecordAsideItem({
 }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
-        {label}
-      </p>
-      <p className="text-sm leading-relaxed text-slate-800">{value || "-"}</p>
+      <p className="text-xs font-medium text-slate-700">{label}</p>
+      <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm leading-relaxed text-slate-700">
+        {value || "-"}
+      </div>
     </div>
   );
 }

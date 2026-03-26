@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { DateRange } from "react-day-picker";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
   ChevronRight,
@@ -11,7 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
@@ -70,6 +71,20 @@ export function DashboardActionPanel({
   const borrowStatus = searchParams.get("status") ?? "";
   const borrowCreatedAfter = searchParams.get("created_after") ?? "";
   const borrowCreatedBefore = searchParams.get("created_before") ?? "";
+  const bookingCreatedRange: DateRange | undefined =
+    bookingCreatedAfter || bookingCreatedBefore
+      ? {
+          from: bookingCreatedAfter ? parseDateKey(bookingCreatedAfter) : undefined,
+          to: bookingCreatedBefore ? parseDateKey(bookingCreatedBefore) : undefined,
+        }
+      : undefined;
+  const borrowCreatedRange: DateRange | undefined =
+    borrowCreatedAfter || borrowCreatedBefore
+      ? {
+          from: borrowCreatedAfter ? parseDateKey(borrowCreatedAfter) : undefined,
+          to: borrowCreatedBefore ? parseDateKey(borrowCreatedBefore) : undefined,
+        }
+      : undefined;
   const roomKeyword = searchParams.get("q") ?? "";
   const roomFloor = searchParams.get("floor") ?? "";
   const equipmentKeyword = searchParams.get("q") ?? "";
@@ -125,6 +140,52 @@ export function DashboardActionPanel({
     } else {
       params.delete(key);
     }
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname);
+  };
+
+  const updateDateRangeFilter = (
+    type: "booking" | "borrow",
+    value: DateRange | undefined,
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+    const queryKeys =
+      type === "booking"
+        ? ({
+            keyword: bookingKeyword,
+            status: bookingStatus,
+          })
+        : ({
+            keyword: borrowKeyword,
+            status: borrowStatus,
+          });
+
+    if (queryKeys.keyword) {
+      params.set("q", queryKeys.keyword);
+    } else {
+      params.delete("q");
+    }
+
+    if (queryKeys.status) {
+      params.set("status", queryKeys.status);
+    } else {
+      params.delete("status");
+    }
+
+    if (value?.from) {
+      params.set("created_after", formatDateKey(value.from));
+    } else {
+      params.delete("created_after");
+    }
+
+    if (value?.to) {
+      params.set("created_before", formatDateKey(value.to));
+    } else if (value?.from) {
+      params.set("created_before", formatDateKey(value.from));
+    } else {
+      params.delete("created_before");
+    }
+
     const next = params.toString();
     router.replace(next ? `${pathname}?${next}` : pathname);
   };
@@ -371,31 +432,12 @@ export function DashboardActionPanel({
                           </div>
                           <div className="space-y-1">
                             <label className="text-xs font-medium text-slate-600">
-                              Dibuat Dari
+                              Tanggal Dibuat
                             </label>
-                            <DatePicker
-                              value={parseDateKey(bookingCreatedAfter)}
+                            <DateRangePicker
+                              value={bookingCreatedRange}
                               onChange={(value) =>
-                                updateBookingFilter(
-                                  "created_after",
-                                  value ? formatDateKey(value) : "",
-                                )
-                              }
-                              clearable
-                              buttonClassName="h-9 border-slate-200 px-3"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Dibuat Sampai
-                            </label>
-                            <DatePicker
-                              value={parseDateKey(bookingCreatedBefore)}
-                              onChange={(value) =>
-                                updateBookingFilter(
-                                  "created_before",
-                                  value ? formatDateKey(value) : "",
-                                )
+                                updateDateRangeFilter("booking", value)
                               }
                               clearable
                               buttonClassName="h-9 border-slate-200 px-3"
@@ -529,31 +571,12 @@ export function DashboardActionPanel({
                           </div>
                           <div className="space-y-1">
                             <label className="text-xs font-medium text-slate-600">
-                              Dibuat Dari
+                              Tanggal Dibuat
                             </label>
-                            <DatePicker
-                              value={parseDateKey(bookingCreatedAfter)}
+                            <DateRangePicker
+                              value={bookingCreatedRange}
                               onChange={(value) =>
-                                updateBookingFilter(
-                                  "created_after",
-                                  value ? formatDateKey(value) : "",
-                                )
-                              }
-                              clearable
-                              buttonClassName="h-9 border-slate-200 px-3"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Dibuat Sampai
-                            </label>
-                            <DatePicker
-                              value={parseDateKey(bookingCreatedBefore)}
-                              onChange={(value) =>
-                                updateBookingFilter(
-                                  "created_before",
-                                  value ? formatDateKey(value) : "",
-                                )
+                                updateDateRangeFilter("booking", value)
                               }
                               clearable
                               buttonClassName="h-9 border-slate-200 px-3"
@@ -756,31 +779,12 @@ export function DashboardActionPanel({
                           </div>
                           <div className="space-y-1">
                             <label className="text-xs font-medium text-slate-600">
-                              Dibuat Dari
+                              Tanggal Dibuat
                             </label>
-                            <DatePicker
-                              value={parseDateKey(borrowCreatedAfter)}
+                            <DateRangePicker
+                              value={borrowCreatedRange}
                               onChange={(value) =>
-                                updateBorrowFilter(
-                                  "created_after",
-                                  value ? formatDateKey(value) : "",
-                                )
-                              }
-                              clearable
-                              buttonClassName="h-9 border-slate-200 px-3"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Dibuat Sampai
-                            </label>
-                            <DatePicker
-                              value={parseDateKey(borrowCreatedBefore)}
-                              onChange={(value) =>
-                                updateBorrowFilter(
-                                  "created_before",
-                                  value ? formatDateKey(value) : "",
-                                )
+                                updateDateRangeFilter("borrow", value)
                               }
                               clearable
                               buttonClassName="h-9 border-slate-200 px-3"

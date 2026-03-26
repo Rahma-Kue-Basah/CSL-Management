@@ -13,7 +13,6 @@ type UpdateSchedulePayload = {
   end_time: string;
   category: string;
   room?: string | null;
-  is_active: boolean;
 };
 
 export function useUpdateSchedule() {

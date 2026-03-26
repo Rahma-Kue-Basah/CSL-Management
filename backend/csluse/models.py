@@ -398,8 +398,6 @@ class Schedule(BaseModel):
         ('Practicum', 'Practicum'),
         ('Maintenance', 'Maintenance'),
         ('Agenda', 'Agenda'),
-        ('Holiday', 'Holiday'),
-        ('Block', 'Block'),
         ('Other', 'Other'),
     ]
 
@@ -428,8 +426,6 @@ class Schedule(BaseModel):
         blank=True,
         related_name='schedules_created_by',
     )
-
-    is_active = models.BooleanField(default=True)
 
     class Meta:
         ordering = ['start_time', 'title']

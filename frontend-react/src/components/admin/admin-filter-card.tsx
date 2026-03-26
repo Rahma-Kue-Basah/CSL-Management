@@ -20,21 +20,17 @@ export function AdminFilterCard({
   return (
     <div className="w-full min-w-0 overflow-hidden rounded-lg border border-slate-400/60 bg-gradient-to-br from-slate-50 to-slate-100/75 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
       <div
-        className={`flex items-center justify-between gap-3 px-4 transition-[padding] duration-250 ease-out ${
-          open ? "py-2.5" : "py-1"
-        }`}
+        className={`flex items-center justify-between gap-3 px-4 transition-[padding] duration-250 ease-out py-1`}
       >
         <button
           type="button"
-          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          className="-ml-2 -my-1 flex min-w-0 flex-1 items-center gap-2 rounded-lg px-2 py-2 text-left hover:cursor-pointer"
           onClick={onToggle}
           aria-expanded={open}
           aria-label="Toggle filter"
         >
           <div
-            className={`rounded-md bg-white text-slate-600 shadow-xs transition-all duration-250 ease-out ${
-              open ? "scale-100 p-1.25" : "scale-95 p-1"
-            }`}
+            className={`rounded-md bg-white text-slate-600 shadow-xs transition-all duration-250 ease-out scale-100 p-1`}
           >
             <SlidersHorizontal className="h-4 w-4" />
           </div>
@@ -42,36 +38,55 @@ export function AdminFilterCard({
         </button>
         <div
           className={`overflow-hidden transition-all duration-250 ease-out ${
-            open ? "max-w-32 opacity-100" : "max-w-0 opacity-0"
+            open ? "max-w-56 opacity-100" : "max-w-0 opacity-0"
           }`}
         >
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-9 gap-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
-            onClick={(event) => {
-              event.stopPropagation();
-              onReset();
-            }}
-            tabIndex={open ? 0 : -1}
-          >
-            <X className="h-4 w-4" />
-            Reset
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              onClick={(event) => {
+                event.stopPropagation();
+                onToggle();
+              }}
+              tabIndex={open ? 0 : -1}
+            >
+              Tutup
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="h-9 gap-2 border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+              onClick={(event) => {
+                event.stopPropagation();
+                onReset();
+              }}
+              tabIndex={open ? 0 : -1}
+            >
+              <X className="h-4 w-4" />
+              Reset
+            </Button>
+          </div>
         </div>
       </div>
 
       <div
         className={`grid transition-all duration-300 ease-out ${
-          open ? "grid-rows-[1fr] border-t border-slate-200/70" : "grid-rows-[0fr] border-t border-transparent"
+          open
+            ? "grid-rows-[1fr] border-t border-slate-200/70"
+            : "grid-rows-[0fr] border-t border-transparent"
         }`}
         aria-hidden={!open}
       >
         <div className="min-h-0 overflow-hidden">
           <div
             className={`bg-white px-4 transition-all duration-300 ease-out ${
-              open ? "translate-y-0 pb-4.5 pt-3.5 opacity-100" : "-translate-y-1 pb-0 pt-0 opacity-0"
+              open
+                ? "translate-y-0 pb-4.5 pt-3.5 opacity-100"
+                : "-translate-y-1 pb-0 pt-0 opacity-0"
             }`}
           >
             {children}

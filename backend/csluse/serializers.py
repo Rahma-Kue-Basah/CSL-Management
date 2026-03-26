@@ -608,7 +608,6 @@ class ScheduleSerializer(serializers.ModelSerializer):
             "room_detail",
             "created_by",
             "created_by_detail",
-            "is_active",
             "created_at",
             "updated_at",
         ]
@@ -668,6 +667,22 @@ class CalendarEventSerializer(serializers.Serializer):
         allow_null=True,
         required=False,
     )
+
+
+class ScheduleFeedItemSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    source = serializers.CharField()
+    source_id = serializers.CharField()
+    title = serializers.CharField()
+    room_name = serializers.CharField(
+        allow_blank=True,
+        allow_null=True,
+        required=False,
+    )
+    start_time = serializers.DateTimeField()
+    end_time = serializers.DateTimeField(allow_null=True)
+    category_label = serializers.CharField()
+    schedule_item = serializers.DictField(allow_null=True, required=False)
 
 
 class StructureOrganizationSimpleSerializer(serializers.ModelSerializer):

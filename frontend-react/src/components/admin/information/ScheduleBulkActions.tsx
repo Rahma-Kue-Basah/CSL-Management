@@ -11,19 +11,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type FaqBulkActionsProps = {
+type ScheduleBulkActionsProps = {
   selectedCount: number;
   isDeleting: boolean;
   onClearSelection: () => void;
   onDeleteSelected: () => void;
 };
 
-export default function FaqBulkActions({
+export default function ScheduleBulkActions({
   selectedCount,
   isDeleting,
   onClearSelection,
   onDeleteSelected,
-}: FaqBulkActionsProps) {
+}: ScheduleBulkActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

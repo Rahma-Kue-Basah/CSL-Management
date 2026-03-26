@@ -1,24 +1,27 @@
 "use client";
 
-import { ChevronDown, Trash2 } from "lucide-react";
+import { ChevronDown, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
 type AnnouncementBulkActionsProps = {
   selectedCount: number;
   isDeleting: boolean;
+  onClearSelection: () => void;
   onDeleteSelected: () => void;
 };
 
 export default function AnnouncementBulkActions({
   selectedCount,
   isDeleting,
+  onClearSelection,
   onDeleteSelected,
 }: AnnouncementBulkActionsProps) {
   return (
@@ -44,6 +47,15 @@ export default function AnnouncementBulkActions({
         >
           <Trash2 className="h-4 w-4" />
           Hapus Terpilih
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem
+          disabled={selectedCount === 0}
+          onClick={onClearSelection}
+          className="text-xs text-slate-500"
+        >
+          <X className="h-3.5 w-3.5" />
+          Clear selection
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

@@ -1,31 +1,29 @@
 "use client";
 
 import { format } from "date-fns";
-import { type FormEvent, type ReactNode } from "react";
+import { ArrowUpRight, CalendarDays } from "lucide-react";
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
+import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/user-management-fields";
+import AdminDetailActions from "@/components/shared/admin-detail-actions";
+import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { DatePicker } from "@/components/ui/date-picker";
+import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { toWibIsoString } from "@/lib/date-format";
+
+const DIALOG_WIDTH_CLASS = `${USER_MODAL_WIDTH_CLASS} gap-0 p-0 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`;
 
 export type ScheduleCategory =
   | "Practicum"
   | "Maintenance"
   | "Agenda"
-  | "Holiday"
-  | "Block"
   | "Other";
+
+export type ScheduleDetailMode = "view" | "edit";
 
 export type ScheduleFormState = {
   title: string;
@@ -34,15 +32,12 @@ export type ScheduleFormState = {
   room: string;
   startTime: string;
   endTime: string;
-  isActive: boolean;
 };
 
 export const SCHEDULE_CATEGORIES: ScheduleCategory[] = [
   "Practicum",
   "Maintenance",
   "Agenda",
-  "Holiday",
-  "Block",
   "Other",
 ];
 
@@ -62,6 +57,13 @@ function updateTimePart(value: string, time: string) {
   return combineDateTime(currentDate, time);
 }
 
+function syncEndDateWithStart(startValue: string, endValue: string) {
+  const startDate = getDateFromDateTime(startValue);
+  if (!startDate) return endValue;
+  const endTime = getTimeFromDateTime(endValue);
+  return endTime ? combineDateTime(startDate, endTime) : "";
+}
+
 function getDateFromDateTime(value: string) {
   if (!value) return undefined;
   const [datePart] = value.split("T");
@@ -76,53 +78,103 @@ function getTimeFromDateTime(value: string) {
   return timePart.slice(0, 5);
 }
 
-function DateTimePickerField({
+function TimePickerField({
   id,
   label,
   value,
   onChange,
   disabled,
-  minDate,
   minTime,
+  className,
 }: {
   id: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
   disabled?: boolean;
-  minDate?: Date;
   minTime?: string;
+  className?: string;
 }) {
-  const selectedDate = getDateFromDateTime(value);
   const selectedTime = getTimeFromDateTime(value);
 
   return (
-    <div className="space-y-2">
+    <label className={className ?? "space-y-2"}>
       <span className="text-sm font-medium text-slate-800">{label}</span>
-      <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-        <DatePicker
-          value={selectedDate}
-          onChange={(nextDate) => onChange(updateDatePart(value, nextDate))}
-          disabled={disabled}
-          defaultMonth={selectedDate}
-          calendarDisabled={
-            minDate ? (calendarDate) => calendarDate < minDate : undefined
-          }
-          className="w-full sm:flex-1"
-          buttonClassName="w-full"
-        />
-        <Input
-          type="time"
-          id={`${id}-time`}
-          value={selectedTime}
-          onChange={(event) => onChange(updateTimePart(value, event.target.value))}
-          step="60"
-          min={minTime}
-          placeholder="HH:MM"
-          className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200 sm:w-36"
-          disabled={disabled}
-        />
-      </div>
+      <Input
+        type="time"
+        id={id}
+        value={selectedTime}
+        onChange={(event) => onChange(event.target.value)}
+        step="60"
+        min={minTime}
+        placeholder="HH:MM"
+        className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200"
+        disabled={disabled}
+      />
+    </label>
+  );
+}
+
+function DateOnlyPickerField({
+  label,
+  value,
+  onChange,
+  disabled,
+  className,
+}: {
+  label: string;
+  value: Date | undefined;
+  onChange: (value: Date | undefined) => void;
+  disabled?: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={className ?? "space-y-2 md:col-span-2"}>
+      <span className="text-sm font-medium text-slate-800">{label}</span>
+      <DatePicker
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        defaultMonth={value}
+        className="w-full"
+        buttonClassName="w-full rounded-md border-sky-300 bg-sky-50/60 px-3 text-sm shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
+      />
+    </div>
+  );
+}
+
+function ScheduleDetailField({
+  label,
+  value,
+  multiline = false,
+  onClick,
+}: {
+  label: string;
+  value: string;
+  multiline?: boolean;
+  onClick?: () => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-slate-700">{label}</p>
+      {onClick ? (
+        <button
+          type="button"
+          onClick={onClick}
+          className="w-full rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-left text-sm font-medium text-sky-700 transition hover:text-sky-800"
+        >
+          {value || "-"}
+          <ArrowUpRight className="ml-2 inline h-3.5 w-3.5 align-text-top text-sky-500" />
+        </button>
+      ) : (
+        <div
+          className={`rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700 ${
+            multiline ? "min-h-24 whitespace-pre-wrap break-words" : ""
+          }`}
+        >
+          {value || "-"}
+        </div>
+      )}
     </div>
   );
 }
@@ -156,7 +208,6 @@ export function validateScheduleForm(
     room: form.room || null,
     start_time: toWibIsoString(startTime),
     end_time: toWibIsoString(endTime),
-    is_active: form.isActive,
   };
 }
 
@@ -179,133 +230,199 @@ export function formatDateTimeLocalInput(value?: string | null) {
 export function ScheduleFormDialog({
   open,
   onOpenChange,
+  title,
+  description,
+  readOnlyTitle,
+  readOnlyDescription,
+  initialMode = "edit",
+  onCancelEdit,
+  onDeleteRequest,
+  onOpenRoomDetail,
   form,
   onChange,
   onSubmit,
   rooms,
-  title,
-  description,
   error,
   isSubmitting,
   trigger,
+  useDetailHeader = false,
+  readOnly = false,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  title: string;
+  description: string;
+  readOnlyTitle?: string;
+  readOnlyDescription?: string;
+  initialMode?: ScheduleDetailMode;
+  onCancelEdit?: () => void;
+  onDeleteRequest?: () => void;
+  onOpenRoomDetail?: (roomId: string | number) => void;
   form: ScheduleFormState;
   onChange: (field: keyof ScheduleFormState, value: string | boolean) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
-  rooms: Array<{ id: string; label: string }>;
-  title: string;
-  description: string;
+  rooms: Array<{ id: string | number; label: string }>;
   error: string;
   isSubmitting: boolean;
   trigger?: ReactNode;
+  useDetailHeader?: boolean;
+  readOnly?: boolean;
 }) {
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const openedInEditMode = initialMode === "edit";
+
+  useEffect(() => {
+    if (!open) return;
+    setIsEditing(initialMode === "edit" && !readOnly);
+  }, [initialMode, open, readOnly]);
+
+  const isReadOnly = readOnly || !isEditing;
+  const shellTitle = isReadOnly ? (readOnlyTitle ?? title) : title;
+  const shellDescription =
+    isReadOnly ? (readOnlyDescription ?? description) : description;
+
   const startDate = getDateFromDateTime(form.startTime);
-  const endDate = getDateFromDateTime(form.endTime);
   const startTime = getTimeFromDateTime(form.startTime);
-  const minEndDate = startDate ? new Date(startDate) : undefined;
-  if (minEndDate) minEndDate.setHours(0, 0, 0, 0);
   const minEndTime =
-    startDate && endDate && format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
-      ? startTime || undefined
-      : undefined;
+    startDate ? startTime || undefined : undefined;
+  const roomLabel = rooms.find((room) => String(room.id) === form.room)?.label || "";
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
-      <DialogContent className="sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>{title}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
+    <AdminDetailDialogShell
+      open={open}
+      onOpenChange={onOpenChange}
+      onCloseReset={() => setIsEditing(false)}
+      title={shellTitle}
+      description={shellDescription}
+      icon={<CalendarDays className="h-5 w-5" />}
+      trigger={trigger}
+      contentClassName={DIALOG_WIDTH_CLASS}
+      showCloseButton={!useDetailHeader}
+    >
+      <form
+        ref={formRef}
+        className={`space-y-4 ${useDetailHeader ? "px-5 py-4 sm:px-6" : "px-6 pb-6"}`}
+        onSubmit={onSubmit}
+      >
+        {isReadOnly ? (
+          <>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <ScheduleDetailField label="Judul Jadwal" value={form.title} />
+              <ScheduleDetailField label="Kategori" value={form.category} />
+              <ScheduleDetailField label="Waktu Mulai" value={form.startTime.replace("T", " ")} />
+              <ScheduleDetailField label="Waktu Selesai" value={form.endTime.replace("T", " ")} />
+              <ScheduleDetailField
+                label="Ruangan"
+                value={roomLabel || "Semua / Tidak spesifik"}
+                onClick={
+                  form.room && onOpenRoomDetail
+                    ? () => onOpenRoomDetail(form.room)
+                    : undefined
+                }
+              />
+            </div>
+            <ScheduleDetailField label="Deskripsi" value={form.description} multiline />
+          </>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-800">Judul Jadwal</span>
+                <Input
+                  value={form.title}
+                  onChange={(event) => onChange("title", event.target.value)}
+                  placeholder="Contoh: Praktikum Kimia Dasar"
+                  className="h-11 border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
+                />
+              </label>
 
-        <form className="space-y-4" onSubmit={onSubmit}>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <label className="space-y-2">
+                <span className="text-sm font-medium text-slate-800">Kategori</span>
+                <select
+                  value={form.category}
+                  onChange={(event) => onChange("category", event.target.value as ScheduleCategory)}
+                  className="h-11 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm text-slate-700 outline-none focus:border-sky-600 focus:ring-[3px] focus:ring-sky-200"
+                >
+                  {SCHEDULE_CATEGORIES.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <div className="grid grid-cols-1 gap-4 md:col-span-2 md:grid-cols-2">
+                <DateOnlyPickerField
+                  label="Tanggal"
+                  value={startDate}
+                  onChange={(nextDate) => {
+                    const nextStart = updateDatePart(form.startTime, nextDate);
+                    onChange("startTime", nextStart);
+                    onChange("endTime", syncEndDateWithStart(nextStart, form.endTime));
+                  }}
+                  disabled={isSubmitting}
+                  className="space-y-2"
+                />
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <TimePickerField
+                    id="schedule-start-time-only"
+                    label="Waktu Mulai"
+                    value={form.startTime}
+                    onChange={(value) => {
+                      const nextStart = updateTimePart(form.startTime, value);
+                      onChange("startTime", nextStart);
+                      onChange("endTime", syncEndDateWithStart(nextStart, form.endTime));
+                    }}
+                    disabled={isSubmitting}
+                    className="space-y-2"
+                  />
+
+                  <TimePickerField
+                    id="schedule-end-time"
+                    label="Waktu Selesai"
+                    value={form.endTime}
+                    onChange={(value) => onChange("endTime", updateTimePart(form.startTime, value))}
+                    disabled={isSubmitting}
+                    minTime={minEndTime}
+                    className="space-y-2"
+                  />
+                </div>
+              </div>
+
+              <label className="space-y-2 md:col-span-2">
+                <span className="text-sm font-medium text-slate-800">Ruangan</span>
+                <select
+                  value={form.room}
+                  onChange={(event) => onChange("room", event.target.value)}
+                  className="h-11 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm text-slate-700 outline-none focus:border-sky-600 focus:ring-[3px] focus:ring-sky-200"
+                >
+                  <option value="">Semua / Tidak spesifik</option>
+                  {rooms.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
+
             <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-800">Judul Jadwal</span>
-              <Input
-                value={form.title}
-                onChange={(event) => onChange("title", event.target.value)}
-                placeholder="Contoh: Praktikum Kimia Dasar"
-                className="h-11"
+              <span className="text-sm font-medium text-slate-800">Deskripsi</span>
+              <Textarea
+                value={form.description}
+                onChange={(event) => onChange("description", event.target.value)}
+                placeholder="Tambahkan detail jadwal, kelas, atau catatan lain."
+                className="min-h-28 resize-y border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
               />
             </label>
+          </>
+        )}
 
-            <label className="space-y-2">
-              <span className="text-sm font-medium text-slate-800">Kategori</span>
-              <select
-                value={form.category}
-                onChange={(event) => onChange("category", event.target.value as ScheduleCategory)}
-                className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-              >
-                {SCHEDULE_CATEGORIES.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </label>
+        {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
-            <DateTimePickerField
-              id="schedule-start-time"
-              label="Waktu Mulai (WIB)"
-              value={form.startTime}
-              onChange={(value) => onChange("startTime", value)}
-              disabled={isSubmitting}
-            />
-
-            <DateTimePickerField
-              id="schedule-end-time"
-              label="Waktu Selesai (WIB)"
-              value={form.endTime}
-              onChange={(value) => onChange("endTime", value)}
-              disabled={isSubmitting}
-              minDate={minEndDate}
-              minTime={minEndTime}
-            />
-
-            <label className="space-y-2 md:col-span-2">
-              <span className="text-sm font-medium text-slate-800">Ruangan</span>
-              <select
-                value={form.room}
-                onChange={(event) => onChange("room", event.target.value)}
-                className="h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
-              >
-                <option value="">Semua / Tidak spesifik</option>
-                {rooms.map((room) => (
-                  <option key={room.id} value={room.id}>
-                    {room.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <label className="space-y-2">
-            <span className="text-sm font-medium text-slate-800">Deskripsi</span>
-            <Textarea
-              value={form.description}
-              onChange={(event) => onChange("description", event.target.value)}
-              placeholder="Tambahkan detail jadwal, kelas, atau catatan lain."
-              className="min-h-28 resize-y"
-            />
-          </label>
-
-          <label className="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
-            <input
-              type="checkbox"
-              checked={form.isActive}
-              onChange={(event) => onChange("isActive", event.target.checked)}
-              className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500"
-            />
-            <span className="text-sm text-slate-700">Jadwal aktif dan ditampilkan di kalender</span>
-          </label>
-
-          {error ? (
-            <InlineErrorAlert>{error}</InlineErrorAlert>
-          ) : null}
-
+        {trigger ? (
           <DialogFooter>
             <Button
               type="submit"
@@ -315,8 +432,31 @@ export function ScheduleFormDialog({
               {isSubmitting ? "Menyimpan..." : "Simpan"}
             </Button>
           </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
+        ) : (
+          <AdminDetailActions
+            isEditing={!isReadOnly}
+            isSubmitting={isSubmitting}
+            showDeleteAction={Boolean(onDeleteRequest)}
+            deleteLabel="Hapus"
+            saveLabel="Simpan Perubahan"
+            onEdit={() => setIsEditing(true)}
+            onCancelEdit={() => {
+              setIsEditing(false);
+              if (openedInEditMode) {
+                onOpenChange(false);
+                return;
+              }
+              if (onCancelEdit) {
+                onCancelEdit();
+                return;
+              }
+              onOpenChange(false);
+            }}
+            onSave={() => formRef.current?.requestSubmit()}
+            onDelete={onDeleteRequest}
+          />
+        )}
+      </form>
+    </AdminDetailDialogShell>
   );
 }

@@ -118,7 +118,6 @@ export default function AdminRoomsPage() {
     setFloor("");
     setPic("");
     setPage(1);
-    setFilterOpen(false);
   };
 
   const handleCreated = () => {
@@ -287,6 +286,7 @@ export default function AdminRoomsPage() {
               isDeleting={isDeleting}
               isExportingSelectedPdf={isExportingSelectedPdf}
               isExportingSelectedExcel={isExportingSelectedExcel}
+              onClearSelection={() => setSelectedIds([])}
               onDeleteSelected={() => setIsBulkDeleteOpen(true)}
               onExportSelectedPdf={() => {
                 void handleExportSelectedPdf();

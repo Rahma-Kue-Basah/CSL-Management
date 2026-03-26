@@ -178,7 +178,7 @@ export function useBookingDetail(id?: string | number | null) {
   useEffect(() => {
     if (!id) {
       setBooking(null);
-      setError("ID booking tidak ditemukan.");
+      setError("");
       setIsLoading(false);
       return;
     }

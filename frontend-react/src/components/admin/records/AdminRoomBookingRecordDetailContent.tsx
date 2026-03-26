@@ -51,8 +51,68 @@ export default function AdminRoomBookingRecordDetailContent({
       ) : null}
 
       {isLoading ? (
-        <div className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-8 text-sm text-muted-foreground">
-          Memuat detail record...
+        <div className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-5">
+          <div className="space-y-5">
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-4">
+              <div className="h-6 w-56 animate-pulse rounded bg-slate-200" />
+              <div className="mt-2 h-4 w-32 animate-pulse rounded bg-slate-100" />
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
+                <div className="space-y-2">
+                  <div className="h-4 w-36 animate-pulse rounded bg-slate-200" />
+                </div>
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div key={`booking-main-${index}`} className="space-y-1.5">
+                    <div className="h-3 w-24 animate-pulse rounded bg-slate-100" />
+                    <div className="h-10 animate-pulse rounded-md border border-slate-200 bg-slate-100" />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
+                <div className="h-4 w-40 animate-pulse rounded bg-slate-200" />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <div key={`booking-time-${index}`} className="space-y-1.5">
+                    <div className="h-3 w-24 animate-pulse rounded bg-slate-100" />
+                    <div className="h-10 animate-pulse rounded-md border border-slate-200 bg-slate-100" />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1.5">
+                <div className="h-3 w-20 animate-pulse rounded bg-slate-100" />
+                <div className="h-16 animate-pulse rounded-md border border-slate-200 bg-slate-100" />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 animate-pulse rounded-lg border border-slate-200 bg-slate-100" />
+                <div className="h-4 w-44 animate-pulse rounded bg-slate-200" />
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {Array.from({ length: 2 }).map((_, index) => (
+                  <div key={`booking-approval-${index}`} className="space-y-1.5">
+                    <div className="h-3 w-24 animate-pulse rounded bg-slate-100" />
+                    <div className="h-10 animate-pulse rounded-md border border-slate-200 bg-slate-100" />
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-1.5">
+                <div className="h-3 w-28 animate-pulse rounded bg-slate-100" />
+                <div className="h-16 animate-pulse rounded-md border border-slate-200 bg-slate-100" />
+              </div>
+            </div>
+          </div>
         </div>
       ) : !booking ? (
         <div className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-8 text-sm text-muted-foreground">

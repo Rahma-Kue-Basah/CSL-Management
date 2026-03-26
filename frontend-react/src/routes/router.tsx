@@ -168,14 +168,17 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <Navigate to="home" replace /> },
       { path: "home", element: <AdminHomePage /> },
+      { path: "schedules", element: <AdminSchedulePage /> },
       { path: "my-profile", element: <AdminMyProfilePage /> },
       {
         path: "information",
         children: [
-          { index: true, element: <Navigate to="schedules" replace /> },
-          { path: "schedules", element: <AdminSchedulePage /> },
+          { index: true, element: <Navigate to="announcements" replace /> },
+          { path: "schedules", element: <Navigate to="/admin/schedules" replace /> },
           { path: "announcements", element: <AdminAnnouncementPage /> },
           { path: "faq", element: <AdminFaqPage /> },
+          { path: "organization-structure", element: <StructureOrgansPage /> },
+          { path: "facilities", element: <FacilityPage /> },
         ],
       },
       {
@@ -198,8 +201,14 @@ export const router = createBrowserRouter([
       {
         path: "profile",
         children: [
-          { path: "organization-structure", element: <StructureOrgansPage /> },
-          { path: "facilities", element: <FacilityPage /> },
+          {
+            path: "organization-structure",
+            element: <Navigate to="/admin/information/organization-structure" replace />,
+          },
+          {
+            path: "facilities",
+            element: <Navigate to="/admin/information/facilities" replace />,
+          },
         ],
       },
       {

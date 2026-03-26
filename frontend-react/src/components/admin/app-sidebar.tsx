@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,26 +21,160 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import {
+  CalendarDays,
   ChevronDown,
   FileText,
   History,
   Info,
   LayoutDashboard,
+  type LucideIcon,
   Package,
   Search,
-  User,
   Users,
 } from "lucide-react";
 import { NavUser } from "./nav-user";
 
+type MenuItem = {
+  label: string;
+  href: string;
+};
+
+type GroupMenuKey = "document" | "information" | "inventory" | "record" | "user";
+
+type LinkMenuConfig = {
+  type: "link";
+  key: string;
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  tooltip?: string;
+  searchTerms?: string[];
+  isActive?: (pathname: string, href: string) => boolean;
+};
+
+type GroupMenuConfig = {
+  type: "group";
+  key: GroupMenuKey;
+  label: string;
+  icon: LucideIcon;
+  tooltip?: string;
+  searchTerms?: string[];
+  items: MenuItem[];
+};
+
+type MenuConfig = LinkMenuConfig | GroupMenuConfig;
+
+const adminMenuConfig: MenuConfig[] = [
+  {
+    type: "link",
+    key: "home",
+    label: "Home",
+    href: "/admin/home",
+    icon: LayoutDashboard,
+    tooltip: "Home",
+    searchTerms: ["home"],
+    isActive: (pathname) => pathname === "/admin" || pathname === "/admin/home",
+  },
+  {
+    type: "group",
+    key: "information",
+    label: "Informasi",
+    icon: Info,
+    tooltip: "Informasi",
+    searchTerms: ["informasi"],
+    items: [
+      {
+        label: "Struktur Organisasi",
+        href: "/admin/information/organization-structure",
+      },
+      { label: "Pengumuman", href: "/admin/information/announcements" },
+      { label: "FAQ", href: "/admin/information/faq" },
+      { label: "Fasilitas", href: "/admin/information/facilities" },
+    ],
+  },
+  {
+    type: "link",
+    key: "schedule",
+    label: "Jadwal",
+    href: "/admin/schedules",
+    icon: CalendarDays,
+    tooltip: "Jadwal",
+  },
+  {
+    type: "group",
+    key: "record",
+    label: "Record",
+    icon: History,
+    tooltip: "Record",
+    searchTerms: ["record"],
+    items: [
+      { label: "Booking Ruangan", href: "/admin/records/room-bookings" },
+      { label: "Penggunaan Alat", href: "/admin/records/equipment-usage" },
+      { label: "Peminjaman Alat", href: "/admin/records/equipment-borrows" },
+      { label: "Pengujian Sampel", href: "/admin/records/sample-testing" },
+    ],
+  },
+  {
+    type: "group",
+    key: "document",
+    label: "Dokumen",
+    icon: FileText,
+    tooltip: "Dokumen",
+    searchTerms: ["dokumen"],
+    items: [
+      {
+        label: "Surat Bebas Laboratorium",
+        href: "/admin/dokumen/surat-bebas-lab",
+      },
+      {
+        label: "Surat Perjanjian Pengujian",
+        href: "/admin/dokumen/surat-perjanjian-pengujian",
+      },
+      {
+        label: "Laporan Hasil Pengujian",
+        href: "/admin/dokumen/laporan-hasil-pengujian",
+      },
+      { label: "Invoice", href: "/admin/dokumen/invoice" },
+    ],
+  },
+  {
+    type: "group",
+    key: "inventory",
+    label: "Inventarisasi",
+    icon: Package,
+    tooltip: "Inventarisasi",
+    searchTerms: ["inventarisasi"],
+    items: [
+      { label: "Ruangan", href: "/admin/inventory/rooms" },
+      { label: "Peralatan", href: "/admin/inventory/equipment" },
+      { label: "Software", href: "/admin/inventory/software" },
+    ],
+  },
+  {
+    type: "group",
+    key: "user",
+    label: "User Management",
+    icon: Users,
+    tooltip: "User",
+    searchTerms: ["user management", "user"],
+    items: [
+      { label: "All", href: "/admin/user-management/all" },
+      { label: "Student", href: "/admin/user-management/student" },
+      { label: "Lecturer", href: "/admin/user-management/lecturer" },
+      { label: "Admin", href: "/admin/user-management/admin" },
+      { label: "Staff", href: "/admin/user-management/staff" },
+      { label: "Guest", href: "/admin/user-management/guest" },
+    ],
+  },
+];
+
 export function AppSidebar() {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
-  const [openMenus, setOpenMenus] = useState({
+  const [openMenus, setOpenMenus] = useState<Record<GroupMenuKey, boolean>>({
     document: false,
     information: false,
     inventory: false,
-    profile: false,
     record: false,
     user: false,
   });
@@ -50,13 +184,7 @@ export function AppSidebar() {
       : "text-sidebar-foreground/65 hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto";
 
   const toggleMenu = (
-    menu:
-      | "document"
-      | "information"
-      | "inventory"
-      | "profile"
-      | "record"
-      | "user",
+    menu: "document" | "information" | "inventory" | "record" | "user",
   ) => {
     setOpenMenus((prev) => ({
       ...prev,
@@ -71,124 +199,118 @@ export function AppSidebar() {
   const matchesSearch = (text: string) =>
     normalizedQuery.length === 0 ||
     text.toLowerCase().includes(normalizedQuery);
+  const groupMenuStates = useMemo(
+    () =>
+      adminMenuConfig.reduce(
+        (acc, menu) => {
+          if (menu.type !== "group") return acc;
 
-  const inventoryItems = [
-    { label: "Ruangan", href: "/admin/inventory/rooms" },
-    { label: "Peralatan", href: "/admin/inventory/equipment" },
-    { label: "Software", href: "/admin/inventory/software" },
-  ];
+          const filteredItems = menu.items.filter((item) =>
+            matchesSearch(item.label),
+          );
+          const searchMatches =
+            menu.searchTerms?.some((term) => matchesSearch(term)) ?? false;
 
-  const documentItems = [
-    {
-      label: "Surat Bebas Laboratorium",
-      href: "/admin/dokumen/surat-bebas-lab",
-    },
-    {
-      label: "Surat Perjanjian Pengujian",
-      href: "/admin/dokumen/surat-perjanjian-pengujian",
-    },
-    {
-      label: "Laporan Hasil Pengujian",
-      href: "/admin/dokumen/laporan-hasil-pengujian",
-    },
-    { label: "Invoice", href: "/admin/dokumen/invoice" },
-  ];
+          acc[menu.key] = {
+            filteredItems,
+            isActive: menu.items.some((item) => isPathActive(item.href)),
+            isVisible: searchMatches || filteredItems.length > 0,
+          };
 
-  const recordItems = [
-    { label: "Booking Ruangan", href: "/admin/records/room-bookings" },
-    { label: "Penggunaan Alat", href: "/admin/records/equipment-usage" },
-    { label: "Peminjaman Alat", href: "/admin/records/equipment-borrows" },
-    { label: "Pengujian Sampel", href: "/admin/records/sample-testing" },
-  ];
-
-  const userItems = [
-    { label: "All", href: "/admin/user-management/all" },
-    { label: "Student", href: "/admin/user-management/student" },
-    { label: "Lecturer", href: "/admin/user-management/lecturer" },
-    { label: "Admin", href: "/admin/user-management/admin" },
-    { label: "Staff", href: "/admin/user-management/staff" },
-    { label: "Guest", href: "/admin/user-management/guest" },
-  ];
-  const profileItems = [
-    {
-      label: "Struktur Organisasi",
-      href: "/admin/profile/organization-structure",
-    },
-    { label: "Fasilitas", href: "/admin/profile/facilities" },
-  ];
-  const informationItems = [
-    { label: "Pengumuman", href: "/admin/information/announcements" },
-    { label: "FAQ", href: "/admin/information/faq" },
-    { label: "Jadwal", href: "/admin/information/schedules" },
-  ];
-
-  const filteredDocumentItems = documentItems.filter((item) =>
-    matchesSearch(item.label),
-  );
-  const filteredRecordItems = recordItems.filter((item) =>
-    matchesSearch(item.label),
-  );
-  const filteredInventoryItems = inventoryItems.filter((item) =>
-    matchesSearch(item.label),
-  );
-  const filteredUserItems = userItems.filter((item) =>
-    matchesSearch(item.label),
-  );
-  const filteredProfileItems = profileItems.filter((item) =>
-    matchesSearch(item.label),
-  );
-  const filteredInformationItems = informationItems.filter((item) =>
-    matchesSearch(item.label),
+          return acc;
+        },
+        {} as Record<
+          GroupMenuKey,
+          { filteredItems: MenuItem[]; isActive: boolean; isVisible: boolean }
+        >,
+      ),
+    [pathname, normalizedQuery],
   );
 
-  const showHome = matchesSearch("home");
-  const showDocument =
-    matchesSearch("dokumen") || filteredDocumentItems.length > 0;
-  const showRecord = matchesSearch("record") || filteredRecordItems.length > 0;
-  const showInventory =
-    matchesSearch("inventarisasi") || filteredInventoryItems.length > 0;
-  const showUser =
-    matchesSearch("user management") ||
-    matchesSearch("user") ||
-    filteredUserItems.length > 0;
-  const showProfile =
-    matchesSearch("profile") || filteredProfileItems.length > 0;
-  const showInformation =
-    matchesSearch("informasi") || filteredInformationItems.length > 0;
+  const nextOpenMenus: Record<GroupMenuKey, boolean> = {
+    document: openMenus.document || groupMenuStates.document.isActive,
+    record: openMenus.record || groupMenuStates.record.isActive,
+    inventory: openMenus.inventory || groupMenuStates.inventory.isActive,
+    user: openMenus.user || groupMenuStates.user.isActive,
+    information: openMenus.information || groupMenuStates.information.isActive,
+  };
 
-  const isHomeActive = pathname === "/admin" || pathname === "/admin/home";
-  const isDocumentActive = documentItems.some((item) =>
-    isPathActive(item.href),
-  );
-  const isRecordActive = recordItems.some((item) => isPathActive(item.href));
-  const isInventoryActive = inventoryItems.some((item) =>
-    isPathActive(item.href),
-  );
-  const isUserActive = userItems.some((item) => isPathActive(item.href));
-  const isProfileActive = profileItems.some((item) => isPathActive(item.href));
-  const isInformationActive = informationItems.some((item) =>
-    isPathActive(item.href),
+  const renderSubmenuItems = (items: MenuItem[]) => (
+    <SidebarMenuSub>
+      {items.map((item) => (
+        <SidebarMenuSubItem key={item.href}>
+          <SidebarMenuSubButton
+            href={item.href}
+            isActive={isPathActive(item.href)}
+            className={
+              isPathActive(item.href)
+                ? "text-sidebar-foreground"
+                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
+            }
+          >
+            <span className="text-sm">{item.label}</span>
+          </SidebarMenuSubButton>
+        </SidebarMenuSubItem>
+      ))}
+    </SidebarMenuSub>
   );
 
-  useEffect(() => {
-    setOpenMenus((prev) => ({
-      ...prev,
-      // Preserve manual/default opened state, and auto-open when route is active.
-      document: prev.document || isDocumentActive,
-      record: prev.record || isRecordActive,
-      inventory: prev.inventory || isInventoryActive,
-      user: prev.user || isUserActive,
-      profile: prev.profile || isProfileActive,
-      information: prev.information || isInformationActive,
-    }));
-  }, [
-    isDocumentActive,
-    isRecordActive,
-    isInventoryActive,
-    isUserActive,
-    isProfileActive,
-    isInformationActive,
-  ]);
+  const renderMenuItem = (menu: MenuConfig) => {
+    if (menu.type === "link") {
+      const isVisible =
+        menu.searchTerms?.some((term) => matchesSearch(term)) ||
+        matchesSearch(menu.label);
+      if (!isVisible) return null;
+
+      const isActive = menu.isActive
+        ? menu.isActive(pathname, menu.href)
+        : isPathActive(menu.href);
+      const Icon = menu.icon;
+
+      return (
+        <SidebarMenuItem className="mt-2" key={menu.key}>
+          <SidebarMenuButton
+            tooltip={menu.tooltip ?? menu.label}
+            className={menuButtonClass(isActive)}
+            asChild
+            isActive={isActive}
+          >
+            <Link href={menu.href}>
+              <Icon />
+              <span className="text-sm">{menu.label}</span>
+            </Link>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      );
+    }
+
+    const state = groupMenuStates[menu.key];
+    if (!state.isVisible) return null;
+
+    const Icon = menu.icon;
+    const isExpanded =
+      nextOpenMenus[menu.key] || (hasSearch && state.filteredItems.length > 0);
+
+    return (
+      <SidebarMenuItem className="mt-2" key={menu.key}>
+        <SidebarMenuButton
+          onClick={() => toggleMenu(menu.key)}
+          tooltip={menu.tooltip ?? menu.label}
+          className={menuButtonClass(state.isActive)}
+          isActive={state.isActive}
+        >
+          <Icon />
+          <span className="text-sm">{menu.label}</span>
+          <ChevronDown
+            className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          />
+        </SidebarMenuButton>
+        {isExpanded && renderSubmenuItems(state.filteredItems)}
+      </SidebarMenuItem>
+    );
+  };
 
   return (
     <Sidebar
@@ -249,275 +371,7 @@ export function AppSidebar() {
             ADMIN AREA
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>
-              {showHome && (
-                <SidebarMenuItem className="mt-2">
-                  <SidebarMenuButton
-                    tooltip="Home"
-                    className={menuButtonClass(isHomeActive)}
-                    asChild
-                    isActive={isHomeActive}
-                  >
-                    <Link href="/admin/home">
-                      <LayoutDashboard />
-                      <span className="text-sm">Home</span>
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              )}
-
-              {showProfile && (
-                <SidebarMenuItem className="mt-2">
-                  <SidebarMenuButton
-                    onClick={() => toggleMenu("profile")}
-                    tooltip="Profile"
-                    className={menuButtonClass(isProfileActive)}
-                    isActive={isProfileActive}
-                  >
-                    <User />
-                    <span className="text-sm">Profile</span>
-                    <ChevronDown
-                      className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${
-                        openMenus.profile ||
-                        (hasSearch && filteredProfileItems.length > 0)
-                          ? "rotate-180"
-                          : ""
-                      }`}
-                    />
-                  </SidebarMenuButton>
-                  {(openMenus.profile ||
-                    (hasSearch && filteredProfileItems.length > 0)) && (
-                    <SidebarMenuSub>
-                      {filteredProfileItems.map((item) => (
-                        <SidebarMenuSubItem key={item.href}>
-                          <SidebarMenuSubButton
-                            href={item.href}
-                            isActive={isPathActive(item.href)}
-                            className={
-                              isPathActive(item.href)
-                                ? "text-sidebar-foreground"
-                                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
-                            }
-                          >
-                            <span className="text-sm">{item.label}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  )}
-                </SidebarMenuItem>
-              )}
-
-              {showInformation && (
-                <SidebarMenuItem className="mt-2">
-                  <SidebarMenuButton
-                    onClick={() => toggleMenu("information")}
-                    tooltip="Informasi"
-                    className={menuButtonClass(isInformationActive)}
-                    isActive={isInformationActive}
-                  >
-                    <Info />
-                    <span className="text-sm">Informasi</span>
-                    <ChevronDown
-                      className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${
-                        openMenus.information ||
-                        (hasSearch && filteredInformationItems.length > 0)
-                          ? "rotate-180"
-                          : ""
-                      }`}
-                    />
-                  </SidebarMenuButton>
-                  {(openMenus.information ||
-                    (hasSearch && filteredInformationItems.length > 0)) && (
-                    <SidebarMenuSub>
-                      {filteredInformationItems.map((item) => (
-                        <SidebarMenuSubItem key={item.href}>
-                          <SidebarMenuSubButton
-                            href={item.href}
-                            isActive={isPathActive(item.href)}
-                            className={
-                              isPathActive(item.href)
-                                ? "text-sidebar-foreground"
-                                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
-                            }
-                          >
-                            <span className="text-sm">{item.label}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  )}
-                </SidebarMenuItem>
-              )}
-
-              {showRecord && (
-                <SidebarMenuItem className="mt-2">
-                  <SidebarMenuButton
-                    onClick={() => toggleMenu("record")}
-                    tooltip="Record"
-                    className={menuButtonClass(isRecordActive)}
-                    isActive={isRecordActive}
-                  >
-                    <History />
-                    <span className="text-sm">Record</span>
-                    <ChevronDown
-                      className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${
-                        openMenus.record ||
-                        (hasSearch && filteredRecordItems.length > 0)
-                          ? "rotate-180"
-                          : ""
-                      }`}
-                    />
-                  </SidebarMenuButton>
-                  {(openMenus.record ||
-                    (hasSearch && filteredRecordItems.length > 0)) && (
-                    <SidebarMenuSub>
-                      {filteredRecordItems.map((item) => (
-                        <SidebarMenuSubItem key={item.href}>
-                          <SidebarMenuSubButton
-                            href={item.href}
-                            isActive={isPathActive(item.href)}
-                            className={
-                              isPathActive(item.href)
-                                ? "text-sidebar-foreground"
-                                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
-                            }
-                          >
-                            <span className="text-sm">{item.label}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  )}
-                </SidebarMenuItem>
-              )}
-
-              {showDocument && (
-                <SidebarMenuItem className="mt-2">
-                  <SidebarMenuButton
-                    onClick={() => toggleMenu("document")}
-                    tooltip="Dokumen"
-                    className={menuButtonClass(isDocumentActive)}
-                    isActive={isDocumentActive}
-                  >
-                    <FileText />
-                    <span className="text-sm">Dokumen</span>
-                    <ChevronDown
-                      className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${
-                        openMenus.document ||
-                        (hasSearch && filteredDocumentItems.length > 0)
-                          ? "rotate-180"
-                          : ""
-                      }`}
-                    />
-                  </SidebarMenuButton>
-                  {(openMenus.document ||
-                    (hasSearch && filteredDocumentItems.length > 0)) && (
-                    <SidebarMenuSub>
-                      {filteredDocumentItems.map((item) => (
-                        <SidebarMenuSubItem key={item.href}>
-                          <SidebarMenuSubButton
-                            href={item.href}
-                            isActive={isPathActive(item.href)}
-                            className={
-                              isPathActive(item.href)
-                                ? "text-sidebar-foreground"
-                                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
-                            }
-                          >
-                            <span className="text-sm">{item.label}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  )}
-                </SidebarMenuItem>
-              )}
-
-              {showInventory && (
-                <SidebarMenuItem className="mt-2">
-                  <SidebarMenuButton
-                    onClick={() => toggleMenu("inventory")}
-                    tooltip="Inventarisasi"
-                    className={menuButtonClass(isInventoryActive)}
-                    isActive={isInventoryActive}
-                  >
-                    <Package />
-                    <span className="text-sm">Inventarisasi</span>
-                    <ChevronDown
-                      className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${
-                        openMenus.inventory ||
-                        (hasSearch && filteredInventoryItems.length > 0)
-                          ? "rotate-180"
-                          : ""
-                      }`}
-                    />
-                  </SidebarMenuButton>
-                  {(openMenus.inventory ||
-                    (hasSearch && filteredInventoryItems.length > 0)) && (
-                    <SidebarMenuSub>
-                      {filteredInventoryItems.map((item) => (
-                        <SidebarMenuSubItem key={item.href}>
-                          <SidebarMenuSubButton
-                            href={item.href}
-                            isActive={isPathActive(item.href)}
-                            className={
-                              isPathActive(item.href)
-                                ? "text-sidebar-foreground"
-                                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
-                            }
-                          >
-                            <span className="text-sm">{item.label}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  )}
-                </SidebarMenuItem>
-              )}
-
-              {showUser && (
-                <SidebarMenuItem className="mt-2">
-                  <SidebarMenuButton
-                    onClick={() => toggleMenu("user")}
-                    tooltip="User"
-                    className={menuButtonClass(isUserActive)}
-                    isActive={isUserActive}
-                  >
-                    <Users />
-                    <span className="text-sm">User Management</span>
-                    <ChevronDown
-                      className={`ml-auto transition-transform group-data-[collapsible=icon]:hidden ${
-                        openMenus.user ||
-                        (hasSearch && filteredUserItems.length > 0)
-                          ? "rotate-180"
-                          : ""
-                      }`}
-                    />
-                  </SidebarMenuButton>
-                  {(openMenus.user ||
-                    (hasSearch && filteredUserItems.length > 0)) && (
-                    <SidebarMenuSub>
-                      {filteredUserItems.map((item) => (
-                        <SidebarMenuSubItem key={item.href}>
-                          <SidebarMenuSubButton
-                            href={item.href}
-                            isActive={isPathActive(item.href)}
-                            className={
-                              isPathActive(item.href)
-                                ? "text-sidebar-foreground"
-                                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
-                            }
-                          >
-                            <span className="text-sm">{item.label}</span>
-                          </SidebarMenuSubButton>
-                        </SidebarMenuSubItem>
-                      ))}
-                    </SidebarMenuSub>
-                  )}
-                </SidebarMenuItem>
-              )}
-            </SidebarMenu>
+            <SidebarMenu>{adminMenuConfig.map(renderMenuItem)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
       </SidebarContent>

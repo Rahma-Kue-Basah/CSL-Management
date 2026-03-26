@@ -354,7 +354,6 @@ export default function AdminFaqPage() {
           setDebouncedSearchQuery("");
           setSortOrder("newest");
           setPage(1);
-          setFilterOpen(false);
         }}
       >
         <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
@@ -407,6 +406,7 @@ export default function AdminFaqPage() {
           <FaqBulkActions
             selectedCount={selectedCount}
             isDeleting={isDeleting}
+            onClearSelection={() => setSelectedIds([])}
             onDeleteSelected={() => setBulkDeleteOpen(true)}
           />
           <FaqFormDialog

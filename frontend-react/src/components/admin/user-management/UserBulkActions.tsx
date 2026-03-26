@@ -1,12 +1,13 @@
 "use client";
 
-import { ChevronDown, Download, FileSpreadsheet, Trash2 } from "lucide-react";
+import { ChevronDown, Download, FileSpreadsheet, Trash2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuSub,
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
@@ -18,6 +19,7 @@ type UserBulkActionsProps = {
   isDeleting: boolean;
   isExportingSelectedPdf: boolean;
   isExportingSelectedExcel: boolean;
+  onClearSelection: () => void;
   onDeleteSelected: () => void;
   onExportSelectedPdf: () => void;
   onExportSelectedExcel: () => void;
@@ -28,6 +30,7 @@ export default function UserBulkActions({
   isDeleting,
   isExportingSelectedPdf,
   isExportingSelectedExcel,
+  onClearSelection,
   onDeleteSelected,
   onExportSelectedPdf,
   onExportSelectedExcel,
@@ -71,6 +74,7 @@ export default function UserBulkActions({
               </DropdownMenuItem>
             </DropdownMenuSubContent>
           </DropdownMenuSub>
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
             disabled={selectedCount === 0 || isDeleting}
@@ -78,6 +82,15 @@ export default function UserBulkActions({
           >
             <Trash2 className="h-4 w-4" />
             Hapus Terpilih
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            disabled={selectedCount === 0}
+            onClick={onClearSelection}
+            className="text-xs text-slate-500"
+          >
+            <X className="h-3.5 w-3.5" />
+            Clear selection
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>

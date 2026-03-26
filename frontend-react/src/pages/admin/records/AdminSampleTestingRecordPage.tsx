@@ -1,18 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import {
-  ChevronDown,
-  Download,
-  Eye,
-  FileSpreadsheet,
-  Loader2,
-  Trash2,
-} from "lucide-react";
+import { Eye, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import AdminSampleTestingRecordDetailContent from "@/components/admin/records/AdminSampleTestingRecordDetailContent";
+import AdminRecordBulkActions from "@/components/admin/records/AdminRecordBulkActions";
 import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
 import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
 import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
@@ -28,15 +22,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSub,
-  DropdownMenuSubContent,
-  DropdownMenuSubTrigger,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import {
   API_PENGUJIAN_DETAIL,
@@ -159,7 +144,6 @@ export default function AdminRecordPengujianSampelPage() {
     setDebouncedSearch("");
     setStatus("");
     setPage(1);
-    setFilterOpen(false);
     setReloadKey((prev) => prev + 1);
   };
 
@@ -334,58 +318,16 @@ export default function AdminRecordPengujianSampelPage() {
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="disabled:border-slate-200 disabled:text-slate-400"
-                    disabled={selectedCount === 0 || isDeleting}
-                  >
-                    Aksi Terpilih
-                    {selectedCount ? ` (${selectedCount})` : ""}
-                    <ChevronDown className="ml-2 h-4 w-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  side="bottom"
-                  align="start"
-                  sideOffset={6}
-                  className="min-w-38"
-                >
-                  <DropdownMenuSub>
-                    <DropdownMenuSubTrigger className="cursor-pointer">
-                      <Download className="h-4 w-4" />
-                      Export Terpilih
-                    </DropdownMenuSubTrigger>
-                    <DropdownMenuSubContent className="min-w-44">
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        disabled={isExportingSelectedExcel}
-                        onSelect={handleExportSelectedExcel}
-                      >
-                        <FileSpreadsheet className="h-4 w-4" />
-                        Export Excel
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        disabled={isExportingSelectedPdf}
-                        onSelect={handleExportSelectedPdf}
-                      >
-                        <Download className="h-4 w-4" />
-                        Export PDF
-                      </DropdownMenuItem>
-                    </DropdownMenuSubContent>
-                  </DropdownMenuSub>
-                  <DropdownMenuItem
-                    className="cursor-pointer text-rose-600 focus:text-rose-700"
-                    onSelect={() => setIsBulkDeleteOpen(true)}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                    Hapus Terpilih
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <AdminRecordBulkActions
+                selectedCount={selectedCount}
+                isDeleting={isDeleting}
+                isExportingSelectedExcel={isExportingSelectedExcel}
+                isExportingSelectedPdf={isExportingSelectedPdf}
+                onExportSelectedExcel={handleExportSelectedExcel}
+                onExportSelectedPdf={handleExportSelectedPdf}
+                onDeleteSelected={() => setIsBulkDeleteOpen(true)}
+                onClearSelection={() => setSelectedIds([])}
+              />
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end">
               <p className="text-xs text-slate-500 sm:text-right">

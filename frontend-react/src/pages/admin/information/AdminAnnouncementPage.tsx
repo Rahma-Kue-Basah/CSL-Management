@@ -393,7 +393,6 @@ export default function AdminAnnouncementPage() {
           setDateFilter("");
           setSortOrder("newest");
           setPage(1);
-          setFilterOpen(false);
         }}
       >
         <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
@@ -454,6 +453,7 @@ export default function AdminAnnouncementPage() {
           <AnnouncementBulkActions
             selectedCount={selectedCount}
             isDeleting={isDeleting}
+            onClearSelection={() => setSelectedIds([])}
             onDeleteSelected={() => setBulkDeleteOpen(true)}
           />
           <Button

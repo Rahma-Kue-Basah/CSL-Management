@@ -48,6 +48,7 @@ from .serializers import (
     ScheduleSerializer,
     FAQSerializer,
     CalendarEventSerializer,
+    ScheduleFeedItemSerializer,
     StructureOrganizationSerializer,
     PengujianSerializer,
     PengujianListSerializer,
@@ -1457,15 +1458,12 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = super().get_queryset()
         room_id = self.request.query_params.get('room')
-        is_active = self.request.query_params.get('is_active')
         search = self.request.query_params.get('search')
         start_raw = self.request.query_params.get('start')
         end_raw = self.request.query_params.get('end')
 
         if room_id:
             qs = qs.filter(room_id=room_id)
-        if is_active is not None:
-            qs = qs.filter(is_active=str(is_active).lower() in ['1', 'true', 'yes'])
         if search:
             qs = qs.filter(Q(title__icontains=search) | Q(description__icontains=search))
         start = parse_datetime(start_raw) if start_raw else None
@@ -1508,6 +1506,165 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         )
         super().perform_destroy(instance)
 
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not is_staff_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus jadwal.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        schedule_map = {
+            str(item.id): item
+            for item in Schedule.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in schedule_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            schedule = schedule_map.get(str(item_id))
+            if schedule is None:
+                continue
+            self.perform_destroy(schedule)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua jadwal terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian jadwal berhasil dihapus."
+                ),
+            },
+            status=response_status,
+        )
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("page", OpenApiTypes.INT, OpenApiParameter.QUERY),
+            OpenApiParameter("page_size", OpenApiTypes.INT, OpenApiParameter.QUERY),
+            OpenApiParameter("search", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("room", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("source", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("start", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("end", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("ordering", OpenApiTypes.STR, OpenApiParameter.QUERY),
+        ],
+        responses=ScheduleFeedItemSerializer(many=True),
+    )
+    @action(detail=False, methods=['get'], url_path='feed')
+    def feed(self, request):
+        room_id = request.query_params.get('room')
+        search = (request.query_params.get('search') or '').strip()
+        source = (request.query_params.get('source') or '').strip().lower()
+        ordering = (request.query_params.get('ordering') or 'newest').strip().lower()
+        start_raw = request.query_params.get('start')
+        end_raw = request.query_params.get('end')
+
+        start = parse_datetime(start_raw) if start_raw else None
+        end = parse_datetime(end_raw) if end_raw else None
+
+        if start and timezone.is_naive(start):
+            start = timezone.make_aware(start, timezone.get_default_timezone())
+        if end and timezone.is_naive(end):
+            end = timezone.make_aware(end, timezone.get_default_timezone())
+
+        normalized_query = search.lower()
+
+        schedule_qs = (
+            Schedule.objects
+            .select_related('room', 'created_by')
+            .all()
+        )
+        booking_qs = (
+            Booking.objects
+            .filter(status__in=['Approved', 'Completed'])
+            .select_related('room', 'requested_by')
+        )
+
+        if room_id:
+            schedule_qs = schedule_qs.filter(room_id=room_id)
+            booking_qs = booking_qs.filter(room_id=room_id)
+        if start:
+            schedule_qs = schedule_qs.filter(end_time__gte=start)
+            booking_qs = booking_qs.filter(end_time__gte=start)
+        if end:
+            schedule_qs = schedule_qs.filter(start_time__lte=end)
+            booking_qs = booking_qs.filter(start_time__lte=end)
+        if search:
+            schedule_qs = schedule_qs.filter(
+                Q(title__icontains=search) | Q(description__icontains=search)
+            )
+            booking_qs = booking_qs.filter(
+                Q(room__name__icontains=search)
+                | Q(note__icontains=search)
+                | Q(requested_by__full_name__icontains=search)
+                | Q(requested_by__user__email__icontains=search)
+                | Q(purpose__icontains=search)
+            )
+
+        items = []
+
+        if source in ['', 'schedule']:
+            for item in schedule_qs:
+                items.append({
+                    'id': f'schedule-{item.id}',
+                    'source': 'schedule',
+                    'source_id': str(item.id),
+                    'title': item.title,
+                    'room_name': item.room.name if item.room else '-',
+                    'start_time': item.start_time,
+                    'end_time': item.end_time,
+                    'category_label': str(item.category),
+                    'schedule_item': ScheduleSerializer(item).data,
+                })
+
+        if source in ['', 'booking']:
+            for item in booking_qs:
+                title = item.room.name if item.room else 'Booking'
+                haystack = " ".join([
+                    title or '',
+                    item.note or '',
+                    item.purpose or '',
+                    item.room.name if item.room else '',
+                    _profile_display_name(item.requested_by) or '',
+                ]).lower()
+                if normalized_query and normalized_query not in haystack:
+                    continue
+                items.append({
+                    'id': f'booking-{item.id}',
+                    'source': 'booking',
+                    'source_id': str(item.id),
+                    'title': title,
+                    'room_name': item.room.name if item.room else '-',
+                    'start_time': item.start_time,
+                    'end_time': item.end_time,
+                    'category_label': 'Booking',
+                    'schedule_item': None,
+                })
+
+        if ordering == 'oldest':
+            items.sort(key=lambda item: item['start_time'])
+        elif ordering == 'title-asc':
+            items.sort(key=lambda item: str(item['title']).lower())
+        elif ordering == 'title-desc':
+            items.sort(key=lambda item: str(item['title']).lower(), reverse=True)
+        else:
+            items.sort(key=lambda item: item['start_time'], reverse=True)
+
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(items, request, view=self)
+        serializer = ScheduleFeedItemSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
+
 
 class CalendarViewSet(viewsets.ViewSet):
     permission_classes = [IsAuthenticated]
@@ -1547,7 +1704,6 @@ class CalendarViewSet(viewsets.ViewSet):
         schedule_qs = (
             Schedule.objects
             .filter(
-                is_active=True,
                 start_time__lt=end,
                 end_time__gt=start,
             )
