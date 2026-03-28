@@ -15,7 +15,7 @@ import {
   Wrench,
 } from "lucide-react";
 
-import { normalizeRoleValue } from "@/constants/roles";
+import { hasMenuAccess, normalizeRoleValue } from "@/constants/roles";
 import {
   APPROVAL_ACCESS_ROLES,
   CATALOG_ACCESS_ROLES,
@@ -40,6 +40,26 @@ export type SidebarShortcut = {
   icon: ComponentType<{ className?: string }>;
   actions: ShortcutAction[];
 };
+
+export type TopNavItem = {
+  id: string;
+  label: string;
+  href?: string;
+  children?: Array<{
+    id?: string;
+    label: string;
+    href: string;
+  }>;
+};
+
+const TOP_NAV_MENU_CONFIG: Array<Pick<TopNavItem, "id" | "label" | "href">> = [
+  { id: "dashboard", label: "Dashboard", href: "/dashboard" },
+  { id: "schedule", label: "Lihat Jadwal", href: "/schedule" },
+  { id: "booking-rooms", label: "Booking Ruangan" },
+  { id: "use-equipment", label: "Penggunaan Alat" },
+  { id: "sample-testing", label: "Pengujian Sampel" },
+  { id: "borrow-equipment", label: "Peminjaman Alat" },
+];
 
 export function getHeaderIcon(menuId: string, actionId: string | null) {
   if (menuId === "dashboard") {
@@ -328,6 +348,39 @@ export function canAccessAction(
   const normalizedRole = normalizeRoleValue(role);
   if (!normalizedRole) return false;
   return action.allowedRoles.includes(normalizedRole);
+}
+
+export function getVisibleTopNavItems(
+  role: string | null | undefined,
+): TopNavItem[] {
+  return TOP_NAV_MENU_CONFIG.flatMap((item) => {
+    if (!hasMenuAccess(role, item.id as Parameters<typeof hasMenuAccess>[1])) {
+      return [];
+    }
+
+    const shortcut = SIDEBAR_SHORTCUTS.find((menu) => menu.id === item.id);
+    if (!shortcut || !shortcut.actions.length) {
+      return [{ ...item }];
+    }
+
+    const children = shortcut.actions
+      .filter((action) => canAccessAction(role, action))
+      .map((action) => ({
+        id: action.id,
+        label: action.label,
+        href: action.href,
+      }));
+
+    if (!children.length) return [];
+
+    return [
+      {
+        id: item.id,
+        label: item.label,
+        children,
+      },
+    ];
+  });
 }
 
 function getDefaultActionId(

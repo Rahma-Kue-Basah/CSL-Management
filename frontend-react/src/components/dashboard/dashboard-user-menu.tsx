@@ -58,7 +58,7 @@ export function DashboardUserMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="w-(--radix-dropdown-menu-trigger-width) min-w-68 rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl"
-        side="bottom"
+        side="right"
         align="end"
         sideOffset={4}
       >

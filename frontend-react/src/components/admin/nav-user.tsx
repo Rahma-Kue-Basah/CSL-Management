@@ -76,17 +76,19 @@ export function NavUser({ user }: NavUserProps) {
             </DropdownMenuLabel>
             <DropdownMenuSeparator className="bg-slate-700" />
             <DropdownMenuItem className="cursor-pointer text-slate-100 hover:bg-slate-800 focus:bg-slate-800 focus:text-slate-100 text-sm">
-              <Link href="/dashboard" className="flex items-center w-full">
-                <CircleArrowOutUpRight className="mr-2 h-4 w-4" />
-                Back to Dashboard
+              <Link
+                href="/admin/my-profile"
+                className="flex items-center w-full"
+              >
+                <UserRound className="mr-2 h-4 w-4" />
+                Profil Saya
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator className="bg-slate-700" />
-
             <DropdownMenuItem className="cursor-pointer text-slate-100 hover:bg-slate-800 focus:bg-slate-800 focus:text-slate-100 text-sm">
-              <Link href="/admin/my-profile" className="flex items-center w-full">
-                <UserRound className="mr-2 h-4 w-4" />
-                Profil Saya
+              <Link href="/dashboard" className="flex items-center w-full">
+                <CircleArrowOutUpRight className="mr-2 h-4 w-4" />
+                Back to Dashboard
               </Link>
             </DropdownMenuItem>
 

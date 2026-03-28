@@ -3,6 +3,7 @@
 import type { ComponentType } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
 import {
   Tooltip,
   TooltipContent,
@@ -99,18 +100,31 @@ export function DashboardSideNavbar({
             {bottomMenus.map((bottomMenu) => (
               <Tooltip key={bottomMenu.id}>
                 <TooltipTrigger asChild>
-                  <Link
-                    href={getMenuHref(bottomMenu.id)}
-                    aria-label={bottomMenu.label}
-                    onClick={() => onMenuClick(bottomMenu.id)}
-                    className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors ${
-                      activeMenuId === bottomMenu.id
-                        ? "bg-[rgb(24_34_53)] text-[#F8FAFC]"
-                        : "text-[#F8FAFC]/70 hover:bg-[rgb(24_34_53)] hover:text-[#F8FAFC]"
-                    }`}
-                  >
-                    <bottomMenu.icon className="h-4 w-4" />
-                  </Link>
+                  {bottomMenu.id === "my-profile" ? (
+                    <div>
+                      <DashboardUserMenu
+                        triggerClassName={`h-10 w-10 justify-center rounded-md px-0 transition-colors ${
+                          activeMenuId === bottomMenu.id
+                            ? "bg-[rgb(24_34_53)] text-[#F8FAFC]"
+                            : "text-[#F8FAFC]/70 hover:bg-[rgb(24_34_53)] hover:text-[#F8FAFC]"
+                        }`}
+                        nameClassName="hidden"
+                      />
+                    </div>
+                  ) : (
+                    <Link
+                      href={getMenuHref(bottomMenu.id)}
+                      aria-label={bottomMenu.label}
+                      onClick={() => onMenuClick(bottomMenu.id)}
+                      className={`flex h-10 w-10 items-center justify-center rounded-md transition-colors ${
+                        activeMenuId === bottomMenu.id
+                          ? "bg-[rgb(24_34_53)] text-[#F8FAFC]"
+                          : "text-[#F8FAFC]/70 hover:bg-[rgb(24_34_53)] hover:text-[#F8FAFC]"
+                      }`}
+                    >
+                      <bottomMenu.icon className="h-4 w-4" />
+                    </Link>
+                  )}
                 </TooltipTrigger>
                 <TooltipContent side="right" align="center">
                   {bottomMenu.label}

@@ -12,7 +12,6 @@ import { LayoutGrid, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DashboardTopNavbar,
-  TOP_NAV_ITEMS,
 } from "@/components/dashboard/layout/DashboardTopNavbar";
 import { DashboardSideNavbar } from "@/components/dashboard/layout/DashboardSideNavbar";
 import { DashboardActionPanel } from "@/components/dashboard/layout/DashboardActionPanel";
@@ -27,10 +26,11 @@ import {
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { hasMenuAccess, normalizeRoleValue } from "@/constants/roles";
+import { hasMenuAccess } from "@/constants/roles";
 import {
   canAccessAction,
   getHeaderIcon,
+  getVisibleTopNavItems,
   parseDashboardPath,
   SIDEBAR_SHORTCUTS,
   type SidebarShortcut,
@@ -86,26 +86,7 @@ function DashboardShell({ children }: UserLayoutProps) {
     [displayName, profile.role],
   );
   const visibleTopNavItems = useMemo(
-    () =>
-      TOP_NAV_ITEMS.filter((item) =>
-        hasMenuAccess(
-          profile.role,
-          item.id as Parameters<typeof hasMenuAccess>[1],
-        ),
-      )
-        .map((item) =>
-          item.children
-            ? {
-                ...item,
-                children: item.children.filter((child) =>
-                  !child.allowedRoles?.length
-                    ? true
-                    : child.allowedRoles.includes(normalizeRoleValue(profile.role)),
-                ),
-              }
-            : item,
-        )
-        .filter((item) => !item.children || item.children.length > 0),
+    () => getVisibleTopNavItems(profile.role),
     [profile.role],
   );
 

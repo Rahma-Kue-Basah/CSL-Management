@@ -1,33 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, ChevronDown, LayoutGrid } from "lucide-react";
+import { Bell, ChevronDown, CircleArrowOutUpRightIcon, LayoutGrid } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
+import { Button } from "@/components/ui/button";
+import { isPrivilegedRole } from "@/constants/roles";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import type { TopNavItem } from "@/lib/dashboard-navigation";
 import { cn } from "@/lib/utils";
-import {
-  APPROVAL_ACCESS_ROLES,
-  CATALOG_ACCESS_ROLES,
-  REQUESTER_ACCESS_ROLES,
-  SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
-} from "@/lib/dashboard-access";
-
-export type TopNavItem = {
-  id: string;
-  label: string;
-  href?: string;
-  children?: Array<{
-    id?: string;
-    label: string;
-    href: string;
-    allowedRoles?: readonly string[];
-  }>;
-};
 
 type DashboardTopNavbarProps = {
   activeMenuId: string;
@@ -36,124 +21,15 @@ type DashboardTopNavbarProps = {
   onMobileActionOpen?: () => void;
 };
 
-export const TOP_NAV_ITEMS: TopNavItem[] = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    href: "/dashboard",
-  },
-  { id: "schedule", label: "Lihat Jadwal", href: "/schedule" },
-  {
-    id: "booking-rooms",
-    label: "Booking Ruangan",
-    children: [
-      {
-        label: "Pengajuan Saya",
-        href: "/booking-rooms",
-        allowedRoles: REQUESTER_ACCESS_ROLES,
-      },
-      {
-        label: "Ajukan Booking Ruangan",
-        href: "/booking-rooms/form",
-        allowedRoles: REQUESTER_ACCESS_ROLES,
-      },
-      {
-        id: "all-requests",
-        label: "Approval Booking Ruangan",
-        href: "/booking-rooms/approval",
-        allowedRoles: APPROVAL_ACCESS_ROLES,
-      },
-      {
-        label: "Ruangan yang Bisa di-Booking",
-        href: "/rooms",
-        allowedRoles: CATALOG_ACCESS_ROLES,
-      },
-    ],
-  },
-  {
-    id: "use-equipment",
-    label: "Penggunaan Alat",
-    children: [
-      {
-        label: "Pengajuan Saya",
-        href: "/use-equipment",
-        allowedRoles: REQUESTER_ACCESS_ROLES,
-      },
-      {
-        label: "Ajukan Penggunaan Alat",
-        href: "/use-equipment/form",
-        allowedRoles: REQUESTER_ACCESS_ROLES,
-      },
-      {
-        id: "all-requests",
-        label: "Approval Penggunaan Alat",
-        href: "/use-equipment/approval",
-        allowedRoles: APPROVAL_ACCESS_ROLES,
-      },
-      {
-        label: "Peralatan yang Bisa Dibooking",
-        href: "/equipment",
-        allowedRoles: CATALOG_ACCESS_ROLES,
-      },
-    ],
-  },
-  {
-    id: "sample-testing",
-    label: "Pengujian Sampel",
-    children: [
-      {
-        label: "Pengajuan Saya",
-        href: "/sample-testing",
-        allowedRoles: SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
-      },
-      {
-        label: "Ajukan Pengujian",
-        href: "/sample-testing/form",
-        allowedRoles: SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
-      },
-      {
-        id: "all-requests",
-        label: "Approval Pengujian Sampel",
-        href: "/sample-testing/approval",
-        allowedRoles: APPROVAL_ACCESS_ROLES,
-      },
-    ],
-  },
-  {
-    id: "borrow-equipment",
-    label: "Peminjaman Alat",
-    children: [
-      {
-        label: "Pengajuan Saya",
-        href: "/borrow-equipment",
-        allowedRoles: REQUESTER_ACCESS_ROLES,
-      },
-      {
-        label: "Ajukan Peminjaman",
-        href: "/borrow-equipment/form",
-        allowedRoles: REQUESTER_ACCESS_ROLES,
-      },
-      {
-        id: "all-requests",
-        label: "Approval Peminjaman Alat",
-        href: "/borrow-equipment/approval",
-        allowedRoles: APPROVAL_ACCESS_ROLES,
-      },
-      {
-        label: "Alat yang Bisa Dipinjam",
-        href: "/borrow-equipment/equipment",
-        allowedRoles: CATALOG_ACCESS_ROLES,
-      },
-    ],
-  },
-];
-
 export function DashboardTopNavbar({
   activeMenuId,
-  items = TOP_NAV_ITEMS,
+  items = [],
   onShortcutClick,
   onMobileActionOpen,
 }: DashboardTopNavbarProps) {
+  const { profile } = useLoadProfile();
+  const canAccessAdmin = isPrivilegedRole(profile.role);
+
   return (
     <header className="fixed top-0 left-0 right-0 z-40 flex h-16 items-center border-b border-slate-200 bg-white md:left-20">
       <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center gap-3 px-4">
@@ -222,6 +98,19 @@ export function DashboardTopNavbar({
 
         <div className="justify-self-end">
           <div className="flex items-center gap-2">
+            {canAccessAdmin ? (
+              <Button
+                asChild
+                size="sm"
+                variant="link"
+                className="hidden text-slate-700 no-underline hover:no-underline hover:text-[#0048B4] lg:inline-flex"
+              >
+                <Link href="/admin/home">
+                  <CircleArrowOutUpRightIcon className="h-4 w-4" />
+                  <span className="ml-1">Go to Admin CSL</span>
+                </Link>
+              </Button>
+            ) : null}
             <Link
               href="/notifications"
               onClick={() => onShortcutClick("notifications")}
@@ -233,10 +122,6 @@ export function DashboardTopNavbar({
             >
               <Bell className="h-5 w-5" />
             </Link>
-            <DashboardUserMenu
-              triggerClassName="h-10 rounded-lg bg-transparent px-2 text-slate-800 hover:bg-slate-100"
-              nameClassName="hidden text-slate-800 sm:block"
-            />
           </div>
         </div>
       </div>
