@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import { API_USE_DETAIL, API_USES, API_USES_MY } from "@/constants/api";
+import {
+  API_USE_DETAIL,
+  API_USES,
+  API_USES_ALL,
+  API_USES_MY,
+} from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type UseFilters = {
@@ -20,6 +25,7 @@ export type UseRow = {
   equipmentId: string;
   equipmentName: string;
   roomName: string;
+  roomPicName: string;
   requesterId: string;
   requesterName: string;
   approvedById: string;
@@ -52,6 +58,10 @@ type ApiUse = {
     room_detail?: {
       id?: string | number | null;
       name?: string | null;
+      pics_detail?: Array<{
+        full_name?: string | null;
+        email?: string | null;
+      }> | null;
     } | null;
   } | null;
   requested_by?: string | number | null;
@@ -99,6 +109,12 @@ export function mapUse(item: ApiUse): UseRow {
     item.approved_by_detail?.full_name ||
     item.approved_by_detail?.email ||
     "-";
+  const roomPicName = Array.isArray(item.equipment_detail?.room_detail?.pics_detail)
+    ? item.equipment_detail.room_detail.pics_detail
+        .map((pic) => String(pic?.full_name ?? pic?.email ?? "").trim())
+        .filter(Boolean)
+        .join(", ") || "-"
+    : "-";
 
   return {
     id: item.id ?? `use-${Math.random().toString(36).slice(2, 8)}`,
@@ -106,6 +122,7 @@ export function mapUse(item: ApiUse): UseRow {
     equipmentId: String(item.equipment_detail?.id ?? item.equipment ?? ""),
     equipmentName: String(item.equipment_detail?.name ?? "-"),
     roomName: String(item.equipment_detail?.room_detail?.name ?? "-"),
+    roomPicName,
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
@@ -223,7 +240,8 @@ export function useUses(
       setIsLoading(true);
       setError("");
       try {
-        const listEndpoint = scope === "my" ? API_USES_MY : API_USES;
+        const listEndpoint =
+          scope === "my" ? API_USES_MY : scope === "all" ? API_USES_ALL : API_USES;
         const url = new URL(listEndpoint, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));

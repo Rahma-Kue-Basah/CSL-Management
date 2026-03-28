@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import { API_BORROWS, API_BORROW_DETAIL } from "@/constants/api";
+import {
+  API_BORROWS,
+  API_BORROWS_ALL,
+  API_BORROWS_MY,
+  API_BORROW_DETAIL,
+} from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type BorrowFilters = {
@@ -12,11 +17,14 @@ export type BorrowFilters = {
   createdBefore?: string;
 };
 
+export type BorrowListScope = "default" | "my" | "all";
+
 export type BorrowRow = {
   id: string | number;
   code: string;
   equipmentId: string;
   equipmentName: string;
+  roomPicName: string;
   requesterId: string;
   requesterName: string;
   approvedById: string;
@@ -50,6 +58,14 @@ type ApiBorrow = {
   equipment_detail?: {
     id?: string | number | null;
     name?: string | null;
+    room_detail?: {
+      id?: string | number | null;
+      name?: string | null;
+      pics_detail?: Array<{
+        full_name?: string | null;
+        email?: string | null;
+      }> | null;
+    } | null;
   } | null;
   requested_by?: string | number | null;
   requested_by_detail?: {
@@ -104,12 +120,19 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
     item.approved_by_detail?.full_name ||
     item.approved_by_detail?.email ||
     "-";
+  const roomPicName = Array.isArray(item.equipment_detail?.room_detail?.pics_detail)
+    ? item.equipment_detail.room_detail.pics_detail
+        .map((pic) => String(pic?.full_name ?? pic?.email ?? "").trim())
+        .filter(Boolean)
+        .join(", ") || "-"
+    : "-";
 
   return {
     id: item.id ?? `borrow-${Math.random().toString(36).slice(2, 8)}`,
     code: String(item.code ?? "-"),
     equipmentId: String(item.equipment_detail?.id ?? item.equipment ?? ""),
     equipmentName: String(item.equipment_detail?.name ?? "-"),
+    roomPicName,
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
@@ -188,6 +211,7 @@ export function useBorrows(
   pageSize = 10,
   filters: BorrowFilters = {},
   reloadKey = 0,
+  scope: BorrowListScope = "default",
 ) {
   const [borrows, setBorrows] = useState<BorrowRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -208,6 +232,27 @@ export function useBorrows(
   });
 
   useEffect(() => {
+    if (scope === "my" && !filters.requestedBy) {
+      setBorrows([]);
+      setTotalCount(0);
+      setAggregates({
+        total: 0,
+        pending: 0,
+        approved: 0,
+        rejected: 0,
+        expired: 0,
+        borrowed: 0,
+        returned_pending_inspection: 0,
+        returned: 0,
+        overdue: 0,
+        lost_damaged: 0,
+      });
+      setError("");
+      setIsLoading(false);
+      setHasLoadedOnce(true);
+      return;
+    }
+
     const controller = new AbortController();
     let isAborted = false;
 
@@ -215,11 +260,17 @@ export function useBorrows(
       setIsLoading(true);
       setError("");
       try {
-        const url = new URL(API_BORROWS, window.location.origin);
+        const listEndpoint =
+          scope === "my"
+            ? API_BORROWS_MY
+            : scope === "all"
+              ? API_BORROWS_ALL
+              : API_BORROWS;
+        const url = new URL(listEndpoint, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
-        if (filters.requestedBy) {
+        if (filters.requestedBy && scope !== "my") {
           url.searchParams.set("requested_by", filters.requestedBy);
         }
         if (filters.createdAfter) {
@@ -275,7 +326,7 @@ export function useBorrows(
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, filters.requestedBy, filters.createdAfter, filters.createdBefore, reloadKey]);
+  }, [page, pageSize, filters.status, filters.requestedBy, filters.createdAfter, filters.createdBefore, reloadKey, scope]);
 
   return {
     borrows,

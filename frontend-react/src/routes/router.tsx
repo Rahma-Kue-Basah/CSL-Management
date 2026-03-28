@@ -3,7 +3,14 @@ import { createBrowserRouter, Navigate, Outlet } from "react-router-dom";
 import AuthLayout from "@/layouts/AuthLayout";
 import AdminLayout from "@/layouts/AdminLayout";
 import { UserLayout } from "@/layouts/UserLayout";
-import { hasAuthToken, RequireAdmin, RequireAuth } from "@/routes/guards";
+import {
+  hasAuthToken,
+  RequireAdmin,
+  RequireAuth,
+  RequireFeatureScope,
+  RequireMenuAccess,
+  RequireStaffOrAbove,
+} from "@/routes/guards";
 
 import LoginPage from "@/pages/auth/LoginPage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
@@ -37,6 +44,7 @@ import BorrowEquipmentAllListPage from "@/pages/dashboard/borrow-equipment/Borro
 import BorrowEquipmentFormPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentFormPage";
 import BorrowEquipmentAvailablePage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentAvailablePage";
 import BorrowEquipmentDetailPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentDetailPage";
+import ApprovalSampleTestingPage from "@/pages/dashboard/approval/ApprovalSampleTestingPage";
 import NotificationsPage from "@/pages/dashboard/account/NotificationsPage";
 import MyProfilePage from "@/pages/dashboard/account/MyProfilePage";
 import AdminHomePage from "@/pages/admin/home/AdminHomePage";
@@ -93,6 +101,11 @@ export const router = createBrowserRouter([
     children: [
       {
         path: "dashboard",
+        element: (
+          <RequireMenuAccess menuId="dashboard">
+            <Outlet />
+          </RequireMenuAccess>
+        ),
         children: [
           { index: true, element: <DashboardHomePage /> },
           { path: "overview", element: <DashboardOverviewPage /> },
@@ -102,52 +115,260 @@ export const router = createBrowserRouter([
           { path: "facilities", element: <DashboardFacilitiesPage /> },
         ],
       },
-      { path: "schedule", element: <SchedulePage /> },
+      {
+        path: "schedule",
+        element: (
+          <RequireMenuAccess menuId="schedule">
+            <SchedulePage />
+          </RequireMenuAccess>
+        ),
+      },
       {
         path: "booking-rooms",
+        element: (
+          <RequireMenuAccess menuId="booking-rooms">
+            <Outlet />
+          </RequireMenuAccess>
+        ),
         children: [
-          { index: true, element: <BookingRoomsListPage /> },
-          { path: "all", element: <BookingRoomsAllListPage /> },
-          { path: "all/:id", element: <BookingRoomsDetailPage /> },
-          { path: "form", element: <BookingRoomsFormPage /> },
-          { path: ":id", element: <BookingRoomsDetailPage /> },
+          {
+            index: true,
+            element: (
+              <RequireFeatureScope featurePath="/booking-rooms" scope="requester">
+                <BookingRoomsListPage />
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "form",
+            element: (
+              <RequireFeatureScope featurePath="/booking-rooms" scope="requester">
+                <BookingRoomsFormPage />
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "approval",
+            element: (
+              <RequireFeatureScope featurePath="/booking-rooms" scope="approval">
+                <RequireStaffOrAbove>
+                  <BookingRoomsAllListPage />
+                </RequireStaffOrAbove>
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "approval/:id",
+            element: (
+              <RequireFeatureScope featurePath="/booking-rooms" scope="approval">
+                <RequireStaffOrAbove>
+                  <BookingRoomsDetailPage />
+                </RequireStaffOrAbove>
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: ":id",
+            element: (
+              <RequireFeatureScope featurePath="/booking-rooms" scope="requester">
+                <BookingRoomsDetailPage />
+              </RequireFeatureScope>
+            ),
+          },
         ],
       },
-      { path: "rooms", element: <RoomsListPage /> },
-      { path: "rooms/:id", element: <RoomDetailPage /> },
+      {
+        path: "rooms",
+        element: (
+          <RequireMenuAccess menuId="booking-rooms">
+            <RoomsListPage />
+          </RequireMenuAccess>
+        ),
+      },
+      {
+        path: "rooms/:id",
+        element: (
+          <RequireMenuAccess menuId="booking-rooms">
+            <RoomDetailPage />
+          </RequireMenuAccess>
+        ),
+      },
       {
         path: "use-equipment",
+        element: (
+          <RequireMenuAccess menuId="use-equipment">
+            <Outlet />
+          </RequireMenuAccess>
+        ),
         children: [
-          { index: true, element: <UseEquipmentListPage /> },
-          { path: "all", element: <UseEquipmentAllListPage /> },
-          { path: "form", element: <UseEquipmentFormPage /> },
-          { path: "all/:id", element: <UseEquipmentDetailPage /> },
-          { path: ":id", element: <UseEquipmentDetailPage /> },
+          {
+            index: true,
+            element: (
+              <RequireFeatureScope featurePath="/use-equipment" scope="requester">
+                <UseEquipmentListPage />
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "form",
+            element: (
+              <RequireFeatureScope featurePath="/use-equipment" scope="requester">
+                <UseEquipmentFormPage />
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "approval",
+            element: (
+              <RequireFeatureScope featurePath="/use-equipment" scope="approval">
+                <RequireStaffOrAbove>
+                  <UseEquipmentAllListPage />
+                </RequireStaffOrAbove>
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "approval/:id",
+            element: (
+              <RequireFeatureScope featurePath="/use-equipment" scope="approval">
+                <RequireStaffOrAbove>
+                  <UseEquipmentDetailPage />
+                </RequireStaffOrAbove>
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: ":id",
+            element: (
+              <RequireFeatureScope featurePath="/use-equipment" scope="requester">
+                <UseEquipmentDetailPage />
+              </RequireFeatureScope>
+            ),
+          },
         ],
       },
-      { path: "equipment", element: <EquipmentListPage /> },
-      { path: "equipment/:id", element: <EquipmentDetailPage /> },
+      {
+        path: "equipment",
+        element: (
+          <RequireMenuAccess menuId="use-equipment">
+            <EquipmentListPage />
+          </RequireMenuAccess>
+        ),
+      },
+      {
+        path: "equipment/:id",
+        element: (
+          <RequireMenuAccess menuId="use-equipment">
+            <EquipmentDetailPage />
+          </RequireMenuAccess>
+        ),
+      },
       {
         path: "sample-testing",
+        element: (
+          <RequireMenuAccess menuId="sample-testing">
+            <Outlet />
+          </RequireMenuAccess>
+        ),
         children: [
-          { index: true, element: <SampleTestingListPage /> },
-          { path: "form", element: <SampleTestingFormPage /> },
+          {
+            index: true,
+            element: (
+              <RequireFeatureScope featurePath="/sample-testing" scope="requester">
+                <SampleTestingListPage />
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "form",
+            element: (
+              <RequireFeatureScope featurePath="/sample-testing" scope="requester">
+                <SampleTestingFormPage />
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "approval",
+            element: (
+              <RequireFeatureScope featurePath="/sample-testing" scope="approval">
+                <RequireStaffOrAbove>
+                  <ApprovalSampleTestingPage />
+                </RequireStaffOrAbove>
+              </RequireFeatureScope>
+            ),
+          },
         ],
       },
       {
         path: "borrow-equipment",
+        element: (
+          <RequireMenuAccess menuId="borrow-equipment">
+            <Outlet />
+          </RequireMenuAccess>
+        ),
         children: [
-          { index: true, element: <BorrowEquipmentListPage /> },
-          { path: "all", element: <BorrowEquipmentAllListPage /> },
-          { path: "form", element: <BorrowEquipmentFormPage /> },
+          {
+            index: true,
+            element: (
+              <RequireFeatureScope featurePath="/borrow-equipment" scope="requester">
+                <BorrowEquipmentListPage />
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "form",
+            element: (
+              <RequireFeatureScope featurePath="/borrow-equipment" scope="requester">
+                <BorrowEquipmentFormPage />
+              </RequireFeatureScope>
+            ),
+          },
           { path: "equipment", element: <BorrowEquipmentAvailablePage /> },
-          { path: "all/:id", element: <BorrowEquipmentDetailPage /> },
-          { path: ":id", element: <BorrowEquipmentDetailPage /> },
+          {
+            path: "approval",
+            element: (
+              <RequireFeatureScope featurePath="/borrow-equipment" scope="approval">
+                <RequireStaffOrAbove>
+                  <BorrowEquipmentAllListPage />
+                </RequireStaffOrAbove>
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "approval/:id",
+            element: (
+              <RequireFeatureScope featurePath="/borrow-equipment" scope="approval">
+                <RequireStaffOrAbove>
+                  <BorrowEquipmentDetailPage />
+                </RequireStaffOrAbove>
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: ":id",
+            element: (
+              <RequireFeatureScope featurePath="/borrow-equipment" scope="requester">
+                <BorrowEquipmentDetailPage />
+              </RequireFeatureScope>
+            ),
+          },
         ],
       },
-      { path: "notifications", element: <NotificationsPage /> },
+      {
+        path: "notifications",
+        element: (
+          <RequireMenuAccess menuId="notifications">
+            <NotificationsPage />
+          </RequireMenuAccess>
+        ),
+      },
       {
         path: "my-profile",
+        element: (
+          <RequireMenuAccess menuId="my-profile">
+            <Outlet />
+          </RequireMenuAccess>
+        ),
         children: [
           { index: true, element: <MyProfilePage /> },
           { path: "edit", element: <MyProfilePage /> },

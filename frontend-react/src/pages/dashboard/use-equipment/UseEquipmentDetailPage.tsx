@@ -1,25 +1,17 @@
 "use client";
 
-import { useState } from "react";
 import {
   ArrowLeft,
   CalendarClock,
-  Check,
   Loader2,
   MapPinned,
   NotebookPen,
   UserRound,
-  X,
 } from "lucide-react";
 import { useParams, usePathname, useRouter } from "next/navigation";
 import { Steps } from "rsuite";
-import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
-import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
-import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useUseDetail } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
@@ -190,17 +182,12 @@ function DetailSection({
 export default function UseEquipmentDetailPage() {
   const router = useRouter();
   const pathname = usePathname();
-  const { profile } = useLoadProfile();
-  const { updateUseStatus, pendingAction } = useUpdateUseStatus();
   const params = useParams<UseDetailParams>();
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
-  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
-    null,
-  );
-  const backHref = pathname.startsWith("/use-equipment/all/")
-    ? "/use-equipment/all"
+  const backHref = pathname.startsWith("/use-equipment/approval/")
+    ? "/use-equipment/approval"
     : "/use-equipment";
-  const backLabel = pathname.startsWith("/use-equipment/all/")
+  const backLabel = pathname.startsWith("/use-equipment/approval/")
     ? "Kembali ke Daftar Pengajuan"
     : "Kembali ke Pengajuan Saya";
 
@@ -243,52 +230,6 @@ export default function UseEquipmentDetailPage() {
     );
   }
 
-  const normalizedRole = normalizeRoleValue(profile?.role);
-  const canReviewUse =
-    pathname.startsWith("/use-equipment/all/") &&
-    (normalizedRole === ROLE_VALUES.ADMIN ||
-      normalizedRole === ROLE_VALUES.LECTURER ||
-      normalizedRole === ROLE_VALUES.STAFF) &&
-    isPendingStatus(item.status);
-
-  const handleUseAction = async () => {
-    if (!confirmType) return;
-
-    const type = confirmType;
-    const result = await updateUseStatus(item.id, type);
-
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
-    }
-
-    const now = new Date().toISOString();
-    setUseItem((current) =>
-      current
-        ? {
-            ...current,
-            status: type === "approve" ? "Approved" : "Rejected",
-            updatedAt: now,
-            approvedById:
-              type === "approve"
-                ? String(profile?.id ?? current.approvedById)
-                : current.approvedById,
-            approvedByName:
-              type === "approve"
-                ? profile?.name || current.approvedByName
-                : current.approvedByName,
-          }
-        : current,
-    );
-    setConfirmType(null);
-
-    toast.success(
-      type === "approve"
-        ? "Pengajuan penggunaan alat berhasil disetujui."
-        : "Pengajuan penggunaan alat berhasil ditolak.",
-    );
-  };
-
   const flowSteps = getUseFlow({
     status: item.status,
     createdAt: item.createdAt,
@@ -309,28 +250,6 @@ export default function UseEquipmentDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {canReviewUse ? (
-            <>
-              <Button
-                type="button"
-                className="h-10 rounded-md border border-emerald-600 bg-emerald-600 px-4 text-white shadow-sm hover:bg-emerald-700"
-                onClick={() => setConfirmType("approve")}
-                disabled={pendingAction.useId === item.id}
-              >
-                <Check className="h-4 w-4" />
-                Setujui
-              </Button>
-              <Button
-                type="button"
-                className="h-10 rounded-md border border-rose-600 bg-rose-600 px-4 text-white shadow-sm hover:bg-rose-700"
-                onClick={() => setConfirmType("reject")}
-                disabled={pendingAction.useId === item.id}
-              >
-                <X className="h-4 w-4" />
-                Tolak
-              </Button>
-            </>
-          ) : null}
           <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
             <ArrowLeft className="h-4 w-4" />
             Kembali
@@ -404,16 +323,6 @@ export default function UseEquipmentDetailPage() {
         </div>
       </div>
 
-      <StatusConfirmDialog
-        open={Boolean(confirmType)}
-        actionType={confirmType}
-        onOpenChange={(open) => {
-          if (!open) setConfirmType(null);
-        }}
-        onConfirm={handleUseAction}
-        isSubmitting={pendingAction.useId === item.id}
-        subjectLabel="pengajuan penggunaan alat ini"
-      />
     </section>
   );
 }

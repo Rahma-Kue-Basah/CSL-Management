@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import { API_USES } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
-import { extractApiErrorMessage } from "@/lib/api-error";
+import {
+  extractApiErrorMessage,
+  extractApiErrorMessageFromText,
+} from "@/lib/api-error";
 
 type CreateUsePayload = {
   equipmentId: string;
@@ -60,8 +63,13 @@ export function useCreateUse() {
 
       let message = "Gagal membuat pengajuan penggunaan alat. Periksa data lalu coba lagi.";
       try {
-        const data = (await response.json()) as unknown;
-        message = parseUseError(data, message);
+        const raw = await response.text();
+        try {
+          const data = JSON.parse(raw) as unknown;
+          message = parseUseError(data, message);
+        } catch {
+          message = extractApiErrorMessageFromText(raw, message);
+        }
       } catch {
         // ignore parse error
       }

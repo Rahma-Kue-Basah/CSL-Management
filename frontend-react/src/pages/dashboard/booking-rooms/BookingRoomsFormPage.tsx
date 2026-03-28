@@ -1,36 +1,30 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { format } from "date-fns";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
+  SubmissionConfirmDialog,
+  SubmissionSummaryItem,
+} from "@/components/dialogs/SubmissionConfirmDialog";
 import {
-  Combobox,
-  ComboboxContent,
-  ComboboxEmpty,
-  ComboboxInput,
-  ComboboxItem,
-  ComboboxList,
-} from "@/components/ui/combobox";
-import { DatePicker } from "@/components/ui/date-picker";
+  DashboardComboboxField,
+  DashboardDateTimePickerField,
+} from "@/components/shared/dashboard-form-fields";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCreateBookingRoom } from "@/hooks/bookings/use-create-booking-room";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
+import {
+  combineDateTime,
+  getMinSelectableTime,
+  startOfToday,
+  type SelectOption,
+} from "@/components/shared/dashboard-form-fields";
 import { cn } from "@/lib/utils";
 
 type FormData = {
@@ -45,11 +39,6 @@ type FormData = {
     equipmentId: string;
     quantity: string;
   }>;
-};
-
-type SelectOption = {
-  value: string;
-  label: string;
 };
 
 const PURPOSE_OPTIONS = [
@@ -70,163 +59,9 @@ const initialFormData: FormData = {
   equipmentItems: [],
 };
 
-function combineDateTime(date: Date | undefined, time: string) {
-  if (!date || !time) return "";
-  return `${format(date, "yyyy-MM-dd")}T${time}`;
-}
-
-function SummaryItem({ label, value }: { label: string; value: string }) {
-  const displayValue = value?.trim() ? value : "-";
-  const isEmpty = displayValue === "-";
-
-  return (
-    <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-[0_1px_2px_rgba(15,23,42,0.05)]">
-      <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500">
-        {label}
-      </p>
-      <p
-        className={`mt-2 text-sm ${isEmpty ? "italic text-slate-400" : "font-medium text-slate-800"}`}
-      >
-        {displayValue}
-      </p>
-    </div>
-  );
-}
-
-type ComboboxFieldProps = {
-  label: string;
-  value: string;
-  options: SelectOption[];
-  placeholder: string;
-  emptyText: string;
-  disabled?: boolean;
-  required?: boolean;
-  showClear?: boolean;
-  onChange: (value: string) => void;
-};
-
-function ComboboxField({
-  label,
-  value,
-  options,
-  placeholder,
-  emptyText,
-  disabled,
-  required,
-  showClear = false,
-  onChange,
-}: ComboboxFieldProps) {
-  const [query, setQuery] = useState("");
-  const selectedOption =
-    options.find((option) => option.value === value) ?? null;
-  const filteredOptions = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
-
-    if (!normalizedQuery) return options;
-
-    return options.filter((option) =>
-      option.label.toLowerCase().includes(normalizedQuery),
-    );
-  }, [options, query]);
-
-  return (
-    <div className="space-y-1.5">
-      <label className="text-xs font-medium text-slate-600">
-        {label} {required ? <span className="text-rose-600">*</span> : null}
-      </label>
-      <Combobox<SelectOption>
-        items={filteredOptions}
-        value={selectedOption}
-        itemToStringLabel={(item) => item.label}
-        itemToStringValue={(item) => item.value}
-        onInputValueChange={(inputValue) => setQuery(inputValue)}
-        onValueChange={(nextValue) => {
-          onChange(nextValue?.value ?? "");
-          setQuery("");
-        }}
-      >
-        <ComboboxInput
-          disabled={disabled}
-          placeholder={placeholder}
-          showClear={showClear}
-          className="h-11 w-full rounded-md border-slate-300 bg-white shadow-xs [&_[data-slot=input-group-control]]:h-11 [&_[data-slot=input-group-control]]:px-3 [&_[data-slot=input-group-control]]:text-sm"
-        />
-        <ComboboxContent className="border border-slate-200 bg-white">
-          <ComboboxList>
-            <ComboboxEmpty>{emptyText}</ComboboxEmpty>
-            {filteredOptions.map((option, index) => (
-              <ComboboxItem key={option.value} value={option} index={index}>
-                {option.label}
-              </ComboboxItem>
-            ))}
-          </ComboboxList>
-        </ComboboxContent>
-      </Combobox>
-    </div>
-  );
-}
-
-type DateTimePickerFieldProps = {
-  id: string;
-  label: string;
-  date: Date | undefined;
-  time: string;
-  disabled?: boolean;
-  minDate?: Date;
-  minTime?: string;
-  onDateChange: (date: Date | undefined) => void;
-  onTimeChange: (time: string) => void;
-};
-
-function DateTimePickerField({
-  id,
-  label,
-  date,
-  time,
-  disabled,
-  minDate,
-  minTime,
-  onDateChange,
-  onTimeChange,
-}: DateTimePickerFieldProps) {
-  return (
-    <div className="w-full space-y-1.5">
-      <label
-        htmlFor={`${id}-time`}
-        className="text-xs font-medium text-slate-600"
-      >
-        {label} <span className="text-rose-600">*</span>
-      </label>
-      <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-        <DatePicker
-          value={date}
-          onChange={onDateChange}
-          disabled={disabled}
-          defaultMonth={date}
-          calendarDisabled={
-            minDate ? (calendarDate) => calendarDate < minDate : undefined
-          }
-          className="w-full sm:flex-1"
-          buttonClassName={cn("w-full", !date && "text-slate-400")}
-        />
-        <Input
-          type="time"
-          id={`${id}-time`}
-          value={time}
-          onChange={(event) => onTimeChange(event.target.value)}
-          step="60"
-          min={minTime}
-          placeholder="HH:MM"
-          className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-[3px] focus-visible:ring-slate-200 sm:w-36"
-          disabled={disabled}
-        />
-      </div>
-    </div>
-  );
-}
-
 export default function BookingRoomsFormPage() {
   const router = useRouter();
+  const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
@@ -247,16 +82,17 @@ export default function BookingRoomsFormPage() {
   const { createBookingRoom, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBookingRoom();
 
-  const minEndDate = startDate ? new Date(startDate) : undefined;
+  const minEndDate = startDate ? new Date(startDate) : new Date(today);
   if (minEndDate) {
     minEndDate.setHours(0, 0, 0, 0);
   }
   const minEndTime =
     startDate &&
     endDate &&
-    format(startDate, "yyyy-MM-dd") === format(endDate, "yyyy-MM-dd")
+    startDate.getTime() === endDate.getTime()
       ? startTime || undefined
       : undefined;
+  const minStartTime = getMinSelectableTime(startDate, today);
 
   const selectedRoomLabel = useMemo(
     () => rooms.find((room) => room.id === formData.roomId)?.label ?? "-",
@@ -530,7 +366,7 @@ export default function BookingRoomsFormPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <ComboboxField
+          <DashboardComboboxField
             label="Ruangan"
             value={formData.roomId}
             options={roomOptions}
@@ -541,7 +377,7 @@ export default function BookingRoomsFormPage() {
             onChange={(value) => handleSelectChange("roomId", value)}
           />
 
-          <ComboboxField
+          <DashboardComboboxField
             label="Tujuan"
             value={formData.purpose}
             options={PURPOSE_OPTIONS}
@@ -553,17 +389,19 @@ export default function BookingRoomsFormPage() {
           />
 
           <div className="grid gap-5 md:col-span-2 md:grid-cols-2">
-            <DateTimePickerField
+            <DashboardDateTimePickerField
               id="start-time"
               label="Waktu Mulai (WIB)"
               date={startDate}
               time={startTime}
+              minDate={today}
+              minTime={minStartTime}
               onDateChange={handleStartDateChange}
               onTimeChange={handleStartTimeChange}
               disabled={isSubmitting}
             />
 
-            <DateTimePickerField
+            <DashboardDateTimePickerField
               id="end-time"
               label="Waktu Selesai (WIB)"
               date={endDate}
@@ -641,7 +479,7 @@ export default function BookingRoomsFormPage() {
                     key={`${index}-${item.equipmentId}`}
                     className="grid grid-cols-1 gap-3 border-b border-slate-200 pb-4 last:border-b-0 last:pb-0 md:grid-cols-[minmax(0,1fr)_180px_44px] md:items-start"
                   >
-                    <ComboboxField
+                    <DashboardComboboxField
                       label={`Alat ${index + 1}`}
                       value={item.equipmentId}
                       options={equipmentComboboxOptions}
@@ -760,56 +598,33 @@ export default function BookingRoomsFormPage() {
         </div>
       ) : null}
 
-      <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
-        <AlertDialogContent className="max-w-xl border-slate-200 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
-          <AlertDialogHeader className="place-items-start text-left">
-            <AlertDialogTitle>Konfirmasi Pengajuan</AlertDialogTitle>
-            <AlertDialogDescription>
-              Periksa kembali data booking ruangan sebelum pengajuan dikirim.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <div className="space-y-3">
-            <SummaryItem label="Ruangan" value={selectedRoomLabel} />
-            <SummaryItem label="Tujuan" value={formData.purpose} />
-            <SummaryItem
-              label="Waktu Mulai (WIB)"
-              value={formatLocalDateTimeAsWib(formData.startTime)}
-            />
-            <SummaryItem
-              label="Waktu Selesai (WIB)"
-              value={formatLocalDateTimeAsWib(formData.endTime)}
-            />
-            <SummaryItem label="Jumlah Orang" value={formData.attendeeCount} />
-            <SummaryItem label="Nama Orang" value={formData.attendeeNames} />
-            <SummaryItem label="Peralatan" value={selectedEquipmentLabel} />
-            <SummaryItem label="Catatan" value={formData.note} />
-          </div>
-
-          <AlertDialogFooter className="border-t border-slate-200 pt-4">
-            <AlertDialogCancel
-              disabled={isSubmitting}
-              className="rounded-md border-slate-300"
-            >
-              Batal
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={isSubmitting}
-              onClick={() => void handleConfirmSubmit()}
-              className="rounded-md bg-[#0052C7] text-white hover:bg-[#0048B4]"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Mengirim...
-                </>
-              ) : (
-                "Konfirmasi"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <SubmissionConfirmDialog
+        open={isConfirmOpen}
+        onOpenChange={setIsConfirmOpen}
+        title="Konfirmasi Pengajuan"
+        description="Periksa kembali data booking ruangan sebelum pengajuan dikirim."
+        isSubmitting={isSubmitting}
+        errorMessage={errorMessage}
+        onConfirm={() => void handleConfirmSubmit()}
+      >
+        <SubmissionSummaryItem label="Ruangan" value={selectedRoomLabel} />
+        <SubmissionSummaryItem label="Tujuan" value={formData.purpose} />
+        <SubmissionSummaryItem
+          label="Waktu Mulai (WIB)"
+          value={formatLocalDateTimeAsWib(formData.startTime)}
+        />
+        <SubmissionSummaryItem
+          label="Waktu Selesai (WIB)"
+          value={formatLocalDateTimeAsWib(formData.endTime)}
+        />
+        <SubmissionSummaryItem
+          label="Jumlah Orang"
+          value={formData.attendeeCount}
+        />
+        <SubmissionSummaryItem label="Nama Orang" value={formData.attendeeNames} />
+        <SubmissionSummaryItem label="Peralatan" value={selectedEquipmentLabel} />
+        <SubmissionSummaryItem label="Catatan" value={formData.note} />
+      </SubmissionConfirmDialog>
     </section>
   );
 }

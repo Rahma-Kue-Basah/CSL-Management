@@ -4,7 +4,10 @@ import { useState } from "react";
 
 import { API_BOOKINGS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
-import { extractApiErrorMessage } from "@/lib/api-error";
+import {
+  extractApiErrorMessage,
+  extractApiErrorMessageFromText,
+} from "@/lib/api-error";
 
 type CreateBookingRoomPayload = {
   roomId: string;
@@ -69,8 +72,13 @@ export function useCreateBookingRoom() {
 
       let message = "Gagal membuat booking ruangan. Periksa data lalu coba lagi.";
       try {
-        const data = (await response.json()) as unknown;
-        message = parseBookingError(data, message);
+        const raw = await response.text();
+        try {
+          const data = JSON.parse(raw) as unknown;
+          message = parseBookingError(data, message);
+        } catch {
+          message = extractApiErrorMessageFromText(raw, message);
+        }
       } catch {
         // ignore parse error
       }

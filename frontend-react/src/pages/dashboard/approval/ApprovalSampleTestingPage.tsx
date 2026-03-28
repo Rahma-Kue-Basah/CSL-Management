@@ -1,36 +1,23 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import {
-  CalendarClock,
-  Check,
-  CheckCircle2,
-  Eye,
-  Loader2,
-  Package,
-  RotateCcw,
-  X,
-} from "lucide-react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, type ReactNode } from "react";
+import { CalendarClock, Check, CheckCircle2, Eye, FlaskConical, Loader2, PackageSearch, RotateCcw, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { DataPagination } from "@/components/shared/data-pagination";
-import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
-import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
-import { useUses } from "@/hooks/uses/use-uses";
+import { DataPagination } from "@/components/shared/data-pagination";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { getStatusBadgeClass, getStatusDisplayLabel, getStatusSummaryTone } from "@/lib/status";
 import { formatDateTimeWib } from "@/lib/date-format";
-import {
-  getStatusBadgeClass,
-  getStatusDisplayLabel,
-  getStatusSummaryTone,
-} from "@/lib/status";
-import {
-  toEndOfDay,
-  toStartOfDay,
-} from "@/lib/date";
+import { usePengujians, type PengujianRow } from "@/hooks/pengujians/use-pengujians";
+import { useUpdatePengujianStatus } from "@/hooks/pengujians/use-update-pengujian-status";
 
 const PAGE_SIZE = 10;
 
@@ -64,10 +51,10 @@ function SummaryCard({
           }
         : tone === "emerald"
           ? {
-            card: "border-emerald-300 bg-emerald-100/90",
-            icon: "bg-white/80 text-emerald-800",
-            value: "text-emerald-900",
-          }
+              card: "border-emerald-300 bg-emerald-100/90",
+              icon: "bg-white/80 text-emerald-800",
+              value: "text-emerald-900",
+            }
           : tone === "sky"
             ? {
                 card: "border-sky-300 bg-sky-100/90",
@@ -99,107 +86,70 @@ function SummaryCard({
             {value}
           </p>
         </div>
-        <div className={`rounded-lg p-2 ${toneClass.icon}`}>{icon}</div>
+        <div className={`rounded-lg p-2 ${toneClass.icon}`}>
+          {icon}
+        </div>
       </div>
     </div>
   );
 }
 
-export default function UseEquipmentListContent({
-  scope,
-  emptyMessage,
+function DetailField({
+  label,
+  value,
 }: {
-  scope: "my" | "all";
-  emptyMessage: string;
+  label: string;
+  value: string;
 }) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const { profile } = useLoadProfile();
-  const { updateUseStatus, pendingAction } = useUpdateUseStatus();
+  return (
+    <div className="space-y-1 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className="text-sm text-slate-800">{value || "-"}</p>
+    </div>
+  );
+}
+
+export default function ApprovalSampleTestingPage() {
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
+  const [detailTarget, setDetailTarget] = useState<PengujianRow | null>(null);
   const [confirmState, setConfirmState] = useState<{
-    useId: string | number;
+    pengujianId: string | number;
     type: "approve" | "reject";
   } | null>(null);
-  const status = searchParams.get("status") ?? "";
-  const search = searchParams.get("q") ?? "";
-  const createdAfter = searchParams.get("created_after") ?? "";
-  const createdBefore = searchParams.get("created_before") ?? "";
 
-  useEffect(() => {
-    setPage(1);
-  }, [status, search, createdAfter, createdBefore]);
+  const { pengujians, totalCount, aggregates, isLoading, hasLoadedOnce, error } =
+    usePengujians(page, PAGE_SIZE, {}, reloadKey, "all");
 
-  const { uses, totalCount, aggregates, isLoading, hasLoadedOnce, error } = useUses(
-    page,
-    PAGE_SIZE,
-    {
-      status,
-      requestedBy: scope === "my" ? String(profile?.id ?? "") : "",
-      createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
-      createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
-    },
-    reloadKey,
-    scope,
-  );
-
-  const filteredUses = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const equipmentUses = uses.filter(
-      (item) => item.equipmentName && item.equipmentName !== "-",
-    );
-
-    if (!query) return equipmentUses;
-    return equipmentUses.filter((item) => {
-      const haystack = [
-        item.code,
-        item.equipmentName,
-        item.requesterName,
-        item.purpose,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [uses, search]);
-
-  const normalizedRole = normalizeRoleValue(profile?.role);
-  const canReviewUses =
-    scope === "all" &&
-    (normalizedRole === ROLE_VALUES.ADMIN ||
-      normalizedRole === ROLE_VALUES.LECTURER ||
-      normalizedRole === ROLE_VALUES.STAFF);
-  const showRequesterColumn = scope === "all";
+  const { updatePengujianStatus, pendingAction } = useUpdatePengujianStatus();
 
   const totalPages = Math.max(
     1,
-    Math.ceil((totalCount || filteredUses.length) / PAGE_SIZE),
+    Math.ceil((totalCount || pengujians.length) / PAGE_SIZE),
   );
-  const pendingCount = aggregates.pending;
-  const approvedCount = aggregates.approved;
-  const completedCount = aggregates.completed;
-  const rejectedCount = aggregates.rejected;
-  const expiredCount = aggregates.expired;
 
-  const handleUseAction = async () => {
+  const handleStatusAction = async () => {
     if (!confirmState) return;
 
-    const { useId, type } = confirmState;
-    const result = await updateUseStatus(useId, type);
+    const result = await updatePengujianStatus(
+      confirmState.pengujianId,
+      confirmState.type,
+    );
 
-    if (result.ok) {
-      toast.success(
-        type === "approve"
-          ? "Pengajuan penggunaan alat berhasil disetujui."
-          : "Pengajuan penggunaan alat berhasil ditolak.",
-      );
-      setReloadKey((prev) => prev + 1);
-      setConfirmState(null);
+    if (!result.ok) {
+      toast.error(result.message);
       return;
     }
 
-    toast.error(result.message);
+    toast.success(
+      confirmState.type === "approve"
+        ? "Pengajuan pengujian sampel berhasil disetujui."
+        : "Pengajuan pengujian sampel berhasil ditolak.",
+    );
+    setConfirmState(null);
+    setReloadKey((prev) => prev + 1);
   };
 
   return (
@@ -208,60 +158,54 @@ export default function UseEquipmentListContent({
         <SummaryCard
           label="Total Pengajuan"
           value={aggregates.total}
-          icon={<Package className="h-4 w-4" />}
+          icon={<PackageSearch className="h-4 w-4" />}
           tone={getStatusSummaryTone("total")}
         />
         <SummaryCard
           label="Pending"
-          value={pendingCount}
+          value={aggregates.pending}
           icon={<CalendarClock className="h-4 w-4" />}
           tone={getStatusSummaryTone("Pending")}
         />
         <SummaryCard
           label="Approved"
-          value={approvedCount}
+          value={aggregates.approved}
           icon={<CheckCircle2 className="h-4 w-4" />}
           tone={getStatusSummaryTone("Approved")}
         />
         <SummaryCard
           label="Completed"
-          value={completedCount}
-          icon={<CheckCircle2 className="h-4 w-4" />}
+          value={aggregates.completed}
+          icon={<FlaskConical className="h-4 w-4" />}
           tone={getStatusSummaryTone("Completed")}
         />
         <SummaryCard
           label="Rejected"
-          value={rejectedCount}
+          value={aggregates.rejected}
           icon={<RotateCcw className="h-4 w-4" />}
           tone={getStatusSummaryTone("Rejected")}
         />
         <SummaryCard
           label="Expired"
-          value={expiredCount}
+          value={aggregates.expired}
           icon={<X className="h-4 w-4" />}
           tone={getStatusSummaryTone("Expired")}
         />
       </div>
 
-      {error ? (
-        <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
-          {error}
-        </div>
-      ) : null}
+      {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
       <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="w-full min-w-[1120px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Alat</th>
-              {showRequesterColumn ? (
-                <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Pemohon</th>
-              ) : null}
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Mulai</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Selesai</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Tujuan</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Pemohon</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Institusi</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Sampel</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Jenis Uji</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Status</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Dibuat</th>
               <th className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
                 Aksi
               </th>
@@ -270,30 +214,33 @@ export default function UseEquipmentListContent({
           <tbody className="text-sm">
             {isLoading || !hasLoadedOnce ? (
               <tr>
-                <td colSpan={showRequesterColumn ? 8 : 7} className="px-3 py-10 text-center text-slate-500">
+                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Memuat data...
                   </div>
                 </td>
               </tr>
-            ) : filteredUses.length ? (
-              filteredUses.map((item) => (
+            ) : pengujians.length ? (
+              pengujians.map((item) => (
                 <tr key={String(item.id)} className="border-b last:border-b-0">
                   <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
                     {item.code}
                   </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{item.equipmentName}</td>
-                  {showRequesterColumn ? (
-                    <td className="px-3 py-2.5 whitespace-nowrap">{item.requesterName}</td>
-                  ) : null}
-                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
-                    {formatDateTimeWib(item.startTime)}
+                  <td className="px-3 py-2.5 text-slate-700">
+                    <div className="space-y-1">
+                      <p className="font-medium text-slate-800">{item.name}</p>
+                      <p className="whitespace-nowrap text-slate-500">{item.email}</p>
+                    </div>
                   </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
-                    {formatDateTimeWib(item.endTime)}
+                  <td className="px-3 py-2.5 whitespace-nowrap">{item.institution}</td>
+                  <td className="px-3 py-2.5 text-slate-700">
+                    <div className="space-y-1">
+                      <p className="font-medium text-slate-800">{item.sampleName}</p>
+                      <p className="whitespace-nowrap text-slate-500">{item.sampleType}</p>
+                    </div>
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700">{item.purpose}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">{item.sampleTestingType}</td>
                   <td className="px-3 py-2.5">
                     <span
                       className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
@@ -301,9 +248,12 @@ export default function UseEquipmentListContent({
                       {getStatusDisplayLabel(item.status)}
                     </span>
                   </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {formatDateTimeWib(item.createdAt)}
+                  </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
-                      {canReviewUses && isPendingStatus(item.status) ? (
+                      {isPendingStatus(item.status) ? (
                         <>
                           <TableActionIconButton
                             type="button"
@@ -312,11 +262,11 @@ export default function UseEquipmentListContent({
                             className="w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
                             onClick={() =>
                               setConfirmState({
-                                useId: item.id,
+                                pengujianId: item.id,
                                 type: "approve",
                               })
                             }
-                            disabled={pendingAction.useId === item.id}
+                            disabled={pendingAction.pengujianId === item.id}
                           />
                           <TableActionIconButton
                             type="button"
@@ -325,11 +275,11 @@ export default function UseEquipmentListContent({
                             className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
                             onClick={() =>
                               setConfirmState({
-                                useId: item.id,
+                                pengujianId: item.id,
                                 type: "reject",
                               })
                             }
-                            disabled={pendingAction.useId === item.id}
+                            disabled={pendingAction.pengujianId === item.id}
                           />
                         </>
                       ) : null}
@@ -339,13 +289,7 @@ export default function UseEquipmentListContent({
                         icon={<Eye className="h-3.5 w-3.5" />}
                         variant="outline"
                         className="border-slate-300 text-slate-700"
-                        onClick={() =>
-                          router.push(
-                            scope === "all"
-                              ? `/use-equipment/approval/${item.id}`
-                              : `/use-equipment/${item.id}`,
-                          )
-                        }
+                        onClick={() => setDetailTarget(item)}
                       />
                     </div>
                   </td>
@@ -353,8 +297,8 @@ export default function UseEquipmentListContent({
               ))
             ) : (
               <tr>
-                <td colSpan={showRequesterColumn ? 8 : 7} className="px-3 py-10 text-center text-slate-500">
-                  {emptyMessage}
+                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
+                  Belum ada pengajuan pengujian sampel yang tersedia.
                 </td>
               </tr>
             )}
@@ -365,22 +309,49 @@ export default function UseEquipmentListContent({
       <DataPagination
         page={page}
         totalPages={totalPages}
-        totalCount={totalCount || filteredUses.length}
+        totalCount={totalCount || pengujians.length}
         pageSize={PAGE_SIZE}
-        itemLabel="penggunaan alat"
+        itemLabel="pengajuan"
         isLoading={isLoading}
         onPageChange={setPage}
       />
 
+      <Dialog open={Boolean(detailTarget)} onOpenChange={(open) => !open && setDetailTarget(null)}>
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
+          <DialogHeader>
+            <DialogTitle>Detail Pengajuan Pengujian Sampel</DialogTitle>
+          </DialogHeader>
+
+          {detailTarget ? (
+            <div className="grid gap-3 md:grid-cols-2">
+              <DetailField label="Kode" value={detailTarget.code} />
+              <DetailField label="Status" value={getStatusDisplayLabel(detailTarget.status)} />
+              <DetailField label="Nama Pemohon" value={detailTarget.name} />
+              <DetailField label="Email" value={detailTarget.email} />
+              <DetailField label="Nomor Telepon" value={detailTarget.phoneNumber} />
+              <DetailField label="Institusi" value={detailTarget.institution} />
+              <DetailField label="Nama Sampel" value={detailTarget.sampleName} />
+              <DetailField label="Jenis Sampel" value={detailTarget.sampleType} />
+              <DetailField label="Merek Sampel" value={detailTarget.sampleBrand} />
+              <DetailField label="Kemasan Sampel" value={detailTarget.samplePackaging} />
+              <DetailField label="Berat Sampel" value={detailTarget.sampleWeight} />
+              <DetailField label="Jumlah Sampel" value={detailTarget.sampleQuantity} />
+              <DetailField label="Serving" value={detailTarget.sampleTestingServing} />
+              <DetailField label="Metode Uji" value={detailTarget.sampleTestingMethod} />
+              <DetailField label="Jenis Pengujian" value={detailTarget.sampleTestingType} />
+              <DetailField label="Dibuat Pada" value={formatDateTimeWib(detailTarget.createdAt)} />
+            </div>
+          ) : null}
+        </DialogContent>
+      </Dialog>
+
       <StatusConfirmDialog
         open={Boolean(confirmState)}
         actionType={confirmState?.type ?? null}
-        onOpenChange={(open) => {
-          if (!open) setConfirmState(null);
-        }}
-        onConfirm={handleUseAction}
-        isSubmitting={pendingAction.useId === confirmState?.useId}
-        subjectLabel="pengajuan penggunaan alat ini"
+        onOpenChange={(open) => !open && setConfirmState(null)}
+        onConfirm={handleStatusAction}
+        isSubmitting={Boolean(confirmState) && pendingAction.pengujianId === confirmState?.pengujianId}
+        subjectLabel="pengajuan pengujian sampel ini"
       />
     </section>
   );

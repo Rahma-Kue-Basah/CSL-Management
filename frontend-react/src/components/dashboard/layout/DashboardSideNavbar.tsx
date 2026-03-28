@@ -6,7 +6,6 @@ import Link from "next/link";
 import {
   Tooltip,
   TooltipContent,
-  TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
@@ -40,8 +39,7 @@ export function DashboardSideNavbar({
     .filter((item): item is (typeof menus)[number] => item !== null);
 
   return (
-    <TooltipProvider delayDuration={120}>
-      <aside className="fixed top-0 bottom-0 left-0 z-50 hidden w-20 shrink-0 border-r border-[rgb(51_65_85)] bg-[rgb(15_23_42)] md:flex md:flex-col">
+    <aside className="fixed top-0 bottom-0 left-0 z-50 hidden w-20 shrink-0 border-r border-[rgb(51_65_85)] bg-[rgb(15_23_42)] md:flex md:flex-col">
         <div className="flex h-16 items-center justify-center border-b border-[rgb(51_65_85)]">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -122,6 +120,5 @@ export function DashboardSideNavbar({
           </div>
         ) : null}
       </aside>
-    </TooltipProvider>
   );
 }

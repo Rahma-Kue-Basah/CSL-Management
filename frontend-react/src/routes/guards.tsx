@@ -1,8 +1,12 @@
 import Cookies from "js-cookie";
 import type { ReactElement } from "react";
 import { Navigate, useLocation } from "react-router-dom";
-
-const ADMIN_ROLES = new Set(["ADMIN", "SUPERADMINISTRATOR", "SUPER_ADMINISTRATOR"]);
+import {
+  hasMenuAccess,
+  isPrivilegedRole,
+  isStaffOrAboveRole,
+} from "@/constants/roles";
+import { isApprovalOnlyRole } from "@/lib/dashboard-access";
 
 type ProfileCookie = {
   role?: string | null;
@@ -50,8 +54,66 @@ export function RequireAuth({ children }: { children: ReactElement }) {
 
 export function RequireAdmin({ children }: { children: ReactElement }) {
   const profile = getProfile();
-  const normalizedRole = (profile.role ?? "").toString().trim().toUpperCase();
-  if (!ADMIN_ROLES.has(normalizedRole)) {
+  if (!isPrivilegedRole(profile.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+}
+
+export function RequireStaffOrAbove({ children }: { children: ReactElement }) {
+  const profile = getProfile();
+  if (!isStaffOrAboveRole(profile.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return children;
+}
+
+export function RequireFeatureScope({
+  children,
+  featurePath,
+  scope,
+}: {
+  children: ReactElement;
+  featurePath:
+    | "/booking-rooms"
+    | "/use-equipment"
+    | "/borrow-equipment"
+    | "/sample-testing";
+  scope: "requester" | "approval";
+}) {
+  const profile = getProfile();
+  const approvalOnlyRole = isApprovalOnlyRole(profile.role);
+
+  if (scope === "requester" && approvalOnlyRole) {
+    return <Navigate to={`${featurePath}/approval`} replace />;
+  }
+
+  if (scope === "approval" && !approvalOnlyRole && !isPrivilegedRole(profile.role)) {
+    return <Navigate to={featurePath} replace />;
+  }
+
+  return children;
+}
+
+export function RequireMenuAccess({
+  children,
+  menuId,
+}: {
+  children: ReactElement;
+  menuId:
+    | "dashboard"
+    | "schedule"
+    | "booking-rooms"
+    | "use-equipment"
+    | "borrow-equipment"
+    | "sample-testing"
+    | "notifications"
+    | "my-profile";
+}) {
+  const profile = getProfile();
+  if (!hasMenuAccess(profile.role, menuId)) {
     return <Navigate to="/dashboard" replace />;
   }
 

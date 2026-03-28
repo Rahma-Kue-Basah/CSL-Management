@@ -57,6 +57,8 @@ const API_BOOKINGS_BY_MONTH = `${API_BOOKINGS}by-month/`;
 
 // REGION: Borrows API Endpoints
 const API_BORROWS = `${API_BASE_URL}/borrows/`;
+const API_BORROWS_MY = `${API_BORROWS}my/`;
+const API_BORROWS_ALL = `${API_BORROWS}all/`;
 const API_BORROWS_EXPORT = `${API_BORROWS}all/export/`;
 const API_BORROWS_BULK_DELETE = `${API_BORROWS}bulk-delete/`;
 const API_BORROW_DETAIL = (id: string | number) => `${API_BORROWS}${id}/`;
@@ -81,6 +83,7 @@ const API_BORROWS_BY_MONTH = `${API_BORROWS}by-month/`;
 // REGION: Uses API Endpoints
 const API_USES = `${API_BASE_URL}/uses/`;
 const API_USES_MY = `${API_USES}my/`;
+const API_USES_ALL = `${API_USES}all/`;
 const API_USES_EXPORT = `${API_USES}all/export/`;
 const API_USES_BULK_DELETE = `${API_USES}bulk-delete/`;
 const API_USE_DETAIL = (id: string | number) => `${API_USES}${id}/`;
@@ -90,6 +93,8 @@ const API_USE_COMPLETE = (id: string | number) => `${API_USES}${id}/complete/`;
 
 // REGION: Pengujians API Endpoints
 const API_PENGUJIANS = `${API_BASE_URL}/pengujians/`;
+const API_PENGUJIANS_MY = `${API_PENGUJIANS}my/`;
+const API_PENGUJIANS_ALL = `${API_PENGUJIANS}all/`;
 const API_PENGUJIANS_EXPORT = `${API_PENGUJIANS}all/export/`;
 const API_PENGUJIANS_BULK_DELETE = `${API_PENGUJIANS}bulk-delete/`;
 const API_PENGUJIAN_DETAIL = (id: string | number) =>
@@ -177,6 +182,8 @@ export {
   API_BOOKING_COMPLETE,
   API_BOOKINGS_BY_MONTH,
   API_BORROWS,
+  API_BORROWS_MY,
+  API_BORROWS_ALL,
   API_BORROWS_EXPORT,
   API_BORROWS_BULK_DELETE,
   API_BORROW_DETAIL,
@@ -191,6 +198,7 @@ export {
   API_BORROWS_BY_MONTH,
   API_USES,
   API_USES_MY,
+  API_USES_ALL,
   API_USES_EXPORT,
   API_USES_BULK_DELETE,
   API_USE_DETAIL,
@@ -198,6 +206,8 @@ export {
   API_USE_REJECT,
   API_USE_COMPLETE,
   API_PENGUJIANS,
+  API_PENGUJIANS_MY,
+  API_PENGUJIANS_ALL,
   API_PENGUJIANS_EXPORT,
   API_PENGUJIANS_BULK_DELETE,
   API_PENGUJIAN_DETAIL,

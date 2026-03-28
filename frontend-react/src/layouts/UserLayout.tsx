@@ -1,25 +1,14 @@
 "use client";
 
-import { useEffect, useState, type ComponentType, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Outlet } from "react-router-dom";
-import {
-  Bell,
-  Building2,
-  CalendarDays,
-  ClipboardList,
-  GitBranch,
-  FilePenLine,
-  FlaskConical,
-  CircleHelp,
-  LayoutGrid,
-  LayoutDashboard,
-  Package,
-  ShieldCheck,
-  UserRound,
-  Wrench,
-  X,
-} from "lucide-react";
+import { LayoutGrid, X } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   DashboardTopNavbar,
@@ -38,374 +27,22 @@ import {
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { hasMenuAccess, normalizeRoleValue } from "@/constants/roles";
+import {
+  canAccessAction,
+  getHeaderIcon,
+  parseDashboardPath,
+  SIDEBAR_SHORTCUTS,
+  type SidebarShortcut,
+  toMenuHref,
+} from "@/lib/dashboard-navigation";
 
 type UserLayoutProps = {
   children?: ReactNode;
 };
 
-type ShortcutAction = {
-  id: string;
-  label: string;
-  description: string;
-  href: string;
-};
-
-type SidebarShortcut = {
-  id: string;
-  label: string;
-  description: string;
-  href: string;
-  icon: ComponentType<{ className?: string }>;
-  actions: ShortcutAction[];
-};
-
-function getHeaderIcon(menuId: string, actionId: string | null) {
-  if (menuId === "dashboard") {
-    if (actionId === "announcements") return Bell;
-    if (actionId === "faq") return CircleHelp;
-    if (actionId === "organization-structure") return GitBranch;
-    if (actionId === "facilities") return Building2;
-    return LayoutDashboard;
-  }
-
-  if (menuId === "schedule") return CalendarDays;
-
-  if (menuId === "booking-rooms") {
-    if (actionId === "request-form") return FilePenLine;
-    if (actionId === "request-list" || actionId === "all-requests") {
-      return ClipboardList;
-    }
-    if (actionId === "rooms") return Building2;
-    return Building2;
-  }
-
-  if (menuId === "use-equipment") {
-    if (actionId === "request-form") return FilePenLine;
-    if (actionId === "request-list" || actionId === "all-requests")
-      return ClipboardList;
-    if (actionId === "equipment") return Wrench;
-    return Wrench;
-  }
-
-  if (menuId === "sample-testing") {
-    if (actionId === "request-form") return FilePenLine;
-    if (actionId === "request-list") return ClipboardList;
-    return FlaskConical;
-  }
-
-  if (menuId === "borrow-equipment") {
-    if (actionId === "request-form") return FilePenLine;
-    if (actionId === "request-list") return ClipboardList;
-    if (actionId === "equipment") return Package;
-    return Package;
-  }
-
-  if (menuId === "notifications") return Bell;
-
-  if (menuId === "my-profile") {
-    if (actionId === "change-password") return ShieldCheck;
-    return UserRound;
-  }
-
-  return LayoutDashboard;
-}
-
 const ACTION_PANEL_WIDTH = "22rem";
 const SIDEBAR_WIDTH = "5rem";
-
-const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
-  {
-    id: "dashboard",
-    label: "Welcome, User!",
-    description:
-      "Akses utama untuk layanan CSL, termasuk jadwal, pemesanan, pengajuan, dan informasi terbaru.",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-    actions: [
-      {
-        id: "overview",
-        label: "Ringkasan",
-        description:
-          "Lihat ringkasan status pengajuan dan aktivitas terbaru Anda.",
-        href: "/dashboard/overview",
-      },
-      {
-        id: "announcements",
-        label: "Pengumuman",
-        description: "Lihat pengumuman terbaru dari admin.",
-        href: "/dashboard/announcements",
-      },
-      {
-        id: "organization-structure",
-        label: "Struktur Organisasi",
-        description: "Lihat bagan struktur organisasi laboratorium.",
-        href: "/dashboard/organization-structure",
-      },
-      {
-        id: "facilities",
-        label: "Fasilitas",
-        description: "Lihat daftar fasilitas laboratorium yang tersedia.",
-        href: "/dashboard/facilities",
-      },
-      {
-        id: "faq",
-        label: "FAQ",
-        description:
-          "Temukan jawaban cepat untuk pertanyaan yang sering diajukan.",
-        href: "/dashboard/faq",
-      },
-    ],
-  },
-  {
-    id: "schedule",
-    label: "Jadwal Lab",
-    description: "Kelola agenda lab dan jadwal kegiatan mendatang.",
-    href: "/schedule",
-    icon: CalendarDays,
-    actions: [],
-  },
-  {
-    id: "booking-rooms",
-    label: "Booking Ruangan",
-    description: "Kelola pengajuan booking dan pantau progresnya.",
-    href: "/booking-rooms/form",
-    icon: Building2,
-    actions: [
-      {
-        id: "request-form",
-        label: "Ajukan Booking",
-        description: "Buat pengajuan booking ruangan melalui formulir.",
-        href: "/booking-rooms/form",
-      },
-      {
-        id: "request-list",
-        label: "Pengajuan Saya",
-        description: "Lihat daftar pengajuan booking ruangan Anda.",
-        href: "/booking-rooms",
-      },
-      {
-        id: "all-requests",
-        label: "Daftar Pengajuan",
-        description: "Lihat seluruh daftar pengajuan booking ruangan.",
-        href: "/booking-rooms/all",
-      },
-      {
-        id: "rooms",
-        label: "Ruangan yang Bisa di-Booking",
-        description: "Lihat daftar ruangan yang tersedia untuk dibooking.",
-        href: "/rooms",
-      },
-    ],
-  },
-  {
-    id: "use-equipment",
-    label: "Penggunaan Alat",
-    description: "Kelola pengajuan penggunaan alat beserta formulirnya.",
-    href: "/use-equipment/form",
-    icon: Wrench,
-    actions: [
-      {
-        id: "request-form",
-        label: "Ajukan Penggunaan",
-        description: "Buat pengajuan penggunaan alat melalui formulir.",
-        href: "/use-equipment/form",
-      },
-      {
-        id: "request-list",
-        label: "Pengajuan Saya",
-        description: "Lihat daftar pengajuan penggunaan alat Anda.",
-        href: "/use-equipment",
-      },
-      {
-        id: "all-requests",
-        label: "Daftar Pengajuan",
-        description: "Lihat seluruh daftar pengajuan penggunaan alat.",
-        href: "/use-equipment/all",
-      },
-      {
-        id: "equipment",
-        label: "Peralatan yang Bisa Dibooking",
-        description: "Lihat daftar peralatan yang tersedia untuk dibooking.",
-        href: "/equipment",
-      },
-    ],
-  },
-  {
-    id: "sample-testing",
-    label: "Pengujian Sampel",
-    description: "Kelola pengajuan pengujian sampel dan formulirnya.",
-    href: "/sample-testing/form",
-    icon: FlaskConical,
-    actions: [
-      {
-        id: "request-form",
-        label: "Ajukan Pengujian",
-        description: "Buat pengajuan pengujian sampel melalui formulir.",
-        href: "/sample-testing/form",
-      },
-      {
-        id: "request-list",
-        label: "Pengajuan Saya",
-        description: "Lihat daftar pengajuan pengujian sampel Anda.",
-        href: "/sample-testing",
-      },
-    ],
-  },
-  {
-    id: "borrow-equipment",
-    label: "Peminjaman Alat",
-    description: "Kelola pengajuan peminjaman alat dan pantau progresnya.",
-    href: "/borrow-equipment/form",
-    icon: Package,
-    actions: [
-      {
-        id: "request-form",
-        label: "Ajukan Peminjaman",
-        description: "Buat pengajuan peminjaman alat melalui formulir.",
-        href: "/borrow-equipment/form",
-      },
-      {
-        id: "request-list",
-        label: "Pengajuan Saya",
-        description: "Lihat daftar pengajuan peminjaman alat Anda.",
-        href: "/borrow-equipment",
-      },
-      {
-        id: "all-requests",
-        label: "Daftar Pengajuan",
-        description: "Lihat seluruh daftar pengajuan peminjaman alat.",
-        href: "/borrow-equipment/all",
-      },
-      {
-        id: "equipment",
-        label: "Alat yang Bisa Dipinjam",
-        description: "Lihat daftar alat yang tersedia untuk dipinjam.",
-        href: "/borrow-equipment/equipment",
-      },
-    ],
-  },
-  {
-    id: "notifications",
-    label: "Notifikasi",
-    description: "Lihat update status pengajuan dan pemberitahuan terbaru.",
-    href: "/notifications",
-    icon: Bell,
-    actions: [],
-  },
-  {
-    id: "my-profile",
-    label: "Profil Saya",
-    description: "Kelola data profil dan informasi akun pengguna.",
-    href: "/my-profile",
-    icon: UserRound,
-    actions: [
-      {
-        id: "edit-profile",
-        label: "Edit Profil",
-        description:
-          "Perbarui data profil seperti nama, batch, dan department.",
-        href: "/my-profile/edit",
-      },
-      {
-        id: "change-password",
-        label: "Ganti Password",
-        description: "Ubah password akun untuk menjaga keamanan akses.",
-        href: "/my-profile/security",
-      },
-    ],
-  },
-];
-
-function toMenuHref(menuId?: string, actionId?: string) {
-  if (!menuId) return "/dashboard";
-  const menu = SIDEBAR_SHORTCUTS.find((item) => item.id === menuId);
-  if (!menu) return "/dashboard";
-  if (!actionId) return menu.href;
-  const action = menu.actions.find((item) => item.id === actionId);
-  return action?.href ?? menu.href;
-}
-
-function parseDashboardPath(pathname: string) {
-  const parts = pathname.split("/").filter(Boolean);
-
-  if (parts[0] === "dashboard") {
-    if (parts[1] === "overview") {
-      return { menu: "dashboard", action: "overview" };
-    }
-    if (parts[1] === "announcements") {
-      return { menu: "dashboard", action: "announcements" };
-    }
-    if (parts[1] === "faq") {
-      return { menu: "dashboard", action: "faq" };
-    }
-    if (parts[1] === "organization-structure") {
-      return { menu: "dashboard", action: "organization-structure" };
-    }
-    if (parts[1] === "facilities") {
-      return { menu: "dashboard", action: "facilities" };
-    }
-    return { menu: "dashboard", action: null };
-  }
-  if (parts[0] === "schedule") {
-    return { menu: "schedule", action: null };
-  }
-  if (parts[0] === "booking-rooms") {
-    if (parts[1] === "all") {
-      return { menu: "booking-rooms", action: "all-requests" };
-    }
-    if (parts[1] === "form") {
-      return { menu: "booking-rooms", action: "request-form" };
-    }
-    return { menu: "booking-rooms", action: "request-list" };
-  }
-  if (parts[0] === "rooms") {
-    return { menu: "booking-rooms", action: "rooms" };
-  }
-  if (parts[0] === "use-equipment") {
-    if (parts[1] === "all") {
-      return { menu: "use-equipment", action: "all-requests" };
-    }
-    if (parts[1] === "form") {
-      return { menu: "use-equipment", action: "request-form" };
-    }
-    return { menu: "use-equipment", action: "request-list" };
-  }
-  if (parts[0] === "equipment") {
-    return { menu: "use-equipment", action: "equipment" };
-  }
-  if (parts[0] === "sample-testing") {
-    if (parts[1] === "form") {
-      return { menu: "sample-testing", action: "request-form" };
-    }
-    return { menu: "sample-testing", action: "request-list" };
-  }
-  if (parts[0] === "borrow-equipment") {
-    if (parts[1] === "equipment") {
-      return { menu: "borrow-equipment", action: "equipment" };
-    }
-    if (parts[1] === "all") {
-      return { menu: "borrow-equipment", action: "all-requests" };
-    }
-    if (parts[1] === "form") {
-      return { menu: "borrow-equipment", action: "request-form" };
-    }
-    return { menu: "borrow-equipment", action: "request-list" };
-  }
-  if (parts[0] === "notifications") {
-    return { menu: "notifications", action: null };
-  }
-  if (parts[0] === "my-profile") {
-    if (parts[1] === "edit") {
-      return { menu: "my-profile", action: "edit-profile" };
-    }
-    if (parts[1] === "security") {
-      return { menu: "my-profile", action: "change-password" };
-    }
-    return { menu: "my-profile", action: null };
-  }
-
-  return { menu: null, action: null };
-}
 
 function DashboardShell({ children }: UserLayoutProps) {
   const pathname = usePathname();
@@ -421,13 +58,55 @@ function DashboardShell({ children }: UserLayoutProps) {
   const { menu: menuParam, action: actionParam } = parseDashboardPath(pathname);
   const defaultMenuId = SIDEBAR_SHORTCUTS[0].id;
   const displayName = profile.name?.trim() || "User";
-  const sidebarShortcuts = SIDEBAR_SHORTCUTS.map((item) =>
-    item.id === "dashboard"
-      ? {
-          ...item,
-          label: `Welcome, ${displayName}!`,
-        }
-      : item,
+  const sidebarShortcuts = useMemo(
+    () =>
+      SIDEBAR_SHORTCUTS.filter((item) =>
+        hasMenuAccess(
+          profile.role,
+          item.id as Parameters<typeof hasMenuAccess>[1],
+        ),
+      )
+        .map((item) => {
+          const actions = item.actions.filter((action) =>
+            canAccessAction(profile.role, action),
+          );
+
+          return {
+            ...item,
+            href: actions[0]?.href ?? item.href,
+            actions,
+            ...(item.id === "dashboard"
+              ? {
+                  label: `Welcome, ${displayName}!`,
+                }
+              : {}),
+          };
+        })
+        .filter((item) => item.actions.length > 0 || item.id === "schedule"),
+    [displayName, profile.role],
+  );
+  const visibleTopNavItems = useMemo(
+    () =>
+      TOP_NAV_ITEMS.filter((item) =>
+        hasMenuAccess(
+          profile.role,
+          item.id as Parameters<typeof hasMenuAccess>[1],
+        ),
+      )
+        .map((item) =>
+          item.children
+            ? {
+                ...item,
+                children: item.children.filter((child) =>
+                  !child.allowedRoles?.length
+                    ? true
+                    : child.allowedRoles.includes(normalizeRoleValue(profile.role)),
+                ),
+              }
+            : item,
+        )
+        .filter((item) => !item.children || item.children.length > 0),
+    [profile.role],
   );
 
   const [activeMenuId, setActiveMenuId] = useState<string>(
@@ -439,10 +118,10 @@ function DashboardShell({ children }: UserLayoutProps) {
 
   useEffect(() => {
     if (!menuParam) return;
-    if (!SIDEBAR_SHORTCUTS.some((menu) => menu.id === menuParam)) return;
+    if (!sidebarShortcuts.some((menu) => menu.id === menuParam)) return;
     setActiveMenuId(menuParam);
     setIsActionPanelOpen(true);
-  }, [menuParam]);
+  }, [menuParam, sidebarShortcuts]);
 
   const activeMenu =
     sidebarShortcuts.find((item) => item.id === activeMenuId) ??
@@ -460,8 +139,8 @@ function DashboardShell({ children }: UserLayoutProps) {
     activeMenu.id === "my-profile"
       ? "Ringkasan data akun pengguna Anda."
       : (activeAction?.description ?? activeMenu.description);
-  const isAllBookingRequestsPage = pathname.startsWith("/booking-rooms/all");
-  const pageEyebrow = isAllBookingRequestsPage ? "CSL Management" : undefined;
+  const isApprovalPage = pathname.includes("/approval");
+  const pageEyebrow = isApprovalPage ? "CSL Management" : undefined;
   const HeaderIcon = getHeaderIcon(activeMenu.id, actionParam);
   const pageHeaderIcon = <HeaderIcon className="h-5 w-5 text-white" />;
 
@@ -469,12 +148,13 @@ function DashboardShell({ children }: UserLayoutProps) {
   const mobileBottomMenus = sidebarShortcuts.filter(
     (item) => item.id !== "notifications" && item.id !== "my-profile",
   );
-  const mobileTopShortcuts = TOP_NAV_ITEMS.map((item) => ({
+  const mobileTopShortcuts = visibleTopNavItems.map((item) => ({
     ...item,
     isActive: activeMenuId === item.id,
   }));
 
-  const getMenuDefaultHref = (menuId: string) => toMenuHref(menuId);
+  const getMenuDefaultHref = (menuId: string) =>
+    toMenuHref(sidebarShortcuts, profile.role, menuId);
 
   const handleMenuClick = (menu: SidebarShortcut) => {
     setActiveMenuId(menu.id);
@@ -508,8 +188,10 @@ function DashboardShell({ children }: UserLayoutProps) {
               menu={activeMenu}
               menuParam={menuParam}
               actionParam={actionParam}
-              getActionHref={(actionId) => toMenuHref(activeMenu.id, actionId)}
-              getMenuHref={() => toMenuHref(activeMenu.id)}
+              getActionHref={(actionId) =>
+                toMenuHref(sidebarShortcuts, profile.role, activeMenu.id, actionId)
+              }
+              getMenuHref={() => toMenuHref(sidebarShortcuts, profile.role, activeMenu.id)}
               onClose={() => setIsMobileActionOpen(false)}
             />
           ) : null}
@@ -518,6 +200,7 @@ function DashboardShell({ children }: UserLayoutProps) {
 
       <DashboardTopNavbar
         activeMenuId={activeMenuId}
+        items={visibleTopNavItems}
         onShortcutClick={(menuId) => {
           handleTopShortcutClick(menuId);
         }}
@@ -547,7 +230,7 @@ function DashboardShell({ children }: UserLayoutProps) {
             );
             if (selectedMenu) handleMenuClick(selectedMenu);
           }}
-          onLogoClick={() => router.push(toMenuHref())}
+          onLogoClick={() => router.push(toMenuHref(sidebarShortcuts, profile.role))}
         />
 
         {activeMenu && (
@@ -557,19 +240,17 @@ function DashboardShell({ children }: UserLayoutProps) {
             menu={activeMenu}
             menuParam={menuParam}
             actionParam={actionParam}
-            getActionHref={(actionId) => toMenuHref(activeMenu.id, actionId)}
-            getMenuHref={() => toMenuHref(activeMenu.id)}
+            getActionHref={(actionId) =>
+              toMenuHref(sidebarShortcuts, profile.role, activeMenu.id, actionId)
+            }
+            getMenuHref={() => toMenuHref(sidebarShortcuts, profile.role, activeMenu.id)}
             onClose={() => setIsActionPanelOpen(false)}
           />
         )}
 
         <DashboardMainLayout
-          pageTitle={isAllBookingRequestsPage ? "Daftar Pengajuan" : pageTitle}
-          pageDescription={
-            isAllBookingRequestsPage
-              ? "Lihat seluruh daftar pengajuan booking ruangan."
-              : pageDescription
-          }
+          pageTitle={pageTitle}
+          pageDescription={pageDescription}
           pageEyebrow={pageEyebrow}
           pageIcon={pageHeaderIcon}
         >

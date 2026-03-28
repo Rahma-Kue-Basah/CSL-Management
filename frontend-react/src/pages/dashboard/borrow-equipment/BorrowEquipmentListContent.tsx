@@ -19,8 +19,8 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { DataPagination } from "@/components/shared/data-pagination";
+import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
-import { Button } from "@/components/ui/button";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import { useBorrows } from "@/hooks/borrows/use-borrows";
 import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
@@ -147,6 +147,7 @@ export default function BorrowEquipmentListContent({
         createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
       },
       reloadKey,
+      scope,
     );
 
   const filteredBorrows = useMemo(
@@ -314,10 +315,11 @@ export default function BorrowEquipmentListContent({
                     <div className="flex items-center justify-center gap-2">
                       {canReviewBorrows && isPendingStatus(item.status) ? (
                         <>
-                          <Button
+                          <TableActionIconButton
                             type="button"
-                            size="sm"
-                            className="h-8 w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
+                            label="Approve"
+                            icon={<Check className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
                             onClick={() =>
                               setConfirmState({
                                 borrowId: item.id,
@@ -325,13 +327,12 @@ export default function BorrowEquipmentListContent({
                               })
                             }
                             disabled={pendingAction.borrowId === item.id}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
+                          />
+                          <TableActionIconButton
                             type="button"
-                            size="sm"
-                            className="h-8 w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
+                            label="Reject"
+                            icon={<X className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
                             onClick={() =>
                               setConfirmState({
                                 borrowId: item.id,
@@ -339,16 +340,15 @@ export default function BorrowEquipmentListContent({
                               })
                             }
                             disabled={pendingAction.borrowId === item.id}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
+                          />
                         </>
                       ) : null}
                       {canReviewBorrows && isApprovedStatus(item.status) ? (
-                        <Button
+                        <TableActionIconButton
                           type="button"
-                          size="sm"
-                          className="h-8 w-8 rounded-md border border-sky-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
+                          label="Serah terima alat"
+                          icon={<Handshake className="h-3.5 w-3.5" />}
+                          className="w-8 rounded-md border border-sky-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
                           onClick={() =>
                             setConfirmState({
                               borrowId: item.id,
@@ -356,25 +356,22 @@ export default function BorrowEquipmentListContent({
                             })
                           }
                           disabled={pendingAction.borrowId === item.id}
-                        >
-                          <Handshake className="h-3.5 w-3.5" />
-                        </Button>
+                        />
                       ) : null}
-                      <Button
+                      <TableActionIconButton
                         type="button"
+                        label="Lihat detail"
+                        icon={<Eye className="h-3.5 w-3.5" />}
                         variant="outline"
-                        size="sm"
-                        className="h-8 border-slate-300 text-slate-700"
+                        className="border-slate-300 text-slate-700"
                         onClick={() =>
                           navigate(
                             scope === "all"
-                              ? `/borrow-equipment/all/${item.id}`
+                              ? `/borrow-equipment/approval/${item.id}`
                               : `/borrow-equipment/${item.id}`,
                           )
                         }
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                   </td>
                 </tr>

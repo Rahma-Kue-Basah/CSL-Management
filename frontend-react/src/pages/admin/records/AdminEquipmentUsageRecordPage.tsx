@@ -137,6 +137,7 @@ export default function AdminRecordPenggunaanAlatPage() {
       createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
     reloadKey,
+    "all",
   );
 
   const filteredUses = useMemo(

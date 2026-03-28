@@ -1000,6 +1000,40 @@ class BorrowViewSet(viewsets.ModelViewSet):
         )
         instance.delete()
 
+    def _apply_list_filters(
+        self,
+        qs,
+        *,
+        allow_requester_filter=False,
+        allow_pic_filter=False,
+    ):
+        status_param = self.request.query_params.get('status')
+        equipment_id = self.request.query_params.get('equipment')
+        requester_id = self.request.query_params.get('requested_by')
+        pic_id = self.request.query_params.get('pic') or self.request.query_params.get('pic_id')
+        start_after = self.request.query_params.get('start_after')
+        end_before = self.request.query_params.get('end_before')
+        created_after = self.request.query_params.get('created_after')
+        created_before = self.request.query_params.get('created_before')
+
+        if status_param:
+            qs = qs.filter(status=normalize_status_value(status_param))
+        if equipment_id:
+            qs = qs.filter(equipment_id=equipment_id)
+        if requester_id and allow_requester_filter:
+            qs = qs.filter(requested_by_id=requester_id)
+        if pic_id and allow_pic_filter:
+            qs = qs.filter(equipment__room__pics__id=pic_id).distinct()
+        if start_after:
+            qs = qs.filter(start_time__gte=start_after)
+        if end_before:
+            qs = qs.filter(end_time__lte=end_before)
+        if created_after:
+            qs = qs.filter(created_at__gte=created_after)
+        if created_before:
+            qs = qs.filter(created_at__lte=created_before)
+        return qs
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -1026,40 +1060,41 @@ class BorrowViewSet(viewsets.ModelViewSet):
         sync_borrow_statuses()
         qs = super().get_queryset()
         profile = self._current_profile()
+        if self.action == "my":
+            if profile is None:
+                return qs.none()
+            qs = qs.filter(requested_by_id=profile.id)
+            return self._apply_list_filters(qs, allow_requester_filter=False, allow_pic_filter=False)
+
+        if self.action in {"all", "export"}:
+            return self._apply_list_filters(
+                qs,
+                allow_requester_filter=self._can_manage_all_borrows(),
+                allow_pic_filter=self._can_manage_all_borrows(),
+            )
+
+        if self.action == "list":
+            if not self._can_manage_all_borrows():
+                if profile is None:
+                    return qs.none()
+                qs = qs.filter(requested_by_id=profile.id)
+            return self._apply_list_filters(
+                qs,
+                allow_requester_filter=self._can_manage_all_borrows(),
+                allow_pic_filter=self._can_manage_all_borrows(),
+            )
+
         if not self._can_manage_all_borrows():
             if profile is None:
                 return qs.none()
             qs = qs.filter(
                 Q(requested_by_id=profile.id) | Q(equipment__room__pics__id=profile.id)
             ).distinct()
-
-        status_param = self.request.query_params.get('status')
-        equipment_id = self.request.query_params.get('equipment')
-        requester_id = self.request.query_params.get('requested_by')
-        pic_id = self.request.query_params.get('pic') or self.request.query_params.get('pic_id')
-        start_after = self.request.query_params.get('start_after')
-        end_before = self.request.query_params.get('end_before')
-        created_after = self.request.query_params.get('created_after')
-        created_before = self.request.query_params.get('created_before')
-
-        # Filter params: status, equipment, requested_by, pic, start_after, end_before, created range
-        if status_param:
-            qs = qs.filter(status=normalize_status_value(status_param))
-        if equipment_id:
-            qs = qs.filter(equipment_id=equipment_id)
-        if requester_id and self._can_manage_all_borrows():
-            qs = qs.filter(requested_by_id=requester_id)
-        if pic_id:
-            qs = qs.filter(equipment__room__pics__id=pic_id).distinct()
-        if start_after:
-            qs = qs.filter(start_time__gte=start_after)
-        if end_before:
-            qs = qs.filter(end_time__lte=end_before)
-        if created_after:
-            qs = qs.filter(created_at__gte=created_after)
-        if created_before:
-            qs = qs.filter(created_at__lte=created_before)
-        return qs
+        return self._apply_list_filters(
+            qs,
+            allow_requester_filter=self._can_manage_all_borrows(),
+            allow_pic_filter=self._can_manage_all_borrows(),
+        )
 
     def _apply_export_search(self, qs):
         query = (self.request.query_params.get('q') or '').strip()
@@ -1131,6 +1166,35 @@ class BorrowViewSet(viewsets.ModelViewSet):
             },
             status=response_status,
         )
+
+    @action(detail=False, methods=['get'], url_path='my')
+    def my(self, request):
+        sync_borrow_statuses()
+        base_qs = super().get_queryset().filter(
+            requested_by=getattr(request.user, "profile", None)
+        )
+        aggregates = build_borrow_status_aggregates(base_qs)
+        qs = self._apply_list_filters(base_qs, allow_requester_filter=False, allow_pic_filter=False)
+        page = self.paginate_queryset(qs)
+        serializer = BorrowListSerializer(page if page is not None else qs, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
+
+    @action(detail=False, methods=['get'], url_path='all')
+    def all(self, request):
+        if not self._can_manage_all_borrows():
+            raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data peminjaman alat.")
+
+        sync_borrow_statuses()
+        base_qs = super().get_queryset()
+        aggregates = build_borrow_status_aggregates(base_qs)
+        qs = self._apply_list_filters(base_qs, allow_requester_filter=True, allow_pic_filter=True)
+        page = self.paginate_queryset(qs)
+        serializer = BorrowListSerializer(page if page is not None else qs, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
     @action(detail=False, methods=['get'], url_path='by-month')
     def by_month(self, request):
@@ -2114,17 +2178,41 @@ class PengujianViewSet(viewsets.ModelViewSet):
         )
         instance.delete()
 
+    def _is_staff_or_above(self):
+        return is_staff_or_above(self.request.user)
+
+    def _apply_list_filters(self, qs, *, allow_requester_filter=False):
+        status_param = self.request.query_params.get('status')
+        requested_by = self.request.query_params.get('requested_by')
+        approved_by = self.request.query_params.get('approved_by')
+        created_after = self.request.query_params.get('created_after')
+        created_before = self.request.query_params.get('created_before')
+
+        if status_param:
+            qs = qs.filter(status=normalize_status_value(status_param))
+        if requested_by and allow_requester_filter:
+            qs = qs.filter(requested_by_id=requested_by)
+        if approved_by:
+            qs = qs.filter(approved_by_id=approved_by)
+        if created_after:
+            qs = qs.filter(created_at__gte=created_after)
+        if created_before:
+            qs = qs.filter(created_at__lte=created_before)
+        return qs
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
             OpenApiParameter("requested_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
             OpenApiParameter("approved_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("created_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("created_before", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
         ]
     )
     def list(self, request, *args, **kwargs):
-        aggregate_qs = super().get_queryset()
+        aggregate_qs = self.get_queryset()
         aggregates = build_status_aggregates(aggregate_qs)
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(aggregate_qs)
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page if page is not None else queryset, many=True)
         if page is not None:
@@ -2133,17 +2221,21 @@ class PengujianViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = super().get_queryset()
-        status_param = self.request.query_params.get('status')
-        requested_by = self.request.query_params.get('requested_by')
-        approved_by = self.request.query_params.get('approved_by')
+        if self.action == "my":
+            qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
+            return self._apply_list_filters(qs, allow_requester_filter=False)
 
-        if status_param:
-            qs = qs.filter(status=normalize_status_value(status_param))
-        if requested_by:
-            qs = qs.filter(requested_by_id=requested_by)
-        if approved_by:
-            qs = qs.filter(approved_by_id=approved_by)
-        return qs
+        if self.action in {"all", "export"}:
+            return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
+
+        if self.action == "list":
+            if not self._is_staff_or_above():
+                qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
+            return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
+
+        if not self._is_staff_or_above():
+            qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
+        return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
 
     def _apply_export_search(self, qs):
         query = (self.request.query_params.get('q') or '').strip()
@@ -2203,6 +2295,33 @@ class PengujianViewSet(viewsets.ModelViewSet):
             },
             status=response_status,
         )
+
+    @action(detail=False, methods=['get'], url_path='my')
+    def my(self, request):
+        base_qs = super().get_queryset().filter(
+            requested_by=getattr(request.user, "profile", None)
+        )
+        aggregates = build_status_aggregates(base_qs)
+        qs = self._apply_list_filters(base_qs, allow_requester_filter=False)
+        page = self.paginate_queryset(qs)
+        serializer = PengujianListSerializer(page if page is not None else qs, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
+
+    @action(detail=False, methods=['get'], url_path='all')
+    def all(self, request):
+        if not self._is_staff_or_above():
+            raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data pengujian sampel.")
+
+        base_qs = super().get_queryset()
+        aggregates = build_status_aggregates(base_qs)
+        qs = self._apply_list_filters(base_qs, allow_requester_filter=True)
+        page = self.paginate_queryset(qs)
+        serializer = PengujianListSerializer(page if page is not None else qs, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
@@ -2292,6 +2411,37 @@ class UseViewSet(viewsets.ModelViewSet):
         )
         instance.delete()
 
+    def _is_staff_or_above(self):
+        return is_staff_or_above(self.request.user)
+
+    def _apply_list_filters(self, qs, *, allow_requester_filter=False):
+        status_param = self.request.query_params.get('status')
+        equipment_id = self.request.query_params.get('equipment')
+        requester_id = self.request.query_params.get('requested_by')
+        approved_by = self.request.query_params.get('approved_by')
+        start_after = self.request.query_params.get('start_after')
+        end_before = self.request.query_params.get('end_before')
+        created_after = self.request.query_params.get('created_after')
+        created_before = self.request.query_params.get('created_before')
+
+        if status_param:
+            qs = qs.filter(status=normalize_status_value(status_param))
+        if equipment_id:
+            qs = qs.filter(equipment_id=equipment_id)
+        if requester_id and allow_requester_filter:
+            qs = qs.filter(requested_by_id=requester_id)
+        if approved_by:
+            qs = qs.filter(approved_by_id=approved_by)
+        if start_after:
+            qs = qs.filter(start_time__gte=start_after)
+        if end_before:
+            qs = qs.filter(end_time__lte=end_before)
+        if created_after:
+            qs = qs.filter(created_at__gte=created_after)
+        if created_before:
+            qs = qs.filter(created_at__lte=created_before)
+        return qs
+
     @extend_schema(
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
@@ -2306,13 +2456,10 @@ class UseViewSet(viewsets.ModelViewSet):
     )
     def list(self, request, *args, **kwargs):
         self._auto_update_use_statuses()
-        requester_id = request.query_params.get('requested_by')
-        aggregate_qs = super().get_queryset()
-        if requester_id:
-            aggregate_qs = aggregate_qs.filter(requested_by_id=requester_id)
+        aggregate_qs = self.get_queryset()
         aggregates = build_status_aggregates(aggregate_qs)
 
-        queryset = self.filter_queryset(self.get_queryset())
+        queryset = self.filter_queryset(aggregate_qs)
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page if page is not None else queryset, many=True)
         if page is not None:
@@ -2322,32 +2469,21 @@ class UseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         self._auto_update_use_statuses()
         qs = super().get_queryset()
-        status_param = self.request.query_params.get('status')
-        equipment_id = self.request.query_params.get('equipment')
-        requester_id = self.request.query_params.get('requested_by')
-        approved_by = self.request.query_params.get('approved_by')
-        start_after = self.request.query_params.get('start_after')
-        end_before = self.request.query_params.get('end_before')
-        created_after = self.request.query_params.get('created_after')
-        created_before = self.request.query_params.get('created_before')
+        if self.action == "my":
+            qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
+            return self._apply_list_filters(qs, allow_requester_filter=False)
 
-        if status_param:
-            qs = qs.filter(status=normalize_status_value(status_param))
-        if equipment_id:
-            qs = qs.filter(equipment_id=equipment_id)
-        if requester_id:
-            qs = qs.filter(requested_by_id=requester_id)
-        if approved_by:
-            qs = qs.filter(approved_by_id=approved_by)
-        if start_after:
-            qs = qs.filter(start_time__gte=start_after)
-        if end_before:
-            qs = qs.filter(end_time__lte=end_before)
-        if created_after:
-            qs = qs.filter(created_at__gte=created_after)
-        if created_before:
-            qs = qs.filter(created_at__lte=created_before)
-        return qs
+        if self.action == "all":
+            return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
+
+        if self.action == "list":
+            if not self._is_staff_or_above():
+                qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
+            return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
+
+        if not self._is_staff_or_above():
+            qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
+        return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
 
     def _apply_export_search(self, qs):
         query = (self.request.query_params.get('q') or '').strip()
@@ -2416,31 +2552,22 @@ class UseViewSet(viewsets.ModelViewSet):
             requested_by=getattr(request.user, "profile", None)
         )
         aggregates = build_status_aggregates(base_qs)
-        qs = base_qs
+        qs = self._apply_list_filters(base_qs, allow_requester_filter=False)
+        page = self.paginate_queryset(qs)
+        serializer = UseListSerializer(page if page is not None else qs, many=True)
+        if page is not None:
+            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+        return Response({"results": serializer.data, "aggregates": aggregates})
 
-        status_param = request.query_params.get('status')
-        equipment_id = request.query_params.get('equipment')
-        approved_by = request.query_params.get('approved_by')
-        start_after = request.query_params.get('start_after')
-        end_before = request.query_params.get('end_before')
-        created_after = request.query_params.get('created_after')
-        created_before = request.query_params.get('created_before')
+    @action(detail=False, methods=['get'], url_path='all')
+    def all(self, request):
+        if not self._is_staff_or_above():
+            raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data penggunaan alat.")
 
-        if status_param:
-            qs = qs.filter(status=normalize_status_value(status_param))
-        if equipment_id:
-            qs = qs.filter(equipment_id=equipment_id)
-        if approved_by:
-            qs = qs.filter(approved_by_id=approved_by)
-        if start_after:
-            qs = qs.filter(start_time__gte=start_after)
-        if end_before:
-            qs = qs.filter(end_time__lte=end_before)
-        if created_after:
-            qs = qs.filter(created_at__gte=created_after)
-        if created_before:
-            qs = qs.filter(created_at__lte=created_before)
-
+        self._auto_update_use_statuses()
+        base_qs = super().get_queryset()
+        aggregates = build_status_aggregates(base_qs)
+        qs = self._apply_list_filters(base_qs, allow_requester_filter=True)
         page = self.paginate_queryset(qs)
         serializer = UseListSerializer(page if page is not None else qs, many=True)
         if page is not None:

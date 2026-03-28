@@ -5,7 +5,7 @@ import { Eye, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { DataPagination } from "@/components/shared/data-pagination";
-import { Button } from "@/components/ui/button";
+import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import { useRooms } from "@/hooks/rooms/use-rooms";
 
 const PAGE_SIZE = 20;
@@ -71,15 +71,14 @@ export default function RoomsListPage() {
                   <td className="truncate px-3 py-2.5">{room.picName}</td>
                   <td className="truncate px-3 py-2.5">{room.description || "-"}</td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
-                    <Button
+                    <TableActionIconButton
                       type="button"
+                      label="Lihat detail"
+                      icon={<Eye className="h-3.5 w-3.5" />}
                       variant="outline"
-                      size="sm"
-                      className="h-8 border-slate-300 text-slate-700"
+                      className="border-slate-300 text-slate-700"
                       onClick={() => router.push(`/rooms/${room.id}`)}
-                    >
-                      <Eye className="h-3.5 w-3.5" />
-                    </Button>
+                    />
                   </td>
                 </tr>
               ))

@@ -468,9 +468,9 @@ class PicUserDropdownSerializer(serializers.ModelSerializer):
             return profile_role
 
         if obj.groups.filter(name="SuperAdministrator").exists():
-            return "SuperAdministrator"
+            return "Admin"
         if obj.groups.filter(name="Administrator").exists():
-            return "Administrator"
+            return "Admin"
         if obj.groups.filter(name="Staff").exists():
             return "Staff"
         if obj.groups.filter(name="Lecturer").exists():

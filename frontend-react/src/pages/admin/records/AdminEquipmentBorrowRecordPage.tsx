@@ -127,6 +127,7 @@ export default function AdminRecordPeminjamanAlatPage() {
         createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
       },
       reloadKey,
+      "all",
     );
   const filteredBorrows = useMemo(
     () => borrows.filter((item) => matchesSearch(item, debouncedSearch)),

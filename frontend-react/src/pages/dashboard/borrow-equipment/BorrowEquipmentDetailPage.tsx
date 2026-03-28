@@ -5,19 +5,14 @@ import { Steps } from "rsuite";
 import {
   ArrowLeft,
   CalendarClock,
-  Check,
   CheckCircle2,
   ClipboardList,
-  Handshake,
   Hourglass,
   Loader2,
   NotebookPen,
-  RotateCcw,
-  ShieldCheck,
   Truck,
   TriangleAlert,
   Wrench,
-  X,
 } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
@@ -237,8 +232,8 @@ export default function BorrowEquipmentDetailPage() {
   >(null);
   const [inspectionNote, setInspectionNote] = useState("");
 
-  const isAllPage = location.pathname.startsWith("/borrow-equipment/all/");
-  const backHref = isAllPage ? "/borrow-equipment/all" : "/borrow-equipment";
+  const isAllPage = location.pathname.startsWith("/borrow-equipment/approval/");
+  const backHref = isAllPage ? "/borrow-equipment/approval" : "/borrow-equipment";
   const backLabel = isAllPage
     ? "Kembali ke Daftar Pengajuan"
     : "Kembali ke Pengajuan Saya";
@@ -442,81 +437,6 @@ export default function BorrowEquipmentDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {canReviewBorrow ? (
-            <>
-              <Button
-                type="button"
-                className="h-10 rounded-md border border-emerald-600 bg-emerald-600 px-4 text-white shadow-sm hover:bg-emerald-700"
-                onClick={() => setConfirmType("approve")}
-                disabled={pendingAction.borrowId === item.id}
-              >
-                <Check className="h-4 w-4" />
-                Setujui
-              </Button>
-              <Button
-                type="button"
-                className="h-10 rounded-md border border-rose-600 bg-rose-600 px-4 text-white shadow-sm hover:bg-rose-700"
-                onClick={() => setConfirmType("reject")}
-                disabled={pendingAction.borrowId === item.id}
-              >
-                <X className="h-4 w-4" />
-                Tolak
-              </Button>
-            </>
-          ) : null}
-          {canHandoverBorrow ? (
-            <Button
-              type="button"
-              className="h-10 rounded-md border border-sky-600 bg-sky-600 px-4 text-white shadow-sm hover:bg-sky-700"
-              onClick={() => setConfirmType("handover")}
-              disabled={pendingAction.borrowId === item.id}
-            >
-              <Handshake className="h-4 w-4" />
-              Serah Terima
-            </Button>
-          ) : null}
-          {canConfirmReturn ? (
-            <Button
-              type="button"
-              className="h-10 rounded-md border border-sky-600 bg-sky-600 px-4 text-white shadow-sm hover:bg-sky-700"
-              onClick={() => setIsReturnConfirmOpen(true)}
-              disabled={pendingAction.borrowId === item.id}
-            >
-              <RotateCcw className="h-4 w-4" />
-              Konfirmasi Pengembalian
-            </Button>
-          ) : null}
-          {canFinalizeInspection ? (
-            <>
-              <Button
-                type="button"
-                className="h-10 rounded-md border border-emerald-600 bg-emerald-600 px-4 text-white shadow-sm hover:bg-emerald-700"
-                onClick={() => setConfirmType("finalize_return")}
-                disabled={pendingAction.borrowId === item.id}
-              >
-                <ShieldCheck className="h-4 w-4" />
-                Finalisasi Return
-              </Button>
-              <Button
-                type="button"
-                className="h-10 rounded-md border border-amber-600 bg-amber-600 px-4 text-white shadow-sm hover:bg-amber-700"
-                onClick={() => setInspectionAction("mark_damaged")}
-                disabled={pendingAction.borrowId === item.id}
-              >
-                <TriangleAlert className="h-4 w-4" />
-                Tandai Rusak
-              </Button>
-              <Button
-                type="button"
-                className="h-10 rounded-md border border-rose-600 bg-rose-600 px-4 text-white shadow-sm hover:bg-rose-700"
-                onClick={() => setInspectionAction("mark_lost")}
-                disabled={pendingAction.borrowId === item.id}
-              >
-                <X className="h-4 w-4" />
-                Tandai Hilang
-              </Button>
-            </>
-          ) : null}
           <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
             <ArrowLeft className="h-4 w-4" />
             Kembali
@@ -525,7 +445,7 @@ export default function BorrowEquipmentDetailPage() {
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="mb-1 flex items-center gap-2">
+        <div className="mb-1 flex items-center gap-2">
           {normalizeStatus(item.status) === "expired" ? (
             <Hourglass className="h-4 w-4 text-slate-600" />
           ) : (

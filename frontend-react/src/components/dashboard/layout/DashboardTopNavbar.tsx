@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { Bell, ChevronDown, LayoutGrid } from "lucide-react";
 import {
@@ -11,20 +10,28 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
 import { cn } from "@/lib/utils";
-import { href } from "react-router-dom";
+import {
+  APPROVAL_ACCESS_ROLES,
+  CATALOG_ACCESS_ROLES,
+  REQUESTER_ACCESS_ROLES,
+  SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
+} from "@/lib/dashboard-access";
 
 export type TopNavItem = {
   id: string;
   label: string;
   href?: string;
   children?: Array<{
+    id?: string;
     label: string;
     href: string;
+    allowedRoles?: readonly string[];
   }>;
 };
 
 type DashboardTopNavbarProps = {
   activeMenuId: string;
+  items?: TopNavItem[];
   onShortcutClick: (menuId: string) => void;
   onMobileActionOpen?: () => void;
 };
@@ -40,42 +47,110 @@ export const TOP_NAV_ITEMS: TopNavItem[] = [
     id: "booking-rooms",
     label: "Booking Ruangan",
     children: [
-      { label: "Pengajuan Saya", href: "/booking-rooms" },
-      { label: "Ajukan Booking Ruangan", href: "/booking-rooms/form" },
-      // { label: "Daftar Ruangan", href: "/rooms" },
+      {
+        label: "Pengajuan Saya",
+        href: "/booking-rooms",
+        allowedRoles: REQUESTER_ACCESS_ROLES,
+      },
+      {
+        label: "Ajukan Booking Ruangan",
+        href: "/booking-rooms/form",
+        allowedRoles: REQUESTER_ACCESS_ROLES,
+      },
+      {
+        id: "all-requests",
+        label: "Approval Booking Ruangan",
+        href: "/booking-rooms/approval",
+        allowedRoles: APPROVAL_ACCESS_ROLES,
+      },
+      {
+        label: "Ruangan yang Bisa di-Booking",
+        href: "/rooms",
+        allowedRoles: CATALOG_ACCESS_ROLES,
+      },
     ],
   },
   {
     id: "use-equipment",
     label: "Penggunaan Alat",
     children: [
-      { label: "Pengajuan Saya", href: "/use-equipment" },
-      { label: "Ajukan Penggunaan Alat", href: "/use-equipment/form" },
-      // { label: "Daftar Alat", href: "/equipment" },
+      {
+        label: "Pengajuan Saya",
+        href: "/use-equipment",
+        allowedRoles: REQUESTER_ACCESS_ROLES,
+      },
+      {
+        label: "Ajukan Penggunaan Alat",
+        href: "/use-equipment/form",
+        allowedRoles: REQUESTER_ACCESS_ROLES,
+      },
+      {
+        id: "all-requests",
+        label: "Approval Penggunaan Alat",
+        href: "/use-equipment/approval",
+        allowedRoles: APPROVAL_ACCESS_ROLES,
+      },
+      {
+        label: "Peralatan yang Bisa Dibooking",
+        href: "/equipment",
+        allowedRoles: CATALOG_ACCESS_ROLES,
+      },
     ],
   },
   {
     id: "sample-testing",
     label: "Pengujian Sampel",
     children: [
-      { label: "Pengajuan Saya", href: "/sample-testing" },
-      { label: "Ajukan Pengujian", href: "/sample-testing/form" },
+      {
+        label: "Pengajuan Saya",
+        href: "/sample-testing",
+        allowedRoles: SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
+      },
+      {
+        label: "Ajukan Pengujian",
+        href: "/sample-testing/form",
+        allowedRoles: SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
+      },
+      {
+        id: "all-requests",
+        label: "Approval Pengujian Sampel",
+        href: "/sample-testing/approval",
+        allowedRoles: APPROVAL_ACCESS_ROLES,
+      },
     ],
   },
   {
     id: "borrow-equipment",
     label: "Peminjaman Alat",
     children: [
-      { label: "Pengajuan Saya", href: "/borrow-equipment" },
-      { label: "Daftar Pengajuan", href: "/borrow-equipment/all" },
-      { label: "Ajukan Peminjaman", href: "/borrow-equipment/form" },
-      // { label: "Daftar Alat", href: "/borrow-equipment/equipment" },
+      {
+        label: "Pengajuan Saya",
+        href: "/borrow-equipment",
+        allowedRoles: REQUESTER_ACCESS_ROLES,
+      },
+      {
+        label: "Ajukan Peminjaman",
+        href: "/borrow-equipment/form",
+        allowedRoles: REQUESTER_ACCESS_ROLES,
+      },
+      {
+        id: "all-requests",
+        label: "Approval Peminjaman Alat",
+        href: "/borrow-equipment/approval",
+        allowedRoles: APPROVAL_ACCESS_ROLES,
+      },
+      {
+        label: "Alat yang Bisa Dipinjam",
+        href: "/borrow-equipment/equipment",
+        allowedRoles: CATALOG_ACCESS_ROLES,
+      },
     ],
   },
 ];
 
 export function DashboardTopNavbar({
   activeMenuId,
+  items = TOP_NAV_ITEMS,
   onShortcutClick,
   onMobileActionOpen,
 }: DashboardTopNavbarProps) {
@@ -100,7 +175,7 @@ export function DashboardTopNavbar({
 
         <div className="justify-self-center">
           <nav className="hidden lg:flex items-center gap-5">
-            {TOP_NAV_ITEMS.map((item) =>
+            {items.map((item) =>
               item.children ? (
                 <DropdownMenu key={item.id}>
                   <DropdownMenuTrigger asChild>

@@ -2,7 +2,12 @@
 
 import { useEffect, useState } from "react";
 
-import { API_PENGUJIAN_DETAIL, API_PENGUJIANS } from "@/constants/api";
+import {
+  API_PENGUJIAN_DETAIL,
+  API_PENGUJIANS,
+  API_PENGUJIANS_ALL,
+  API_PENGUJIANS_MY,
+} from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type PengujianFilters = {
@@ -10,6 +15,8 @@ export type PengujianFilters = {
   createdAfter?: string;
   createdBefore?: string;
 };
+
+export type PengujianListScope = "default" | "my" | "all";
 
 export type PengujianRow = {
   id: string | number;
@@ -188,6 +195,7 @@ export function usePengujians(
   pageSize = 10,
   filters: PengujianFilters = {},
   reloadKey = 0,
+  scope: PengujianListScope = "default",
 ) {
   const [pengujians, setPengujians] = useState<PengujianRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -211,7 +219,13 @@ export function usePengujians(
       setIsLoading(true);
       setError("");
       try {
-        const url = new URL(API_PENGUJIANS, window.location.origin);
+        const listEndpoint =
+          scope === "my"
+            ? API_PENGUJIANS_MY
+            : scope === "all"
+              ? API_PENGUJIANS_ALL
+              : API_PENGUJIANS;
+        const url = new URL(listEndpoint, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
@@ -269,6 +283,7 @@ export function usePengujians(
     filters.createdAfter,
     filters.createdBefore,
     reloadKey,
+    scope,
   ]);
 
   return {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { DateRange } from "react-day-picker";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
@@ -11,6 +11,10 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
+import {
+  DashboardDetailReviewPanel,
+  parseReviewContext,
+} from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
@@ -40,6 +44,64 @@ type DashboardActionPanelProps = {
   getMenuHref: () => string;
   onClose: () => void;
 };
+
+type RequestFilterConfig = {
+  keyword: string;
+  status: string;
+  dateRange?: DateRange;
+  placeholder: string;
+  statusOptions: Array<{ value: string; label: string }>;
+  onKeywordChange: (value: string) => void;
+  onStatusChange: (value: string) => void;
+  onDateRangeChange: (value: DateRange | undefined) => void;
+  onReset: () => void;
+};
+
+type EquipmentFilterConfig = {
+  keyword: string;
+  category: string;
+  room: string;
+  onKeywordChange: (value: string) => void;
+  onCategoryChange: (value: string) => void;
+  onRoomChange: (value: string) => void;
+  onReset: () => void;
+  status?: string;
+  moveable?: string;
+  onStatusChange?: (value: string) => void;
+  onMoveableChange?: (value: string) => void;
+};
+
+function FilterCard({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        {title}
+      </p>
+      <div className="mt-2 space-y-2">{children}</div>
+    </div>
+  );
+}
+
+function FilterField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="space-y-1">
+      <label className="text-xs font-medium text-slate-600">{label}</label>
+      {children}
+    </div>
+  );
+}
 
 export function DashboardActionPanel({
   width,
@@ -93,14 +155,41 @@ export function DashboardActionPanel({
   const equipmentRoom = searchParams.get("room") ?? "";
   const equipmentMoveable = searchParams.get("moveable") ?? "";
   const isBookingRequestListPage = pathname === "/booking-rooms";
-  const isBookingAllRequestsPage = pathname === "/booking-rooms/all";
+  const isBookingAllRequestsPage = pathname === "/booking-rooms/approval";
   const isRoomsListPage = pathname === "/rooms";
   const isUseRequestListPage = pathname === "/use-equipment";
-  const isUseAllRequestsPage = pathname === "/use-equipment/all";
+  const isUseAllRequestsPage = pathname === "/use-equipment/approval";
   const isEquipmentListPage = pathname === "/equipment";
   const isBorrowRequestListPage = pathname === "/borrow-equipment";
-  const isBorrowAllRequestsPage = pathname === "/borrow-equipment/all";
+  const isBorrowAllRequestsPage = pathname === "/borrow-equipment/approval";
   const isBorrowEquipmentListPage = pathname === "/borrow-equipment/equipment";
+  const isSampleTestingRequestListPage = pathname === "/sample-testing";
+  const isSampleTestingAllRequestsPage = pathname === "/sample-testing/approval";
+  const reviewContext = parseReviewContext(pathname);
+
+  const replaceCurrentPath = (params: URLSearchParams) => {
+    const next = params.toString();
+    router.replace(next ? `${pathname}?${next}` : pathname);
+  };
+
+  const resetFilters = (keys: string[]) => {
+    const params = new URLSearchParams(searchParams.toString());
+    keys.forEach((key) => params.delete(key));
+    replaceCurrentPath(params);
+  };
+
+  const isActionPathActive = (
+    currentActionId: string,
+    requestActionId: string,
+    requestPathActive: boolean,
+    approvalPathActive = false,
+  ) =>
+    isActionActive(currentActionId) &&
+    ((currentActionId === requestActionId && requestPathActive) ||
+      (currentActionId === "all-requests" && approvalPathActive));
+
+  const isActionActive = (currentActionId: string) =>
+    actionParam === currentActionId && menuParam === menu.id;
 
   const updateScheduleFilter = (
     key: "q" | "room" | "category",
@@ -112,8 +201,7 @@ export function DashboardActionPanel({
     } else {
       params.delete(key);
     }
-    const next = params.toString();
-    router.replace(next ? `${pathname}?${next}` : pathname);
+    replaceCurrentPath(params);
   };
 
   const updateBookingFilter = (
@@ -126,8 +214,7 @@ export function DashboardActionPanel({
     } else {
       params.delete(key);
     }
-    const next = params.toString();
-    router.replace(next ? `${pathname}?${next}` : pathname);
+    replaceCurrentPath(params);
   };
 
   const updateBorrowFilter = (
@@ -140,8 +227,7 @@ export function DashboardActionPanel({
     } else {
       params.delete(key);
     }
-    const next = params.toString();
-    router.replace(next ? `${pathname}?${next}` : pathname);
+    replaceCurrentPath(params);
   };
 
   const updateDateRangeFilter = (
@@ -186,8 +272,7 @@ export function DashboardActionPanel({
       params.delete("created_before");
     }
 
-    const next = params.toString();
-    router.replace(next ? `${pathname}?${next}` : pathname);
+    replaceCurrentPath(params);
   };
 
   const updateRoomFilter = (key: "q" | "floor", value: string) => {
@@ -197,8 +282,7 @@ export function DashboardActionPanel({
     } else {
       params.delete(key);
     }
-    const next = params.toString();
-    router.replace(next ? `${pathname}?${next}` : pathname);
+    replaceCurrentPath(params);
   };
 
   const updateEquipmentFilter = (
@@ -211,9 +295,181 @@ export function DashboardActionPanel({
     } else {
       params.delete(key);
     }
-    const next = params.toString();
-    router.replace(next ? `${pathname}?${next}` : pathname);
+    replaceCurrentPath(params);
   };
+
+  const renderRequestFilters = ({
+    keyword,
+    status,
+    dateRange,
+    placeholder,
+    statusOptions,
+    onKeywordChange,
+    onStatusChange,
+    onDateRangeChange,
+    onReset,
+  }: RequestFilterConfig) => (
+    <FilterCard title="Filter Pengajuan">
+      <FilterField label="Cari">
+        <Input
+          value={keyword}
+          onChange={(event) => onKeywordChange(event.target.value)}
+          type="search"
+          placeholder={placeholder}
+          className="h-9"
+        />
+      </FilterField>
+      <FilterField label="Status">
+        <select
+          value={status}
+          onChange={(event) => onStatusChange(event.target.value)}
+          className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+        >
+          {statusOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </FilterField>
+      <FilterField label="Tanggal Dibuat">
+        <DateRangePicker
+          value={dateRange}
+          onChange={onDateRangeChange}
+          clearable
+          buttonClassName="h-9 border-slate-200 px-3"
+        />
+      </FilterField>
+      <Button type="button" variant="outline" className="w-full" onClick={onReset}>
+        Reset Filter
+      </Button>
+    </FilterCard>
+  );
+
+  const renderRoomFilters = () => (
+    <FilterCard title="Filter Ruangan">
+      <FilterField label="Cari">
+        <Input
+          value={roomKeyword}
+          onChange={(event) => updateRoomFilter("q", event.target.value)}
+          type="search"
+          placeholder="Nama ruangan atau nomor"
+          className="h-9"
+        />
+      </FilterField>
+      <FilterField label="Lantai">
+        <select
+          value={roomFloor}
+          onChange={(event) => updateRoomFilter("floor", event.target.value)}
+          className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+        >
+          <option value="">Semua Lantai</option>
+          <option value="1">Lantai 1</option>
+          <option value="2">Lantai 2</option>
+          <option value="3">Lantai 3</option>
+          <option value="4">Lantai 4</option>
+          <option value="5">Lantai 5</option>
+        </select>
+      </FilterField>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={() => resetFilters(["q", "floor"])}
+      >
+        Reset Filter
+      </Button>
+    </FilterCard>
+  );
+
+  const renderEquipmentFilters = ({
+    keyword,
+    category,
+    room,
+    onKeywordChange,
+    onCategoryChange,
+    onRoomChange,
+    onReset,
+    status,
+    moveable,
+    onStatusChange,
+    onMoveableChange,
+  }: EquipmentFilterConfig) => (
+    <FilterCard title="Filter Peralatan">
+      <FilterField label="Cari">
+        <Input
+          value={keyword}
+          onChange={(event) => onKeywordChange(event.target.value)}
+          type="search"
+          placeholder="Nama atau kategori"
+          className="h-9"
+        />
+      </FilterField>
+      {typeof status === "string" && onStatusChange ? (
+        <FilterField label="Status">
+          <select
+            value={status}
+            onChange={(event) => onStatusChange(event.target.value)}
+            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+          >
+            <option value="">Semua Status</option>
+            {EQUIPMENT_STATUS_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+      ) : null}
+      <FilterField label="Kategori">
+        <select
+          value={category}
+          onChange={(event) => onCategoryChange(event.target.value)}
+          className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+        >
+          <option value="">Semua Kategori</option>
+          {EQUIPMENT_CATEGORY_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </FilterField>
+      <FilterField label="Ruangan">
+        <select
+          value={room}
+          onChange={(event) => onRoomChange(event.target.value)}
+          className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+        >
+          <option value="">Semua Ruangan</option>
+          {rooms.map((roomOption) => (
+            <option key={roomOption.id} value={roomOption.id}>
+              {roomOption.label}
+            </option>
+          ))}
+        </select>
+      </FilterField>
+      {typeof moveable === "string" && onMoveableChange ? (
+        <FilterField label="Moveable">
+          <select
+            value={moveable}
+            onChange={(event) => onMoveableChange(event.target.value)}
+            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+          >
+            <option value="">Semua</option>
+            {MOVEABLE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </FilterField>
+      ) : null}
+      <Button type="button" variant="outline" className="w-full" onClick={onReset}>
+        Reset Filter
+      </Button>
+    </FilterCard>
+  );
 
   const handleActionClick = () => {
     if (mobile) onClose();
@@ -258,120 +514,121 @@ export function DashboardActionPanel({
           </div>
 
           {menu.id === "schedule" && (
-            <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
-              <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                Filter Jadwal
-              </p>
-              <div className="mt-2 space-y-2">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600">
-                    Cari Agenda
-                  </label>
-                  <Input
-                    value={scheduleKeyword}
-                    onChange={(event) =>
-                      updateScheduleFilter("q", event.target.value)
-                    }
-                    type="text"
-                    placeholder="Cari jadwal lab..."
-                    className="h-9"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600">
-                    Kategori
-                  </label>
-                  <select
-                    value={scheduleCategory}
-                    onChange={(event) =>
-                      updateScheduleFilter("category", event.target.value)
-                    }
-                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                  >
-                    <option value="">Semua Kategori</option>
-                    <option value="schedule">Jadwal Umum</option>
-                    <option value="booking">Booking Ruangan</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-xs font-medium text-slate-600">
-                    Ruangan
-                  </label>
-                  <select
-                    value={scheduleRoom}
-                    onChange={(event) =>
-                      updateScheduleFilter("room", event.target.value)
-                    }
-                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                  >
-                    <option value="">Semua Ruangan</option>
-                    {rooms.map((room) => (
-                      <option key={room.id} value={room.id}>
-                        {room.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => {
-                    const params = new URLSearchParams(searchParams.toString());
-                    params.delete("q");
-                    params.delete("category");
-                    params.delete("room");
-                    const next = params.toString();
-                    router.replace(next ? `${pathname}?${next}` : pathname);
-                  }}
+            <FilterCard title="Filter Jadwal">
+              <FilterField label="Cari Agenda">
+                <Input
+                  value={scheduleKeyword}
+                  onChange={(event) =>
+                    updateScheduleFilter("q", event.target.value)
+                  }
+                  type="text"
+                  placeholder="Cari jadwal lab..."
+                  className="h-9"
+                />
+              </FilterField>
+              <FilterField label="Kategori">
+                <select
+                  value={scheduleCategory}
+                  onChange={(event) =>
+                    updateScheduleFilter("category", event.target.value)
+                  }
+                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
                 >
-                  Reset Filter
-                </Button>
-              </div>
-            </div>
+                  <option value="">Semua Kategori</option>
+                  <option value="schedule">Jadwal Umum</option>
+                  <option value="booking">Booking Ruangan</option>
+                </select>
+              </FilterField>
+              <FilterField label="Ruangan">
+                <select
+                  value={scheduleRoom}
+                  onChange={(event) =>
+                    updateScheduleFilter("room", event.target.value)
+                  }
+                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                >
+                  <option value="">Semua Ruangan</option>
+                  {rooms.map((room) => (
+                    <option key={room.id} value={room.id}>
+                      {room.label}
+                    </option>
+                  ))}
+                </select>
+              </FilterField>
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => resetFilters(["q", "category", "room"])}
+              >
+                Reset Filter
+              </Button>
+            </FilterCard>
           )}
 
           {menu.actions.length > 0
             ? menu.actions.map((action) => {
-                const isActionActive =
-                  actionParam === action.id && menuParam === menu.id;
+                const actionIsActive = isActionActive(action.id);
                 const showBookingFilters =
                   menu.id === "booking-rooms" &&
-                  isActionActive &&
-                  ((action.id === "request-list" && isBookingRequestListPage) ||
-                    (action.id === "all-requests" && isBookingAllRequestsPage));
+                  isActionPathActive(
+                    action.id,
+                    "request-list",
+                    isBookingRequestListPage,
+                    isBookingAllRequestsPage,
+                  );
                 const showRoomFilters =
                   menu.id === "booking-rooms" &&
-                  isActionActive &&
+                  actionIsActive &&
                   action.id === "rooms" &&
                   isRoomsListPage;
                 const showUseFilters =
                   menu.id === "use-equipment" &&
-                  isActionActive &&
-                  ((action.id === "request-list" && isUseRequestListPage) ||
-                    (action.id === "all-requests" && isUseAllRequestsPage));
+                  isActionPathActive(
+                    action.id,
+                    "request-list",
+                    isUseRequestListPage,
+                    isUseAllRequestsPage,
+                  );
                 const showEquipmentFilters =
                   menu.id === "use-equipment" &&
-                  isActionActive &&
+                  actionIsActive &&
                   action.id === "equipment" &&
                   isEquipmentListPage;
                 const showBorrowFilters =
                   menu.id === "borrow-equipment" &&
-                  isActionActive &&
-                  ((action.id === "request-list" && isBorrowRequestListPage) ||
-                    (action.id === "all-requests" && isBorrowAllRequestsPage));
+                  isActionPathActive(
+                    action.id,
+                    "request-list",
+                    isBorrowRequestListPage,
+                    isBorrowAllRequestsPage,
+                  );
                 const showBorrowEquipmentFilters =
                   menu.id === "borrow-equipment" &&
-                  isActionActive &&
+                  actionIsActive &&
                   action.id === "equipment" &&
                   isBorrowEquipmentListPage;
+                const showSampleTestingFilters =
+                  menu.id === "sample-testing" &&
+                  isActionPathActive(
+                    action.id,
+                    "request-list",
+                    isSampleTestingRequestListPage,
+                    isSampleTestingAllRequestsPage,
+                  );
+                const showDetailReviewPanel =
+                  action.id === "all-requests" &&
+                  reviewContext &&
+                  ((menu.id === "booking-rooms" && reviewContext.kind === "booking") ||
+                    (menu.id === "use-equipment" && reviewContext.kind === "use") ||
+                    (menu.id === "borrow-equipment" && reviewContext.kind === "borrow"));
 
                 return (
                   <div key={action.id} className="space-y-3">
                     <Link
                       href={getActionHref(action.id)}
                       onClick={(event) => {
-                        if (isActionActive && event.detail === 2) {
+                        if (actionIsActive && event.detail === 2) {
                           event.preventDefault();
                           router.push(getMenuHref());
                           handleActionClick();
@@ -380,7 +637,7 @@ export function DashboardActionPanel({
                         handleActionClick();
                       }}
                       className={`flex w-full items-center justify-between rounded-md px-3 py-2 text-left text-sm transition ${
-                        isActionActive
+                        actionIsActive
                           ? "bg-blue-50 text-blue-700"
                           : "text-slate-700 hover:bg-slate-100"
                       }`}
@@ -389,516 +646,123 @@ export function DashboardActionPanel({
                       <ChevronRight className="h-4 w-4 opacity-70" />
                     </Link>
 
-                    {showBookingFilters ? (
-                      <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Filter Pengajuan
-                        </p>
-                        <div className="mt-2 space-y-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Cari
-                            </label>
-                            <Input
-                              value={bookingKeyword}
-                              onChange={(event) =>
-                                updateBookingFilter("q", event.target.value)
-                              }
-                              type="search"
-                              placeholder="Kode, ruangan"
-                              className="h-9"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Status
-                            </label>
-                            <select
-                              value={bookingStatus}
-                              onChange={(event) =>
-                                updateBookingFilter(
-                                  "status",
-                                  event.target.value,
-                                )
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              {REQUEST_STATUS_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Tanggal Dibuat
-                            </label>
-                            <DateRangePicker
-                              value={bookingCreatedRange}
-                              onChange={(value) =>
-                                updateDateRangeFilter("booking", value)
-                              }
-                              clearable
-                              buttonClassName="h-9 border-slate-200 px-3"
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              const params = new URLSearchParams(
-                                searchParams.toString(),
-                              );
-                              params.delete("q");
-                              params.delete("status");
-                              params.delete("created_after");
-                              params.delete("created_before");
-                              const next = params.toString();
-                              router.replace(
-                                next ? `${pathname}?${next}` : pathname,
-                              );
-                            }}
-                          >
-                            Reset Filter
-                          </Button>
-                        </div>
-                      </div>
-                    ) : null}
+                    {showBookingFilters || showSampleTestingFilters
+                      ? renderRequestFilters({
+                          keyword: bookingKeyword,
+                          status: bookingStatus,
+                          dateRange: bookingCreatedRange,
+                          placeholder: "Kode, ruangan",
+                          statusOptions: REQUEST_STATUS_OPTIONS,
+                          onKeywordChange: (value) =>
+                            updateBookingFilter("q", value),
+                          onStatusChange: (value) =>
+                            updateBookingFilter("status", value),
+                          onDateRangeChange: (value) =>
+                            updateDateRangeFilter("booking", value),
+                          onReset: () =>
+                            resetFilters([
+                              "q",
+                              "status",
+                              "created_after",
+                              "created_before",
+                            ]),
+                        })
+                      : null}
 
-                    {showRoomFilters ? (
-                      <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Filter Ruangan
-                        </p>
-                        <div className="mt-2 space-y-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Cari
-                            </label>
-                            <Input
-                              value={roomKeyword}
-                              onChange={(event) =>
-                                updateRoomFilter("q", event.target.value)
-                              }
-                              type="search"
-                              placeholder="Nama ruangan atau nomor"
-                              className="h-9"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Lantai
-                            </label>
-                            <select
-                              value={roomFloor}
-                              onChange={(event) =>
-                                updateRoomFilter("floor", event.target.value)
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              <option value="">Semua Lantai</option>
-                              <option value="1">Lantai 1</option>
-                              <option value="2">Lantai 2</option>
-                              <option value="3">Lantai 3</option>
-                              <option value="4">Lantai 4</option>
-                              <option value="5">Lantai 5</option>
-                            </select>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              const params = new URLSearchParams(
-                                searchParams.toString(),
-                              );
-                              params.delete("q");
-                              params.delete("floor");
-                              const next = params.toString();
-                              router.replace(
-                                next ? `${pathname}?${next}` : pathname,
-                              );
-                            }}
-                          >
-                            Reset Filter
-                          </Button>
-                        </div>
-                      </div>
-                    ) : null}
+                    {showRoomFilters ? renderRoomFilters() : null}
 
-                    {showUseFilters ? (
-                      <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Filter Pengajuan
-                        </p>
-                        <div className="mt-2 space-y-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Cari
-                            </label>
-                            <Input
-                              value={bookingKeyword}
-                              onChange={(event) =>
-                                updateBookingFilter("q", event.target.value)
-                              }
-                              type="search"
-                              placeholder="Kode, alat"
-                              className="h-9"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Status
-                            </label>
-                            <select
-                              value={bookingStatus}
-                              onChange={(event) =>
-                                updateBookingFilter(
-                                  "status",
-                                  event.target.value,
-                                )
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              {REQUEST_STATUS_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Tanggal Dibuat
-                            </label>
-                            <DateRangePicker
-                              value={bookingCreatedRange}
-                              onChange={(value) =>
-                                updateDateRangeFilter("booking", value)
-                              }
-                              clearable
-                              buttonClassName="h-9 border-slate-200 px-3"
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              const params = new URLSearchParams(
-                                searchParams.toString(),
-                              );
-                              params.delete("q");
-                              params.delete("status");
-                              params.delete("created_after");
-                              params.delete("created_before");
-                              const next = params.toString();
-                              router.replace(
-                                next ? `${pathname}?${next}` : pathname,
-                              );
-                            }}
-                          >
-                            Reset Filter
-                          </Button>
-                        </div>
-                      </div>
-                    ) : null}
+                    {showUseFilters
+                      ? renderRequestFilters({
+                          keyword: bookingKeyword,
+                          status: bookingStatus,
+                          dateRange: bookingCreatedRange,
+                          placeholder: "Kode, alat",
+                          statusOptions: REQUEST_STATUS_OPTIONS,
+                          onKeywordChange: (value) =>
+                            updateBookingFilter("q", value),
+                          onStatusChange: (value) =>
+                            updateBookingFilter("status", value),
+                          onDateRangeChange: (value) =>
+                            updateDateRangeFilter("booking", value),
+                          onReset: () =>
+                            resetFilters([
+                              "q",
+                              "status",
+                              "created_after",
+                              "created_before",
+                            ]),
+                        })
+                      : null}
 
-                    {showEquipmentFilters ? (
-                      <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Filter Peralatan
-                        </p>
-                        <div className="mt-2 space-y-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Cari
-                            </label>
-                            <Input
-                              value={equipmentKeyword}
-                              onChange={(event) =>
-                                updateEquipmentFilter("q", event.target.value)
-                              }
-                              type="search"
-                              placeholder="Nama atau kategori"
-                              className="h-9"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Status
-                            </label>
-                            <select
-                              value={equipmentStatus}
-                              onChange={(event) =>
-                                updateEquipmentFilter(
-                                  "status",
-                                  event.target.value,
-                                )
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              <option value="">Semua Status</option>
-                              {EQUIPMENT_STATUS_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Kategori
-                            </label>
-                            <select
-                              value={equipmentCategory}
-                              onChange={(event) =>
-                                updateEquipmentFilter(
-                                  "category",
-                                  event.target.value,
-                                )
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              <option value="">Semua Kategori</option>
-                              {EQUIPMENT_CATEGORY_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Ruangan
-                            </label>
-                            <select
-                              value={equipmentRoom}
-                              onChange={(event) =>
-                                updateEquipmentFilter(
-                                  "room",
-                                  event.target.value,
-                                )
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              <option value="">Semua Ruangan</option>
-                              {rooms.map((room) => (
-                                <option key={room.id} value={room.id}>
-                                  {room.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Moveable
-                            </label>
-                            <select
-                              value={equipmentMoveable}
-                              onChange={(event) =>
-                                updateEquipmentFilter(
-                                  "moveable",
-                                  event.target.value,
-                                )
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              <option value="">Semua</option>
-                              {MOVEABLE_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              const params = new URLSearchParams(
-                                searchParams.toString(),
-                              );
-                              params.delete("q");
-                              params.delete("status");
-                              params.delete("category");
-                              params.delete("room");
-                              params.delete("moveable");
-                              const next = params.toString();
-                              router.replace(
-                                next ? `${pathname}?${next}` : pathname,
-                              );
-                            }}
-                          >
-                            Reset Filter
-                          </Button>
-                        </div>
-                      </div>
-                    ) : null}
+                    {showEquipmentFilters
+                      ? renderEquipmentFilters({
+                          keyword: equipmentKeyword,
+                          status: equipmentStatus,
+                          category: equipmentCategory,
+                          room: equipmentRoom,
+                          moveable: equipmentMoveable,
+                          onKeywordChange: (value) =>
+                            updateEquipmentFilter("q", value),
+                          onStatusChange: (value) =>
+                            updateEquipmentFilter("status", value),
+                          onCategoryChange: (value) =>
+                            updateEquipmentFilter("category", value),
+                          onRoomChange: (value) =>
+                            updateEquipmentFilter("room", value),
+                          onMoveableChange: (value) =>
+                            updateEquipmentFilter("moveable", value),
+                          onReset: () =>
+                            resetFilters([
+                              "q",
+                              "status",
+                              "category",
+                              "room",
+                              "moveable",
+                            ]),
+                        })
+                      : null}
 
-                    {showBorrowFilters ? (
-                      <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Filter Pengajuan
-                        </p>
-                        <div className="mt-2 space-y-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Cari
-                            </label>
-                            <Input
-                              value={borrowKeyword}
-                              onChange={(event) =>
-                                updateBorrowFilter("q", event.target.value)
-                              }
-                              type="search"
-                              placeholder="Kode, alat"
-                              className="h-9"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Status
-                            </label>
-                            <select
-                              value={borrowStatus}
-                              onChange={(event) =>
-                                updateBorrowFilter("status", event.target.value)
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              {BORROW_STATUS_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Tanggal Dibuat
-                            </label>
-                            <DateRangePicker
-                              value={borrowCreatedRange}
-                              onChange={(value) =>
-                                updateDateRangeFilter("borrow", value)
-                              }
-                              clearable
-                              buttonClassName="h-9 border-slate-200 px-3"
-                            />
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              const params = new URLSearchParams(
-                                searchParams.toString(),
-                              );
-                              params.delete("q");
-                              params.delete("status");
-                              params.delete("created_after");
-                              params.delete("created_before");
-                              const next = params.toString();
-                              router.replace(
-                                next ? `${pathname}?${next}` : pathname,
-                              );
-                            }}
-                          >
-                            Reset Filter
-                          </Button>
-                        </div>
-                      </div>
-                    ) : null}
+                    {showBorrowFilters
+                      ? renderRequestFilters({
+                          keyword: borrowKeyword,
+                          status: borrowStatus,
+                          dateRange: borrowCreatedRange,
+                          placeholder: "Kode, alat",
+                          statusOptions: BORROW_STATUS_OPTIONS,
+                          onKeywordChange: (value) =>
+                            updateBorrowFilter("q", value),
+                          onStatusChange: (value) =>
+                            updateBorrowFilter("status", value),
+                          onDateRangeChange: (value) =>
+                            updateDateRangeFilter("borrow", value),
+                          onReset: () =>
+                            resetFilters([
+                              "q",
+                              "status",
+                              "created_after",
+                              "created_before",
+                            ]),
+                        })
+                      : null}
 
-                    {showBorrowEquipmentFilters ? (
-                      <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          Filter Peralatan
-                        </p>
-                        <div className="mt-2 space-y-2">
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Cari
-                            </label>
-                            <Input
-                              value={equipmentKeyword}
-                              onChange={(event) =>
-                                updateEquipmentFilter("q", event.target.value)
-                              }
-                              type="search"
-                              placeholder="Nama atau kategori"
-                              className="h-9"
-                            />
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Kategori
-                            </label>
-                            <select
-                              value={equipmentCategory}
-                              onChange={(event) =>
-                                updateEquipmentFilter(
-                                  "category",
-                                  event.target.value,
-                                )
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              <option value="">Semua Kategori</option>
-                              {EQUIPMENT_CATEGORY_OPTIONS.map((option) => (
-                                <option key={option.value} value={option.value}>
-                                  {option.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <div className="space-y-1">
-                            <label className="text-xs font-medium text-slate-600">
-                              Ruangan
-                            </label>
-                            <select
-                              value={equipmentRoom}
-                              onChange={(event) =>
-                                updateEquipmentFilter(
-                                  "room",
-                                  event.target.value,
-                                )
-                              }
-                              className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
-                            >
-                              <option value="">Semua Ruangan</option>
-                              {rooms.map((room) => (
-                                <option key={room.id} value={room.id}>
-                                  {room.label}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => {
-                              const params = new URLSearchParams(
-                                searchParams.toString(),
-                              );
-                              params.delete("q");
-                              params.delete("category");
-                              params.delete("room");
-                              const next = params.toString();
-                              router.replace(
-                                next ? `${pathname}?${next}` : pathname,
-                              );
-                            }}
-                          >
-                            Reset Filter
-                          </Button>
-                        </div>
-                      </div>
+                    {showBorrowEquipmentFilters
+                      ? renderEquipmentFilters({
+                          keyword: equipmentKeyword,
+                          category: equipmentCategory,
+                          room: equipmentRoom,
+                          onKeywordChange: (value) =>
+                            updateEquipmentFilter("q", value),
+                          onCategoryChange: (value) =>
+                            updateEquipmentFilter("category", value),
+                          onRoomChange: (value) =>
+                            updateEquipmentFilter("room", value),
+                          onReset: () =>
+                            resetFilters(["q", "category", "room"]),
+                        })
+                      : null}
+
+                    {showDetailReviewPanel ? (
+                      <DashboardDetailReviewPanel context={reviewContext} />
                     ) : null}
                   </div>
                 );

@@ -24,6 +24,7 @@ export type BookingRow = {
   roomId: string;
   roomName: string;
   roomNumber: string;
+  roomPicName: string;
   requesterId: string;
   requesterName: string;
   requesterEmail: string;
@@ -67,6 +68,10 @@ type ApiBooking = {
     id?: string | number | null;
     name?: string | null;
     number?: string | null;
+    pics_detail?: Array<{
+      full_name?: string | null;
+      email?: string | null;
+    }> | null;
   } | null;
   requested_by?: string | number | null;
   requested_by_detail?: {
@@ -122,6 +127,12 @@ export function mapBooking(item: ApiBooking): BookingRow {
     item.approved_by_detail?.full_name ||
     item.approved_by_detail?.email ||
     "-";
+  const roomPicName = Array.isArray(item.room_detail?.pics_detail)
+    ? item.room_detail.pics_detail
+        .map((pic) => String(pic?.full_name ?? pic?.email ?? "").trim())
+        .filter(Boolean)
+        .join(", ") || "-"
+    : "-";
 
   const equipmentItems = Array.isArray(item.equipment_items_detail)
     ? item.equipment_items_detail.map((equipmentItem) => ({
@@ -146,6 +157,7 @@ export function mapBooking(item: ApiBooking): BookingRow {
     roomId: String(item.room_detail?.id ?? item.room ?? ""),
     roomName: String(item.room_detail?.name ?? "-"),
     roomNumber: String(item.room_detail?.number ?? "-"),
+    roomPicName,
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
     requesterEmail: String(item.requested_by_detail?.email ?? "-"),

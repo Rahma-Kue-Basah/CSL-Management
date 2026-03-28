@@ -15,7 +15,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import { DataPagination } from "@/components/shared/data-pagination";
-import { Button } from "@/components/ui/button";
+import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import {
   useBookings,
   type BookingListScope,
@@ -334,10 +334,11 @@ export default function BookingRoomsListContent({
                     <div className="flex items-center justify-center gap-2">
                       {canReviewBookings && isPendingStatus(booking.status) ? (
                         <>
-                          <Button
+                          <TableActionIconButton
                             type="button"
-                            size="sm"
-                            className="h-8 w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
+                            label="Approve"
+                            icon={<Check className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
                             onClick={() =>
                               setConfirmState({
                                 bookingId: booking.id,
@@ -345,13 +346,12 @@ export default function BookingRoomsListContent({
                               })
                             }
                             disabled={pendingAction.bookingId === booking.id}
-                          >
-                            <Check className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
+                          />
+                          <TableActionIconButton
                             type="button"
-                            size="sm"
-                            className="h-8 w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
+                            label="Reject"
+                            icon={<X className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
                             onClick={() =>
                               setConfirmState({
                                 bookingId: booking.id,
@@ -359,26 +359,23 @@ export default function BookingRoomsListContent({
                               })
                             }
                             disabled={pendingAction.bookingId === booking.id}
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </Button>
+                          />
                         </>
                       ) : null}
-                      <Button
+                      <TableActionIconButton
                         type="button"
+                        label="Lihat detail"
+                        icon={<Eye className="h-3.5 w-3.5" />}
                         variant="outline"
-                        size="sm"
-                        className="h-8 border-slate-300 text-slate-700"
+                        className="border-slate-300 text-slate-700"
                         onClick={() =>
                           router.push(
                             scope === "all"
-                              ? `/booking-rooms/all/${booking.id}`
+                              ? `/booking-rooms/approval/${booking.id}`
                               : `/booking-rooms/${booking.id}`,
                           )
                         }
-                      >
-                        <Eye className="h-3.5 w-3.5" />
-                      </Button>
+                      />
                     </div>
                   </td>
                 </tr>
