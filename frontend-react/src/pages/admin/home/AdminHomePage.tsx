@@ -47,6 +47,8 @@ type AdminKpisResponse = {
   total_equipments?: number;
   total_bookings?: number;
   total_borrows?: number;
+  total_uses?: number;
+  total_pengujians?: number;
 };
 
 function formatActionLabel(action: AdminAction["action"]) {
@@ -192,8 +194,8 @@ export default function Page() {
           totalEquipments: payload.total_equipments ?? 0,
           totalBookings: payload.total_bookings ?? 0,
           totalBorrows: payload.total_borrows ?? 0,
-          totalPengujian: 0,
-          totalUseRequest: 0,
+          totalPengujian: payload.total_pengujians ?? 0,
+          totalUseRequest: payload.total_uses ?? 0,
         });
       } catch (loadError) {
         if (

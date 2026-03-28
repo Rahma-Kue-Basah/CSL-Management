@@ -526,3 +526,5 @@ class AdminDashboardKpisSerializer(serializers.Serializer):
     total_equipments = serializers.IntegerField()
     total_bookings = serializers.IntegerField()
     total_borrows = serializers.IntegerField()
+    total_uses = serializers.IntegerField()
+    total_pengujians = serializers.IntegerField()

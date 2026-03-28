@@ -10,7 +10,10 @@ import { API_AUTH_USER_PROFILE_DETAIL } from "@/constants/api";
 import { BATCH_OPTIONS } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { useChangePassword } from "@/hooks/auth/use-change-password";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import {
+  persistProfileCache,
+  useLoadProfile,
+} from "@/hooks/profile/use-load-profile";
 import { authFetch } from "@/lib/auth";
 import { formatDateTimeIdWithZone } from "@/lib/date-format";
 import { formatRoleLabel, getInitialsFromNameOrEmail } from "@/lib/formatters";
@@ -115,22 +118,15 @@ export default function AdminMyProfilePage() {
         return;
       }
 
-      if (typeof window !== "undefined") {
-        const cachedRaw = window.localStorage.getItem("profile");
-        const cached = cachedRaw ? (JSON.parse(cachedRaw) as Record<string, unknown>) : {};
-        window.localStorage.setItem(
-          "profile",
-          JSON.stringify({
-            ...cached,
-            name: formData.full_name.trim(),
-            initials: formData.initials.trim() || null,
-            department: formData.department || null,
-            batch: formData.batch || null,
-            id_number: formData.id_number || null,
-            institution: formData.institution || null,
-          }),
-        );
-      }
+      persistProfileCache({
+        ...profile,
+        name: formData.full_name.trim(),
+        initials: formData.initials.trim() || null,
+        department: formData.department || null,
+        batch: formData.batch || null,
+        id_number: formData.id_number || null,
+        institution: formData.institution || null,
+      });
 
       setMessage("Profil berhasil diperbarui.");
       setIsEditing(false);

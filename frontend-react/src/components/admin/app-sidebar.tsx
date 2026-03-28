@@ -39,7 +39,7 @@ type MenuItem = {
   href: string;
 };
 
-type GroupMenuKey = "document" | "information" | "inventory" | "record" | "user";
+type GroupMenuKey = "information" | "inventory" | "record" | "user";
 
 type LinkMenuConfig = {
   type: "link";
@@ -116,29 +116,6 @@ const adminMenuConfig: MenuConfig[] = [
   },
   {
     type: "group",
-    key: "document",
-    label: "Dokumen",
-    icon: FileText,
-    tooltip: "Dokumen",
-    searchTerms: ["dokumen"],
-    items: [
-      {
-        label: "Surat Bebas Laboratorium",
-        href: "/admin/dokumen/surat-bebas-lab",
-      },
-      {
-        label: "Surat Perjanjian Pengujian",
-        href: "/admin/dokumen/surat-perjanjian-pengujian",
-      },
-      {
-        label: "Laporan Hasil Pengujian",
-        href: "/admin/dokumen/laporan-hasil-pengujian",
-      },
-      { label: "Invoice", href: "/admin/dokumen/invoice" },
-    ],
-  },
-  {
-    type: "group",
     key: "inventory",
     label: "Inventarisasi",
     icon: Package,
@@ -147,7 +124,6 @@ const adminMenuConfig: MenuConfig[] = [
     items: [
       { label: "Ruangan", href: "/admin/inventory/rooms" },
       { label: "Peralatan", href: "/admin/inventory/equipment" },
-      { label: "Software", href: "/admin/inventory/software" },
     ],
   },
   {
@@ -172,7 +148,6 @@ export function AppSidebar() {
   const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState("");
   const [openMenus, setOpenMenus] = useState<Record<GroupMenuKey, boolean>>({
-    document: false,
     information: false,
     inventory: false,
     record: false,
@@ -184,7 +159,7 @@ export function AppSidebar() {
       : "text-sidebar-foreground/65 hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto";
 
   const toggleMenu = (
-    menu: "document" | "information" | "inventory" | "record" | "user",
+    menu: "information" | "inventory" | "record" | "user",
   ) => {
     setOpenMenus((prev) => ({
       ...prev,
@@ -228,7 +203,6 @@ export function AppSidebar() {
   );
 
   const nextOpenMenus: Record<GroupMenuKey, boolean> = {
-    document: openMenus.document || groupMenuStates.document.isActive,
     record: openMenus.record || groupMenuStates.record.isActive,
     inventory: openMenus.inventory || groupMenuStates.inventory.isActive,
     user: openMenus.user || groupMenuStates.user.isActive,

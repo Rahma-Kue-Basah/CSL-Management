@@ -27,7 +27,7 @@ from .serializers import (
 )
 from .permissions import SUPER_ADMINISTRATOR, has_role, IsStaffOrAbove
 from csluse.viewsets import DefaultPagination
-from csluse.models import Room, Equipment, Booking, Borrow
+from csluse.models import Room, Equipment, Booking, Borrow, Use, Pengujian
 from .permissions import IsAdministratorOrAbove
 
 User = get_user_model()
@@ -155,12 +155,16 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
         )
 
         department = request.query_params.get("department")
+        role = request.query_params.get("role")
         batch = request.query_params.get("batch")
+        user_type = request.query_params.get("user_type")
         search_term = request.query_params.get("search") or request.query_params.get("q")
 
         base_filters = {
             "profile__department__iexact": department,
+            "profile__role__iexact": role,
             "profile__batch": batch,
+            "profile__user_type__iexact": user_type,
         }
         base_filters = {key: value for key, value in base_filters.items() if value}
         if base_filters:
@@ -315,5 +319,7 @@ class AdminDashboardViewSet(viewsets.ReadOnlyModelViewSet):
             "total_equipments": Equipment.objects.count(),
             "total_bookings": Booking.objects.count(),
             "total_borrows": Borrow.objects.count(),
+            "total_uses": Use.objects.count(),
+            "total_pengujians": Pengujian.objects.count(),
         }
         return Response(data)

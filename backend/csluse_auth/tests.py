@@ -3,10 +3,12 @@ from django.contrib.admin.models import DELETION, LogEntry
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from datetime import timedelta
+from django.utils import timezone
 from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from csluse.models import Booking, Borrow, Equipment, Pengujian, Room, Use
 from csluse_auth.models import Profile
 from csluse_auth.permissions import ADMINISTRATOR, SUPER_ADMINISTRATOR, assign_role
 
@@ -177,6 +179,33 @@ class UserWithProfileViewSetTests(AuthBaseTestMixin, APITestCase):
             1,
         )
 
+    def test_list_aggregates_follow_role_filter(self):
+        self.create_user(
+            email="student-filter@example.com",
+            full_name="Student Filter",
+            role="Student",
+            department="DIGITAL BUSINESS TECHNOLOGY",
+            batch="2024",
+            id_number="STD-010",
+            user_type="INTERNAL",
+            verified=True,
+        )
+        self.create_user(
+            email="guest-filter@example.com",
+            full_name="Guest Filter",
+            role="Guest",
+            institution="External Lab",
+            user_type="EXTERNAL",
+            verified=True,
+        )
+
+        response = self.client.get("/api/admin/users/", {"role": "Guest"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["aggregates"]["total"], 1)
+        self.assertEqual(response.data["aggregates"]["guest"], 1)
+        self.assertEqual(response.data["aggregates"]["student"], 0)
+
 
 class JwtCookieAuthFlowTests(AuthBaseTestMixin, APITestCase):
     def setUp(self):
@@ -239,3 +268,82 @@ class JwtCookieAuthFlowTests(AuthBaseTestMixin, APITestCase):
 
         self.assertEqual(profile_response.status_code, status.HTTP_200_OK)
         self.assertEqual(profile_response.data["email"], self.user.email)
+
+
+class AdminDashboardKpisTests(AuthBaseTestMixin, APITestCase):
+    def setUp(self):
+        self.admin = self.create_user(
+            email="dashboard-admin@example.com",
+            full_name="Dashboard Admin",
+            role="Admin",
+            verified=True,
+            group_role=ADMINISTRATOR,
+        )
+        self.client.force_authenticate(user=self.admin)
+
+        room = Room.objects.create(
+            name="Lab A",
+            capacity=20,
+            number="101",
+            floor=1,
+        )
+        equipment = Equipment.objects.create(
+            name="Oscilloscope",
+            quantity=2,
+            room=room,
+        )
+        requester = self.create_user(
+            email="requester@example.com",
+            full_name="Requester User",
+            role="Student",
+            department="DIGITAL BUSINESS TECHNOLOGY",
+            batch="2024",
+            id_number="STD-100",
+            user_type="INTERNAL",
+            verified=True,
+        )
+        start_time = timezone.localtime(timezone.now()).replace(
+            hour=9,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        if start_time <= timezone.localtime(timezone.now()):
+            start_time = start_time + timedelta(days=1)
+        end_time = start_time + timedelta(hours=2)
+
+        Booking.objects.create(
+            requested_by=requester.profile,
+            room=room,
+            start_time=start_time,
+            end_time=end_time,
+        )
+        Borrow.objects.create(
+            requested_by=requester.profile,
+            equipment=equipment,
+            start_time=start_time,
+            end_time=end_time + timedelta(days=1),
+        )
+        Use.objects.create(
+            requested_by=requester.profile,
+            equipment=equipment,
+            quantity=1,
+            start_time=start_time,
+        )
+        Pengujian.objects.create(
+            name="Sample Request",
+            email="sample@example.com",
+            sample_type="Liquid",
+            requested_by=requester.profile,
+        )
+
+    def test_admin_dashboard_kpis_include_use_and_pengujian_totals(self):
+        response = self.client.get("/api/admin/dashboard/kpis/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["total_rooms"], 1)
+        self.assertEqual(response.data["total_equipments"], 1)
+        self.assertEqual(response.data["total_bookings"], 1)
+        self.assertEqual(response.data["total_borrows"], 1)
+        self.assertEqual(response.data["total_uses"], 1)
+        self.assertEqual(response.data["total_pengujians"], 1)

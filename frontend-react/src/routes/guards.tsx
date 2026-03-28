@@ -18,6 +18,8 @@ import {
 } from "@/hooks/profile/use-load-profile";
 
 type RoleProfile = Pick<UserProfile, "role">;
+let resolvedAuthStatus: AuthStatus | null = null;
+let inFlightAuthStatusRequest: Promise<AuthStatus> | null = null;
 
 export function hasAuthToken() {
   return Boolean(getCachedProfileSnapshot());
@@ -37,53 +39,91 @@ function AuthPending() {
   );
 }
 
+async function resolveAuthStatus(): Promise<AuthStatus> {
+  if (resolvedAuthStatus && resolvedAuthStatus !== "checking") {
+    return resolvedAuthStatus;
+  }
+
+  if (getCachedProfileSnapshot()) {
+    resolvedAuthStatus = "authenticated";
+    return resolvedAuthStatus;
+  }
+
+  if (inFlightAuthStatusRequest) {
+    return inFlightAuthStatusRequest;
+  }
+
+  inFlightAuthStatusRequest = (async () => {
+    try {
+      const response = await authFetch(API_AUTH_USER_PROFILE, {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        clearTokens();
+        clearProfileCache();
+        resolvedAuthStatus = "unauthenticated";
+        return resolvedAuthStatus;
+      }
+
+      const profileData: unknown = await response.json().catch(() => null);
+      const nextProfile = buildProfileFromApiResponse(profileData);
+      if (nextProfile) {
+        persistProfileCache(nextProfile);
+      }
+      resolvedAuthStatus = "authenticated";
+      return resolvedAuthStatus;
+    } catch (error) {
+      console.error("Auth guard session check error:", error);
+      clearTokens();
+      clearProfileCache();
+      resolvedAuthStatus = "unauthenticated";
+      return resolvedAuthStatus;
+    } finally {
+      inFlightAuthStatusRequest = null;
+    }
+  })();
+
+  return inFlightAuthStatusRequest;
+}
+
 export function useResolvedAuthStatus() {
-  const [status, setStatus] = useState<AuthStatus>("checking");
+  const [status, setStatus] = useState<AuthStatus>(() => {
+    if (resolvedAuthStatus && resolvedAuthStatus !== "checking") {
+      return resolvedAuthStatus;
+    }
+    if (getCachedProfileSnapshot()) {
+      resolvedAuthStatus = "authenticated";
+      return resolvedAuthStatus;
+    }
+    return "checking";
+  });
 
   useEffect(() => {
     let isActive = true;
 
-    const resolveSession = async () => {
-      try {
-        const response = await authFetch(API_AUTH_USER_PROFILE, {
-          credentials: "include",
-        });
+    if (status !== "checking") {
+      return () => {
+        isActive = false;
+      };
+    }
 
-        if (!isActive) return;
-
-        if (!response.ok) {
-          clearTokens();
-          clearProfileCache();
-          setStatus("unauthenticated");
-          return;
-        }
-
-        const profileData: unknown = await response.json().catch(() => null);
-        const nextProfile = buildProfileFromApiResponse(profileData);
-        if (nextProfile) {
-          persistProfileCache(nextProfile);
-        }
-        setStatus("authenticated");
-      } catch (error) {
-        console.error("Auth guard session check error:", error);
-        if (!isActive) return;
-        clearTokens();
-        clearProfileCache();
-        setStatus("unauthenticated");
-      }
-    };
-
-    void resolveSession();
+    void resolveAuthStatus().then((nextStatus) => {
+      if (!isActive) return;
+      setStatus(nextStatus);
+    });
 
     return () => {
       isActive = false;
     };
-  }, []);
+  }, [status]);
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
 
     const handleSessionExpired = () => {
+      resolvedAuthStatus = "unauthenticated";
+      inFlightAuthStatusRequest = null;
       setStatus("unauthenticated");
     };
 
