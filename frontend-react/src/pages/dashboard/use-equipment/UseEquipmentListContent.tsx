@@ -253,6 +253,9 @@ export default function UseEquipmentListContent({
         <table className="w-full min-w-[1120px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
+              <th className="sticky left-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[1px_0_0_0_rgba(51,65,85,1)]">
+                Aksi
+              </th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Alat</th>
               {showRequesterColumn ? (
@@ -262,9 +265,6 @@ export default function UseEquipmentListContent({
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Selesai</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Tujuan</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Status</th>
-              <th className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
-                Aksi
-              </th>
             </tr>
           </thead>
           <tbody className="text-sm">
@@ -280,28 +280,7 @@ export default function UseEquipmentListContent({
             ) : filteredUses.length ? (
               filteredUses.map((item) => (
                 <tr key={String(item.id)} className="border-b last:border-b-0">
-                  <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
-                    {item.code}
-                  </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{item.equipmentName}</td>
-                  {showRequesterColumn ? (
-                    <td className="px-3 py-2.5 whitespace-nowrap">{item.requesterName}</td>
-                  ) : null}
-                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
-                    {formatDateTimeWib(item.startTime)}
-                  </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
-                    {formatDateTimeWib(item.endTime)}
-                  </td>
-                  <td className="px-3 py-2.5 text-slate-700">{item.purpose}</td>
-                  <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
-                    >
-                      {getStatusDisplayLabel(item.status)}
-                    </span>
-                  </td>
-                  <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
+                  <td className="sticky left-0 z-10 bg-white px-3 py-2.5 text-center shadow-[1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
                       {canReviewUses && isPendingStatus(item.status) ? (
                         <>
@@ -348,6 +327,27 @@ export default function UseEquipmentListContent({
                         }
                       />
                     </div>
+                  </td>
+                  <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
+                    {item.code}
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">{item.equipmentName}</td>
+                  {showRequesterColumn ? (
+                    <td className="px-3 py-2.5 whitespace-nowrap">{item.requesterName}</td>
+                  ) : null}
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {formatDateTimeWib(item.startTime)}
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {formatDateTimeWib(item.endTime)}
+                  </td>
+                  <td className="px-3 py-2.5 text-slate-700">{item.purpose}</td>
+                  <td className="px-3 py-2.5">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                    >
+                      {getStatusDisplayLabel(item.status)}
+                    </span>
                   </td>
                 </tr>
               ))

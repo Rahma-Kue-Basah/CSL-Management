@@ -256,6 +256,9 @@ export default function BookingRoomsListContent({
         <table className="w-full min-w-[1120px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
+              <th className="sticky left-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 whitespace-nowrap shadow-[1px_0_0_0_rgba(51,65,85,1)]">
+                Aksi
+              </th>
               <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
                 Kode
               </th>
@@ -279,11 +282,6 @@ export default function BookingRoomsListContent({
               <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
                 Status
               </th>
-              <th
-                className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 whitespace-nowrap shadow-[-1px_0_0_0_rgba(51,65,85,1)]"
-              >
-                Aksi
-              </th>
             </tr>
           </thead>
           <tbody className="text-sm">
@@ -305,32 +303,7 @@ export default function BookingRoomsListContent({
                   key={String(booking.id)}
                   className="border-b last:border-b-0"
                 >
-                  <td className="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap">
-                    {booking.code}
-                  </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{booking.roomName}</td>
-                  {showRequesterColumn ? (
-                    <td className="px-3 py-2.5 whitespace-nowrap">
-                      {booking.requesterName}
-                    </td>
-                  ) : null}
-                  <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
-                    {formatDateTimeWib(booking.startTime)}
-                  </td>
-                  <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
-                    {formatDateTimeWib(booking.endTime)}
-                  </td>
-                  <td className="px-3 py-2.5 text-slate-700">
-                    {booking.purpose}
-                  </td>
-                  <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(booking.status)}`}
-                    >
-                      {getStatusDisplayLabel(booking.status)}
-                    </span>
-                  </td>
-                  <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
+                  <td className="sticky left-0 z-10 bg-white px-3 py-2.5 text-center shadow-[1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
                       {canReviewBookings && isPendingStatus(booking.status) ? (
                         <>
@@ -377,6 +350,31 @@ export default function BookingRoomsListContent({
                         }
                       />
                     </div>
+                  </td>
+                  <td className="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap">
+                    {booking.code}
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">{booking.roomName}</td>
+                  {showRequesterColumn ? (
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      {booking.requesterName}
+                    </td>
+                  ) : null}
+                  <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
+                    {formatDateTimeWib(booking.startTime)}
+                  </td>
+                  <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
+                    {formatDateTimeWib(booking.endTime)}
+                  </td>
+                  <td className="px-3 py-2.5 text-slate-700">
+                    {booking.purpose}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span
+                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(booking.status)}`}
+                    >
+                      {getStatusDisplayLabel(booking.status)}
+                    </span>
                   </td>
                 </tr>
               ))

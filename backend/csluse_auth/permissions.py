@@ -238,7 +238,13 @@ class IsLecturerOrAbove(permissions.BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        return has_role(user, LECTURER) or has_role(user, STAFF) or has_role(user, ADMINISTRATOR) or has_role(user, SUPER_ADMINISTRATOR)
+        return (
+            getattr(user, "is_superuser", False)
+            or has_role(user, LECTURER)
+            or has_role(user, STAFF)
+            or has_role(user, ADMINISTRATOR)
+            or has_role(user, SUPER_ADMINISTRATOR)
+        )
     
 class IsStaffOrAbove(permissions.BasePermission):
     """
@@ -249,7 +255,12 @@ class IsStaffOrAbove(permissions.BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        return has_role(user, STAFF) or has_role(user, ADMINISTRATOR) or has_role(user, SUPER_ADMINISTRATOR)
+        return (
+            getattr(user, "is_superuser", False)
+            or has_role(user, STAFF)
+            or has_role(user, ADMINISTRATOR)
+            or has_role(user, SUPER_ADMINISTRATOR)
+        )
 
 
 class IsAdministratorOrAbove(permissions.BasePermission):
@@ -261,7 +272,11 @@ class IsAdministratorOrAbove(permissions.BasePermission):
         user = request.user
         if not user or not user.is_authenticated:
             return False
-        return has_role(user, ADMINISTRATOR) or has_role(user, SUPER_ADMINISTRATOR)
+        return (
+            getattr(user, "is_superuser", False)
+            or has_role(user, ADMINISTRATOR)
+            or has_role(user, SUPER_ADMINISTRATOR)
+        )
 
 
 class IsSuperAdministratorOnly(permissions.BasePermission):

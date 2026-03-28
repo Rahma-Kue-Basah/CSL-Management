@@ -245,12 +245,48 @@ class BookingSerializer(serializers.ModelSerializer):
     )
 
     def validate(self, attrs):
+        instance = getattr(self, "instance", None)
         equipment_items = attrs.get("equipment_items")
-        room = attrs.get("room") or getattr(self.instance, "room", None)
-        attendee_count = attrs.get("attendee_count", getattr(self.instance, "attendee_count", 1))
-        start_time = attrs.get("start_time", getattr(self.instance, "start_time", None))
-        end_time = attrs.get("end_time", getattr(self.instance, "end_time", None))
-        next_status = attrs.get("status", getattr(self.instance, "status", "Pending"))
+        room = attrs.get("room") or getattr(instance, "room", None)
+        attendee_count = attrs.get("attendee_count", getattr(instance, "attendee_count", 1))
+        start_time = attrs.get("start_time", getattr(instance, "start_time", None))
+        end_time = attrs.get("end_time", getattr(instance, "end_time", None))
+        next_status = attrs.get("status", getattr(instance, "status", "Pending"))
+
+        if instance is None:
+            if attrs.get("status") not in (None, "Pending"):
+                raise serializers.ValidationError(
+                    {"status": "Status booking hanya boleh di-set melalui action endpoint khusus."}
+                )
+            if attrs.get("approved_by") is not None:
+                raise serializers.ValidationError(
+                    {"approved_by": "approved_by tidak boleh diisi saat create."}
+                )
+        else:
+            if "status" in attrs:
+                if not self.context.get("allow_status_transition"):
+                    raise serializers.ValidationError(
+                        {"status": "Gunakan action status booking yang spesifik untuk mengubah status."}
+                    )
+                allowed_next_status = self.context.get("allowed_next_status")
+                if allowed_next_status and attrs["status"] != allowed_next_status:
+                    raise serializers.ValidationError(
+                        {"status": f"Transisi status hanya boleh menuju {allowed_next_status}."}
+                    )
+
+            if "approved_by" in attrs:
+                raise serializers.ValidationError(
+                    {"approved_by": "approved_by tidak boleh diubah langsung."}
+                )
+
+            if instance.status != "Pending" and not self.context.get("allow_status_transition"):
+                raise serializers.ValidationError(
+                    {
+                        "non_field_errors": [
+                            "Booking yang sudah diproses tidak dapat diubah langsung."
+                        ]
+                    }
+                )
 
         if attendee_count <= 0:
             raise serializers.ValidationError({"attendee_count": "Jumlah orang harus lebih dari 0."})
@@ -286,8 +322,8 @@ class BookingSerializer(serializers.ModelSerializer):
                 start_time__lt=end_time,
                 end_time__gt=start_time,
             )
-            if self.instance:
-                overlapping_bookings = overlapping_bookings.exclude(pk=self.instance.pk)
+            if instance:
+                overlapping_bookings = overlapping_bookings.exclude(pk=instance.pk)
 
             if overlapping_bookings.exists():
                 raise serializers.ValidationError(
@@ -376,7 +412,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ['requested_by', 'code']
+        read_only_fields = ['requested_by', 'code', 'approved_by']
 
 
 class BookingListSerializer(serializers.ModelSerializer):
@@ -713,10 +749,51 @@ class PengujianSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
 
+    def validate(self, attrs):
+        instance = getattr(self, "instance", None)
+
+        if instance is None:
+            if attrs.get("status") not in (None, "Pending"):
+                raise serializers.ValidationError(
+                    {"status": "Status pengujian sampel hanya boleh di-set melalui action endpoint khusus."}
+                )
+            if attrs.get("approved_by") is not None:
+                raise serializers.ValidationError(
+                    {"approved_by": "approved_by tidak boleh diisi saat create."}
+                )
+            return attrs
+
+        if "status" in attrs:
+            if not self.context.get("allow_status_transition"):
+                raise serializers.ValidationError(
+                    {"status": "Gunakan action status pengujian yang spesifik untuk mengubah status."}
+                )
+            allowed_next_status = self.context.get("allowed_next_status")
+            if allowed_next_status and attrs["status"] != allowed_next_status:
+                raise serializers.ValidationError(
+                    {"status": f"Transisi status hanya boleh menuju {allowed_next_status}."}
+                )
+
+        if "approved_by" in attrs:
+            raise serializers.ValidationError(
+                {"approved_by": "approved_by tidak boleh diubah langsung."}
+            )
+
+        if instance.status != "Pending" and not self.context.get("allow_status_transition"):
+            raise serializers.ValidationError(
+                {
+                    "non_field_errors": [
+                        "Pengujian sampel yang sudah diproses tidak dapat diubah langsung."
+                    ]
+                }
+            )
+
+        return attrs
+
     class Meta:
         model = Pengujian
         fields = '__all__'
-        read_only_fields = ['requested_by', 'code']
+        read_only_fields = ['requested_by', 'code', 'approved_by']
 
 
 class PengujianListSerializer(serializers.ModelSerializer):
@@ -756,9 +833,45 @@ class UseSerializer(serializers.ModelSerializer):
     equipment_detail = EquipmentSerializer(source="equipment", read_only=True)
 
     def validate(self, attrs):
-        start_time = attrs.get("start_time", getattr(self.instance, "start_time", None))
-        end_time = attrs.get("end_time", getattr(self.instance, "end_time", None))
-        next_status = attrs.get("status", getattr(self.instance, "status", "Pending"))
+        instance = getattr(self, "instance", None)
+        start_time = attrs.get("start_time", getattr(instance, "start_time", None))
+        end_time = attrs.get("end_time", getattr(instance, "end_time", None))
+        next_status = attrs.get("status", getattr(instance, "status", "Pending"))
+
+        if instance is None:
+            if attrs.get("status") not in (None, "Pending"):
+                raise serializers.ValidationError(
+                    {"status": "Status penggunaan alat hanya boleh di-set melalui action endpoint khusus."}
+                )
+            if attrs.get("approved_by") is not None:
+                raise serializers.ValidationError(
+                    {"approved_by": "approved_by tidak boleh diisi saat create."}
+                )
+        else:
+            if "status" in attrs:
+                if not self.context.get("allow_status_transition"):
+                    raise serializers.ValidationError(
+                        {"status": "Gunakan action status penggunaan alat yang spesifik untuk mengubah status."}
+                    )
+                allowed_next_status = self.context.get("allowed_next_status")
+                if allowed_next_status and attrs["status"] != allowed_next_status:
+                    raise serializers.ValidationError(
+                        {"status": f"Transisi status hanya boleh menuju {allowed_next_status}."}
+                    )
+
+            if "approved_by" in attrs:
+                raise serializers.ValidationError(
+                    {"approved_by": "approved_by tidak boleh diubah langsung."}
+                )
+
+            if instance.status != "Pending" and not self.context.get("allow_status_transition"):
+                raise serializers.ValidationError(
+                    {
+                        "non_field_errors": [
+                            "Penggunaan alat yang sudah diproses tidak dapat diubah langsung."
+                        ]
+                    }
+                )
 
         if next_status == "Approved":
             effective_deadline = end_time or start_time
@@ -776,7 +889,7 @@ class UseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Use
         fields = '__all__'
-        read_only_fields = ['requested_by', 'code']
+        read_only_fields = ['requested_by', 'code', 'approved_by']
 
 
 class UseListSerializer(serializers.ModelSerializer):

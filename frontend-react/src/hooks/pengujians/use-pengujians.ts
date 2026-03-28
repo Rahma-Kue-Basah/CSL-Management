@@ -23,6 +23,7 @@ export type PengujianRow = {
   code: string;
   name: string;
   institution: string;
+  institutionAddress: string;
   email: string;
   phoneNumber: string;
   sampleName: string;
@@ -48,6 +49,7 @@ type ApiPengujian = {
   code?: string | null;
   name?: string | null;
   institution?: string | null;
+  institution_address?: string | null;
   email?: string | null;
   phone_number?: string | null;
   sample_name?: string | null;
@@ -113,6 +115,7 @@ export function mapPengujian(item: ApiPengujian): PengujianRow {
     code: String(item.code ?? "-"),
     name: String(item.name ?? "-"),
     institution: String(item.institution ?? "-"),
+    institutionAddress: String(item.institution_address ?? "-"),
     email: String(item.email ?? "-"),
     phoneNumber: String(item.phone_number ?? "-"),
     sampleName: String(item.sample_name ?? "-"),

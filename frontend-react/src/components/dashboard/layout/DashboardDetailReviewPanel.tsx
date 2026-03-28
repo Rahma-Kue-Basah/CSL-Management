@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Check, Handshake, Loader2, RotateCcw, ShieldCheck, TriangleAlert, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -438,17 +438,14 @@ function BorrowReviewPanel({ id }: { id: string }) {
     );
   };
 
-  const reviewMeta = useMemo(
-    () => [
-      { label: "Pemohon", value: borrow.requesterName },
-      { label: "Ditujukan ke PIC", value: borrow.roomPicName || "-" },
-      {
-        label: "Batas waktu approval",
-        value: formatDateTimeWib(borrow.startTime),
-      },
-    ],
-    [borrow],
-  );
+  const reviewMeta = [
+    { label: "Pemohon", value: borrow.requesterName },
+    { label: "Ditujukan ke PIC", value: borrow.roomPicName || "-" },
+    {
+      label: "Batas waktu approval",
+      value: formatDateTimeWib(borrow.startTime),
+    },
+  ];
 
   return (
     <>

@@ -142,7 +142,7 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
                 | models.Q(profile__id_number__icontains=search_term)
             )
 
-        return qs
+        return qs.order_by("profile__full_name", "email", "pk")
 
     def list(self, request, *args, **kwargs):
         aggregate_qs = (

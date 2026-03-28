@@ -1,10 +1,18 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { CalendarClock, Check, CheckCircle2, Eye, FlaskConical, Loader2, PackageSearch, RotateCcw, X } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import {
+  CalendarClock,
+  CheckCircle2,
+  Eye,
+  FlaskConical,
+  Loader2,
+  PackageSearch,
+  RotateCcw,
+  X,
+} from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
-import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { DataPagination } from "@/components/shared/data-pagination";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
@@ -14,16 +22,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { getStatusBadgeClass, getStatusDisplayLabel, getStatusSummaryTone } from "@/lib/status";
 import { formatDateTimeWib } from "@/lib/date-format";
-import { usePengujians, type PengujianRow } from "@/hooks/pengujians/use-pengujians";
-import { useUpdatePengujianStatus } from "@/hooks/pengujians/use-update-pengujian-status";
+import {
+  getStatusBadgeClass,
+  getStatusDisplayLabel,
+  getStatusSummaryTone,
+} from "@/lib/status";
+import { toEndOfDay, toStartOfDay } from "@/lib/date";
+import {
+  usePengujians,
+  type PengujianListScope,
+  type PengujianRow,
+} from "@/hooks/pengujians/use-pengujians";
 
 const PAGE_SIZE = 10;
-
-function isPendingStatus(status: string) {
-  return status.toLowerCase() === "pending";
-}
 
 function SummaryCard({
   label,
@@ -86,9 +98,7 @@ function SummaryCard({
             {value}
           </p>
         </div>
-        <div className={`rounded-lg p-2 ${toneClass.icon}`}>
-          {icon}
-        </div>
+        <div className={`rounded-lg p-2 ${toneClass.icon}`}>{icon}</div>
       </div>
     </div>
   );
@@ -111,46 +121,64 @@ function DetailField({
   );
 }
 
-export default function ApprovalSampleTestingPage() {
+type SampleTestingListContentProps = {
+  scope: PengujianListScope;
+  emptyMessage: string;
+};
+
+export default function SampleTestingListContent({
+  scope,
+  emptyMessage,
+}: SampleTestingListContentProps) {
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
-  const [reloadKey, setReloadKey] = useState(0);
   const [detailTarget, setDetailTarget] = useState<PengujianRow | null>(null);
-  const [confirmState, setConfirmState] = useState<{
-    pengujianId: string | number;
-    type: "approve" | "reject";
-  } | null>(null);
+  const status = searchParams.get("status") ?? "";
+  const search = searchParams.get("q") ?? "";
+  const createdAfter = searchParams.get("created_after") ?? "";
+  const createdBefore = searchParams.get("created_before") ?? "";
+
+  useEffect(() => {
+    setPage(1);
+  }, [status, search, createdAfter, createdBefore]);
 
   const { pengujians, totalCount, aggregates, isLoading, hasLoadedOnce, error } =
-    usePengujians(page, PAGE_SIZE, {}, reloadKey, "all");
+    usePengujians(
+      page,
+      PAGE_SIZE,
+      {
+        status,
+        createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
+        createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
+      },
+      0,
+      scope,
+    );
 
-  const { updatePengujianStatus, pendingAction } = useUpdatePengujianStatus();
+  const filteredPengujians = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return pengujians;
+
+    return pengujians.filter((item) =>
+      [
+        item.code,
+        item.sampleName,
+        item.sampleType,
+        item.sampleTestingType,
+        item.institution,
+        item.name,
+        item.email,
+      ]
+        .join(" ")
+        .toLowerCase()
+        .includes(query),
+    );
+  }, [pengujians, search]);
 
   const totalPages = Math.max(
     1,
-    Math.ceil((totalCount || pengujians.length) / PAGE_SIZE),
+    Math.ceil((totalCount || filteredPengujians.length) / PAGE_SIZE),
   );
-
-  const handleStatusAction = async () => {
-    if (!confirmState) return;
-
-    const result = await updatePengujianStatus(
-      confirmState.pengujianId,
-      confirmState.type,
-    );
-
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
-    }
-
-    toast.success(
-      confirmState.type === "approve"
-        ? "Pengajuan pengujian sampel berhasil disetujui."
-        : "Pengajuan pengujian sampel berhasil ditolak.",
-    );
-    setConfirmState(null);
-    setReloadKey((prev) => prev + 1);
-  };
 
   return (
     <section className="space-y-4">
@@ -196,66 +224,47 @@ export default function ApprovalSampleTestingPage() {
       {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
       <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[1120px]">
+        <table className="w-full min-w-[1100px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
               <th className="sticky left-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[1px_0_0_0_rgba(51,65,85,1)]">
                 Aksi
               </th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Pemohon</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Institusi</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Sampel</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Jenis Uji</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Status</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Dibuat</th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Kode
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Sampel
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Jenis Uji
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Institusi
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Status
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Dibuat
+              </th>
             </tr>
           </thead>
           <tbody className="text-sm">
             {isLoading || !hasLoadedOnce ? (
               <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
+                <td colSpan={7} className="px-3 py-10 text-center text-slate-500">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Memuat data...
                   </div>
                 </td>
               </tr>
-            ) : pengujians.length ? (
-              pengujians.map((item) => (
+            ) : filteredPengujians.length ? (
+              filteredPengujians.map((item) => (
                 <tr key={String(item.id)} className="border-b last:border-b-0">
                   <td className="sticky left-0 z-10 bg-white px-3 py-2.5 text-center shadow-[1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
-                      {isPendingStatus(item.status) ? (
-                        <>
-                          <TableActionIconButton
-                            type="button"
-                            label="Approve"
-                            icon={<Check className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
-                            onClick={() =>
-                              setConfirmState({
-                                pengujianId: item.id,
-                                type: "approve",
-                              })
-                            }
-                            disabled={pendingAction.pengujianId === item.id}
-                          />
-                          <TableActionIconButton
-                            type="button"
-                            label="Reject"
-                            icon={<X className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
-                            onClick={() =>
-                              setConfirmState({
-                                pengujianId: item.id,
-                                type: "reject",
-                              })
-                            }
-                            disabled={pendingAction.pengujianId === item.id}
-                          />
-                        </>
-                      ) : null}
                       <TableActionIconButton
                         type="button"
                         label="Lihat detail"
@@ -271,18 +280,19 @@ export default function ApprovalSampleTestingPage() {
                   </td>
                   <td className="px-3 py-2.5 text-slate-700">
                     <div className="space-y-1">
-                      <p className="font-medium text-slate-800">{item.name}</p>
-                      <p className="whitespace-nowrap text-slate-500">{item.email}</p>
-                    </div>
-                  </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{item.institution}</td>
-                  <td className="px-3 py-2.5 text-slate-700">
-                    <div className="space-y-1">
                       <p className="font-medium text-slate-800">{item.sampleName}</p>
                       <p className="whitespace-nowrap text-slate-500">{item.sampleType}</p>
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{item.sampleTestingType}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {item.sampleTestingType}
+                  </td>
+                  <td className="px-3 py-2.5 text-slate-700">
+                    <div className="space-y-1">
+                      <p className="font-medium text-slate-800">{item.institution}</p>
+                      <p className="whitespace-nowrap text-slate-500">{item.email}</p>
+                    </div>
+                  </td>
                   <td className="px-3 py-2.5">
                     <span
                       className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
@@ -297,8 +307,8 @@ export default function ApprovalSampleTestingPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
-                  Belum ada pengajuan pengujian sampel yang tersedia.
+                <td colSpan={7} className="px-3 py-10 text-center text-slate-500">
+                  {emptyMessage}
                 </td>
               </tr>
             )}
@@ -309,14 +319,17 @@ export default function ApprovalSampleTestingPage() {
       <DataPagination
         page={page}
         totalPages={totalPages}
-        totalCount={totalCount || pengujians.length}
+        totalCount={totalCount || filteredPengujians.length}
         pageSize={PAGE_SIZE}
         itemLabel="pengajuan"
         isLoading={isLoading}
         onPageChange={setPage}
       />
 
-      <Dialog open={Boolean(detailTarget)} onOpenChange={(open) => !open && setDetailTarget(null)}>
+      <Dialog
+        open={Boolean(detailTarget)}
+        onOpenChange={(open) => !open && setDetailTarget(null)}
+      >
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
           <DialogHeader>
             <DialogTitle>Detail Pengajuan Pengujian Sampel</DialogTitle>
@@ -325,34 +338,50 @@ export default function ApprovalSampleTestingPage() {
           {detailTarget ? (
             <div className="grid gap-3 md:grid-cols-2">
               <DetailField label="Kode" value={detailTarget.code} />
-              <DetailField label="Status" value={getStatusDisplayLabel(detailTarget.status)} />
+              <DetailField
+                label="Status"
+                value={getStatusDisplayLabel(detailTarget.status)}
+              />
               <DetailField label="Nama Pemohon" value={detailTarget.name} />
               <DetailField label="Email" value={detailTarget.email} />
               <DetailField label="Nomor Telepon" value={detailTarget.phoneNumber} />
               <DetailField label="Institusi" value={detailTarget.institution} />
+              <DetailField
+                label="Alamat Institusi"
+                value={detailTarget.institutionAddress}
+              />
               <DetailField label="Nama Sampel" value={detailTarget.sampleName} />
               <DetailField label="Jenis Sampel" value={detailTarget.sampleType} />
               <DetailField label="Merek Sampel" value={detailTarget.sampleBrand} />
-              <DetailField label="Kemasan Sampel" value={detailTarget.samplePackaging} />
+              <DetailField
+                label="Kemasan Sampel"
+                value={detailTarget.samplePackaging}
+              />
               <DetailField label="Berat Sampel" value={detailTarget.sampleWeight} />
-              <DetailField label="Jumlah Sampel" value={detailTarget.sampleQuantity} />
-              <DetailField label="Serving" value={detailTarget.sampleTestingServing} />
-              <DetailField label="Metode Uji" value={detailTarget.sampleTestingMethod} />
-              <DetailField label="Jenis Pengujian" value={detailTarget.sampleTestingType} />
-              <DetailField label="Dibuat Pada" value={formatDateTimeWib(detailTarget.createdAt)} />
+              <DetailField
+                label="Jumlah Sampel"
+                value={detailTarget.sampleQuantity}
+              />
+              <DetailField
+                label="Serving"
+                value={detailTarget.sampleTestingServing}
+              />
+              <DetailField
+                label="Metode Uji"
+                value={detailTarget.sampleTestingMethod}
+              />
+              <DetailField
+                label="Jenis Pengujian"
+                value={detailTarget.sampleTestingType}
+              />
+              <DetailField
+                label="Dibuat Pada"
+                value={formatDateTimeWib(detailTarget.createdAt)}
+              />
             </div>
           ) : null}
         </DialogContent>
       </Dialog>
-
-      <StatusConfirmDialog
-        open={Boolean(confirmState)}
-        actionType={confirmState?.type ?? null}
-        onOpenChange={(open) => !open && setConfirmState(null)}
-        onConfirm={handleStatusAction}
-        isSubmitting={Boolean(confirmState) && pendingAction.pengujianId === confirmState?.pengujianId}
-        subjectLabel="pengajuan pengujian sampel ini"
-      />
     </section>
   );
 }

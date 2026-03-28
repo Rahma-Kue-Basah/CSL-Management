@@ -40,15 +40,15 @@ export default function RoomsListPage() {
         <table className="w-full min-w-[860px] table-fixed">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
+              <th className="sticky left-0 z-20 w-[120px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[1px_0_0_0_rgba(51,65,85,1)]">
+                Aksi
+              </th>
               <th className="w-[200px] px-3 py-3 font-medium text-slate-50">Nama Ruangan</th>
               <th className="w-[130px] px-3 py-3 font-medium text-slate-50">Nomor</th>
               <th className="w-[100px] px-3 py-3 font-medium text-slate-50">Lantai</th>
               <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Kapasitas</th>
               <th className="w-[200px] px-3 py-3 font-medium text-slate-50">PIC</th>
               <th className="w-[250px] px-3 py-3 font-medium text-slate-50">Deskripsi</th>
-              <th className="sticky right-0 z-20 w-[120px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
-                Aksi
-              </th>
             </tr>
           </thead>
           <tbody className="text-sm">
@@ -64,13 +64,7 @@ export default function RoomsListPage() {
             ) : rooms.length ? (
               rooms.map((room) => (
                 <tr key={String(room.id)} className="border-b last:border-b-0">
-                  <td className="truncate px-3 py-2.5 font-medium text-slate-800">{room.name}</td>
-                  <td className="truncate px-3 py-2.5">{room.number}</td>
-                  <td className="truncate px-3 py-2.5">{room.floor}</td>
-                  <td className="truncate px-3 py-2.5">{room.capacity}</td>
-                  <td className="truncate px-3 py-2.5">{room.picName}</td>
-                  <td className="truncate px-3 py-2.5">{room.description || "-"}</td>
-                  <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
+                  <td className="sticky left-0 z-10 bg-white px-3 py-2.5 text-center shadow-[1px_0_0_0_rgba(226,232,240,1)]">
                     <TableActionIconButton
                       type="button"
                       label="Lihat detail"
@@ -80,6 +74,12 @@ export default function RoomsListPage() {
                       onClick={() => router.push(`/rooms/${room.id}`)}
                     />
                   </td>
+                  <td className="truncate px-3 py-2.5 font-medium text-slate-800">{room.name}</td>
+                  <td className="truncate px-3 py-2.5">{room.number}</td>
+                  <td className="truncate px-3 py-2.5">{room.floor}</td>
+                  <td className="truncate px-3 py-2.5">{room.capacity}</td>
+                  <td className="truncate px-3 py-2.5">{room.picName}</td>
+                  <td className="truncate px-3 py-2.5">{room.description || "-"}</td>
                 </tr>
               ))
             ) : (

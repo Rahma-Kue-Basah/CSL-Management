@@ -4,6 +4,12 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from csluse_auth.models import Profile
+from csluse_auth.permissions import (
+    ADMINISTRATOR,
+    STAFF,
+    SUPER_ADMINISTRATOR,
+    has_role,
+)
 
 from .models import Image, Booking, BookingEquipmentItem, Borrow, Room, Pengujian, Use
 
@@ -45,6 +51,30 @@ def validate_booking_working_hours(start_time, end_time):
         raise ValidationError("Booking end time must be after start time.")
 
 
+def is_admin_approver(profile):
+    if not profile:
+        return False
+
+    approver_role = str(profile.role or "").upper()
+    approver_user = getattr(profile, "user", None)
+
+    return (
+        approver_role == "ADMIN"
+        or getattr(approver_user, "is_superuser", False)
+        or has_role(approver_user, ADMINISTRATOR)
+        or has_role(approver_user, SUPER_ADMINISTRATOR)
+    )
+
+
+def is_staff_or_admin_approver(profile):
+    if is_admin_approver(profile):
+        return True
+
+    approver_role = str(getattr(profile, "role", "") or "").upper()
+    approver_user = getattr(profile, "user", None)
+    return approver_role == "STAFF" or has_role(approver_user, STAFF)
+
+
 @receiver(post_delete, sender=Image)
 def delete_image(sender, instance, **kwargs):
     image_name = instance.image.name
@@ -75,8 +105,7 @@ def validate_booking(sender, instance, **kwargs):
 
     # approved_by must be room PIC or Admin (when set)
     if instance.approved_by_id:
-        approver_role = str(instance.approved_by.role or "").upper()
-        if approver_role != "ADMIN":
+        if not is_admin_approver(instance.approved_by):
             if not instance.room.pics.filter(id=instance.approved_by_id).exists():
                 raise ValidationError(
                     "Approver harus PIC ruangan terkait atau Admin."
@@ -160,8 +189,7 @@ def validate_borrow(sender, instance, **kwargs):
 
     # approved_by must be equipment room PIC or Admin (when set)
     if instance.approved_by_id:
-        approver_role = str(instance.approved_by.role or "").upper()
-        if approver_role != "ADMIN":
+        if not is_admin_approver(instance.approved_by):
             room = instance.equipment.room if instance.equipment_id else None
             if not room or not room.pics.filter(id=instance.approved_by_id).exists():
                 raise ValidationError(
@@ -195,13 +223,17 @@ def validate_room_pic_members(sender, instance, action, pk_set, **kwargs):
 def validate_pengujians(sender, instance, **kwargs):
     """
     Pengujian rules:
-    - Only editable while pending and not approved.
-    - approved_by must be Admin (when set).
+    - Rejected/completed requests are locked.
+    - approved_by must be Staff/Admin (when set).
     """
-    if instance.status != 'pending' or instance.approved_by is not None:
-        raise ValidationError("Cannot modify a pengujian that is not pending.")
+    previous_instance = None
+    if instance.pk:
+        previous_instance = Pengujian.objects.filter(pk=instance.pk).only(
+            "status",
+        ).first()
 
-    if instance.approved_by_id:
-        approver_role = str(instance.approved_by.role or "").upper()
-        if approver_role not in {"ADMIN", "STAFF"}:
-            raise ValidationError("Approver harus Admin atau Staff.")
+    if previous_instance and previous_instance.status in {"Rejected", "Completed"}:
+        raise ValidationError("Pengujian yang sudah selesai diproses tidak dapat diubah.")
+
+    if instance.approved_by_id and not is_staff_or_admin_approver(instance.approved_by):
+        raise ValidationError("Approver harus Admin atau Staff.")

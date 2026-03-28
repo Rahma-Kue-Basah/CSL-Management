@@ -59,6 +59,7 @@ from .serializers import (
 from csluse_auth.audit import log_admin_action
 from csluse_auth.permissions import (
     IsStaffOrAbove,
+    IsAdministratorOrAbove,
     has_role,
     STAFF,
     ADMINISTRATOR,
@@ -95,7 +96,20 @@ def is_staff_or_above(user):
         user
         and user.is_authenticated
         and (
-            has_role(user, STAFF)
+            getattr(user, "is_superuser", False)
+            or has_role(user, STAFF)
+            or has_role(user, ADMINISTRATOR)
+            or has_role(user, SUPER_ADMINISTRATOR)
+        )
+    )
+
+
+def is_administrator_or_above(user):
+    return (
+        user
+        and user.is_authenticated
+        and (
+            getattr(user, "is_superuser", False)
             or has_role(user, ADMINISTRATOR)
             or has_role(user, SUPER_ADMINISTRATOR)
         )
@@ -212,6 +226,8 @@ class ImageViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), IsStaffOrAbove()]
+        if self.action in {"update", "partial_update", "destroy"}:
+            return [IsAuthenticated(), IsAdministratorOrAbove()]
         return super().get_permissions()
 
     def perform_create(self, serializer):
@@ -243,6 +259,8 @@ class RoomViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), IsStaffOrAbove()]
+        if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
+            return [IsAuthenticated(), IsAdministratorOrAbove()]
         return super().get_permissions()
 
     @extend_schema(
@@ -326,7 +344,7 @@ class RoomViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
     def bulk_delete(self, request):
-        if not is_staff_or_above(request.user):
+        if not is_administrator_or_above(request.user):
             raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data ruangan.")
 
         serializer = RecordBulkDeleteSerializer(data=request.data)
@@ -437,6 +455,8 @@ class EquipmentViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), IsStaffOrAbove()]
+        if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
+            return [IsAuthenticated(), IsAdministratorOrAbove()]
         return super().get_permissions()
 
     @extend_schema(
@@ -535,7 +555,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
     def bulk_delete(self, request):
-        if not is_staff_or_above(request.user):
+        if not is_administrator_or_above(request.user):
             raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data peralatan.")
 
         serializer = RecordBulkDeleteSerializer(data=request.data)
@@ -616,12 +636,13 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         bookings = (
             Booking.objects
             .filter(
-                equipment=equipment,
+                equipment_items__equipment=equipment,
                 status__in=booking_block,
                 start_time__lt=end,
                 end_time__gt=start,
             )
             .values('id', 'start_time', 'end_time', 'status')
+            .distinct()
         )
 
         borrows = (
@@ -656,6 +677,48 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     def _is_staff_or_above(self):
         return is_staff_or_above(self.request.user)
+
+    def _current_profile(self):
+        return getattr(self.request.user, "profile", None)
+
+    def _ensure_review_permission(self, booking):
+        if not self._is_staff_or_above():
+            raise PermissionDenied(
+                "Hanya Staff, Admin, atau SuperAdministrator yang dapat memproses booking."
+            )
+
+        current_profile = self._current_profile()
+        if (
+            current_profile
+            and booking.requested_by_id == current_profile.id
+            and not is_administrator_or_above(self.request.user)
+        ):
+            raise PermissionDenied(
+                "Anda tidak dapat memproses pengajuan milik sendiri kecuali sebagai Admin atau SuperAdministrator."
+            )
+
+    def _ensure_transition(self, booking, allowed_sources, target_status):
+        if booking.status not in allowed_sources:
+            allowed = ", ".join(allowed_sources)
+            raise ValidationError(
+                {
+                    "status": (
+                        f"Transisi ke {target_status} hanya boleh dari status: {allowed}."
+                    )
+                }
+            )
+
+    def _transition_serializer(self, instance, data):
+        return self.get_serializer(
+            instance,
+            data=data,
+            partial=True,
+            context={
+                **self.get_serializer_context(),
+                "allow_status_transition": True,
+                "allowed_next_status": data.get("status"),
+            },
+        )
 
     def _auto_update_booking_statuses(self):
         sync_booking_statuses()
@@ -715,7 +778,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         if room_id:
             qs = qs.filter(room_id=room_id)
         if equipment_id:
-            qs = qs.filter(equipment_id=equipment_id)
+            qs = qs.filter(equipment_items__equipment_id=equipment_id).distinct()
         if requester_id and allow_requester_filter:
             qs = qs.filter(requested_by_id=requester_id)
         if pic_id:
@@ -883,10 +946,11 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Pending"], "Approved")
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
@@ -895,10 +959,11 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Pending"], "Rejected")
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
@@ -907,10 +972,11 @@ class BookingViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Approved"], "Completed")
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Completed', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -956,6 +1022,15 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
     def _ensure_review_permission(self, borrow):
         if self._can_review_borrow(borrow):
+            profile = self._current_profile()
+            if (
+                profile
+                and borrow.requested_by_id == profile.id
+                and not is_administrator_or_above(self.request.user)
+            ):
+                raise PermissionDenied(
+                    "Anda tidak dapat memproses pengajuan milik sendiri kecuali sebagai Admin atau SuperAdministrator."
+                )
             return
         raise PermissionDenied(
             "Hanya PIC ruangan terkait atau laboran/admin yang dapat memproses borrow ini."
@@ -1396,6 +1471,8 @@ class FacilityViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), IsStaffOrAbove()]
+        if self.action in {"update", "partial_update", "destroy"}:
+            return [IsAuthenticated(), IsAdministratorOrAbove()]
         return super().get_permissions()
 
 
@@ -1434,6 +1511,8 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), IsStaffOrAbove()]
+        if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
+            return [IsAuthenticated(), IsAdministratorOrAbove()]
         return super().get_permissions()
 
     def perform_create(self, serializer):
@@ -1468,7 +1547,7 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
     def bulk_delete(self, request):
-        if not is_staff_or_above(request.user):
+        if not is_administrator_or_above(request.user):
             raise PermissionDenied("Anda tidak memiliki akses untuk menghapus pengumuman.")
 
         serializer = RecordBulkDeleteSerializer(data=request.data)
@@ -2051,6 +2130,8 @@ class FAQViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), IsStaffOrAbove()]
+        if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
+            return [IsAuthenticated(), IsAdministratorOrAbove()]
         return super().get_permissions()
 
     def get_queryset(self):
@@ -2102,7 +2183,7 @@ class FAQViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
     def bulk_delete(self, request):
-        if not is_staff_or_above(request.user):
+        if not is_administrator_or_above(request.user):
             raise PermissionDenied("Anda tidak memiliki akses untuk menghapus FAQ.")
 
         serializer = RecordBulkDeleteSerializer(data=request.data)
@@ -2151,6 +2232,8 @@ class StructureOrganizationViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "create":
             return [IsAuthenticated(), IsStaffOrAbove()]
+        if self.action in {"update", "partial_update", "destroy"}:
+            return [IsAuthenticated(), IsAdministratorOrAbove()]
         return super().get_permissions()
 
 
@@ -2180,6 +2263,48 @@ class PengujianViewSet(viewsets.ModelViewSet):
 
     def _is_staff_or_above(self):
         return is_staff_or_above(self.request.user)
+
+    def _current_profile(self):
+        return getattr(self.request.user, "profile", None)
+
+    def _ensure_review_permission(self, pengujian):
+        if not self._is_staff_or_above():
+            raise PermissionDenied(
+                "Hanya Staff, Admin, atau SuperAdministrator yang dapat memproses pengujian sampel."
+            )
+
+        current_profile = self._current_profile()
+        if (
+            current_profile
+            and pengujian.requested_by_id == current_profile.id
+            and not is_administrator_or_above(self.request.user)
+        ):
+            raise PermissionDenied(
+                "Anda tidak dapat memproses pengajuan milik sendiri kecuali sebagai Admin atau SuperAdministrator."
+            )
+
+    def _ensure_transition(self, pengujian, allowed_sources, target_status):
+        if pengujian.status not in allowed_sources:
+            allowed = ", ".join(allowed_sources)
+            raise ValidationError(
+                {
+                    "status": (
+                        f"Transisi ke {target_status} hanya boleh dari status: {allowed}."
+                    )
+                }
+            )
+
+    def _transition_serializer(self, instance, data):
+        return self.get_serializer(
+            instance,
+            data=data,
+            partial=True,
+            context={
+                **self.get_serializer_context(),
+                "allow_status_transition": True,
+                "allowed_next_status": data.get("status"),
+            },
+        )
 
     def _apply_list_filters(self, qs, *, allow_requester_filter=False):
         status_param = self.request.query_params.get('status')
@@ -2326,10 +2451,11 @@ class PengujianViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Pending"], "Approved")
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
@@ -2350,10 +2476,11 @@ class PengujianViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Pending"], "Rejected")
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
@@ -2362,10 +2489,11 @@ class PengujianViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Approved"], "Completed")
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Completed', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -2413,6 +2541,48 @@ class UseViewSet(viewsets.ModelViewSet):
 
     def _is_staff_or_above(self):
         return is_staff_or_above(self.request.user)
+
+    def _current_profile(self):
+        return getattr(self.request.user, "profile", None)
+
+    def _ensure_review_permission(self, use_item):
+        if not self._is_staff_or_above():
+            raise PermissionDenied(
+                "Hanya Staff, Admin, atau SuperAdministrator yang dapat memproses penggunaan alat."
+            )
+
+        current_profile = self._current_profile()
+        if (
+            current_profile
+            and use_item.requested_by_id == current_profile.id
+            and not is_administrator_or_above(self.request.user)
+        ):
+            raise PermissionDenied(
+                "Anda tidak dapat memproses pengajuan milik sendiri kecuali sebagai Admin atau SuperAdministrator."
+            )
+
+    def _ensure_transition(self, use_item, allowed_sources, target_status):
+        if use_item.status not in allowed_sources:
+            allowed = ", ".join(allowed_sources)
+            raise ValidationError(
+                {
+                    "status": (
+                        f"Transisi ke {target_status} hanya boleh dari status: {allowed}."
+                    )
+                }
+            )
+
+    def _transition_serializer(self, instance, data):
+        return self.get_serializer(
+            instance,
+            data=data,
+            partial=True,
+            context={
+                **self.get_serializer_context(),
+                "allow_status_transition": True,
+                "allowed_next_status": data.get("status"),
+            },
+        )
 
     def _apply_list_filters(self, qs, *, allow_requester_filter=False):
         status_param = self.request.query_params.get('status')
@@ -2591,10 +2761,11 @@ class UseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Pending"], "Approved")
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
@@ -2603,10 +2774,11 @@ class UseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Pending"], "Rejected")
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save(approved_by=getattr(request.user, 'profile', None))
@@ -2615,10 +2787,11 @@ class UseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):
         instance = self.get_object()
-        serializer = self.get_serializer(
+        self._ensure_review_permission(instance)
+        self._ensure_transition(instance, ["Approved"], "Completed")
+        serializer = self._transition_serializer(
             instance,
             data={'status': 'Completed', **request.data},
-            partial=True,
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
