@@ -1,0 +1,14 @@
+Halo {{ user_display }},
+
+Peminjaman alat Anda dengan ID {{ request_identifier }} untuk {{ equipment_name }} sudah overdue sejak {{ due_text }}.
+
+{{ notification_message }}
+
+Silakan buka tautan berikut untuk melihat detail peminjaman Anda:
+{{ cta_url }}
+
+Terima kasih,
+
+CSL USE
+School of Science, Technology, Engineering, Mathematic
+Universitas Prasetiya Mulya

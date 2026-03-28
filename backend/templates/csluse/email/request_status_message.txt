@@ -1,0 +1,14 @@
+Halo {{ user_display }},
+
+Pengajuan {{ request_label_lower }} Anda dengan ID {{ request_identifier }} telah {{ status_label }}.
+
+{{ notification_message }}
+
+Silakan buka tautan berikut untuk melihat detail request Anda:
+{{ cta_url }}
+
+Terima kasih,
+
+CSL USE
+School of Science, Technology, Engineering, Mathematic
+Universitas Prasetiya Mulya

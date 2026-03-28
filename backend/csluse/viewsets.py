@@ -27,6 +27,7 @@ from .models import (
     StructureOrganization,
     Pengujian,
     Use,
+    Notification,
 )
 from .serializers import (
     ImageSerializer,
@@ -55,6 +56,7 @@ from .serializers import (
     UseSerializer,
     UseListSerializer,
     DashboardOverviewSerializer,
+    NotificationSerializer,
 )
 from csluse_auth.audit import log_admin_action
 from csluse_auth.permissions import (
@@ -64,6 +66,12 @@ from csluse_auth.permissions import (
     STAFF,
     ADMINISTRATOR,
     SUPER_ADMINISTRATOR,
+)
+from .email_notifications import (
+    build_email_context,
+    notification_cta_label,
+    notification_cta_url,
+    send_notification_email,
 )
 
 STATUS_VALUE_MAP = {
@@ -145,6 +153,216 @@ def _overview_title(value, fallback):
     return raw or fallback
 
 
+def _create_notification(recipient, *, title, category, message):
+    if recipient is None:
+        return None
+    return Notification.objects.create(
+        recipient=recipient,
+        title=title,
+        category=category,
+        message=message,
+    )
+
+
+def _request_label(kind):
+    labels = {
+        "booking": "booking ruangan",
+        "borrow": "peminjaman alat",
+        "use": "penggunaan alat",
+        "pengujian": "pengujian sampel",
+    }
+    return labels.get(kind, "request")
+
+
+def _request_identifier(instance, fallback):
+    return (
+        getattr(instance, "code", None)
+        or getattr(instance, "sample_name", None)
+        or getattr(instance, "name", None)
+        or fallback
+    )
+
+
+def _notification_recipient_email(recipient):
+    if recipient is None:
+        return None
+    user = getattr(recipient, "user", None)
+    email = getattr(user, "email", None)
+    return (email or "").strip() or None
+
+
+def _notification_recipient_name(instance, recipient):
+    return (
+        _profile_display_name(recipient)
+        or getattr(instance, "name", None)
+        or _notification_recipient_email(recipient)
+        or "Pengguna"
+    )
+
+
+def _notification_email_extra_context(
+    instance,
+    *,
+    recipient,
+    kind,
+    title,
+    message,
+    cta_url,
+    cta_label,
+):
+    return {
+        "user_display": _notification_recipient_name(instance, recipient),
+        "notification_title": title,
+        "notification_message": message,
+        "request_label": _request_label(kind).title(),
+        "request_label_lower": _request_label(kind),
+        "request_identifier": _request_identifier(instance, _request_label(kind).title()),
+        "cta_url": cta_url,
+        "cta_label": cta_label,
+    }
+
+
+def _send_request_status_email(
+    instance,
+    *,
+    recipient,
+    kind,
+    title,
+    message,
+    status_value,
+    request=None,
+):
+    recipient_email = _notification_recipient_email(recipient)
+    if not recipient_email:
+        return
+
+    cta_url = notification_cta_url(kind, instance)
+    cta_label = notification_cta_label(kind)
+    context = build_email_context(
+        request=request,
+        extra_context={
+            **_notification_email_extra_context(
+                instance,
+                recipient=recipient,
+                kind=kind,
+                title=title,
+                message=message,
+                cta_url=cta_url,
+                cta_label=cta_label,
+            ),
+            "status_label": "disetujui" if status_value == "Approved" else "ditolak",
+        },
+    )
+    send_notification_email(
+        recipient_email,
+        template_base="csluse/email/request_status",
+        context=context,
+    )
+
+
+def _send_borrow_overdue_email(
+    instance,
+    *,
+    recipient,
+    title,
+    message,
+    due_text,
+    equipment_name,
+    request=None,
+):
+    recipient_email = _notification_recipient_email(recipient)
+    if not recipient_email:
+        return
+
+    cta_url = notification_cta_url("borrow", instance)
+    context = build_email_context(
+        request=request,
+        extra_context={
+            **_notification_email_extra_context(
+                instance,
+                recipient=recipient,
+                kind="borrow",
+                title=title,
+                message=message,
+                cta_url=cta_url,
+                cta_label="Lihat Detail Peminjaman",
+            ),
+            "equipment_name": equipment_name,
+            "due_text": due_text,
+        },
+    )
+    send_notification_email(
+        recipient_email,
+        template_base="csluse/email/borrow_overdue",
+        context=context,
+    )
+
+
+def _notify_request_status(instance, *, kind, status_value, actor_profile=None, request=None):
+    recipient = getattr(instance, "requested_by", None)
+    if recipient is None:
+        return
+
+    request_label = _request_label(kind)
+    request_identifier = _request_identifier(instance, request_label.title())
+    actor_name = _profile_display_name(actor_profile) or "tim laboratorium"
+    category = "Approved" if status_value == "Approved" else "Rejected"
+    action_label = "disetujui" if status_value == "Approved" else "ditolak"
+    title = f"{request_label.title()} {request_identifier} {action_label}"
+    message = (
+        f"Pengajuan {request_label} Anda ({request_identifier}) telah "
+        f"{action_label} oleh {actor_name}."
+    )
+
+    _create_notification(
+        recipient,
+        title=title,
+        category=category,
+        message=message,
+    )
+    _send_request_status_email(
+        instance,
+        recipient=recipient,
+        kind=kind,
+        title=title,
+        message=message,
+        status_value=status_value,
+        request=request,
+    )
+
+
+def _notify_borrow_overdue(instance, request=None):
+    recipient = getattr(instance, "requested_by", None)
+    if recipient is None:
+        return
+
+    borrow_identifier = _request_identifier(instance, "Borrow")
+    equipment_name = getattr(getattr(instance, "equipment", None), "name", "alat")
+    due_at = getattr(instance, "end_time", None)
+    due_text = timezone.localtime(due_at).strftime("%d %b %Y %H:%M WIB") if due_at else "jadwal pengembalian"
+    title = f"Peminjaman {borrow_identifier} melewati batas waktu"
+    message = (
+        f"Peminjaman alat Anda ({borrow_identifier}) untuk {equipment_name} "
+        f"sudah overdue sejak {due_text}. Segera lakukan pengembalian."
+    )
+
+    _create_notification(
+        recipient,
+        title=title,
+        category="Reminder",
+        message=message,
+    )
+    _send_borrow_overdue_email(
+        instance,
+        recipient=recipient,
+        title=title,
+        message=message,
+        due_text=due_text,
+        equipment_name=equipment_name,
+        request=request,
+    )
+
+
 def build_status_aggregates(queryset, completed_statuses=None):
     completed_statuses = completed_statuses or ["Completed"]
     return {
@@ -209,11 +427,19 @@ def sync_borrow_statuses():
         .filter(status="Pending", start_time__lt=now)
         .update(status="Expired", updated_at=now)
     )
-    (
+    overdue_borrows = list(
         Borrow.objects
         .filter(status="Borrowed", end_time__lt=now)
-        .update(status="Overdue", updated_at=now)
+        .select_related("requested_by", "equipment")
     )
+    if overdue_borrows:
+        Borrow.objects.filter(pk__in=[item.pk for item in overdue_borrows]).update(
+            status="Overdue",
+            updated_at=now,
+        )
+        for item in overdue_borrows:
+            item.status = "Overdue"
+            _notify_borrow_overdue(item)
 
 
 class ImageViewSet(viewsets.ModelViewSet):
@@ -948,12 +1174,14 @@ class BookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self._ensure_review_permission(instance)
         self._ensure_transition(instance, ["Pending"], "Approved")
+        actor_profile = getattr(request.user, 'profile', None)
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        serializer.save(approved_by=actor_profile)
+        _notify_request_status(instance, kind="booking", status_value="Approved", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
@@ -961,12 +1189,14 @@ class BookingViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self._ensure_review_permission(instance)
         self._ensure_transition(instance, ["Pending"], "Rejected")
+        actor_profile = getattr(request.user, 'profile', None)
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        serializer.save(approved_by=actor_profile)
+        _notify_request_status(instance, kind="booking", status_value="Rejected", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
@@ -1321,13 +1551,15 @@ class BorrowViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self._ensure_review_permission(instance)
         self._ensure_transition(instance, ["Pending"], "Approved")
+        actor_profile = getattr(request.user, 'profile', None)
 
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        serializer.save(approved_by=actor_profile)
+        _notify_request_status(instance, kind="borrow", status_value="Approved", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
@@ -1335,13 +1567,15 @@ class BorrowViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self._ensure_review_permission(instance)
         self._ensure_transition(instance, ["Pending"], "Rejected")
+        actor_profile = getattr(request.user, 'profile', None)
 
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        serializer.save(approved_by=actor_profile)
+        _notify_request_status(instance, kind="borrow", status_value="Rejected", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
@@ -2453,12 +2687,14 @@ class PengujianViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self._ensure_review_permission(instance)
         self._ensure_transition(instance, ["Pending"], "Approved")
+        actor_profile = getattr(request.user, 'profile', None)
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        serializer.save(approved_by=actor_profile)
+        _notify_request_status(instance, kind="pengujian", status_value="Approved", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
     @action(detail=False, methods=['get'], url_path='all/export')
@@ -2478,12 +2714,14 @@ class PengujianViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self._ensure_review_permission(instance)
         self._ensure_transition(instance, ["Pending"], "Rejected")
+        actor_profile = getattr(request.user, 'profile', None)
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        serializer.save(approved_by=actor_profile)
+        _notify_request_status(instance, kind="pengujian", status_value="Rejected", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
@@ -2763,12 +3001,14 @@ class UseViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self._ensure_review_permission(instance)
         self._ensure_transition(instance, ["Pending"], "Approved")
+        actor_profile = getattr(request.user, 'profile', None)
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        serializer.save(approved_by=actor_profile)
+        _notify_request_status(instance, kind="use", status_value="Approved", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
@@ -2776,12 +3016,14 @@ class UseViewSet(viewsets.ModelViewSet):
         instance = self.get_object()
         self._ensure_review_permission(instance)
         self._ensure_transition(instance, ["Pending"], "Rejected")
+        actor_profile = getattr(request.user, 'profile', None)
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=getattr(request.user, 'profile', None))
+        serializer.save(approved_by=actor_profile)
+        _notify_request_status(instance, kind="use", status_value="Rejected", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'])
@@ -2796,3 +3038,15 @@ class UseViewSet(viewsets.ModelViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    def get_queryset(self):
+        profile = getattr(self.request.user, "profile", None)
+        if profile is None:
+            return Notification.objects.none()
+        return Notification.objects.filter(recipient=profile).order_by("-created_at")

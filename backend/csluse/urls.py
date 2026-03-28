@@ -18,6 +18,7 @@ router.register(r'faqs', views.FAQViewSet, basename='faqs')
 router.register(r'structure-organizations', views.StructureOrganizationViewSet, basename='structure-organizations')
 router.register(r'pengujians', views.PengujianViewSet, basename='pengujians')
 router.register(r'uses', views.UseViewSet, basename='uses')
+router.register(r'notifications', views.NotificationViewSet, basename='notifications')
 
 urlpatterns = [
     path('', include(router.urls)),

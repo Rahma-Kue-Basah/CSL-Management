@@ -40,12 +40,12 @@ function AuthPending() {
 }
 
 async function resolveAuthStatus(): Promise<AuthStatus> {
-  if (resolvedAuthStatus && resolvedAuthStatus !== "checking") {
+  if (getCachedProfileSnapshot()) {
+    resolvedAuthStatus = "authenticated";
     return resolvedAuthStatus;
   }
 
-  if (getCachedProfileSnapshot()) {
-    resolvedAuthStatus = "authenticated";
+  if (resolvedAuthStatus && resolvedAuthStatus !== "checking") {
     return resolvedAuthStatus;
   }
 
@@ -89,11 +89,11 @@ async function resolveAuthStatus(): Promise<AuthStatus> {
 
 export function useResolvedAuthStatus() {
   const [status, setStatus] = useState<AuthStatus>(() => {
-    if (resolvedAuthStatus && resolvedAuthStatus !== "checking") {
-      return resolvedAuthStatus;
-    }
     if (getCachedProfileSnapshot()) {
       resolvedAuthStatus = "authenticated";
+      return resolvedAuthStatus;
+    }
+    if (resolvedAuthStatus && resolvedAuthStatus !== "checking") {
       return resolvedAuthStatus;
     }
     return "checking";

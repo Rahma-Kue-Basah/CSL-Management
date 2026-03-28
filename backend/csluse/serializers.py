@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from django.utils import timezone
+import re
 
 from typing import Optional
 
@@ -18,6 +19,7 @@ from .models import (
     StructureOrganization,
     Pengujian,
     Use,
+    Notification,
 )
 from csluse_auth.serializers import ProfileSerializer, RoomPicDetailSerializer
 
@@ -212,6 +214,59 @@ class RecordEquipmentListSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "name",
+        ]
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    target_path = serializers.SerializerMethodField()
+
+    def _extract_identifier(self, value: str) -> Optional[str]:
+        match = re.search(r"\b(?:PR|PA|US|PS)\d{4}-\d{3}\b", value or "")
+        if match:
+            return match.group(0)
+        return None
+
+    def get_target_path(self, obj):
+        title = str(getattr(obj, "title", "") or "")
+        message = str(getattr(obj, "message", "") or "")
+        combined = f"{title} {message}"
+        identifier = self._extract_identifier(combined)
+        lower_text = combined.lower()
+
+        if "pengujian" in lower_text:
+            return "/sample-testing"
+
+        if not identifier:
+            return None
+
+        booking = Booking.objects.filter(code=identifier).values_list("id", flat=True).first()
+        if booking is not None:
+            return f"/booking-rooms/{booking}"
+
+        borrow = Borrow.objects.filter(code=identifier).values_list("id", flat=True).first()
+        if borrow is not None:
+            return f"/borrow-equipment/{borrow}"
+
+        use = Use.objects.filter(code=identifier).values_list("id", flat=True).first()
+        if use is not None:
+            return f"/use-equipment/{use}"
+
+        pengujian = Pengujian.objects.filter(code=identifier).values_list("id", flat=True).first()
+        if pengujian is not None:
+            return "/sample-testing"
+
+        return None
+
+    class Meta:
+        model = Notification
+        fields = [
+            "id",
+            "title",
+            "category",
+            "message",
+            "target_path",
+            "created_at",
+            "updated_at",
         ]
 
 

@@ -82,7 +82,12 @@ function DashboardShell({ children }: UserLayoutProps) {
               : {}),
           };
         })
-        .filter((item) => item.actions.length > 0 || item.id === "schedule"),
+        .filter(
+          (item) =>
+            item.actions.length > 0 ||
+            item.id === "schedule" ||
+            item.id === "notifications",
+        ),
     [displayName, profile.role],
   );
   const visibleTopNavItems = useMemo(
