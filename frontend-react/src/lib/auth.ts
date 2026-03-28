@@ -1,11 +1,7 @@
 "use client";
 
 import { API_AUTH_TOKEN_REFRESH } from "@/constants/api";
-import {
-  getCookieValue,
-  setCookieValue,
-  removeCookieValue,
-} from "@/lib/cookies";
+import { removeCookieValue } from "@/lib/cookies";
 
 type RefreshResponse = {
   access?: string;
@@ -15,22 +11,9 @@ type RefreshResponse = {
   detail?: string;
 };
 
-function setAccessTokens(accessToken: string | null | undefined): void {
-  if (!accessToken) return;
-  setCookieValue("access_token", accessToken, { sameSite: "lax" });
-  setCookieValue("access", accessToken, { sameSite: "lax" });
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem("access_token", accessToken);
-  }
-}
-
-function setRefreshToken(refreshToken: string | null | undefined): void {
-  if (!refreshToken) return;
-  setCookieValue("refresh_token", refreshToken, { sameSite: "lax" });
-  setCookieValue("refresh", refreshToken, { sameSite: "lax" });
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem("refresh_token", refreshToken);
-  }
+function notifySessionExpired(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event("auth:session-expired"));
 }
 
 function clearTokens(): void {
@@ -41,39 +24,19 @@ function clearTokens(): void {
   removeCookieValue("profile");
   removeCookieValue("user");
   if (typeof window !== "undefined") {
-    window.localStorage.clear();
+    window.localStorage.removeItem("access_token");
+    window.localStorage.removeItem("refresh_token");
+    window.localStorage.removeItem("profile");
+    window.localStorage.removeItem("profile_cached_at");
+    window.localStorage.removeItem("user");
   }
-}
-
-function getAccessToken(): string | null {
-  return (
-    getCookieValue("access_token") ||
-    getCookieValue("access") ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem("access_token")
-      : null)
-  );
-}
-
-function getRefreshToken(): string | null {
-  return (
-    getCookieValue("refresh_token") ||
-    getCookieValue("refresh") ||
-    (typeof window !== "undefined"
-      ? window.localStorage.getItem("refresh_token")
-      : null)
-  );
+  notifySessionExpired();
 }
 
 async function refreshToken(): Promise<string | undefined> {
-  const refresh = getRefreshToken();
-  const payload = refresh ? { refresh } : {};
-
   const resp = await fetch(API_AUTH_TOKEN_REFRESH, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: Object.keys(payload).length ? JSON.stringify(payload) : null,
   });
 
   if (!resp.ok) {
@@ -82,11 +45,7 @@ async function refreshToken(): Promise<string | undefined> {
   }
 
   const data = (await resp.json()) as RefreshResponse;
-  const accessToken = data.access || data.access_token;
-  if (accessToken) setAccessTokens(accessToken);
-  const newRefresh = data.refresh || data.refresh_token;
-  if (newRefresh) setRefreshToken(newRefresh);
-  return accessToken;
+  return data.access || data.access_token;
 }
 
 export async function authFetch(
@@ -94,13 +53,8 @@ export async function authFetch(
   options: RequestInit = {},
   retry = true,
 ): Promise<Response> {
-  const accessToken = getAccessToken();
-  const headers = new Headers(options.headers ?? {});
-  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
-
   const resp = await fetch(url, {
     ...options,
-    headers,
     credentials: options.credentials ?? "include",
   });
 
@@ -117,10 +71,6 @@ export async function authFetch(
 }
 
 export {
-  setAccessTokens,
-  setRefreshToken,
-  getAccessToken,
-  getRefreshToken,
   refreshToken,
   clearTokens,
 };

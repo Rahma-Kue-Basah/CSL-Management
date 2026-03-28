@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { getCookieValue } from "@/lib/cookies";
 
 import { API_AUTH_USER_PROFILE } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
@@ -71,10 +70,6 @@ function asProfileId(value: unknown): ProfileId | null {
   return typeof value === "string" || typeof value === "number" ? value : null;
 }
 
-function hasAuthToken() {
-  return Boolean(getCookieValue("access_token") || getCookieValue("access"));
-}
-
 function isFresh(timestamp: number | null | undefined) {
   if (!timestamp || Number.isNaN(timestamp)) return false;
   return Date.now() - timestamp < PROFILE_CACHE_TTL_MS;
@@ -85,7 +80,6 @@ function parseCachedProfileValue(
   user?: ProfileUserInput | null,
 ): UserProfile | null {
   if (!isRecord(parsed)) return null;
-  const authTokenPresent = hasAuthToken();
   return {
     id: asProfileId(parsed.id) ?? user?.id ?? null,
     name: asString(parsed.name) ?? user?.name ?? "User",
@@ -99,11 +93,9 @@ function parseCachedProfileValue(
     user_type: asString(parsed.user_type) ?? user?.user_type ?? null,
     institution: asString(parsed.institution) ?? user?.institution ?? null,
     canResetPassword:
-      authTokenPresent
-        ? true
-        : typeof parsed.canResetPassword === "boolean"
-          ? parsed.canResetPassword
-          : true,
+      typeof parsed.canResetPassword === "boolean"
+        ? parsed.canResetPassword
+        : true,
   };
 }
 
@@ -129,7 +121,35 @@ function getCachedProfile(
   }
 }
 
-function persistProfileCache(profile: UserProfile) {
+export function getCachedProfileSnapshot(
+  user?: ProfileUserInput | null,
+): UserProfile | null {
+  return getCachedProfile(user).profile;
+}
+
+export function buildProfileFromApiResponse(profileData: unknown): UserProfile | null {
+  if (!isRecord(profileData)) return null;
+
+  return {
+    id: asProfileId(profileData.id) ?? null,
+    name:
+      asString(profileData.full_name) ??
+      asString(profileData.username) ??
+      "User",
+    initials: asString(profileData.initials) ?? null,
+    email: asString(profileData.email) ?? "",
+    last_login: asString(profileData.last_login) ?? null,
+    role: asString(profileData.role) ?? null,
+    department: asString(profileData.department) ?? null,
+    batch: asBatch(profileData.batch) ?? null,
+    id_number: asString(profileData.id_number) ?? null,
+    user_type: asString(profileData.user_type) ?? null,
+    institution: asString(profileData.institution) ?? null,
+    canResetPassword: true,
+  };
+}
+
+export function persistProfileCache(profile: UserProfile) {
   if (typeof window === "undefined") return;
   const now = Date.now();
   window.localStorage.setItem(PROFILE_CACHE_KEY, JSON.stringify(profile));
@@ -159,10 +179,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
     }
 
     if (inMemoryProfile) {
-      return {
-        ...inMemoryProfile,
-        canResetPassword: hasAuthToken(),
-      };
+      return inMemoryProfile;
     }
 
     try {
@@ -187,10 +204,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
     if (hasFetchedRef.current) return;
 
     if (inMemoryProfile && isFresh(inMemoryProfileAt)) {
-      setProfile({
-        ...inMemoryProfile,
-        canResetPassword: hasAuthToken(),
-      });
+      setProfile(inMemoryProfile);
       hasFetchedRef.current = true;
       return;
     }
@@ -221,25 +235,8 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
           });
           if (!response.ok) return null;
           const profileData: unknown = await response.json();
-          if (!isRecord(profileData)) return null;
-
-          const nextProfile: UserProfile = {
-            id: asProfileId(profileData.id) ?? null,
-            name:
-              asString(profileData.full_name) ??
-              asString(profileData.username) ??
-              "User",
-            initials: asString(profileData.initials) ?? null,
-            email: asString(profileData.email) ?? "",
-            last_login: asString(profileData.last_login) ?? null,
-            role: asString(profileData.role) ?? null,
-            department: asString(profileData.department) ?? null,
-            batch: asBatch(profileData.batch) ?? null,
-            id_number: asString(profileData.id_number) ?? null,
-            user_type: asString(profileData.user_type) ?? null,
-            institution: asString(profileData.institution) ?? null,
-            canResetPassword: hasAuthToken(),
-          };
+          const nextProfile = buildProfileFromApiResponse(profileData);
+          if (!nextProfile) return null;
           persistProfileCache(nextProfile);
           return nextProfile;
         })();

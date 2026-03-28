@@ -10,6 +10,7 @@ import {
   RequireFeatureScope,
   RequireMenuAccess,
   RequireStaffOrAbove,
+  useResolvedAuthStatus,
 } from "@/routes/guards";
 
 import LoginPage from "@/pages/auth/LoginPage";
@@ -77,7 +78,11 @@ function AuthLayoutOutlet() {
 }
 
 function RootRedirect() {
-  return <Navigate to={hasAuthToken() ? "/dashboard" : "/login"} replace />;
+  const status = useResolvedAuthStatus();
+
+  if (status === "checking") return null;
+
+  return <Navigate to={status === "authenticated" || hasAuthToken() ? "/dashboard" : "/login"} replace />;
 }
 
 export const router = createBrowserRouter([

@@ -1,51 +1,110 @@
-import Cookies from "js-cookie";
-import type { ReactElement } from "react";
+import { Loader2 } from "lucide-react";
+import { useEffect, useState, type ReactElement } from "react";
 import { Navigate, useLocation } from "react-router-dom";
+import { API_AUTH_USER_PROFILE } from "@/constants/api";
 import {
   hasMenuAccess,
   isPrivilegedRole,
   isStaffOrAboveRole,
 } from "@/constants/roles";
 import { isApprovalOnlyRole } from "@/lib/dashboard-access";
+import { authFetch, clearTokens } from "@/lib/auth";
+import {
+  buildProfileFromApiResponse,
+  clearProfileCache,
+  getCachedProfileSnapshot,
+  persistProfileCache,
+  type UserProfile,
+} from "@/hooks/profile/use-load-profile";
 
-type ProfileCookie = {
-  role?: string | null;
-};
-
-function getAccessToken() {
-  return Cookies.get("access") || Cookies.get("access_token");
-}
+type RoleProfile = Pick<UserProfile, "role">;
 
 export function hasAuthToken() {
-  return Boolean(getAccessToken());
+  return Boolean(getCachedProfileSnapshot());
 }
 
-function getProfile(): ProfileCookie {
-  const cookieProfile = Cookies.get("profile");
-  if (cookieProfile) {
-    try {
-      return JSON.parse(cookieProfile) as ProfileCookie;
-    } catch {
-      return {};
-    }
-  }
+function getProfile() {
+  return (getCachedProfileSnapshot() ?? {}) as RoleProfile;
+}
 
-  const lsProfile = typeof window !== "undefined" ? window.localStorage.getItem("profile") : null;
-  if (lsProfile) {
-    try {
-      return JSON.parse(lsProfile) as ProfileCookie;
-    } catch {
-      return {};
-    }
-  }
+type AuthStatus = "checking" | "authenticated" | "unauthenticated";
 
-  return {};
+function AuthPending() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 text-slate-600">
+      <Loader2 className="h-5 w-5 animate-spin" />
+    </div>
+  );
+}
+
+export function useResolvedAuthStatus() {
+  const [status, setStatus] = useState<AuthStatus>("checking");
+
+  useEffect(() => {
+    let isActive = true;
+
+    const resolveSession = async () => {
+      try {
+        const response = await authFetch(API_AUTH_USER_PROFILE, {
+          credentials: "include",
+        });
+
+        if (!isActive) return;
+
+        if (!response.ok) {
+          clearTokens();
+          clearProfileCache();
+          setStatus("unauthenticated");
+          return;
+        }
+
+        const profileData: unknown = await response.json().catch(() => null);
+        const nextProfile = buildProfileFromApiResponse(profileData);
+        if (nextProfile) {
+          persistProfileCache(nextProfile);
+        }
+        setStatus("authenticated");
+      } catch (error) {
+        console.error("Auth guard session check error:", error);
+        if (!isActive) return;
+        clearTokens();
+        clearProfileCache();
+        setStatus("unauthenticated");
+      }
+    };
+
+    void resolveSession();
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+
+    const handleSessionExpired = () => {
+      setStatus("unauthenticated");
+    };
+
+    window.addEventListener("auth:session-expired", handleSessionExpired);
+    return () => {
+      window.removeEventListener("auth:session-expired", handleSessionExpired);
+    };
+  }, []);
+
+  return status;
 }
 
 export function RequireAuth({ children }: { children: ReactElement }) {
   const location = useLocation();
+  const status = useResolvedAuthStatus();
 
-  if (!hasAuthToken()) {
+  if (status === "checking") {
+    return <AuthPending />;
+  }
+
+  if (status !== "authenticated") {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 

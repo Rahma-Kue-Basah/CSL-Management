@@ -1,8 +1,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_AUTH_LOGIN, API_AUTH_USER_PROFILE } from "@/constants/api";
-import { authFetch, setAccessTokens, setRefreshToken } from "@/lib/auth";
-import { getCookieValue, setCookieValue } from "@/lib/cookies";
+import { authFetch } from "@/lib/auth";
+import {
+  buildProfileFromApiResponse,
+  persistProfileCache,
+} from "@/hooks/profile/use-load-profile";
 
 type LoginStatus = "idle" | "submitting" | "success" | "error";
 
@@ -16,37 +19,8 @@ type LoginResponse = {
   access?: string;
   refresh_token?: string;
   refresh?: string;
-  user?: unknown;
   non_field_errors?: string[];
   detail?: string;
-};
-
-type ProfileResponse = {
-  id?: string | number;
-  full_name?: string;
-  initials?: string | null;
-  username?: string;
-  email?: string;
-  role?: string | null;
-  department?: string | null;
-  batch?: string | number | null;
-  id_number?: string | null;
-  user_type?: string | null;
-  institution?: string | null;
-};
-
-type ProfileCookie = {
-  id?: string | number;
-  name: string;
-  initials: string | null;
-  email: string;
-  role: string | null;
-  department: string | null;
-  batch: string | number | null;
-  id_number: string | null;
-  user_type: string | null;
-  institution: string | null;
-  canResetPassword: boolean;
 };
 
 export function useLogin() {
@@ -86,51 +60,17 @@ export function useLogin() {
       if (response.ok) {
         setStatus("success");
 
-        if (data.access_token || data.access) {
-          setAccessTokens(data.access_token || data.access);
-        }
-
-        if (data.refresh_token || data.refresh) {
-          setRefreshToken(data.refresh_token || data.refresh);
-        }
-
-        if (data.user) {
-            setCookieValue("user", JSON.stringify(data.user), {
-              expires: 1,
-              secure: import.meta.env.PROD,
-              sameSite: "lax",
-            });
-        }
-
         try {
           const profileResponse = await authFetch(API_AUTH_USER_PROFILE, {
             credentials: "include",
           });
 
           if (profileResponse.ok) {
-            const profileData = (await profileResponse.json()) as ProfileResponse;
-            const hasAccessToken = Boolean(
-              getCookieValue("access_token") || getCookieValue("access"),
-            );
-            const nextProfile: ProfileCookie = {
-              id: profileData.id,
-              name: profileData.full_name || profileData.username || "User",
-              initials: profileData.initials ?? null,
-              email: profileData.email || "",
-              role: profileData.role ?? null,
-              department: profileData.department ?? null,
-              batch: profileData.batch ?? null,
-              id_number: profileData.id_number ?? null,
-              user_type: profileData.user_type ?? null,
-              institution: profileData.institution ?? null,
-              canResetPassword: hasAccessToken,
-            };
-            window.localStorage.setItem("profile", JSON.stringify(nextProfile));
-            setCookieValue("profile", JSON.stringify(nextProfile), {
-              expires: 1,
-              secure: import.meta.env.PROD,
-              sameSite: "lax",
-            });
+            const profileData: unknown = await profileResponse.json();
+            const nextProfile = buildProfileFromApiResponse(profileData);
+            if (nextProfile) {
+              persistProfileCache(nextProfile);
+            }
           }
         } catch (error) {
           console.error("Profile fetch after login error:", error);

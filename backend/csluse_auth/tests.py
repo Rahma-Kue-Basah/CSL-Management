@@ -2,6 +2,8 @@ from allauth.account.models import EmailAddress
 from django.contrib.admin.models import DELETION, LogEntry
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from datetime import timedelta
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 from rest_framework import status
 from rest_framework.test import APITestCase
 
@@ -174,3 +176,66 @@ class UserWithProfileViewSetTests(AuthBaseTestMixin, APITestCase):
             ).count(),
             1,
         )
+
+
+class JwtCookieAuthFlowTests(AuthBaseTestMixin, APITestCase):
+    def setUp(self):
+        self.user = self.create_user(
+            email="jwt-user@example.com",
+            full_name="JWT User",
+            role="Student",
+            department="DIGITAL BUSINESS TECHNOLOGY",
+            batch="2024",
+            id_number="STD-999",
+            user_type="INTERNAL",
+            verified=True,
+        )
+
+    def _expired_access_token(self):
+        token = AccessToken.for_user(self.user)
+        token.set_exp(lifetime=timedelta(seconds=-1))
+        return str(token)
+
+    def _valid_refresh_token(self):
+        return str(RefreshToken.for_user(self.user))
+
+    def _expired_refresh_token(self):
+        token = RefreshToken.for_user(self.user)
+        token.set_exp(lifetime=timedelta(seconds=-1))
+        return str(token)
+
+    def test_profile_request_with_expired_access_returns_unauthorized(self):
+        self.client.cookies["access"] = self._expired_access_token()
+
+        response = self.client.get("/api/auth/user/profile/")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_refresh_endpoint_uses_refresh_cookie_to_issue_new_access_token(self):
+        self.client.cookies["refresh"] = self._valid_refresh_token()
+
+        response = self.client.post("/api/auth/token/refresh/", {}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIn("access", response.data)
+        self.assertIn("access", response.cookies)
+
+    def test_refresh_endpoint_rejects_expired_refresh_cookie(self):
+        self.client.cookies["refresh"] = self._expired_refresh_token()
+
+        response = self.client.post("/api/auth/token/refresh/", {}, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_profile_succeeds_after_refreshing_expired_access_cookie(self):
+        self.client.cookies["access"] = self._expired_access_token()
+        self.client.cookies["refresh"] = self._valid_refresh_token()
+
+        refresh_response = self.client.post("/api/auth/token/refresh/", {}, format="json")
+        self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
+
+        self.client.cookies["access"] = refresh_response.cookies["access"].value
+        profile_response = self.client.get("/api/auth/user/profile/")
+
+        self.assertEqual(profile_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(profile_response.data["email"], self.user.email)
