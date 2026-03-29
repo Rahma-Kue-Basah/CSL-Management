@@ -14,7 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type AdminRecordBulkActionsProps = {
+type AdminHistoryBulkActionsProps = {
   selectedCount: number;
   isDeleting: boolean;
   isExportingSelectedExcel: boolean;
@@ -25,7 +25,7 @@ type AdminRecordBulkActionsProps = {
   onClearSelection: () => void;
 };
 
-export default function AdminRecordBulkActions({
+export default function AdminHistoryBulkActions({
   selectedCount,
   isDeleting,
   isExportingSelectedExcel,
@@ -34,7 +34,7 @@ export default function AdminRecordBulkActions({
   onExportSelectedPdf,
   onDeleteSelected,
   onClearSelection,
-}: AdminRecordBulkActionsProps) {
+}: AdminHistoryBulkActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

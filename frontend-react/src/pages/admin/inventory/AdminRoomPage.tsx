@@ -11,7 +11,7 @@ import { DataPagination } from "@/components/shared/data-pagination";
 import AdminRoomDetailDialog from "@/components/admin/inventory/AdminRoomDetailDialog";
 import RoomCreateDialog from "@/components/admin/inventory/RoomCreateDialog";
 import RoomTable from "@/components/admin/inventory/RoomTable";
-import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
+import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";

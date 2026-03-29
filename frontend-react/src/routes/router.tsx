@@ -54,10 +54,10 @@ import AdminAnnouncementPage from "@/pages/admin/information/AdminAnnouncementPa
 import AdminFaqPage from "@/pages/admin/information/AdminFaqPage";
 import AdminEquipmentPage from "@/pages/admin/inventory/AdminEquipmentPage";
 import AdminRoomPage from "@/pages/admin/inventory/AdminRoomPage";
-import AdminRoomBookingRecordPage from "@/pages/admin/records/AdminRoomBookingRecordPage";
-import AdminEquipmentUsageRecordPage from "@/pages/admin/records/AdminEquipmentUsageRecordPage";
-import AdminEquipmentBorrowRecordPage from "@/pages/admin/records/AdminEquipmentBorrowRecordPage";
-import AdminSampleTestingRecordPage from "@/pages/admin/records/AdminSampleTestingRecordPage";
+import AdminRoomBookingHistoryPage from "@/pages/admin/history/AdminRoomBookingHistoryPage";
+import AdminEquipmentUsageHistoryPage from "@/pages/admin/history/AdminEquipmentUsageHistoryPage";
+import AdminEquipmentBorrowHistoryPage from "@/pages/admin/history/AdminEquipmentBorrowHistoryPage";
+import AdminSampleTestingHistoryPage from "@/pages/admin/history/AdminSampleTestingHistoryPage";
 import AdminMyProfilePage from "@/pages/admin/profile/AdminMyProfilePage";
 import StructureOrgansPage from "@/pages/admin/lab-profile/StructureOrgansPage";
 import FacilityPage from "@/pages/admin/lab-profile/FacilityPage";
@@ -416,12 +416,12 @@ export const router = createBrowserRouter([
         ],
       },
       {
-        path: "records",
+        path: "history",
         children: [
-          { path: "room-bookings", element: <AdminRoomBookingRecordPage /> },
-          { path: "equipment-usage", element: <AdminEquipmentUsageRecordPage /> },
-          { path: "equipment-borrows", element: <AdminEquipmentBorrowRecordPage /> },
-          { path: "sample-testing", element: <AdminSampleTestingRecordPage /> },
+          { path: "room-bookings", element: <AdminRoomBookingHistoryPage /> },
+          { path: "equipment-usage", element: <AdminEquipmentUsageHistoryPage /> },
+          { path: "equipment-borrows", element: <AdminEquipmentBorrowHistoryPage /> },
+          { path: "sample-testing", element: <AdminSampleTestingHistoryPage /> },
         ],
       },
       {

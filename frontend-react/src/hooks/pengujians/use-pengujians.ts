@@ -12,6 +12,8 @@ import { authFetch } from "@/lib/auth";
 
 export type PengujianFilters = {
   status?: string;
+  requestedBy?: string;
+  department?: string;
   createdAfter?: string;
   createdBefore?: string;
 };
@@ -38,6 +40,7 @@ export type PengujianRow = {
   status: string;
   requesterId: string;
   requesterName: string;
+  requesterDepartment: string;
   approvedById: string;
   approvedByName: string;
   createdAt: string;
@@ -69,6 +72,7 @@ type ApiPengujian = {
     id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
+    department?: string | null;
   } | null;
   approved_by?: string | number | null;
   approved_by_detail?: {
@@ -130,6 +134,7 @@ export function mapPengujian(item: ApiPengujian): PengujianRow {
     status: String(item.status ?? "-"),
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
+    requesterDepartment: String(item.requested_by_detail?.department ?? "-"),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     createdAt: String(item.created_at ?? "-"),
@@ -232,6 +237,12 @@ export function usePengujians(
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
+        if (filters.requestedBy && scope !== "my") {
+          url.searchParams.set("requested_by", filters.requestedBy);
+        }
+        if (filters.department) {
+          url.searchParams.set("department", filters.department);
+        }
         if (filters.createdAfter) {
           url.searchParams.set("created_after", filters.createdAfter);
         }
@@ -283,6 +294,8 @@ export function usePengujians(
     page,
     pageSize,
     filters.status,
+    filters.requestedBy,
+    filters.department,
     filters.createdAfter,
     filters.createdBefore,
     reloadKey,

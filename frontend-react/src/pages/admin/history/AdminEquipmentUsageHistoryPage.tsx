@@ -12,13 +12,13 @@ import {
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import RelatedEquipmentDetailDialog from "@/components/admin/records/RelatedEquipmentDetailDialog";
-import AdminEquipmentUsageRecordDetailContent from "@/components/admin/records/AdminEquipmentUsageRecordDetailContent";
-import AdminRecordBulkActions from "@/components/admin/records/AdminRecordBulkActions";
-import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
-import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
-import AdminRecordTable from "@/components/admin/records/AdminRecordTable";
-import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
+import RelatedEquipmentDetailDialog from "@/components/admin/history/RelatedEquipmentDetailDialog";
+import AdminEquipmentUsageHistoryDetailContent from "@/components/admin/history/AdminEquipmentUsageHistoryDetailContent";
+import AdminHistoryBulkActions from "@/components/admin/history/AdminHistoryBulkActions";
+import AdminHistoryExportActions from "@/components/admin/history/AdminHistoryExportActions";
+import AdminHistorySummaryCards from "@/components/admin/history/AdminHistorySummaryCards";
+import AdminHistoryTable from "@/components/admin/history/AdminHistoryTable";
+import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { DataPagination } from "@/components/shared/data-pagination";
@@ -35,9 +35,13 @@ import {
 import { Input } from "@/components/ui/input";
 import {
   API_USE_DETAIL,
+  API_USES_ALL_REQUESTERS,
   API_USES_BULK_DELETE,
   API_USES_EXPORT,
 } from "@/constants/api";
+import { DEPARTMENT_VALUES } from "@/constants/departments";
+import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
+import { useHistoryRequesterOptions } from "@/hooks/history/use-history-requester-options";
 import { mapUse, useUses, type UseRow } from "@/hooks/uses/use-uses";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
@@ -69,13 +73,16 @@ function matchesSearch(row: UseRow, query: string) {
   return haystack.includes(query.toLowerCase());
 }
 
-export default function AdminRecordPenggunaanAlatPage() {
+export default function AdminEquipmentUsageHistoryPage() {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const { profile } = useLoadProfile();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [requestedBy, setRequestedBy] = useState("");
+  const [department, setDepartment] = useState("");
+  const [equipment, setEquipment] = useState("");
   const [ordering, setOrdering] = useState("newest");
   const [createdRange, setCreatedRange] = useState<DateRange | undefined>();
   const [filterOpen, setFilterOpen] = useState(false);
@@ -99,6 +106,8 @@ export default function AdminRecordPenggunaanAlatPage() {
       ? formatDateKey(createdRange.from)
       : "";
   const { deleteRecord, deleteRecords, isDeleting } = useDeleteRecord();
+  const { requesters } = useHistoryRequesterOptions(API_USES_ALL_REQUESTERS);
+  const { equipments } = useEquipmentOptions("", "", true);
   const { updateUseStatus, pendingAction } = useUpdateUseStatus();
   const {
     exportPdf,
@@ -110,11 +119,14 @@ export default function AdminRecordPenggunaanAlatPage() {
     filters: {
       q: debouncedSearch,
       status,
+      requested_by: requestedBy,
+      department,
+      equipment,
       created_after: createdAfter ? toStartOfDay(createdAfter) : "",
       created_before: createdBefore ? toEndOfDay(createdBefore) : "",
     },
     mapItem: mapUse,
-    title: "Record Penggunaan Alat",
+    title: "Riwayat Penggunaan Alat",
     pdfFilename: "record-penggunaan-alat.pdf",
     excelFilename: "record-penggunaan-alat.xlsx",
     columns: USE_EXPORT_COLUMNS,
@@ -133,6 +145,9 @@ export default function AdminRecordPenggunaanAlatPage() {
     PAGE_SIZE,
     {
       status,
+      requestedBy,
+      department,
+      equipment,
       createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
       createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
@@ -190,6 +205,9 @@ export default function AdminRecordPenggunaanAlatPage() {
     setSearch("");
     setDebouncedSearch("");
     setStatus("");
+    setRequestedBy("");
+    setDepartment("");
+    setEquipment("");
     setOrdering("newest");
     setCreatedRange(undefined);
     setPage(1);
@@ -200,7 +218,7 @@ export default function AdminRecordPenggunaanAlatPage() {
     if (!deleteTarget) return;
     const result = await deleteRecord(API_USE_DETAIL(deleteTarget.id));
     if (result.ok) {
-      toast.success("Record penggunaan alat berhasil dihapus.");
+      toast.success("Riwayat penggunaan alat berhasil dihapus.");
       setDeleteTarget(null);
       setReloadKey((prev) => prev + 1);
       return;
@@ -297,7 +315,7 @@ export default function AdminRecordPenggunaanAlatPage() {
     try {
       setIsExportingSelectedPdf(true);
       exportAdminRecordPdf({
-        title: "Record Penggunaan Alat Terpilih",
+        title: "Riwayat Penggunaan Alat Terpilih",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "record-penggunaan-alat-terpilih.pdf",
         columns: USE_EXPORT_COLUMNS,
@@ -318,7 +336,7 @@ export default function AdminRecordPenggunaanAlatPage() {
     try {
       setIsExportingSelectedExcel(true);
       exportAdminRecordExcel({
-        title: "Record Penggunaan Alat Terpilih",
+        title: "Riwayat Penggunaan Alat Terpilih",
         filename: "record-penggunaan-alat-terpilih.xlsx",
         columns: USE_EXPORT_COLUMNS,
         rows: selectedRows,
@@ -338,12 +356,12 @@ export default function AdminRecordPenggunaanAlatPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex-1 space-y-4">
           <AdminPageHeader
-            title="Record Penggunaan Alat"
+            title="Riwayat Penggunaan Alat"
             description="Pantau histori penggunaan alat laboratorium."
             icon={<Eye className="h-5 w-5 text-sky-200" />}
           />
 
-          <AdminRecordSummaryCards
+          <AdminHistorySummaryCards
             items={[
               { label: "Total", value: aggregates.total, tone: "blue" },
               { label: "Pending", value: aggregates.pending },
@@ -360,21 +378,21 @@ export default function AdminRecordPenggunaanAlatPage() {
             onReset={resetFilters}
           >
             <form
-              className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
+              className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-6"
               onSubmit={(event) => {
                 event.preventDefault();
                 setPage(1);
               }}
             >
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Cari
                 </label>
                 <Input
                   type="search"
                   value={search}
                   placeholder="Kode, alat, atau peminjam"
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  className="h-8 border-slate-400 bg-white px-2 py-0 text-xs placeholder:text-xs md:text-xs shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                   onChange={(event) => {
                     setSearch(event.target.value);
                     setPage(1);
@@ -382,7 +400,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                 />
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Status
                 </label>
                 <select
@@ -391,7 +409,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                     setStatus(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
                 >
                   {STATUS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -401,7 +419,67 @@ export default function AdminRecordPenggunaanAlatPage() {
                 </select>
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
+                  Nama Pemohon
+                </label>
+                <select
+                  value={requestedBy}
+                  onChange={(event) => {
+                    setRequestedBy(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  <option value="">Semua pemohon</option>
+                  {requesters.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
+                  Prodi Pemohon
+                </label>
+                <select
+                  value={department}
+                  onChange={(event) => {
+                    setDepartment(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  <option value="">Semua prodi</option>
+                  {DEPARTMENT_VALUES.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
+                  Alat
+                </label>
+                <select
+                  value={equipment}
+                  onChange={(event) => {
+                    setEquipment(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  <option value="">Semua alat</option>
+                  {equipments.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Urutkan
                 </label>
                 <select
@@ -410,7 +488,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                     setOrdering(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
                 >
                   {ORDERING_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -419,8 +497,8 @@ export default function AdminRecordPenggunaanAlatPage() {
                   ))}
                 </select>
               </div>
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+              <div className="min-w-0 xl:col-start-3 xl:col-span-2">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Tanggal Dibuat
                 </label>
                 <DateRangePicker
@@ -430,7 +508,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                     setPage(1);
                   }}
                   clearable
-                  buttonClassName="h-9 w-full rounded-md border-slate-400 bg-white px-2 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  buttonClassName="h-8 w-full rounded-md border-slate-400 bg-white px-2 text-xs shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                 />
               </div>
             </form>
@@ -438,7 +516,7 @@ export default function AdminRecordPenggunaanAlatPage() {
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <AdminRecordBulkActions
+              <AdminHistoryBulkActions
                 selectedCount={selectedCount}
                 isDeleting={isDeleting}
                 isExportingSelectedExcel={isExportingSelectedExcel}
@@ -453,7 +531,7 @@ export default function AdminRecordPenggunaanAlatPage() {
               <p className="text-xs text-slate-500 sm:text-right">
                 Export mengikuti filter dan pencarian yang sedang aktif.
               </p>
-              <AdminRecordExportActions
+              <AdminHistoryExportActions
                 onExportExcel={exportExcel}
                 onExportPdf={exportPdf}
                 isExportingExcel={isExportingExcel}
@@ -466,7 +544,7 @@ export default function AdminRecordPenggunaanAlatPage() {
             <InlineErrorAlert>{error}</InlineErrorAlert>
           ) : null}
 
-          <AdminRecordTable
+          <AdminHistoryTable
             columns={[
               { label: "Kode" },
               { label: "Alat" },
@@ -585,7 +663,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                 </td>
               </tr>
             ))}
-          </AdminRecordTable>
+          </AdminHistoryTable>
 
           <DataPagination
             page={page}
@@ -600,7 +678,7 @@ export default function AdminRecordPenggunaanAlatPage() {
           <ConfirmDeleteDialog
             open={Boolean(deleteTarget)}
             title="Hapus record penggunaan alat?"
-            description={`Record ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
+            description={`Riwayat ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
             isDeleting={isDeleting}
             onOpenChange={(open) => {
               if (!open) setDeleteTarget(null);
@@ -647,7 +725,7 @@ export default function AdminRecordPenggunaanAlatPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
-                <AdminEquipmentUsageRecordDetailContent
+                <AdminEquipmentUsageHistoryDetailContent
                   item={detailTarget}
                   isLoading={false}
                   error=""

@@ -45,6 +45,7 @@ const API_BOOKINGS = `${API_BASE_URL}/bookings/`;
 const API_BOOKINGS_MY = `${API_BOOKINGS}my/`;
 const API_BOOKINGS_ALL = `${API_BOOKINGS}all/`;
 const API_BOOKINGS_ALL_EXPORT = `${API_BOOKINGS}all/export/`;
+const API_BOOKINGS_ALL_REQUESTERS = `${API_BOOKINGS}all/requesters/`;
 const API_BOOKINGS_BULK_DELETE = `${API_BOOKINGS}bulk-delete/`;
 const API_BOOKING_DETAIL = (id: string | number) => `${API_BOOKINGS}${id}/`;
 const API_BOOKING_APPROVE = (id: string | number) =>
@@ -60,6 +61,7 @@ const API_BORROWS = `${API_BASE_URL}/borrows/`;
 const API_BORROWS_MY = `${API_BORROWS}my/`;
 const API_BORROWS_ALL = `${API_BORROWS}all/`;
 const API_BORROWS_EXPORT = `${API_BORROWS}all/export/`;
+const API_BORROWS_ALL_REQUESTERS = `${API_BORROWS}all/requesters/`;
 const API_BORROWS_BULK_DELETE = `${API_BORROWS}bulk-delete/`;
 const API_BORROW_DETAIL = (id: string | number) => `${API_BORROWS}${id}/`;
 const API_BORROW_APPROVE = (id: string | number) =>
@@ -85,6 +87,7 @@ const API_USES = `${API_BASE_URL}/uses/`;
 const API_USES_MY = `${API_USES}my/`;
 const API_USES_ALL = `${API_USES}all/`;
 const API_USES_EXPORT = `${API_USES}all/export/`;
+const API_USES_ALL_REQUESTERS = `${API_USES}all/requesters/`;
 const API_USES_BULK_DELETE = `${API_USES}bulk-delete/`;
 const API_USE_DETAIL = (id: string | number) => `${API_USES}${id}/`;
 const API_USE_APPROVE = (id: string | number) => `${API_USES}${id}/approve/`;
@@ -96,6 +99,7 @@ const API_PENGUJIANS = `${API_BASE_URL}/pengujians/`;
 const API_PENGUJIANS_MY = `${API_PENGUJIANS}my/`;
 const API_PENGUJIANS_ALL = `${API_PENGUJIANS}all/`;
 const API_PENGUJIANS_EXPORT = `${API_PENGUJIANS}all/export/`;
+const API_PENGUJIANS_ALL_REQUESTERS = `${API_PENGUJIANS}all/requesters/`;
 const API_PENGUJIANS_BULK_DELETE = `${API_PENGUJIANS}bulk-delete/`;
 const API_PENGUJIAN_DETAIL = (id: string | number) =>
   `${API_PENGUJIANS}${id}/`;
@@ -176,6 +180,7 @@ export {
   API_BOOKINGS_MY,
   API_BOOKINGS_ALL,
   API_BOOKINGS_ALL_EXPORT,
+  API_BOOKINGS_ALL_REQUESTERS,
   API_BOOKINGS_BULK_DELETE,
   API_BOOKING_DETAIL,
   API_BOOKING_APPROVE,
@@ -186,6 +191,7 @@ export {
   API_BORROWS_MY,
   API_BORROWS_ALL,
   API_BORROWS_EXPORT,
+  API_BORROWS_ALL_REQUESTERS,
   API_BORROWS_BULK_DELETE,
   API_BORROW_DETAIL,
   API_BORROW_APPROVE,
@@ -201,6 +207,7 @@ export {
   API_USES_MY,
   API_USES_ALL,
   API_USES_EXPORT,
+  API_USES_ALL_REQUESTERS,
   API_USES_BULK_DELETE,
   API_USE_DETAIL,
   API_USE_APPROVE,
@@ -210,6 +217,7 @@ export {
   API_PENGUJIANS_MY,
   API_PENGUJIANS_ALL,
   API_PENGUJIANS_EXPORT,
+  API_PENGUJIANS_ALL_REQUESTERS,
   API_PENGUJIANS_BULK_DELETE,
   API_PENGUJIAN_DETAIL,
   API_PENGUJIAN_APPROVE,

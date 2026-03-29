@@ -15,7 +15,7 @@ import {
   AdminRecordDetailItem,
   AdminRecordDetailSection,
   AdminRecordDetailShell,
-} from "@/components/admin/records/AdminRecordDetailLayout";
+} from "@/components/admin/history/AdminHistoryDetailLayout";
 import type { BookingRow } from "@/hooks/bookings/use-bookings";
 import { formatDateTimeWib } from "@/lib/date-format";
 

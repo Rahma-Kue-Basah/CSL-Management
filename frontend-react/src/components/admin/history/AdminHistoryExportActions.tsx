@@ -10,19 +10,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-type AdminRecordExportActionsProps = {
+type AdminHistoryExportActionsProps = {
   onExportExcel: () => void;
   onExportPdf: () => void;
   isExportingExcel: boolean;
   isExportingPdf: boolean;
 };
 
-export default function AdminRecordExportActions({
+export default function AdminHistoryExportActions({
   onExportExcel,
   onExportPdf,
   isExportingExcel,
   isExportingPdf,
-}: AdminRecordExportActionsProps) {
+}: AdminHistoryExportActionsProps) {
   const isExporting = isExportingExcel || isExportingPdf;
 
   return (

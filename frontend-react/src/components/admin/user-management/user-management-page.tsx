@@ -6,8 +6,8 @@ import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
-import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
+import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
+import AdminRecordSummaryCards from "@/components/admin/history/AdminHistorySummaryCards";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";

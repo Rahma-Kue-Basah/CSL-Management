@@ -12,6 +12,9 @@ import { authFetch } from "@/lib/auth";
 
 export type BookingFilters = {
   status?: string;
+  requestedBy?: string;
+  department?: string;
+  room?: string;
   createdAfter?: string;
   createdBefore?: string;
 };
@@ -28,6 +31,7 @@ export type BookingRow = {
   requesterId: string;
   requesterName: string;
   requesterEmail: string;
+  requesterDepartment: string;
   status: string;
   purpose: string;
   startTime: string;
@@ -78,6 +82,7 @@ type ApiBooking = {
     id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
+    department?: string | null;
   } | null;
   approved_by?: string | number | null;
   approved_by_detail?: {
@@ -161,6 +166,7 @@ export function mapBooking(item: ApiBooking): BookingRow {
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
     requesterEmail: String(item.requested_by_detail?.email ?? "-"),
+    requesterDepartment: String(item.requested_by_detail?.department ?? "-"),
     status: String(item.status ?? "-"),
     purpose: String(item.purpose ?? "-"),
     startTime: String(item.start_time ?? "-"),
@@ -273,6 +279,15 @@ export function useBookings(
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
         if (filters.status) url.searchParams.set("status", filters.status);
+        if (filters.requestedBy && scope !== "my") {
+          url.searchParams.set("requested_by", filters.requestedBy);
+        }
+        if (filters.department) {
+          url.searchParams.set("department", filters.department);
+        }
+        if (filters.room) {
+          url.searchParams.set("room", filters.room);
+        }
         if (filters.createdAfter) {
           url.searchParams.set("created_after", filters.createdAfter);
         }
@@ -320,7 +335,18 @@ export function useBookings(
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, filters.createdAfter, filters.createdBefore, reloadKey, scope]);
+  }, [
+    page,
+    pageSize,
+    filters.status,
+    filters.requestedBy,
+    filters.department,
+    filters.room,
+    filters.createdAfter,
+    filters.createdBefore,
+    reloadKey,
+    scope,
+  ]);
 
   return {
     bookings,

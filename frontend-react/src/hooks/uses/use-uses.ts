@@ -12,6 +12,8 @@ import { authFetch } from "@/lib/auth";
 
 export type UseFilters = {
   status?: string;
+  department?: string;
+  equipment?: string;
   createdAfter?: string;
   createdBefore?: string;
   requestedBy?: string;
@@ -28,6 +30,7 @@ export type UseRow = {
   roomPicName: string;
   requesterId: string;
   requesterName: string;
+  requesterDepartment: string;
   approvedById: string;
   approvedByName: string;
   status: string;
@@ -69,6 +72,7 @@ type ApiUse = {
     id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
+    department?: string | null;
   } | null;
   approved_by?: string | number | null;
   approved_by_detail?: {
@@ -125,6 +129,7 @@ export function mapUse(item: ApiUse): UseRow {
     roomPicName,
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
+    requesterDepartment: String(item.requested_by_detail?.department ?? "-"),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     status: String(item.status ?? "-"),
@@ -249,6 +254,12 @@ export function useUses(
         if (filters.requestedBy && scope !== "my") {
           url.searchParams.set("requested_by", filters.requestedBy);
         }
+        if (filters.department) {
+          url.searchParams.set("department", filters.department);
+        }
+        if (filters.equipment) {
+          url.searchParams.set("equipment", filters.equipment);
+        }
         if (filters.createdAfter) {
           url.searchParams.set("created_after", filters.createdAfter);
         }
@@ -296,7 +307,18 @@ export function useUses(
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, filters.createdAfter, filters.createdBefore, filters.requestedBy, reloadKey, scope]);
+  }, [
+    page,
+    pageSize,
+    filters.status,
+    filters.department,
+    filters.equipment,
+    filters.createdAfter,
+    filters.createdBefore,
+    filters.requestedBy,
+    reloadKey,
+    scope,
+  ]);
 
   return {
     uses,

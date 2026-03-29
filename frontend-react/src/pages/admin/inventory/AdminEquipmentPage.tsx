@@ -11,7 +11,7 @@ import AdminEquipmentDetailDialog from "@/components/admin/inventory/AdminEquipm
 import EquipmentTable from "@/components/admin/inventory/EquipmentTable";
 import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
 import { DataPagination } from "@/components/shared/data-pagination";
-import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
+import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";

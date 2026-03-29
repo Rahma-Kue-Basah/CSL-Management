@@ -12,7 +12,7 @@ type SummaryCardItem = {
   tone?: StatusSummaryTone;
 };
 
-type AdminRecordSummaryCardsProps = {
+type AdminHistorySummaryCardsProps = {
   items: SummaryCardItem[];
 };
 
@@ -50,9 +50,9 @@ function SummaryCard({ label, value, icon, tone = "blue" }: SummaryCardItem) {
   );
 }
 
-export default function AdminRecordSummaryCards({
+export default function AdminHistorySummaryCards({
   items,
-}: AdminRecordSummaryCardsProps) {
+}: AdminHistorySummaryCardsProps) {
   return (
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
       {items.map((item) => (

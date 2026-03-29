@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import AdminRoomBookingRecordDetailContent from "@/components/admin/records/AdminRoomBookingRecordDetailContent";
+import AdminRoomBookingHistoryDetailContent from "@/components/admin/history/AdminRoomBookingHistoryDetailContent";
 import {
   Dialog,
   DialogContent,
@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import type { BookingRow } from "@/hooks/bookings/use-bookings";
 
-type AdminRoomBookingRecordDetailDialogProps = {
+type AdminRoomBookingHistoryDetailDialogProps = {
   open: boolean;
   booking: BookingRow | null;
   isLoading: boolean;
@@ -25,7 +25,7 @@ type AdminRoomBookingRecordDetailDialogProps = {
   showAside?: boolean;
 };
 
-export default function AdminRoomBookingRecordDetailDialog({
+export default function AdminRoomBookingHistoryDetailDialog({
   open,
   booking,
   isLoading,
@@ -36,7 +36,7 @@ export default function AdminRoomBookingRecordDetailDialog({
   actions,
   backLabel = "Tutup",
   showAside = false,
-}: AdminRoomBookingRecordDetailDialogProps) {
+}: AdminRoomBookingHistoryDetailDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
@@ -50,7 +50,7 @@ export default function AdminRoomBookingRecordDetailDialog({
           </DialogDescription>
         </DialogHeader>
         <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
-          <AdminRoomBookingRecordDetailContent
+          <AdminRoomBookingHistoryDetailContent
             booking={booking}
             isLoading={isLoading}
             error={error}

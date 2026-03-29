@@ -12,7 +12,7 @@ import {
   AdminRecordDetailItem,
   AdminRecordDetailSection,
   AdminRecordDetailShell,
-} from "@/components/admin/records/AdminRecordDetailLayout";
+} from "@/components/admin/history/AdminHistoryDetailLayout";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BorrowRow } from "@/hooks/borrows/use-borrows";
 import { formatDateTimeWib } from "@/lib/date-format";

@@ -59,6 +59,7 @@ from .serializers import (
     NotificationSerializer,
 )
 from csluse_auth.audit import log_admin_action
+from csluse_auth.models import Profile
 from csluse_auth.permissions import (
     IsStaffOrAbove,
     IsAdministratorOrAbove,
@@ -122,6 +123,29 @@ def is_administrator_or_above(user):
             or has_role(user, SUPER_ADMINISTRATOR)
         )
     )
+
+
+def build_requester_dropdown_response(queryset):
+    requester_ids = (
+        queryset.exclude(requested_by__isnull=True)
+        .values_list("requested_by_id", flat=True)
+        .distinct()
+    )
+    profiles = (
+        Profile.objects
+        .select_related("user")
+        .filter(id__in=requester_ids)
+        .order_by("full_name", "user__email")
+    )
+    return Response([
+        {
+            "id": str(profile.id),
+            "full_name": profile.full_name or profile.user.email,
+            "email": profile.user.email,
+            "department": profile.department,
+        }
+        for profile in profiles
+    ])
 
 
 class DefaultPagination(PageNumberPagination):
@@ -977,6 +1001,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             OpenApiParameter("room", OpenApiTypes.UUID, OpenApiParameter.QUERY),
             OpenApiParameter("equipment", OpenApiTypes.UUID, OpenApiParameter.QUERY),
             OpenApiParameter("requested_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("department", OpenApiTypes.STR, OpenApiParameter.QUERY),
             OpenApiParameter("pic", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="PIC of the room"),
             OpenApiParameter("pic_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="Alias for pic"),
             OpenApiParameter("start_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
@@ -993,6 +1018,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         room_id = self.request.query_params.get('room')
         equipment_id = self.request.query_params.get('equipment')
         requester_id = self.request.query_params.get('requested_by')
+        department = self.request.query_params.get('department')
         pic_id = self.request.query_params.get('pic') or self.request.query_params.get('pic_id')
         start_after = self.request.query_params.get('start_after')
         end_before = self.request.query_params.get('end_before')
@@ -1007,6 +1033,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             qs = qs.filter(equipment_items__equipment_id=equipment_id).distinct()
         if requester_id and allow_requester_filter:
             qs = qs.filter(requested_by_id=requester_id)
+        if department:
+            qs = qs.filter(requested_by__department__iexact=department)
         if pic_id:
             qs = qs.filter(room__pics__id=pic_id).distinct()
         if start_after:
@@ -1134,6 +1162,13 @@ class BookingViewSet(viewsets.ModelViewSet):
             "generated_at": timezone.now(),
             "results": serializer.data,
         })
+
+    @action(detail=False, methods=['get'], url_path='all/requesters')
+    def requester_options(self, request):
+        if not self._is_staff_or_above():
+            raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon booking.")
+        self._auto_update_booking_statuses()
+        return build_requester_dropdown_response(super().get_queryset())
 
     @action(detail=False, methods=['get'], url_path='by-month')
     def by_month(self, request):
@@ -1314,7 +1349,9 @@ class BorrowViewSet(viewsets.ModelViewSet):
     ):
         status_param = self.request.query_params.get('status')
         equipment_id = self.request.query_params.get('equipment')
+        room_id = self.request.query_params.get('room')
         requester_id = self.request.query_params.get('requested_by')
+        department = self.request.query_params.get('department')
         pic_id = self.request.query_params.get('pic') or self.request.query_params.get('pic_id')
         start_after = self.request.query_params.get('start_after')
         end_before = self.request.query_params.get('end_before')
@@ -1325,8 +1362,12 @@ class BorrowViewSet(viewsets.ModelViewSet):
             qs = qs.filter(status=normalize_status_value(status_param))
         if equipment_id:
             qs = qs.filter(equipment_id=equipment_id)
+        if room_id:
+            qs = qs.filter(equipment__room_id=room_id)
         if requester_id and allow_requester_filter:
             qs = qs.filter(requested_by_id=requester_id)
+        if department:
+            qs = qs.filter(requested_by__department__iexact=department)
         if pic_id and allow_pic_filter:
             qs = qs.filter(equipment__room__pics__id=pic_id).distinct()
         if start_after:
@@ -1343,7 +1384,9 @@ class BorrowViewSet(viewsets.ModelViewSet):
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
             OpenApiParameter("equipment", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("room", OpenApiTypes.UUID, OpenApiParameter.QUERY),
             OpenApiParameter("requested_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("department", OpenApiTypes.STR, OpenApiParameter.QUERY),
             OpenApiParameter("pic", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="PIC of the equipment's room"),
             OpenApiParameter("pic_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="Alias for pic"),
             OpenApiParameter("start_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
@@ -1545,6 +1588,13 @@ class BorrowViewSet(viewsets.ModelViewSet):
             "generated_at": timezone.now(),
             "results": serializer.data,
         })
+
+    @action(detail=False, methods=['get'], url_path='all/requesters')
+    def requester_options(self, request):
+        if not self._can_manage_all_borrows():
+            raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon peminjaman alat.")
+        sync_borrow_statuses()
+        return build_requester_dropdown_response(super().get_queryset())
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
@@ -2543,6 +2593,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
     def _apply_list_filters(self, qs, *, allow_requester_filter=False):
         status_param = self.request.query_params.get('status')
         requested_by = self.request.query_params.get('requested_by')
+        department = self.request.query_params.get('department')
         approved_by = self.request.query_params.get('approved_by')
         created_after = self.request.query_params.get('created_after')
         created_before = self.request.query_params.get('created_before')
@@ -2551,6 +2602,8 @@ class PengujianViewSet(viewsets.ModelViewSet):
             qs = qs.filter(status=normalize_status_value(status_param))
         if requested_by and allow_requester_filter:
             qs = qs.filter(requested_by_id=requested_by)
+        if department:
+            qs = qs.filter(requested_by__department__iexact=department)
         if approved_by:
             qs = qs.filter(approved_by_id=approved_by)
         if created_after:
@@ -2563,6 +2616,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
             OpenApiParameter("requested_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("department", OpenApiTypes.STR, OpenApiParameter.QUERY),
             OpenApiParameter("approved_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
             OpenApiParameter("created_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
             OpenApiParameter("created_before", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
@@ -2709,6 +2763,12 @@ class PengujianViewSet(viewsets.ModelViewSet):
             "results": serializer.data,
         })
 
+    @action(detail=False, methods=['get'], url_path='all/requesters')
+    def requester_options(self, request):
+        if not self._is_staff_or_above():
+            raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon pengujian sampel.")
+        return build_requester_dropdown_response(super().get_queryset())
+
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):
         instance = self.get_object()
@@ -2825,7 +2885,9 @@ class UseViewSet(viewsets.ModelViewSet):
     def _apply_list_filters(self, qs, *, allow_requester_filter=False):
         status_param = self.request.query_params.get('status')
         equipment_id = self.request.query_params.get('equipment')
+        room_id = self.request.query_params.get('room')
         requester_id = self.request.query_params.get('requested_by')
+        department = self.request.query_params.get('department')
         approved_by = self.request.query_params.get('approved_by')
         start_after = self.request.query_params.get('start_after')
         end_before = self.request.query_params.get('end_before')
@@ -2836,8 +2898,12 @@ class UseViewSet(viewsets.ModelViewSet):
             qs = qs.filter(status=normalize_status_value(status_param))
         if equipment_id:
             qs = qs.filter(equipment_id=equipment_id)
+        if room_id:
+            qs = qs.filter(equipment__room_id=room_id)
         if requester_id and allow_requester_filter:
             qs = qs.filter(requested_by_id=requester_id)
+        if department:
+            qs = qs.filter(requested_by__department__iexact=department)
         if approved_by:
             qs = qs.filter(approved_by_id=approved_by)
         if start_after:
@@ -2854,7 +2920,9 @@ class UseViewSet(viewsets.ModelViewSet):
         parameters=[
             OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
             OpenApiParameter("equipment", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("room", OpenApiTypes.UUID, OpenApiParameter.QUERY),
             OpenApiParameter("requested_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("department", OpenApiTypes.STR, OpenApiParameter.QUERY),
             OpenApiParameter("approved_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
             OpenApiParameter("start_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
             OpenApiParameter("end_before", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
@@ -2995,6 +3063,13 @@ class UseViewSet(viewsets.ModelViewSet):
             "generated_at": timezone.now(),
             "results": serializer.data,
         })
+
+    @action(detail=False, methods=['get'], url_path='all/requesters')
+    def requester_options(self, request):
+        if not self._is_staff_or_above():
+            raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon penggunaan alat.")
+        self._auto_update_use_statuses()
+        return build_requester_dropdown_response(super().get_queryset())
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):

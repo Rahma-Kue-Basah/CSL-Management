@@ -13,6 +13,8 @@ import { authFetch } from "@/lib/auth";
 export type BorrowFilters = {
   status?: string;
   requestedBy?: string;
+  department?: string;
+  equipment?: string;
   createdAfter?: string;
   createdBefore?: string;
 };
@@ -24,9 +26,11 @@ export type BorrowRow = {
   code: string;
   equipmentId: string;
   equipmentName: string;
+  roomName: string;
   roomPicName: string;
   requesterId: string;
   requesterName: string;
+  requesterDepartment: string;
   approvedById: string;
   approvedByName: string;
   status: string;
@@ -72,6 +76,7 @@ type ApiBorrow = {
     id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
+    department?: string | null;
   } | null;
   approved_by?: string | number | null;
   approved_by_detail?: {
@@ -132,9 +137,11 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
     code: String(item.code ?? "-"),
     equipmentId: String(item.equipment_detail?.id ?? item.equipment ?? ""),
     equipmentName: String(item.equipment_detail?.name ?? "-"),
+    roomName: String(item.equipment_detail?.room_detail?.name ?? "-"),
     roomPicName,
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
+    requesterDepartment: String(item.requested_by_detail?.department ?? "-"),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     status: String(item.status ?? "-"),
@@ -273,6 +280,12 @@ export function useBorrows(
         if (filters.requestedBy && scope !== "my") {
           url.searchParams.set("requested_by", filters.requestedBy);
         }
+        if (filters.department) {
+          url.searchParams.set("department", filters.department);
+        }
+        if (filters.equipment) {
+          url.searchParams.set("equipment", filters.equipment);
+        }
         if (filters.createdAfter) {
           url.searchParams.set("created_after", filters.createdAfter);
         }
@@ -326,7 +339,18 @@ export function useBorrows(
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, filters.requestedBy, filters.createdAfter, filters.createdBefore, reloadKey, scope]);
+  }, [
+    page,
+    pageSize,
+    filters.status,
+    filters.requestedBy,
+    filters.department,
+    filters.equipment,
+    filters.createdAfter,
+    filters.createdBefore,
+    reloadKey,
+    scope,
+  ]);
 
   return {
     borrows,

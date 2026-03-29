@@ -103,15 +103,15 @@ const adminMenuConfig: MenuConfig[] = [
   {
     type: "group",
     key: "record",
-    label: "Record",
+    label: "Riwayat",
     icon: History,
-    tooltip: "Record",
-    searchTerms: ["record"],
+    tooltip: "Riwayat",
+    searchTerms: ["riwayat"],
     items: [
-      { label: "Booking Ruangan", href: "/admin/records/room-bookings" },
-      { label: "Penggunaan Alat", href: "/admin/records/equipment-usage" },
-      { label: "Peminjaman Alat", href: "/admin/records/equipment-borrows" },
-      { label: "Pengujian Sampel", href: "/admin/records/sample-testing" },
+      { label: "Booking Ruangan", href: "/admin/history/room-bookings" },
+      { label: "Penggunaan Alat", href: "/admin/history/equipment-usage" },
+      { label: "Peminjaman Alat", href: "/admin/history/equipment-borrows" },
+      { label: "Pengujian Sampel", href: "/admin/history/sample-testing" },
     ],
   },
   {

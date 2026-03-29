@@ -1,13 +1,13 @@
 import type { ReactNode, RefObject } from "react";
 import { Loader2 } from "lucide-react";
 
-type AdminRecordTableColumn = {
+type AdminHistoryTableColumn = {
   label: string;
   className?: string;
 };
 
-type AdminRecordTableProps = {
-  columns: AdminRecordTableColumn[];
+type AdminHistoryTableProps = {
+  columns: AdminHistoryTableColumn[];
   colSpan: number;
   hasRows: boolean;
   isLoading: boolean;
@@ -20,7 +20,7 @@ type AdminRecordTableProps = {
   children: ReactNode;
 };
 
-export default function AdminRecordTable({
+export default function AdminHistoryTable({
   columns,
   colSpan,
   hasRows,
@@ -32,7 +32,7 @@ export default function AdminRecordTable({
   selectAllRef,
   selectAllAriaLabel = "Pilih semua record pada halaman ini",
   children,
-}: AdminRecordTableProps) {
+}: AdminHistoryTableProps) {
   return (
     <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
       <table className="min-w-max w-full table-auto">

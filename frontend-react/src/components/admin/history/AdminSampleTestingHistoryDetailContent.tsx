@@ -1,11 +1,10 @@
 "use client";
 
-import type { ReactNode } from "react";
 import {
-  CalendarClock,
   ClipboardList,
-  NotebookPen,
-  Wrench,
+  FlaskConical,
+  Microscope,
+  UserRound,
 } from "lucide-react";
 
 import {
@@ -15,31 +14,27 @@ import {
   AdminRecordDetailItem,
   AdminRecordDetailSection,
   AdminRecordDetailShell,
-} from "@/components/admin/records/AdminRecordDetailLayout";
-import type { UseRow } from "@/hooks/uses/use-uses";
+} from "@/components/admin/history/AdminHistoryDetailLayout";
+import type { PengujianRow } from "@/hooks/pengujians/use-pengujians";
 import { formatDateTimeWib } from "@/lib/date-format";
 
 type Props = {
-  item: UseRow | null;
+  item: PengujianRow | null;
   isLoading: boolean;
   error: string;
   onBack: () => void;
   backLabel?: string;
-  actions?: ReactNode;
   showAside?: boolean;
-  onOpenEquipmentDetail?: (equipmentId: string | number) => void;
   onOpenUserDetail?: (userId: string | number) => void;
 };
 
-export default function AdminEquipmentUsageRecordDetailContent({
+export default function AdminSampleTestingRecordDetailContent({
   item,
   isLoading,
   error,
   onBack,
   backLabel = "Kembali",
-  actions,
   showAside = true,
-  onOpenEquipmentDetail,
   onOpenUserDetail,
 }: Props) {
   return (
@@ -56,17 +51,16 @@ export default function AdminEquipmentUsageRecordDetailContent({
         </div>
       ) : !item ? (
         <div className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-8 text-sm text-muted-foreground">
-          Data record penggunaan alat tidak ditemukan.
+          Data record pengujian sampel tidak ditemukan.
         </div>
       ) : (
         <AdminRecordDetailShell
-          title="Detail Penggunaan Alat"
+          title="Detail Pengujian Sampel"
           code={item.code}
           icon={<ClipboardList className="h-5 w-5" />}
           status={item.status}
           onBack={onBack}
           backLabel={backLabel}
-          actions={actions}
           aside={
             showAside
               ? (
@@ -88,8 +82,8 @@ export default function AdminEquipmentUsageRecordDetailContent({
               </AdminRecordAsideCard>
               <AdminRecordAsideCard title="Audit Singkat">
                 <AdminRecordAsideItem label="Kode" value={item.code} />
-                <AdminRecordAsideItem label="Alat" value={item.equipmentName} />
-                <AdminRecordAsideItem label="Pengguna" value={item.requesterName} />
+                <AdminRecordAsideItem label="Pemohon" value={item.name} />
+                <AdminRecordAsideItem label="Institusi" value={item.institution} />
               </AdminRecordAsideCard>
             </>
                 )
@@ -97,23 +91,16 @@ export default function AdminEquipmentUsageRecordDetailContent({
           }
         >
           <AdminRecordDetailSection
-            title="Informasi Utama"
-            icon={<Wrench className="h-5 w-5" />}
+            title="Informasi Pemohon"
+            icon={<UserRound className="h-5 w-5" />}
           >
             <AdminRecordDetailGrid>
+              <AdminRecordDetailItem label="Nama Pemohon" value={item.name} />
+              <AdminRecordDetailItem label="Institusi" value={item.institution} />
+              <AdminRecordDetailItem label="Email" value={item.email} />
+              <AdminRecordDetailItem label="Telepon" value={item.phoneNumber} />
               <AdminRecordDetailItem
-                label="Alat"
-                value={item.equipmentName}
-                hrefIcon={Boolean(item.equipmentId)}
-                onClick={
-                  item.equipmentId && onOpenEquipmentDetail
-                    ? () => onOpenEquipmentDetail(item.equipmentId)
-                    : undefined
-                }
-              />
-              <AdminRecordDetailItem label="Jumlah" value={item.quantity} />
-              <AdminRecordDetailItem
-                label="Pengguna"
+                label="Pemohon Internal"
                 value={item.requesterName}
                 hrefIcon={Boolean(item.requesterId)}
                 onClick={
@@ -124,32 +111,42 @@ export default function AdminEquipmentUsageRecordDetailContent({
               />
               <AdminRecordDetailItem label="Status" value={item.status} status />
             </AdminRecordDetailGrid>
-            <div className="mt-3">
-              <AdminRecordDetailItem label="Tujuan" value={item.purpose} />
-            </div>
           </AdminRecordDetailSection>
 
           <AdminRecordDetailSection
-            title="Jadwal Penggunaan"
-            icon={<CalendarClock className="h-5 w-5" />}
+            title="Detail Sampel"
+            icon={<FlaskConical className="h-5 w-5" />}
           >
             <AdminRecordDetailGrid>
+              <AdminRecordDetailItem label="Nama Sampel" value={item.sampleName} />
+              <AdminRecordDetailItem label="Jenis Sampel" value={item.sampleType} />
+              <AdminRecordDetailItem label="Merk Sampel" value={item.sampleBrand} />
               <AdminRecordDetailItem
-                label="Waktu Mulai"
-                value={formatDateTimeWib(item.startTime)}
+                label="Kemasan Sampel"
+                value={item.samplePackaging}
               />
-              <AdminRecordDetailItem
-                label="Waktu Selesai"
-                value={formatDateTimeWib(item.endTime)}
-              />
+              <AdminRecordDetailItem label="Berat Sampel" value={item.sampleWeight} />
+              <AdminRecordDetailItem label="Jumlah Sampel" value={item.sampleQuantity} />
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
 
           <AdminRecordDetailSection
-            title="Catatan dan Persetujuan"
-            icon={<NotebookPen className="h-5 w-5" />}
+            title="Spesifikasi Pengujian"
+            icon={<Microscope className="h-5 w-5" />}
           >
             <AdminRecordDetailGrid>
+              <AdminRecordDetailItem
+                label="Penyajian Sampel"
+                value={item.sampleTestingServing}
+              />
+              <AdminRecordDetailItem
+                label="Metode Pengujian"
+                value={item.sampleTestingMethod}
+              />
+              <AdminRecordDetailItem
+                label="Jenis Pengujian"
+                value={item.sampleTestingType}
+              />
               <AdminRecordDetailItem
                 label="Disetujui Oleh"
                 value={item.approvedByName}
@@ -159,10 +156,6 @@ export default function AdminEquipmentUsageRecordDetailContent({
                     ? () => onOpenUserDetail(item.approvedById)
                     : undefined
                 }
-              />
-              <AdminRecordDetailItem
-                label="Catatan Pemohon"
-                value={item.note || "-"}
               />
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>

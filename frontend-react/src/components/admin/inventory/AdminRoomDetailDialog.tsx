@@ -5,7 +5,7 @@ import { ArrowUpRight, MapPinned, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PicMultiSelect } from "@/components/admin/inventory/PicMultiSelect";
-import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
+import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
 import AdminDetailActions from "@/components/shared/admin-detail-actions";
 import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";

@@ -6,12 +6,13 @@ import { Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import AdminSampleTestingRecordDetailContent from "@/components/admin/records/AdminSampleTestingRecordDetailContent";
-import AdminRecordBulkActions from "@/components/admin/records/AdminRecordBulkActions";
-import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
-import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
-import AdminRecordTable from "@/components/admin/records/AdminRecordTable";
-import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
+import AdminEquipmentBorrowHistoryDetailContent from "@/components/admin/history/AdminEquipmentBorrowHistoryDetailContent";
+import AdminHistoryBulkActions from "@/components/admin/history/AdminHistoryBulkActions";
+import AdminHistoryExportActions from "@/components/admin/history/AdminHistoryExportActions";
+import AdminHistorySummaryCards from "@/components/admin/history/AdminHistorySummaryCards";
+import AdminHistoryTable from "@/components/admin/history/AdminHistoryTable";
+import RelatedEquipmentDetailDialog from "@/components/admin/history/RelatedEquipmentDetailDialog";
+import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { DataPagination } from "@/components/shared/data-pagination";
@@ -27,70 +28,71 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import {
-  API_PENGUJIAN_DETAIL,
-  API_PENGUJIANS_BULK_DELETE,
-  API_PENGUJIANS_EXPORT,
+  API_BORROWS_ALL_REQUESTERS,
+  API_BORROW_DETAIL,
+  API_BORROWS_BULK_DELETE,
+  API_BORROWS_EXPORT,
 } from "@/constants/api";
+import { DEPARTMENT_VALUES } from "@/constants/departments";
+import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import {
-  mapPengujian,
-  usePengujians,
-  type PengujianRow,
-} from "@/hooks/pengujians/use-pengujians";
+  mapBorrow,
+  useBorrows,
+  type BorrowRow,
+} from "@/hooks/borrows/use-borrows";
+import { useHistoryRequesterOptions } from "@/hooks/history/use-history-requester-options";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
-import { PENGUJIAN_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
-import { formatDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 import {
-  exportAdminRecordExcel,
-  exportAdminRecordPdf,
-} from "@/lib/admin-record-pdf";
+  formatDateKey,
+  toEndOfDay,
+  toStartOfDay,
+} from "@/lib/date";
+import { formatDateTimeWib } from "@/lib/date-format";
+import { BORROW_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
+import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
 import {
+  BORROW_STATUS_OPTIONS,
   getStatusBadgeClass,
   getStatusDisplayLabel,
-  SAMPLE_TESTING_STATUS_OPTIONS,
 } from "@/lib/status";
 import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 
 const PAGE_SIZE = 20;
-const STATUS_OPTIONS = SAMPLE_TESTING_STATUS_OPTIONS;
+const STATUS_OPTIONS = BORROW_STATUS_OPTIONS;
 const ORDERING_OPTIONS = [
   { value: "newest", label: "Terbaru" },
   { value: "oldest", label: "Terlama" },
 ];
 
-function matchesSearch(row: PengujianRow, query: string) {
+function matchesSearch(row: BorrowRow, query: string) {
   if (!query) return true;
-  const haystack = [
-    row.code,
-    row.name,
-    row.institution,
-    row.email,
-    row.sampleType,
-  ]
+  const haystack = [row.code, row.equipmentName, row.requesterName, row.purpose]
     .join(" ")
     .toLowerCase();
   return haystack.includes(query.toLowerCase());
 }
 
-export default function AdminRecordPengujianSampelPage() {
+export default function AdminEquipmentBorrowHistoryPage() {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [requestedBy, setRequestedBy] = useState("");
+  const [department, setDepartment] = useState("");
+  const [equipment, setEquipment] = useState("");
   const [ordering, setOrdering] = useState("newest");
   const [createdRange, setCreatedRange] = useState<DateRange | undefined>();
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [deleteTarget, setDeleteTarget] = useState<PengujianRow | null>(null);
-  const [detailTarget, setDetailTarget] = useState<PengujianRow | null>(null);
-  const [relatedUserId, setRelatedUserId] = useState<string | number | null>(
-    null,
-  );
+  const [deleteTarget, setDeleteTarget] = useState<BorrowRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
+  const [detailTarget, setDetailTarget] = useState<BorrowRow | null>(null);
+  const [relatedEquipmentId, setRelatedEquipmentId] = useState<string | number | null>(null);
+  const [relatedUserId, setRelatedUserId] = useState<string | number | null>(null);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
-  const [isExportingSelectedExcel, setIsExportingSelectedExcel] =
-    useState(false);
+  const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
   const createdAfter = createdRange?.from ? formatDateKey(createdRange.from) : "";
   const createdBefore = createdRange?.to
     ? formatDateKey(createdRange.to)
@@ -98,23 +100,28 @@ export default function AdminRecordPengujianSampelPage() {
       ? formatDateKey(createdRange.from)
       : "";
   const { deleteRecord, deleteRecords, isDeleting } = useDeleteRecord();
+  const { requesters } = useHistoryRequesterOptions(API_BORROWS_ALL_REQUESTERS);
+  const { equipments } = useEquipmentOptions("", "", true, true);
   const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } =
     useAdminRecordExport({
-      endpoint: API_PENGUJIANS_EXPORT,
+      endpoint: API_BORROWS_EXPORT,
       filters: {
         q: debouncedSearch,
         status,
+        requested_by: requestedBy,
+        department,
+        equipment,
         created_after: createdAfter ? toStartOfDay(createdAfter) : "",
         created_before: createdBefore ? toEndOfDay(createdBefore) : "",
       },
-      mapItem: mapPengujian,
-      title: "Record Pengujian Sampel",
-      pdfFilename: "record-pengujian-sampel.pdf",
-      excelFilename: "record-pengujian-sampel.xlsx",
-      columns: PENGUJIAN_EXPORT_COLUMNS,
-      emptyMessage: "Tidak ada data pengujian sampel untuk diunduh.",
-      pdfSuccessMessage: "PDF pengujian sampel berhasil diunduh.",
-      excelSuccessMessage: "Excel pengujian sampel berhasil diunduh.",
+      mapItem: mapBorrow,
+      title: "Riwayat Peminjaman Alat",
+      pdfFilename: "record-peminjaman-alat.pdf",
+      excelFilename: "record-peminjaman-alat.xlsx",
+      columns: BORROW_EXPORT_COLUMNS,
+      emptyMessage: "Tidak ada data peminjaman alat untuk diunduh.",
+      pdfSuccessMessage: "PDF peminjaman alat berhasil diunduh.",
+      excelSuccessMessage: "Excel peminjaman alat berhasil diunduh.",
     });
 
   useEffect(() => {
@@ -122,30 +129,27 @@ export default function AdminRecordPengujianSampelPage() {
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const {
-    pengujians,
-    totalCount,
-    aggregates,
-    isLoading,
-    hasLoadedOnce,
-    error,
-  } = usePengujians(
-    page,
-    PAGE_SIZE,
-    {
-      status,
-      createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
-      createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
-    },
-    reloadKey,
+  const { borrows, totalCount, aggregates, isLoading, hasLoadedOnce, error } =
+    useBorrows(
+      page,
+      PAGE_SIZE,
+      {
+        status,
+        requestedBy,
+        department,
+        equipment,
+        createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
+        createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
+      },
+      reloadKey,
+      "all",
+    );
+  const filteredBorrows = useMemo(
+    () => borrows.filter((item) => matchesSearch(item, debouncedSearch)),
+    [borrows, debouncedSearch],
   );
-
-  const filteredItems = useMemo(
-    () => pengujians.filter((item) => matchesSearch(item, debouncedSearch)),
-    [pengujians, debouncedSearch],
-  );
-  const visibleItems = useMemo(() => {
-    const items = [...filteredItems];
+  const visibleBorrows = useMemo(() => {
+    const items = [...filteredBorrows];
 
     if (ordering === "oldest") {
       items.sort(
@@ -158,32 +162,36 @@ export default function AdminRecordPengujianSampelPage() {
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
     return items;
-  }, [filteredItems, ordering]);
-  const selectedRows = useMemo(() => {
-    const selectedIdSet = new Set(selectedIds.map((id) => String(id)));
-    return pengujians.filter((item) => selectedIdSet.has(String(item.id)));
-  }, [pengujians, selectedIds]);
+  }, [filteredBorrows, ordering]);
 
   const totalPages = useMemo(
     () =>
-      Math.max(1, Math.ceil((totalCount || filteredItems.length) / PAGE_SIZE)),
-    [totalCount, filteredItems.length],
+      Math.max(
+        1,
+        Math.ceil((totalCount || filteredBorrows.length) / PAGE_SIZE),
+      ),
+    [totalCount, filteredBorrows.length],
   );
+
   const selectedCount = selectedIds.length;
+  const selectedRows = useMemo(() => {
+    const selectedIdSet = new Set(selectedIds.map((id) => String(id)));
+    return borrows.filter((item) => selectedIdSet.has(String(item.id)));
+  }, [borrows, selectedIds]);
   const allVisibleSelected =
-    visibleItems.length > 0 &&
-    visibleItems.every((item) => selectedIds.includes(item.id));
+    visibleBorrows.length > 0 &&
+    visibleBorrows.every((item) => selectedIds.includes(item.id));
   const someVisibleSelected =
-    visibleItems.some((item) => selectedIds.includes(item.id)) &&
+    visibleBorrows.some((item) => selectedIds.includes(item.id)) &&
     !allVisibleSelected;
 
   useEffect(() => {
     setSelectedIds((prev) =>
       prev.filter((id) =>
-        pengujians.some((item) => String(item.id) === String(id)),
+        borrows.some((item) => String(item.id) === String(id)),
       ),
     );
-  }, [pengujians]);
+  }, [borrows]);
 
   useEffect(() => {
     if (!selectAllRef.current) return;
@@ -194,6 +202,9 @@ export default function AdminRecordPengujianSampelPage() {
     setSearch("");
     setDebouncedSearch("");
     setStatus("");
+    setRequestedBy("");
+    setDepartment("");
+    setEquipment("");
     setOrdering("newest");
     setCreatedRange(undefined);
     setPage(1);
@@ -202,9 +213,9 @@ export default function AdminRecordPengujianSampelPage() {
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
-    const result = await deleteRecord(API_PENGUJIAN_DETAIL(deleteTarget.id));
+    const result = await deleteRecord(API_BORROW_DETAIL(deleteTarget.id));
     if (result.ok) {
-      toast.success("Record pengujian sampel berhasil dihapus.");
+      toast.success("Riwayat peminjaman alat berhasil dihapus.");
       setDeleteTarget(null);
       setReloadKey((prev) => prev + 1);
       return;
@@ -223,21 +234,21 @@ export default function AdminRecordPengujianSampelPage() {
   const toggleSelectAllVisible = (checked: boolean) => {
     if (!checked) {
       setSelectedIds((prev) =>
-        prev.filter((id) => !visibleItems.some((item) => item.id === id)),
+        prev.filter((id) => !visibleBorrows.some((item) => item.id === id)),
       );
       return;
     }
 
     setSelectedIds((prev) => {
       const next = new Set(prev);
-      visibleItems.forEach((item) => next.add(item.id));
+      visibleBorrows.forEach((item) => next.add(item.id));
       return Array.from(next);
     });
   };
 
   const handleBulkDelete = async () => {
     if (!selectedIds.length) return;
-    const result = await deleteRecords(API_PENGUJIANS_BULK_DELETE, selectedIds);
+    const result = await deleteRecords(API_BORROWS_BULK_DELETE, selectedIds);
 
     if (!result.ok) {
       toast.error(result.message);
@@ -245,17 +256,14 @@ export default function AdminRecordPengujianSampelPage() {
     }
 
     if (result.failedCount && result.deletedCount) {
-      toast.success(
-        `${result.deletedCount} record pengujian sampel berhasil dihapus.`,
-      );
+      toast.success(`${result.deletedCount} record peminjaman alat berhasil dihapus.`);
       toast.error(
-        result.message ??
-          `${result.failedCount} record pengujian sampel gagal dihapus.`,
+        result.message ?? `${result.failedCount} record peminjaman alat gagal dihapus.`,
       );
     } else {
       toast.success(
         result.message ??
-          `${result.deletedCount} record pengujian sampel berhasil dihapus.`,
+          `${result.deletedCount} record peminjaman alat berhasil dihapus.`,
       );
     }
 
@@ -269,18 +277,16 @@ export default function AdminRecordPengujianSampelPage() {
     try {
       setIsExportingSelectedPdf(true);
       exportAdminRecordPdf({
-        title: "Record Pengujian Sampel Terpilih",
+        title: "Riwayat Peminjaman Alat Terpilih",
         subtitle: `Total data: ${selectedRows.length}`,
-        filename: "record-pengujian-sampel-terpilih.pdf",
-        columns: PENGUJIAN_EXPORT_COLUMNS,
+        filename: "record-peminjaman-alat-terpilih.pdf",
+        columns: BORROW_EXPORT_COLUMNS,
         rows: selectedRows,
       });
-      toast.success("PDF pengujian sampel terpilih berhasil diunduh.");
+      toast.success("PDF record peminjaman alat terpilih berhasil diunduh.");
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Gagal mengunduh PDF data terpilih.",
+        error instanceof Error ? error.message : "Gagal mengunduh PDF data terpilih.",
       );
     } finally {
       setIsExportingSelectedPdf(false);
@@ -292,17 +298,15 @@ export default function AdminRecordPengujianSampelPage() {
     try {
       setIsExportingSelectedExcel(true);
       exportAdminRecordExcel({
-        title: "Record Pengujian Sampel Terpilih",
-        filename: "record-pengujian-sampel-terpilih.xlsx",
-        columns: PENGUJIAN_EXPORT_COLUMNS,
+        title: "Riwayat Peminjaman Alat Terpilih",
+        filename: "record-peminjaman-alat-terpilih.xlsx",
+        columns: BORROW_EXPORT_COLUMNS,
         rows: selectedRows,
       });
-      toast.success("Excel pengujian sampel terpilih berhasil diunduh.");
+      toast.success("Excel record peminjaman alat terpilih berhasil diunduh.");
     } catch (error) {
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Gagal mengunduh Excel data terpilih.",
+        error instanceof Error ? error.message : "Gagal mengunduh Excel data terpilih.",
       );
     } finally {
       setIsExportingSelectedExcel(false);
@@ -314,18 +318,26 @@ export default function AdminRecordPengujianSampelPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex-1 space-y-4">
           <AdminPageHeader
-            title="Record Pengujian Sampel"
-            description="Pantau histori pengujian sampel yang diajukan pengguna."
+            title="Riwayat Peminjaman Alat"
+            description="Pantau histori peminjaman alat laboratorium."
             icon={<Eye className="h-5 w-5 text-sky-200" />}
           />
 
-          <AdminRecordSummaryCards
+          <AdminHistorySummaryCards
             items={[
               { label: "Total", value: aggregates.total, tone: "blue" },
               { label: "Pending", value: aggregates.pending },
               { label: "Approved", value: aggregates.approved },
-              { label: "Completed", value: aggregates.completed },
               { label: "Rejected", value: aggregates.rejected },
+              { label: "Expired", value: aggregates.expired },
+              { label: "Borrowed", value: aggregates.borrowed, tone: "blue" },
+              {
+                label: "Returned Pending Inspection",
+                value: aggregates.returned_pending_inspection,
+              },
+              { label: "Returned", value: aggregates.returned },
+              { label: "Overdue", value: aggregates.overdue },
+              { label: "Lost/Damaged", value: aggregates.lost_damaged },
             ]}
           />
 
@@ -335,21 +347,21 @@ export default function AdminRecordPengujianSampelPage() {
             onReset={resetFilters}
           >
             <form
-              className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
+              className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-6"
               onSubmit={(event) => {
                 event.preventDefault();
                 setPage(1);
               }}
             >
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Cari
                 </label>
                 <Input
                   type="search"
                   value={search}
-                  placeholder="Kode, nama pemohon, institusi, atau jenis sampel"
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  placeholder="Kode, alat, atau peminjam"
+                  className="h-8 border-slate-400 bg-white px-2 py-0 text-xs placeholder:text-xs md:text-xs shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                   onChange={(event) => {
                     setSearch(event.target.value);
                     setPage(1);
@@ -357,7 +369,7 @@ export default function AdminRecordPengujianSampelPage() {
                 />
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Status
                 </label>
                 <select
@@ -366,7 +378,7 @@ export default function AdminRecordPengujianSampelPage() {
                     setStatus(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
                 >
                   {STATUS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -376,7 +388,67 @@ export default function AdminRecordPengujianSampelPage() {
                 </select>
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
+                  Nama Pemohon
+                </label>
+                <select
+                  value={requestedBy}
+                  onChange={(event) => {
+                    setRequestedBy(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  <option value="">Semua pemohon</option>
+                  {requesters.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
+                  Prodi Pemohon
+                </label>
+                <select
+                  value={department}
+                  onChange={(event) => {
+                    setDepartment(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  <option value="">Semua prodi</option>
+                  {DEPARTMENT_VALUES.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
+                  Alat
+                </label>
+                <select
+                  value={equipment}
+                  onChange={(event) => {
+                    setEquipment(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  <option value="">Semua alat</option>
+                  {equipments.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Urutkan
                 </label>
                 <select
@@ -385,7 +457,7 @@ export default function AdminRecordPengujianSampelPage() {
                     setOrdering(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
                 >
                   {ORDERING_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -394,8 +466,8 @@ export default function AdminRecordPengujianSampelPage() {
                   ))}
                 </select>
               </div>
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+              <div className="min-w-0 xl:col-start-3 xl:col-span-2">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Tanggal Dibuat
                 </label>
                 <DateRangePicker
@@ -405,7 +477,7 @@ export default function AdminRecordPengujianSampelPage() {
                     setPage(1);
                   }}
                   clearable
-                  buttonClassName="h-9 w-full rounded-md border-slate-400 bg-white px-2 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  buttonClassName="h-8 w-full rounded-md border-slate-400 bg-white px-2 text-xs shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                 />
               </div>
             </form>
@@ -413,7 +485,7 @@ export default function AdminRecordPengujianSampelPage() {
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <AdminRecordBulkActions
+              <AdminHistoryBulkActions
                 selectedCount={selectedCount}
                 isDeleting={isDeleting}
                 isExportingSelectedExcel={isExportingSelectedExcel}
@@ -428,7 +500,7 @@ export default function AdminRecordPengujianSampelPage() {
               <p className="text-xs text-slate-500 sm:text-right">
                 Export mengikuti filter dan pencarian yang sedang aktif.
               </p>
-              <AdminRecordExportActions
+              <AdminHistoryExportActions
                 onExportExcel={exportExcel}
                 onExportPdf={exportPdf}
                 isExportingExcel={isExportingExcel}
@@ -437,14 +509,17 @@ export default function AdminRecordPengujianSampelPage() {
             </div>
           </div>
 
-          {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
+          {error ? (
+            <InlineErrorAlert>{error}</InlineErrorAlert>
+          ) : null}
 
-          <AdminRecordTable
+          <AdminHistoryTable
             columns={[
               { label: "Kode" },
+              { label: "Alat" },
               { label: "Pemohon" },
-              { label: "Institusi" },
-              { label: "Jenis Sampel" },
+              { label: "Waktu Mulai" },
+              { label: "Waktu Selesai" },
               { label: "Status" },
               {
                 label: "Aksi",
@@ -452,16 +527,16 @@ export default function AdminRecordPengujianSampelPage() {
                   "sticky right-0 z-10 relative whitespace-nowrap bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700",
               },
             ]}
-            colSpan={7}
-            hasRows={visibleItems.length > 0}
+            colSpan={8}
+            hasRows={visibleBorrows.length > 0}
             isLoading={isLoading}
             hasLoadedOnce={hasLoadedOnce}
-            emptyMessage="Tidak ada data pengujian sampel."
+            emptyMessage="Tidak ada data peminjaman alat."
             allVisibleSelected={allVisibleSelected}
             onToggleSelectAll={toggleSelectAllVisible}
             selectAllRef={selectAllRef}
           >
-            {visibleItems.map((item) => (
+            {visibleBorrows.map((item) => (
               <tr key={String(item.id)} className="border-b last:border-b-0">
                 <td className="px-3 py-2 text-center">
                   <input
@@ -475,12 +550,17 @@ export default function AdminRecordPengujianSampelPage() {
                 <td className="whitespace-nowrap px-3 py-2 font-medium">
                   {item.code}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2">{item.name}</td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {item.equipmentName}
+                </td>
                 <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
-                  {item.institution || "-"}
+                  {item.requesterName}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
-                  {item.sampleType}
+                  {formatDateTimeWib(item.startTime)}
+                </td>
+                <td className="whitespace-nowrap px-3 py-2">
+                  {formatDateTimeWib(item.endTime)}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   <span
@@ -512,22 +592,22 @@ export default function AdminRecordPengujianSampelPage() {
                 </td>
               </tr>
             ))}
-          </AdminRecordTable>
+          </AdminHistoryTable>
 
           <DataPagination
             page={page}
             totalPages={totalPages}
-            totalCount={totalCount || filteredItems.length}
+            totalCount={totalCount || filteredBorrows.length}
             pageSize={PAGE_SIZE}
-            itemLabel="pengujian sampel"
+            itemLabel="peminjaman alat"
             isLoading={isLoading}
             onPageChange={setPage}
           />
 
           <ConfirmDeleteDialog
             open={Boolean(deleteTarget)}
-            title="Hapus record pengujian sampel?"
-            description={`Record ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
+            title="Hapus record peminjaman alat?"
+            description={`Riwayat ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
             isDeleting={isDeleting}
             onOpenChange={(open) => {
               if (!open) setDeleteTarget(null);
@@ -537,7 +617,7 @@ export default function AdminRecordPengujianSampelPage() {
 
           <ConfirmDeleteDialog
             open={isBulkDeleteOpen}
-            title="Hapus record pengujian sampel terpilih?"
+            title="Hapus record peminjaman alat terpilih?"
             description={`${selectedCount} record yang dipilih akan dihapus permanen.`}
             isDeleting={isDeleting}
             onOpenChange={setIsBulkDeleteOpen}
@@ -555,24 +635,32 @@ export default function AdminRecordPengujianSampelPage() {
               className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden border-0 bg-transparent p-0 shadow-none sm:w-[50vw] sm:max-w-[960px] sm:min-w-[720px] sm:max-w-none"
             >
               <DialogHeader className="sr-only">
-                <DialogTitle>Detail Pengujian Sampel</DialogTitle>
+                <DialogTitle>Detail Peminjaman Alat</DialogTitle>
                 <DialogDescription>
-                  Detail record pengujian sampel ditampilkan dalam modal.
+                  Detail record peminjaman alat ditampilkan dalam modal.
                 </DialogDescription>
               </DialogHeader>
-              <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
-                <AdminSampleTestingRecordDetailContent
+              <div className="max-h-[85vh] overflow-y-auto px-1 pt-1">
+                <AdminEquipmentBorrowHistoryDetailContent
                   item={detailTarget}
                   isLoading={false}
                   error=""
-                  showAside={false}
                   backLabel="Tutup"
                   onBack={() => setDetailTarget(null)}
+                  onOpenEquipmentDetail={setRelatedEquipmentId}
                   onOpenUserDetail={setRelatedUserId}
                 />
               </div>
             </DialogContent>
           </Dialog>
+
+          <RelatedEquipmentDetailDialog
+            open={Boolean(relatedEquipmentId)}
+            equipmentId={relatedEquipmentId}
+            onOpenChange={(open) => {
+              if (!open) setRelatedEquipmentId(null);
+            }}
+          />
 
           <RelatedUserDetailDialog
             open={Boolean(relatedUserId)}

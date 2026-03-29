@@ -16,13 +16,13 @@ import {
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import RelatedRoomDetailDialog from "@/components/admin/records/RelatedRoomDetailDialog";
-import AdminRoomBookingRecordDetailContent from "@/components/admin/records/AdminRoomBookingRecordDetailContent";
-import AdminRecordBulkActions from "@/components/admin/records/AdminRecordBulkActions";
-import AdminRecordExportActions from "@/components/admin/records/AdminRecordExportActions";
-import AdminRecordSummaryCards from "@/components/admin/records/AdminRecordSummaryCards";
-import AdminRecordTable from "@/components/admin/records/AdminRecordTable";
-import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
+import RelatedRoomDetailDialog from "@/components/admin/history/RelatedRoomDetailDialog";
+import AdminRoomBookingHistoryDetailContent from "@/components/admin/history/AdminRoomBookingHistoryDetailContent";
+import AdminHistoryBulkActions from "@/components/admin/history/AdminHistoryBulkActions";
+import AdminHistoryExportActions from "@/components/admin/history/AdminHistoryExportActions";
+import AdminHistorySummaryCards from "@/components/admin/history/AdminHistorySummaryCards";
+import AdminHistoryTable from "@/components/admin/history/AdminHistoryTable";
+import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { DataPagination } from "@/components/shared/data-pagination";
@@ -40,13 +40,17 @@ import { Input } from "@/components/ui/input";
 import {
   API_BOOKING_DETAIL,
   API_BOOKINGS_ALL_EXPORT,
+  API_BOOKINGS_ALL_REQUESTERS,
   API_BOOKINGS_BULK_DELETE,
 } from "@/constants/api";
+import { DEPARTMENT_VALUES } from "@/constants/departments";
+import { useHistoryRequesterOptions } from "@/hooks/history/use-history-requester-options";
 import {
   mapBooking,
   useBookings,
   type BookingRow,
 } from "@/hooks/bookings/use-bookings";
+import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
@@ -82,13 +86,16 @@ function matchesSearch(booking: BookingRow, query: string) {
   return haystack.includes(query.toLowerCase());
 }
 
-export default function AdminRoomBookingRecordPage() {
+export default function AdminRoomBookingHistoryPage() {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const { profile } = useLoadProfile();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [status, setStatus] = useState("");
+  const [requestedBy, setRequestedBy] = useState("");
+  const [department, setDepartment] = useState("");
+  const [room, setRoom] = useState("");
   const [ordering, setOrdering] = useState("newest");
   const [createdRange, setCreatedRange] = useState<DateRange | undefined>();
   const [filterOpen, setFilterOpen] = useState(false);
@@ -112,6 +119,8 @@ export default function AdminRoomBookingRecordPage() {
       ? formatDateKey(createdRange.from)
       : "";
   const { deleteRecord, deleteRecords, isDeleting } = useDeleteRecord();
+  const { requesters } = useHistoryRequesterOptions(API_BOOKINGS_ALL_REQUESTERS);
+  const { rooms } = useRoomOptions();
   const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
   const {
     exportPdf,
@@ -123,11 +132,14 @@ export default function AdminRoomBookingRecordPage() {
     filters: {
       q: debouncedSearch,
       status,
+      requested_by: requestedBy,
+      department,
+      room,
       created_after: createdAfter ? toStartOfDay(createdAfter) : "",
       created_before: createdBefore ? toEndOfDay(createdBefore) : "",
     },
     mapItem: mapBooking,
-    title: "Record Booking Ruangan",
+    title: "Riwayat Booking Ruangan",
     pdfFilename: "record-booking-ruangan.pdf",
     excelFilename: "record-booking-ruangan.xlsx",
     columns: BOOKING_EXPORT_COLUMNS,
@@ -146,6 +158,9 @@ export default function AdminRoomBookingRecordPage() {
     PAGE_SIZE,
     {
       status,
+      requestedBy,
+      department,
+      room,
       createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
       createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
@@ -203,6 +218,9 @@ export default function AdminRoomBookingRecordPage() {
     setSearch("");
     setDebouncedSearch("");
     setStatus("");
+    setRequestedBy("");
+    setDepartment("");
+    setRoom("");
     setOrdering("newest");
     setCreatedRange(undefined);
     setPage(1);
@@ -213,7 +231,7 @@ export default function AdminRoomBookingRecordPage() {
     if (!deleteTarget) return;
     const result = await deleteRecord(API_BOOKING_DETAIL(deleteTarget.id));
     if (result.ok) {
-      toast.success("Record peminjaman ruangan berhasil dihapus.");
+      toast.success("Riwayat booking ruangan berhasil dihapus.");
       setDeleteTarget(null);
       setReloadKey((prev) => prev + 1);
       return;
@@ -315,7 +333,7 @@ export default function AdminRoomBookingRecordPage() {
     try {
       setIsExportingSelectedPdf(true);
       exportAdminRecordPdf({
-        title: "Record Booking Ruangan Terpilih",
+        title: "Riwayat Booking Ruangan Terpilih",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "record-booking-ruangan-terpilih.pdf",
         columns: BOOKING_EXPORT_COLUMNS,
@@ -336,7 +354,7 @@ export default function AdminRoomBookingRecordPage() {
     try {
       setIsExportingSelectedExcel(true);
       exportAdminRecordExcel({
-        title: "Record Booking Ruangan Terpilih",
+        title: "Riwayat Booking Ruangan Terpilih",
         filename: "record-booking-ruangan-terpilih.xlsx",
         columns: BOOKING_EXPORT_COLUMNS,
         rows: selectedRows,
@@ -356,12 +374,12 @@ export default function AdminRoomBookingRecordPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex-1 space-y-4">
           <AdminPageHeader
-            title="Record Booking Ruangan"
+            title="Riwayat Booking Ruangan"
             description="Pantau seluruh histori booking ruangan dari pengguna."
             icon={<Eye className="h-5 w-5 text-sky-200" />}
           />
 
-          <AdminRecordSummaryCards
+          <AdminHistorySummaryCards
             items={[
               { label: "Total", value: aggregates.total, tone: "blue" },
               { label: "Pending", value: aggregates.pending },
@@ -378,21 +396,21 @@ export default function AdminRoomBookingRecordPage() {
             onReset={resetFilters}
           >
             <form
-              className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
+              className="grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-6"
               onSubmit={(event) => {
                 event.preventDefault();
                 setPage(1);
               }}
             >
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Cari
                 </label>
                 <Input
                   type="search"
                   value={search}
-                  placeholder="Kode, ruangan, atau peminjam"
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  placeholder="Kode"
+                  className="h-8 border-slate-400 bg-white px-2 py-0 text-xs placeholder:text-xs md:text-xs shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                   onChange={(event) => {
                     setSearch(event.target.value);
                     setPage(1);
@@ -400,7 +418,7 @@ export default function AdminRoomBookingRecordPage() {
                 />
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Status
                 </label>
                 <select
@@ -409,7 +427,7 @@ export default function AdminRoomBookingRecordPage() {
                     setStatus(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
                 >
                   {STATUS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -419,7 +437,67 @@ export default function AdminRoomBookingRecordPage() {
                 </select>
               </div>
               <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
+                  Nama Pemohon
+                </label>
+                <select
+                  value={requestedBy}
+                  onChange={(event) => {
+                    setRequestedBy(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  <option value="">Semua pemohon</option>
+                  {requesters.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
+                  Prodi Pemohon
+                </label>
+                <select
+                  value={department}
+                  onChange={(event) => {
+                    setDepartment(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  <option value="">Semua prodi</option>
+                  {DEPARTMENT_VALUES.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
+                  Ruangan
+                </label>
+                <select
+                  value={room}
+                  onChange={(event) => {
+                    setRoom(event.target.value);
+                    setPage(1);
+                  }}
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                >
+                  <option value="">Semua ruangan</option>
+                  {rooms.map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="min-w-0">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Urutkan
                 </label>
                 <select
@@ -428,7 +506,7 @@ export default function AdminRoomBookingRecordPage() {
                     setOrdering(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                  className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
                 >
                   {ORDERING_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -437,8 +515,8 @@ export default function AdminRoomBookingRecordPage() {
                   ))}
                 </select>
               </div>
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
+              <div className="min-w-0 xl:col-start-3 xl:col-span-2">
+                <label className="mb-0.5 block text-[11px] font-semibold text-slate-900/90">
                   Tanggal Dibuat
                 </label>
                 <DateRangePicker
@@ -448,7 +526,7 @@ export default function AdminRoomBookingRecordPage() {
                     setPage(1);
                   }}
                   clearable
-                  buttonClassName="h-9 w-full rounded-md border-slate-400 bg-white px-2 shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  buttonClassName="h-8 w-full rounded-md border-slate-400 bg-white px-2 text-xs shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
                 />
               </div>
             </form>
@@ -456,7 +534,7 @@ export default function AdminRoomBookingRecordPage() {
 
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-2">
-              <AdminRecordBulkActions
+              <AdminHistoryBulkActions
                 selectedCount={selectedCount}
                 isDeleting={isDeleting}
                 isExportingSelectedExcel={isExportingSelectedExcel}
@@ -471,7 +549,7 @@ export default function AdminRoomBookingRecordPage() {
               <p className="text-xs text-slate-500 sm:text-right">
                 Export mengikuti filter dan pencarian yang sedang aktif.
               </p>
-              <AdminRecordExportActions
+              <AdminHistoryExportActions
                 onExportExcel={exportExcel}
                 onExportPdf={exportPdf}
                 isExportingExcel={isExportingExcel}
@@ -484,13 +562,12 @@ export default function AdminRoomBookingRecordPage() {
             <InlineErrorAlert>{error}</InlineErrorAlert>
           ) : null}
 
-          <AdminRecordTable
+          <AdminHistoryTable
             columns={[
               { label: "Kode" },
               { label: "Ruangan" },
               { label: "Pemohon" },
-              { label: "Orang" },
-              { label: "Peralatan" },
+              { label: "Tujuan" },
               { label: "Waktu Mulai" },
               { label: "Waktu Selesai" },
               { label: "Status" },
@@ -500,7 +577,7 @@ export default function AdminRoomBookingRecordPage() {
                   "sticky right-0 z-10 relative whitespace-nowrap bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700",
               },
             ]}
-            colSpan={10}
+            colSpan={9}
             hasRows={visibleBookings.length > 0}
             isLoading={isLoading}
             hasLoadedOnce={hasLoadedOnce}
@@ -527,12 +604,8 @@ export default function AdminRoomBookingRecordPage() {
                 <td className="whitespace-nowrap px-3 py-2 text-muted-foreground">
                   {booking.requesterName}
                 </td>
-                <td className="whitespace-nowrap px-3 py-2">{booking.attendeeCount}</td>
-                <td
-                  className="whitespace-nowrap px-3 py-2 text-muted-foreground"
-                  title={booking.equipmentName}
-                >
-                  {booking.equipmentName}
+                <td className="px-3 py-2 text-muted-foreground" title={booking.purpose}>
+                  {booking.purpose}
                 </td>
                 <td className="whitespace-nowrap px-3 py-2">
                   {formatDateTimeWib(booking.startTime)}
@@ -612,7 +685,7 @@ export default function AdminRoomBookingRecordPage() {
                 </td>
               </tr>
             ))}
-          </AdminRecordTable>
+          </AdminHistoryTable>
 
           <DataPagination
             page={page}
@@ -627,7 +700,7 @@ export default function AdminRoomBookingRecordPage() {
           <ConfirmDeleteDialog
             open={Boolean(deleteTarget)}
             title="Hapus record peminjaman ruangan?"
-            description={`Record ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
+            description={`Riwayat ${deleteTarget?.code ?? ""} akan dihapus permanen.`}
             isDeleting={isDeleting}
             onOpenChange={(open) => {
               if (!open) setDeleteTarget(null);
@@ -676,7 +749,7 @@ export default function AdminRoomBookingRecordPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
-                <AdminRoomBookingRecordDetailContent
+                <AdminRoomBookingHistoryDetailContent
                   booking={detailTarget}
                   isLoading={false}
                   error=""

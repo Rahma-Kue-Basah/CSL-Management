@@ -6,9 +6,9 @@ import type { DateRange } from "react-day-picker";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import CalendarTabContent from "@/components/admin/information/calendar-tab-content";
-import AdminRoomBookingRecordDetailDialog from "@/components/admin/records/AdminRoomBookingRecordDetailDialog";
-import RelatedRoomDetailDialog from "@/components/admin/records/RelatedRoomDetailDialog";
-import RelatedUserDetailDialog from "@/components/admin/records/RelatedUserDetailDialog";
+import AdminRoomBookingRecordDetailDialog from "@/components/admin/history/AdminRoomBookingHistoryDetailDialog";
+import RelatedRoomDetailDialog from "@/components/admin/history/RelatedRoomDetailDialog";
+import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
 import {
   formatDateTimeLocalInput,
   type ScheduleCategory,

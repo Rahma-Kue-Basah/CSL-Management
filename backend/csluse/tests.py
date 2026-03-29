@@ -69,6 +69,46 @@ class CsluseWorkflowRegressionTests(APITestCase):
         profile.refresh_from_db()
         return user, profile
 
+    def test_booking_requesters_endpoint_returns_unique_requesters(self):
+        self.student_profile.department = "DIGITAL BUSINESS TECHNOLOGY"
+        self.student_profile.save(update_fields=["department"])
+        self.create_booking(self.student_profile)
+        self.create_use(self.student_profile)
+
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.get("/api/bookings/all/requesters/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], str(self.student_profile.id))
+        self.assertEqual(response.data[0]["department"], "DIGITAL BUSINESS TECHNOLOGY")
+
+    def test_booking_all_supports_department_and_room_filters(self):
+        other_user, other_profile = self.create_user_with_profile(
+            "other-student@example.com",
+            "Student",
+            "Other Student",
+        )
+        other_profile.department = "BUSINESS MATHEMATICS"
+        other_profile.save(update_fields=["department"])
+        self.student_profile.department = "DIGITAL BUSINESS TECHNOLOGY"
+        self.student_profile.save(update_fields=["department"])
+
+        self.create_booking(self.student_profile)
+        self.create_booking(other_profile)
+
+        self.client.force_authenticate(user=self.admin_user)
+        response = self.client.get(
+            f"/api/bookings/all/?department=DIGITAL%20BUSINESS%20TECHNOLOGY&room={self.room.id}"
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(
+            response.data["results"][0]["requested_by_detail"]["department"],
+            "DIGITAL BUSINESS TECHNOLOGY",
+        )
+
     def future_window(self, *, days=1, start_hour=9, duration_hours=2):
         local_now = timezone.localtime(timezone.now()) + timedelta(days=days)
         start = local_now.replace(

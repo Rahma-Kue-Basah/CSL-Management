@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ChangeEvent } from "react";
 import { ArrowUpRight, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
-import RelatedRoomDetailDialog from "@/components/admin/records/RelatedRoomDetailDialog";
+import RelatedRoomDetailDialog from "@/components/admin/history/RelatedRoomDetailDialog";
 import AdminDetailActions from "@/components/shared/admin-detail-actions";
 import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";

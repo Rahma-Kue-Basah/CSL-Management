@@ -194,6 +194,7 @@ class RecordProfileListSerializer(serializers.ModelSerializer):
             "id",
             "full_name",
             "email",
+            "department",
         ]
 
 
