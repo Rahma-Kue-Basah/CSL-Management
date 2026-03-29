@@ -6,7 +6,7 @@ export default function BookingRoomsAllListPage() {
   return (
     <BookingRoomsListContent
       scope="all"
-      emptyMessage="Belum ada pengajuan booking ruangan yang tersedia."
+      emptyMessage="Belum ada pengajuan peminjaman lab yang tersedia."
     />
   );
 }

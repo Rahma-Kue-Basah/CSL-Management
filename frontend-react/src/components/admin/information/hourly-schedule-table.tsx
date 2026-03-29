@@ -13,7 +13,7 @@ type HourlyScheduleEvent = {
 
 function mapSourceLabel(source: string) {
   if (source === "schedule") return "Jadwal";
-  if (source === "booking") return "Booking Ruangan";
+  if (source === "booking") return "Peminjaman Lab";
   if (source === "use") return "Penggunaan Alat";
   return source;
 }

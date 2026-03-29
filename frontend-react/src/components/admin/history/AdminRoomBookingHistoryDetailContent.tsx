@@ -116,11 +116,11 @@ export default function AdminRoomBookingRecordDetailContent({
         </div>
       ) : !booking ? (
         <div className="w-full rounded-2xl border border-slate-200 bg-white px-5 py-8 text-sm text-muted-foreground">
-          Data record booking ruangan tidak ditemukan.
+          Data riwayat peminjaman lab tidak ditemukan.
         </div>
       ) : (
         <AdminRecordDetailShell
-          title="Detail Booking Ruangan"
+          title="Detail Peminjaman Lab"
           code={booking.code}
           icon={<ClipboardList className="h-5 w-5" />}
           status={booking.status}

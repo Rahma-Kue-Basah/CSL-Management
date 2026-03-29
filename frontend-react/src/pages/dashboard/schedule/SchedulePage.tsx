@@ -37,7 +37,7 @@ function isSameMonth(left: Date, right: Date) {
 
 function mapSourceLabel(source: string) {
   if (source === "schedule") return "Jadwal Umum";
-  if (source === "booking") return "Booking Ruangan";
+  if (source === "booking") return "Peminjaman Lab";
   return source;
 }
 

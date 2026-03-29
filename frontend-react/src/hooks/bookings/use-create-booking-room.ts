@@ -23,7 +23,7 @@ type CreateBookingRoomPayload = {
   }>;
 };
 
-function parseBookingError(data: unknown, fallback = "Gagal membuat booking ruangan.") {
+function parseBookingError(data: unknown, fallback = "Gagal membuat peminjaman lab.") {
   return extractApiErrorMessage(data, fallback, [
     "attendee_count",
     "room",
@@ -70,7 +70,7 @@ export function useCreateBookingRoom() {
         return { ok: true as const };
       }
 
-      let message = "Gagal membuat booking ruangan. Periksa data lalu coba lagi.";
+      let message = "Gagal membuat peminjaman lab. Periksa data lalu coba lagi.";
       try {
         const raw = await response.text();
         try {

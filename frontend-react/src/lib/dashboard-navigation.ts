@@ -55,7 +55,7 @@ export type TopNavItem = {
 const TOP_NAV_MENU_CONFIG: Array<Pick<TopNavItem, "id" | "label" | "href">> = [
   { id: "dashboard", label: "Dashboard", href: "/dashboard" },
   { id: "schedule", label: "Lihat Jadwal", href: "/schedule" },
-  { id: "booking-rooms", label: "Booking Ruangan" },
+  { id: "booking-rooms", label: "Peminjaman Lab" },
   { id: "use-equipment", label: "Penggunaan Alat" },
   { id: "sample-testing", label: "Pengujian Sampel" },
   { id: "borrow-equipment", label: "Peminjaman Alat" },
@@ -167,7 +167,7 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   },
   {
     id: "booking-rooms",
-    label: "Booking Ruangan",
+    label: "Peminjaman Lab",
     description: "Kelola pengajuan booking dan pantau progresnya.",
     href: "/booking-rooms/form",
     icon: Building2,
@@ -175,21 +175,21 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
       {
         id: "request-form",
         label: "Ajukan Booking",
-        description: "Buat pengajuan booking ruangan melalui formulir.",
+        description: "Buat pengajuan peminjaman lab melalui formulir.",
         href: "/booking-rooms/form",
         allowedRoles: REQUESTER_ACCESS_ROLES,
       },
       {
         id: "request-list",
         label: "Pengajuan Saya",
-        description: "Lihat daftar pengajuan booking ruangan Anda.",
+        description: "Lihat daftar pengajuan peminjaman lab Anda.",
         href: "/booking-rooms",
         allowedRoles: REQUESTER_ACCESS_ROLES,
       },
       {
         id: "all-requests",
-        label: "Approval Booking Ruangan",
-        description: "Lihat seluruh pengajuan booking ruangan untuk diproses.",
+        label: "Approval Peminjaman Lab",
+        description: "Lihat seluruh pengajuan peminjaman lab untuk diproses.",
         href: "/booking-rooms/approval",
         allowedRoles: APPROVAL_ACCESS_ROLES,
       },

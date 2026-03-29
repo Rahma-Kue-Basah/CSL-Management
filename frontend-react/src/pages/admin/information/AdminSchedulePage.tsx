@@ -426,7 +426,7 @@ export default function AdminSchedulePage() {
     <section className="space-y-4 px-4">
       <AdminPageHeader
         title="Jadwal"
-        description="Kelola jadwal dan pantau agenda gabungan dari jadwal admin, booking ruangan, dan penggunaan alat."
+        description="Kelola jadwal dan pantau agenda gabungan dari jadwal admin, peminjaman lab, dan penggunaan alat."
         icon={<CalendarDays className="h-5 w-5 text-blue-100" />}
       />
 

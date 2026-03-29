@@ -397,7 +397,7 @@ export default function BookingRoomsListContent({
         totalPages={totalPages}
         totalCount={totalCount || filteredBookings.length}
         pageSize={PAGE_SIZE}
-        itemLabel="booking ruangan"
+        itemLabel="peminjaman lab"
         isLoading={isLoading}
         onPageChange={setPage}
       />
@@ -410,7 +410,7 @@ export default function BookingRoomsListContent({
         }}
         onConfirm={handleBookingAction}
         isSubmitting={pendingAction.bookingId === confirmState?.bookingId}
-        subjectLabel="pengajuan booking ruangan ini"
+        subjectLabel="pengajuan peminjaman lab ini"
       />
     </section>
   );

@@ -191,7 +191,7 @@ function BookingReviewPanel({ id }: { id: string }) {
         }}
         onConfirm={handleBookingAction}
         isSubmitting={pendingAction.bookingId === booking.id}
-        subjectLabel="pengajuan booking ruangan ini"
+        subjectLabel="pengajuan peminjaman lab ini"
       />
     </>
   );

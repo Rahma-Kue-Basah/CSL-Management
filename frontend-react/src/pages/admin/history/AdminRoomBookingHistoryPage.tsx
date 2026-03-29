@@ -139,13 +139,13 @@ export default function AdminRoomBookingHistoryPage() {
       created_before: createdBefore ? toEndOfDay(createdBefore) : "",
     },
     mapItem: mapBooking,
-    title: "Riwayat Booking Ruangan",
+    title: "Riwayat Peminjaman Lab",
     pdfFilename: "record-booking-ruangan.pdf",
     excelFilename: "record-booking-ruangan.xlsx",
     columns: BOOKING_EXPORT_COLUMNS,
-    emptyMessage: "Tidak ada data booking ruangan untuk diunduh.",
-    pdfSuccessMessage: "PDF booking ruangan berhasil diunduh.",
-    excelSuccessMessage: "Excel booking ruangan berhasil diunduh.",
+    emptyMessage: "Tidak ada data peminjaman lab untuk diunduh.",
+    pdfSuccessMessage: "PDF peminjaman lab berhasil diunduh.",
+    excelSuccessMessage: "Excel peminjaman lab berhasil diunduh.",
   });
 
   useEffect(() => {
@@ -231,7 +231,7 @@ export default function AdminRoomBookingHistoryPage() {
     if (!deleteTarget) return;
     const result = await deleteRecord(API_BOOKING_DETAIL(deleteTarget.id));
     if (result.ok) {
-      toast.success("Riwayat booking ruangan berhasil dihapus.");
+      toast.success("Riwayat peminjaman lab berhasil dihapus.");
       setDeleteTarget(null);
       setReloadKey((prev) => prev + 1);
       return;
@@ -270,14 +270,14 @@ export default function AdminRoomBookingHistoryPage() {
     }
 
     if (result.failedCount && result.deletedCount) {
-      toast.success(`${result.deletedCount} record booking ruangan berhasil dihapus.`);
+      toast.success(`${result.deletedCount} record peminjaman lab berhasil dihapus.`);
       toast.error(
-        result.message ?? `${result.failedCount} record booking ruangan gagal dihapus.`,
+        result.message ?? `${result.failedCount} record peminjaman lab gagal dihapus.`,
       );
     } else {
       toast.success(
         result.message ??
-          `${result.deletedCount} record booking ruangan berhasil dihapus.`,
+          `${result.deletedCount} record peminjaman lab berhasil dihapus.`,
       );
     }
 
@@ -333,13 +333,13 @@ export default function AdminRoomBookingHistoryPage() {
     try {
       setIsExportingSelectedPdf(true);
       exportAdminRecordPdf({
-        title: "Riwayat Booking Ruangan Terpilih",
+        title: "Riwayat Peminjaman Lab Terpilih",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "record-booking-ruangan-terpilih.pdf",
         columns: BOOKING_EXPORT_COLUMNS,
         rows: selectedRows,
       });
-      toast.success("PDF booking ruangan terpilih berhasil diunduh.");
+      toast.success("PDF peminjaman lab terpilih berhasil diunduh.");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Gagal mengunduh PDF data terpilih.",
@@ -354,12 +354,12 @@ export default function AdminRoomBookingHistoryPage() {
     try {
       setIsExportingSelectedExcel(true);
       exportAdminRecordExcel({
-        title: "Riwayat Booking Ruangan Terpilih",
+        title: "Riwayat Peminjaman Lab Terpilih",
         filename: "record-booking-ruangan-terpilih.xlsx",
         columns: BOOKING_EXPORT_COLUMNS,
         rows: selectedRows,
       });
-      toast.success("Excel booking ruangan terpilih berhasil diunduh.");
+      toast.success("Excel peminjaman lab terpilih berhasil diunduh.");
     } catch (error) {
       toast.error(
         error instanceof Error ? error.message : "Gagal mengunduh Excel data terpilih.",
@@ -374,8 +374,8 @@ export default function AdminRoomBookingHistoryPage() {
       <div className="flex flex-col gap-4 lg:flex-row">
         <div className="flex-1 space-y-4">
           <AdminPageHeader
-            title="Riwayat Booking Ruangan"
-            description="Pantau seluruh histori booking ruangan dari pengguna."
+            title="Riwayat Peminjaman Lab"
+            description="Pantau seluruh histori peminjaman lab dari pengguna."
             icon={<Eye className="h-5 w-5 text-sky-200" />}
           />
 
@@ -692,7 +692,7 @@ export default function AdminRoomBookingHistoryPage() {
             totalPages={totalPages}
             totalCount={totalCount || filteredBookings.length}
             pageSize={PAGE_SIZE}
-            itemLabel="booking ruangan"
+            itemLabel="peminjaman lab"
             isLoading={isLoading}
             onPageChange={setPage}
           />
@@ -710,7 +710,7 @@ export default function AdminRoomBookingHistoryPage() {
 
           <ConfirmDeleteDialog
             open={isBulkDeleteOpen}
-            title="Hapus record booking ruangan terpilih?"
+            title="Hapus record peminjaman lab terpilih?"
             description={`${selectedCount} record yang dipilih akan dihapus permanen.`}
             isDeleting={isDeleting}
             onOpenChange={setIsBulkDeleteOpen}
@@ -729,7 +729,7 @@ export default function AdminRoomBookingHistoryPage() {
                 ? pendingAction.bookingId === statusTarget.booking.id
                 : false
             }
-            subjectLabel="pengajuan booking ruangan ini"
+            subjectLabel="pengajuan peminjaman lab ini"
           />
 
           <Dialog
@@ -743,9 +743,9 @@ export default function AdminRoomBookingHistoryPage() {
               className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden border-0 bg-transparent p-0 shadow-none sm:w-[50vw] sm:max-w-[960px] sm:min-w-[720px] sm:max-w-none"
             >
               <DialogHeader className="sr-only">
-                <DialogTitle>Detail Booking Ruangan</DialogTitle>
+                <DialogTitle>Detail Peminjaman Lab</DialogTitle>
                 <DialogDescription>
-                  Detail record booking ruangan ditampilkan dalam modal.
+                  Detail riwayat peminjaman lab ditampilkan dalam modal.
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">

@@ -340,7 +340,7 @@ export default function BookingRoomsFormPage() {
     });
 
     if (result.ok) {
-      toast.success("Pengajuan booking ruangan berhasil dikirim.");
+      toast.success("Pengajuan peminjaman lab berhasil dikirim.");
       setFormData(initialFormData);
       setStartDate(undefined);
       setStartTime("");
@@ -361,7 +361,7 @@ export default function BookingRoomsFormPage() {
       >
         <div className="border-b border-slate-200 pb-4">
           <p className="text-base font-semibold text-slate-900">
-            Form Booking Ruangan
+            Form Peminjaman Lab
           </p>
         </div>
 
@@ -602,7 +602,7 @@ export default function BookingRoomsFormPage() {
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
         title="Konfirmasi Pengajuan"
-        description="Periksa kembali data booking ruangan sebelum pengajuan dikirim."
+        description="Periksa kembali data peminjaman lab sebelum pengajuan dikirim."
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={() => void handleConfirmSubmit()}

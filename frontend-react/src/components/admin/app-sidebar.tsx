@@ -108,7 +108,7 @@ const adminMenuConfig: MenuConfig[] = [
     tooltip: "Riwayat",
     searchTerms: ["riwayat"],
     items: [
-      { label: "Booking Ruangan", href: "/admin/history/room-bookings" },
+      { label: "Peminjaman Lab", href: "/admin/history/room-bookings" },
       { label: "Penggunaan Alat", href: "/admin/history/equipment-usage" },
       { label: "Peminjaman Alat", href: "/admin/history/equipment-borrows" },
       { label: "Pengujian Sampel", href: "/admin/history/sample-testing" },
