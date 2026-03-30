@@ -20,6 +20,7 @@ import {
   APPROVAL_ACCESS_ROLES,
   CATALOG_ACCESS_ROLES,
   REQUESTER_ACCESS_ROLES,
+  SAMPLE_TESTING_APPROVAL_ACCESS_ROLES,
   SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
   isApprovalOnlyRole,
 } from "@/lib/dashboard-access";
@@ -304,7 +305,7 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         description:
           "Lihat seluruh daftar pengajuan pengujian sampel untuk diproses.",
         href: "/sample-testing/approval",
-        allowedRoles: APPROVAL_ACCESS_ROLES,
+        allowedRoles: SAMPLE_TESTING_APPROVAL_ACCESS_ROLES,
       },
     ],
   },

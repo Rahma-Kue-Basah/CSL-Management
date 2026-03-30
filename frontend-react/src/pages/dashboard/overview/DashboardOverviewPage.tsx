@@ -11,6 +11,7 @@ import {
   Loader2,
   OctagonX,
   Package,
+  Sparkles,
   X,
 } from "lucide-react";
 
@@ -46,64 +47,104 @@ function SummaryCard({
   value,
   icon,
   tone = "slate",
+  helper,
 }: {
   label: string;
   value: number;
   icon: ReactNode;
   tone?: "slate" | "blue" | "amber" | "emerald" | "sky" | "rose";
+  helper: string;
 }) {
   const toneClass =
     tone === "blue"
       ? {
-          card: "border-blue-300 bg-blue-100",
+          card: "border-blue-300 bg-blue-100/90",
           icon: "bg-white/80 text-blue-800",
           value: "text-blue-900",
         }
       : tone === "amber"
-      ? {
-          card: "border-amber-300 bg-amber-100",
-          icon: "bg-white/80 text-amber-800",
-          value: "text-amber-900",
-        }
-      : tone === "emerald"
         ? {
-            card: "border-emerald-300 bg-emerald-100",
-            icon: "bg-white/80 text-emerald-800",
-            value: "text-emerald-900",
+            card: "border-amber-300 bg-amber-100/90",
+            icon: "bg-white/80 text-amber-800",
+            value: "text-amber-900",
           }
-        : tone === "sky"
+        : tone === "emerald"
           ? {
-              card: "border-sky-300 bg-sky-100",
-              icon: "bg-white/80 text-sky-800",
-              value: "text-sky-900",
+              card: "border-emerald-300 bg-emerald-100/90",
+              icon: "bg-white/80 text-emerald-800",
+              value: "text-emerald-900",
             }
-          : tone === "rose"
+          : tone === "sky"
             ? {
-                card: "border-rose-300 bg-rose-100",
-                icon: "bg-white/80 text-rose-800",
-                value: "text-rose-900",
+                card: "border-sky-300 bg-sky-100/90",
+                icon: "bg-white/80 text-sky-800",
+                value: "text-sky-900",
               }
-            : {
-                card: "border-slate-300 bg-slate-100",
-                icon: "bg-white/80 text-slate-800",
-                value: "text-slate-900",
-              };
+            : tone === "rose"
+              ? {
+                  card: "border-rose-300 bg-rose-100/90",
+                  icon: "bg-white/80 text-rose-800",
+                  value: "text-rose-900",
+                }
+              : {
+                  card: "border-slate-300 bg-slate-100/90",
+                  icon: "bg-white/80 text-slate-800",
+                  value: "text-slate-900",
+                };
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-[0_6px_18px_rgba(15,23,42,0.08)] ${toneClass.card}`}>
-      <div className="flex min-h-28 items-stretch justify-between gap-3">
-        <div className="flex min-w-0 flex-1 flex-col justify-between">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+    <div
+      className={`rounded-2xl border p-4 shadow-[0_8px_22px_rgba(15,23,42,0.08)] ${toneClass.card}`}
+    >
+      <div className="flex min-h-[100px] flex-col md:min-h-[172px]">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">
             {label}
           </p>
-          <p className={`mt-2 text-5xl font-semibold ${toneClass.value}`}>
+          <div className={`rounded-xl p-2.5 ${toneClass.icon}`}>{icon}</div>
+        </div>
+        <div className="mt-auto pt-3">
+          <p
+            className={`text-2xl font-semibold leading-none md:text-3xl ${toneClass.value}`}
+          >
             {value}
           </p>
-        </div>
-        <div className={`self-start rounded-xl p-2.5 ${toneClass.icon}`}>
-          {icon}
+          <p className="mt-2 w-full text-[11px] leading-4 text-slate-600 md:mt-3 md:text-xs md:leading-5">
+            {helper}
+          </p>
         </div>
       </div>
+    </div>
+  );
+}
+
+function SectionCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description: string;
+  children?: ReactNode;
+}) {
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_28px_rgba(15,23,42,0.06)]">
+      <div className="mb-4">
+        <h2 className="text-base font-semibold text-slate-900">{title}</h2>
+        <p className="mt-1 text-sm text-slate-500">{description}</p>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function MetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white/90 px-3 py-2">
+      <p className="text-[11px] font-medium uppercase tracking-[0.16em] text-slate-500">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-semibold text-slate-900">{value}</p>
     </div>
   );
 }
@@ -116,28 +157,27 @@ function RecentActivityItem({ item }: { item: OverviewItem }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-base font-semibold text-slate-900">
-            {item.title}
-          </p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-sm font-semibold text-slate-900">
+              {item.title}
+            </p>
+            <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-blue-700">
+              {item.code || "-"}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-slate-500">{item.type}</p>
         </div>
         <span
-          className={`inline-flex shrink-0 rounded-full border px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status, { bordered: true })}`}
+          className={`inline-flex shrink-0 rounded-full border px-2 py-1 text-[11px] font-medium ${getStatusBadgeClass(item.status, { bordered: true })}`}
         >
           {getStatusDisplayLabel(item.status)}
         </span>
       </div>
 
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-600">
-          {item.type}
-        </span>
-        <span className="inline-flex items-center rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-semibold tracking-[0.08em] text-blue-700">
-          {item.code || "-"}
-        </span>
-      </div>
-
       <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs">
-        <span className="text-slate-500">{formatDateTimeWib(item.createdAt)}</span>
+        <span className="text-slate-500">
+          {formatDateTimeWib(item.createdAt)}
+        </span>
         <span className="inline-flex items-center gap-1 font-medium text-[#0048B4]">
           Lihat detail
           <ArrowRight className="h-4 w-4" />
@@ -151,47 +191,37 @@ function UpcomingApprovedCard({ item }: { item: UpcomingApprovedItem }) {
   return (
     <Link
       href={item.href}
-      className="upcoming-approved-water block rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-100/60"
+      className="relative block overflow-hidden rounded-2xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-100/60"
     >
-      <div className="pointer-events-none absolute right-8 top-6 h-24 w-24">
-        <span className="upcoming-approved-water-ripple absolute left-1/2 top-10 h-14 w-14 -translate-x-1/2 rounded-full border border-emerald-300/70 bg-emerald-200/20" />
-        <span className="upcoming-approved-water-ripple absolute left-1/2 top-10 h-14 w-14 -translate-x-1/2 rounded-full border border-emerald-300/55 bg-emerald-200/10 [animation-delay:1.4s]" />
-        <span className="upcoming-approved-water-drop absolute left-1/2 top-0 h-4 w-4 -translate-x-1/2 rounded-full bg-emerald-400/70 shadow-[0_0_18px_rgba(52,211,153,0.35)]" />
-      </div>
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.14),_transparent_28%),radial-gradient(circle_at_bottom_left,_rgba(34,197,94,0.10),_transparent_34%)]" />
+      <div className="relative">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
+              Jadwal Terdekat
+            </p>
+            <h2 className="mt-2 text-lg font-semibold text-slate-900">
+              {item.title}
+            </h2>
+            <p className="mt-1 text-sm text-slate-600">{item.type}</p>
+          </div>
+          <div className="rounded-xl bg-emerald-100 p-2.5 text-emerald-700">
+            <BellRing className="h-5 w-5" />
+          </div>
+        </div>
 
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-700">
-            Jadwal Terdekat Anda
-          </p>
-          <h2 className="mt-2 text-lg font-semibold text-slate-900">
-            {item.title}
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">{item.type}</p>
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <MetricPill label="Mulai" value={formatDateTimeWib(item.startTime)} />
+          <MetricPill
+            label="Selesai"
+            value={item.endTime ? formatDateTimeWib(item.endTime) : "-"}
+          />
         </div>
-        <div className="rounded-xl bg-emerald-100 p-2.5 text-emerald-700">
-          <BellRing className="h-5 w-5" />
-        </div>
-      </div>
 
-      <div className="mt-4 grid gap-3 md:grid-cols-2">
-        <div className="rounded-xl border border-emerald-200 bg-white/80 p-3">
-          <p className="text-xs font-medium text-slate-500">Mulai</p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">
-            {formatDateTimeWib(item.startTime)}
-          </p>
+        <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[#0048B4]">
+          Buka detail jadwal
+          <ArrowRight className="h-4 w-4" />
         </div>
-        <div className="rounded-xl border border-emerald-200 bg-white/80 p-3">
-          <p className="text-xs font-medium text-slate-500">Selesai</p>
-          <p className="mt-1 text-sm font-semibold text-slate-900">
-            {item.endTime ? formatDateTimeWib(item.endTime) : "-"}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 inline-flex items-center gap-1 text-sm font-medium text-[#0048B4]">
-        Lihat detail
-        <ArrowRight className="h-4 w-4" />
       </div>
     </Link>
   );
@@ -235,36 +265,42 @@ export default function DashboardOverviewPage() {
           value={overview.totals.total_requests}
           icon={<ClipboardList className="h-5 w-5" />}
           tone="blue"
+          helper="Seluruh permohonan yang pernah tercatat pada akun ini."
         />
         <SummaryCard
           label="Pending"
           value={overview.totals.pending}
           icon={<CalendarClock className="h-5 w-5" />}
           tone={getStatusSummaryTone("Pending")}
+          helper="Masih menunggu persetujuan atau tindak lanjut reviewer."
         />
         <SummaryCard
           label="Approved"
           value={overview.totals.approved}
           icon={<CheckCircle2 className="h-5 w-5" />}
           tone={getStatusSummaryTone("Approved")}
+          helper="Sudah disetujui dan masih berada dalam alur layanan aktif."
         />
         <SummaryCard
           label="Completed"
           value={overview.totals.completed}
           icon={<Package className="h-5 w-5" />}
           tone={getStatusSummaryTone("Completed")}
+          helper="Pengajuan yang proses layanannya sudah selesai sepenuhnya."
         />
         <SummaryCard
           label="Rejected"
           value={overview.totals.rejected}
           icon={<OctagonX className="h-5 w-5" />}
           tone={getStatusSummaryTone("Rejected")}
+          helper="Permohonan yang tidak lolos review atau ditolak oleh petugas."
         />
         <SummaryCard
           label="Expired"
           value={overview.totals.expired}
           icon={<X className="h-5 w-5" />}
           tone={getStatusSummaryTone("Expired")}
+          helper="Pengajuan yang melewati batas proses atau tidak ditindaklanjuti."
         />
       </div>
 
@@ -284,31 +320,37 @@ export default function DashboardOverviewPage() {
       ) : null}
 
       {!isLoading && !error ? (
-        <>
-          {upcomingApproved ? <UpcomingApprovedCard item={upcomingApproved} /> : null}
-
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-900">
-                Aktivitas Pengajuan Terbaru
-              </h2>
-            </div>
+        <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
+          <div>
+            {upcomingApproved ? (
+              <UpcomingApprovedCard item={upcomingApproved} />
+            ) : (
+              <SectionCard
+                title="Jadwal Terdekat"
+                description="Jadwal layanan terdekat yang sudah disetujui akan tampil di sini."
+              />
+            )}
           </div>
 
-          {recentActivities.length ? (
-            <div className="mt-4 grid gap-3 lg:grid-cols-2">
-              {recentActivities.map((item) => (
-                <RecentActivityItem key={item.id} item={item} />
-              ))}
-            </div>
-          ) : (
-            <div className="mt-4 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-              <p className="text-sm text-slate-600">
-                Belum ada aktivitas pengajuan untuk akun ini.
-              </p>
-            </div>
-          )}
-        </>
+          <SectionCard
+            title="Aktivitas Pengajuan Terbaru"
+            description="Permohonan paling baru yang masih relevan untuk dipantau."
+          >
+            {recentActivities.length ? (
+              <div className="grid gap-3 lg:grid-cols-2">
+                {recentActivities.map((item) => (
+                  <RecentActivityItem key={item.id} item={item} />
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                <p className="text-sm text-slate-600">
+                  Belum ada aktivitas pengajuan untuk akun ini.
+                </p>
+              </div>
+            )}
+          </SectionCard>
+        </div>
       ) : null}
     </section>
   );

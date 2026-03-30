@@ -4,7 +4,6 @@ import { useState } from "react";
 import {
   ArrowLeft,
   CalendarClock,
-  Loader2,
   MapPinned,
   NotebookPen,
   UserRound,
@@ -14,6 +13,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { ProgressSteps } from "@/components/shared/progress-steps";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useBookingDetail } from "@/hooks/bookings/use-bookings";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
@@ -241,6 +241,72 @@ function DetailMetaItem({
   );
 }
 
+function BookingDetailSkeleton() {
+  return (
+    <section className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-9 w-44 rounded-md" />
+        <Skeleton className="h-8 w-24 rounded-full" />
+      </div>
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+        <Skeleton className="h-5 w-32" />
+        <div className="mt-4">
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      </div>
+      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-64" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Skeleton className="h-16 w-full rounded-md" />
+              <Skeleton className="h-16 w-full rounded-md" />
+              <Skeleton className="h-16 w-full rounded-md" />
+              <Skeleton className="h-24 w-full rounded-md" />
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-44" />
+                <Skeleton className="h-3 w-56" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-14 w-full rounded-md" />
+            </div>
+          </div>
+        </div>
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-20 w-full rounded-md" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function BookingRoomsDetailPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -258,14 +324,7 @@ export default function BookingRoomsDetailPage() {
   const { booking, isLoading, error } = useBookingDetail(id, reloadKey);
 
   if (isLoading) {
-    return (
-      <section className="rounded-xl border border-slate-200 bg-white p-6">
-        <div className="flex items-center justify-center gap-2 text-slate-500">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          Memuat detail booking...
-        </div>
-      </section>
-    );
+    return <BookingDetailSkeleton />;
   }
 
   if (error) {

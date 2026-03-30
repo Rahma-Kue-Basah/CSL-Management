@@ -5,6 +5,7 @@ import { CalendarClock, Check, CheckCircle2, Eye, FlaskConical, Loader2, Package
 import { toast } from "sonner";
 
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
+import SampleTestingDetailContent from "@/components/dashboard/sample-testing/SampleTestingDetailContent";
 import { DataPagination } from "@/components/shared/data-pagination";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
@@ -90,23 +91,6 @@ function SummaryCard({
           {icon}
         </div>
       </div>
-    </div>
-  );
-}
-
-function DetailField({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="space-y-1 rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-        {label}
-      </p>
-      <p className="text-sm text-slate-800">{value || "-"}</p>
     </div>
   );
 }
@@ -316,31 +300,12 @@ export default function ApprovalSampleTestingPage() {
       />
 
       <Dialog open={Boolean(detailTarget)} onOpenChange={(open) => !open && setDetailTarget(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-4xl">
+        <DialogContent className="max-h-[85vh] overflow-y-auto border-none bg-transparent p-0 shadow-none sm:max-w-6xl">
           <DialogHeader>
-            <DialogTitle>Detail Pengajuan Pengujian Sampel</DialogTitle>
+            <DialogTitle className="sr-only">Detail Pengajuan Pengujian Sampel</DialogTitle>
           </DialogHeader>
 
-          {detailTarget ? (
-            <div className="grid gap-3 md:grid-cols-2">
-              <DetailField label="Kode" value={detailTarget.code} />
-              <DetailField label="Status" value={getStatusDisplayLabel(detailTarget.status)} />
-              <DetailField label="Nama Pemohon" value={detailTarget.name} />
-              <DetailField label="Email" value={detailTarget.email} />
-              <DetailField label="Nomor Telepon" value={detailTarget.phoneNumber} />
-              <DetailField label="Institusi" value={detailTarget.institution} />
-              <DetailField label="Nama Sampel" value={detailTarget.sampleName} />
-              <DetailField label="Jenis Sampel" value={detailTarget.sampleType} />
-              <DetailField label="Merek Sampel" value={detailTarget.sampleBrand} />
-              <DetailField label="Kemasan Sampel" value={detailTarget.samplePackaging} />
-              <DetailField label="Berat Sampel" value={detailTarget.sampleWeight} />
-              <DetailField label="Jumlah Sampel" value={detailTarget.sampleQuantity} />
-              <DetailField label="Serving" value={detailTarget.sampleTestingServing} />
-              <DetailField label="Metode Uji" value={detailTarget.sampleTestingMethod} />
-              <DetailField label="Jenis Pengujian" value={detailTarget.sampleTestingType} />
-              <DetailField label="Dibuat Pada" value={formatDateTimeWib(detailTarget.createdAt)} />
-            </div>
-          ) : null}
+          {detailTarget ? <SampleTestingDetailContent item={detailTarget} /> : null}
         </DialogContent>
       </Dialog>
 

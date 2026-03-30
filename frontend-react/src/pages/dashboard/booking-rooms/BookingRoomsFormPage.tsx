@@ -555,6 +555,9 @@ export default function BookingRoomsFormPage() {
             disabled={isSubmitting}
           />
           <p className="text-[11px] text-slate-500">Maksimal 2000 karakter.</p>
+          <p className="text-[11px] text-amber-700">
+            Peminjaman pada hari Sabtu dan Minggu wajib menginfokan secara mandiri ke PAFM.
+          </p>
         </div>
 
         {validationMessage ? (

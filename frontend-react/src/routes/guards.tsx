@@ -6,6 +6,8 @@ import {
   hasMenuAccess,
   isPrivilegedRole,
   isStaffOrAboveRole,
+  normalizeRoleValue,
+  ROLE_VALUES,
 } from "@/constants/roles";
 import { isApprovalOnlyRole } from "@/lib/dashboard-access";
 import { authFetch, clearTokens } from "@/lib/auth";
@@ -183,10 +185,17 @@ export function RequireFeatureScope({
   scope: "requester" | "approval";
 }) {
   const profile = getProfile();
-  const approvalOnlyRole = isApprovalOnlyRole(profile.role);
+  const normalizedRole = normalizeRoleValue(profile.role);
+  const isSampleTestingLecturer =
+    featurePath === "/sample-testing" && normalizedRole === ROLE_VALUES.LECTURER;
+  const approvalOnlyRole = isApprovalOnlyRole(profile.role) && !isSampleTestingLecturer;
 
   if (scope === "requester" && approvalOnlyRole) {
     return <Navigate to={`${featurePath}/approval`} replace />;
+  }
+
+  if (scope === "approval" && isSampleTestingLecturer) {
+    return <Navigate to={featurePath} replace />;
   }
 
   if (scope === "approval" && !approvalOnlyRole && !isPrivilegedRole(profile.role)) {

@@ -32,6 +32,11 @@ class CsluseWorkflowRegressionTests(APITestCase):
             "Staff",
             "Staff User",
         )
+        self.lecturer_user, self.lecturer_profile = self.create_user_with_profile(
+            "lecturer@example.com",
+            "Lecturer",
+            "Lecturer User",
+        )
         self.admin_user, self.admin_profile = self.create_user_with_profile(
             "admin@example.com",
             "Admin",
@@ -50,7 +55,20 @@ class CsluseWorkflowRegressionTests(APITestCase):
             room=self.room,
             is_moveable=True,
         )
+        self.other_room = Room.objects.create(
+            name="Lab B",
+            capacity=15,
+            number="102",
+            floor=1,
+        )
+        self.other_equipment = Equipment.objects.create(
+            name="Microscope",
+            quantity=3,
+            room=self.other_room,
+            is_moveable=True,
+        )
         self.room.pics.add(self.staff_profile)
+        self.other_room.pics.add(self.lecturer_profile)
 
     def create_user_with_profile(self, email, role, full_name):
         user = User.objects.create_user(
@@ -131,11 +149,35 @@ class CsluseWorkflowRegressionTests(APITestCase):
             purpose="Research",
         )
 
+    def create_booking_for_room(self, requested_by, room):
+        start, end = self.future_window()
+        return Booking.objects.create(
+            requested_by=requested_by,
+            room=room,
+            start_time=start,
+            end_time=end,
+            attendee_count=1,
+            purpose="Research",
+        )
+
     def create_use(self, requested_by, *, status="Pending", approved_by=None):
         start, end = self.future_window(days=2, start_hour=10)
         return Use.objects.create(
             requested_by=requested_by,
             equipment=self.equipment,
+            quantity=1,
+            start_time=start,
+            end_time=end,
+            purpose="Research",
+            status=status,
+            approved_by=approved_by,
+        )
+
+    def create_use_for_equipment(self, requested_by, equipment, *, status="Pending", approved_by=None):
+        start, end = self.future_window(days=2, start_hour=10)
+        return Use.objects.create(
+            requested_by=requested_by,
+            equipment=equipment,
             quantity=1,
             start_time=start,
             end_time=end,
@@ -156,6 +198,63 @@ class CsluseWorkflowRegressionTests(APITestCase):
             status=status,
             approved_by=approved_by,
         )
+
+    def create_borrow_for_equipment(self, requested_by, equipment, *, status="Pending", approved_by=None):
+        start, end = self.future_window(days=2, start_hour=11)
+        return Borrow.objects.create(
+            requested_by=requested_by,
+            equipment=equipment,
+            quantity=1,
+            start_time=start,
+            end_time=end,
+            purpose="Research",
+            status=status,
+            approved_by=approved_by,
+        )
+
+    def test_staff_approval_booking_all_only_shows_rooms_where_user_is_pic(self):
+        own_scope_booking = self.create_booking_for_room(self.student_profile, self.room)
+        self.create_booking_for_room(self.student_profile, self.other_room)
+
+        self.client.force_authenticate(self.staff_user)
+        response = self.client.get("/api/bookings/all/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["id"], str(own_scope_booking.id))
+
+    def test_staff_approval_use_all_only_shows_equipment_in_rooms_where_user_is_pic(self):
+        own_scope_use = self.create_use_for_equipment(self.student_profile, self.equipment)
+        self.create_use_for_equipment(self.student_profile, self.other_equipment)
+
+        self.client.force_authenticate(self.staff_user)
+        response = self.client.get("/api/uses/all/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["id"], str(own_scope_use.id))
+
+    def test_staff_approval_borrow_all_only_shows_equipment_in_rooms_where_user_is_pic(self):
+        own_scope_borrow = self.create_borrow_for_equipment(self.student_profile, self.equipment)
+        self.create_borrow_for_equipment(self.student_profile, self.other_equipment)
+
+        self.client.force_authenticate(self.staff_user)
+        response = self.client.get("/api/borrows/all/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["id"], str(own_scope_borrow.id))
+
+    def test_lecturer_can_access_approval_scope_for_their_pic_room(self):
+        self.create_booking_for_room(self.student_profile, self.room)
+        scoped_booking = self.create_booking_for_room(self.student_profile, self.other_room)
+
+        self.client.force_authenticate(self.lecturer_user)
+        response = self.client.get("/api/bookings/all/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["id"], str(scoped_booking.id))
 
     def test_pengujian_can_be_created_and_approved(self):
         self.client.force_authenticate(self.student_user)

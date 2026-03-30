@@ -54,6 +54,7 @@ const MENU_ACCESS_RULES: Record<string, readonly string[]> = {
   ],
   schedule: [
     ROLE_VALUES.STUDENT,
+    ROLE_VALUES.GUEST,
     ROLE_VALUES.LECTURER,
     ROLE_VALUES.STAFF,
     ROLE_VALUES.ADMIN,
@@ -61,6 +62,7 @@ const MENU_ACCESS_RULES: Record<string, readonly string[]> = {
   ],
   "booking-rooms": [
     ROLE_VALUES.STUDENT,
+    ROLE_VALUES.GUEST,
     ROLE_VALUES.LECTURER,
     ROLE_VALUES.STAFF,
     ROLE_VALUES.ADMIN,
@@ -126,6 +128,7 @@ function isStaffOrAboveRole(role?: string | null): boolean {
   const normalized = normalizeRoleValue(role);
   if (!normalized) return false;
   return (
+    normalized === ROLE_VALUES.LECTURER ||
     normalized === ROLE_VALUES.STAFF ||
     normalized === ROLE_VALUES.ADMIN ||
     normalized === ROLE_VALUES.SUPER_ADMINISTRATOR

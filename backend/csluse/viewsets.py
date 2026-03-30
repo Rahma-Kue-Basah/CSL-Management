@@ -64,6 +64,7 @@ from csluse_auth.permissions import (
     IsStaffOrAbove,
     IsAdministratorOrAbove,
     has_role,
+    LECTURER,
     STAFF,
     ADMINISTRATOR,
     SUPER_ADMINISTRATOR,
@@ -113,6 +114,20 @@ def is_staff_or_above(user):
     )
 
 
+def is_reviewer_or_above(user):
+    return (
+        user
+        and user.is_authenticated
+        and (
+            getattr(user, "is_superuser", False)
+            or has_role(user, LECTURER)
+            or has_role(user, STAFF)
+            or has_role(user, ADMINISTRATOR)
+            or has_role(user, SUPER_ADMINISTRATOR)
+        )
+    )
+
+
 def is_administrator_or_above(user):
     return (
         user
@@ -123,6 +138,10 @@ def is_administrator_or_above(user):
             or has_role(user, SUPER_ADMINISTRATOR)
         )
     )
+
+
+def can_manage_all_approval_records(user):
+    return is_administrator_or_above(user)
 
 
 def build_requester_dropdown_response(queryset):
@@ -927,15 +946,35 @@ class BookingViewSet(viewsets.ModelViewSet):
     pagination_class = DefaultPagination
 
     def _is_staff_or_above(self):
-        return is_staff_or_above(self.request.user)
+        return is_reviewer_or_above(self.request.user)
+
+    def _can_manage_all_bookings(self):
+        return can_manage_all_approval_records(self.request.user)
 
     def _current_profile(self):
         return getattr(self.request.user, "profile", None)
 
+    def _is_room_pic_for_booking(self, booking):
+        profile = self._current_profile()
+        if not profile or not booking.room_id:
+            return False
+        return booking.room.pics.filter(id=profile.id).exists()
+
+    def _can_review_booking(self, booking):
+        return self._can_manage_all_bookings() or self._is_room_pic_for_booking(booking)
+
+    def _ensure_booking_access(self, booking):
+        profile = self._current_profile()
+        if profile and booking.requested_by_id == profile.id:
+            return
+        if self._can_review_booking(booking):
+            return
+        raise PermissionDenied("Anda tidak memiliki akses ke pengajuan peminjaman lab ini.")
+
     def _ensure_review_permission(self, booking):
-        if not self._is_staff_or_above():
+        if not self._can_review_booking(booking):
             raise PermissionDenied(
-                "Hanya Staff, Admin, atau SuperAdministrator yang dapat memproses booking."
+                "Hanya PIC ruangan terkait atau Admin yang dapat memproses booking."
             )
 
         current_profile = self._current_profile()
@@ -1076,13 +1115,22 @@ class BookingViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         self._auto_update_booking_statuses()
         qs = super().get_queryset()
-        is_staff_or_above = self._is_staff_or_above()
+        profile = self._current_profile()
 
-        # User-level access: non staff/admin can only see their own submitted bookings.
-        if not is_staff_or_above:
-            qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
+        if not self._is_staff_or_above():
+            qs = qs.filter(requested_by=profile)
+            return self._apply_list_filters(qs, allow_requester_filter=False)
 
-        return self._apply_list_filters(qs, allow_requester_filter=is_staff_or_above)
+        if self._can_manage_all_bookings():
+            return self._apply_list_filters(qs, allow_requester_filter=True)
+
+        if profile is None:
+            return qs.none()
+
+        qs = qs.filter(
+            Q(requested_by_id=profile.id) | Q(room__pics__id=profile.id)
+        ).distinct()
+        return self._apply_list_filters(qs, allow_requester_filter=False)
 
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
@@ -1151,9 +1199,9 @@ class BookingViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data booking.")
 
         self._auto_update_booking_statuses()
-        base_qs = super().get_queryset()
+        base_qs = self.get_queryset()
         aggregates = build_status_aggregates(base_qs)
-        qs = self._apply_list_filters(base_qs, allow_requester_filter=True)
+        qs = base_qs
         page = self.paginate_queryset(qs)
         serializer = BookingListSerializer(page if page is not None else qs, many=True)
         if page is not None:
@@ -1166,7 +1214,7 @@ class BookingViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Anda tidak memiliki akses untuk export data booking.")
 
         self._auto_update_booking_statuses()
-        qs = self._apply_list_filters(super().get_queryset(), allow_requester_filter=True)
+        qs = self.get_queryset()
         qs = self._apply_export_search(qs)
         serializer = BookingListSerializer(qs, many=True)
         return Response({
@@ -1180,7 +1228,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         if not self._is_staff_or_above():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon booking.")
         self._auto_update_booking_statuses()
-        return build_requester_dropdown_response(super().get_queryset())
+        return build_requester_dropdown_response(self.get_queryset())
 
     @action(detail=False, methods=['get'], url_path='by-month')
     def by_month(self, request):
@@ -1281,7 +1329,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
         return getattr(self.request.user, "profile", None)
 
     def _can_manage_all_borrows(self):
-        return is_staff_or_above(self.request.user)
+        return can_manage_all_approval_records(self.request.user)
+
+    def _can_access_borrow_approval(self):
+        return is_reviewer_or_above(self.request.user)
 
     def _is_room_pic_for_borrow(self, borrow):
         profile = self._current_profile()
@@ -1439,6 +1490,12 @@ class BorrowViewSet(viewsets.ModelViewSet):
             return self._apply_list_filters(qs, allow_requester_filter=False, allow_pic_filter=False)
 
         if self.action in {"all", "export"}:
+            if not self._can_access_borrow_approval():
+                return qs.none()
+            if not self._can_manage_all_borrows():
+                if profile is None:
+                    return qs.none()
+                qs = qs.filter(equipment__room__pics__id=profile.id).distinct()
             return self._apply_list_filters(
                 qs,
                 allow_requester_filter=self._can_manage_all_borrows(),
@@ -1555,13 +1612,13 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all')
     def all(self, request):
-        if not self._can_manage_all_borrows():
+        if not self._can_access_borrow_approval():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data peminjaman alat.")
 
         sync_borrow_statuses()
-        base_qs = super().get_queryset()
+        base_qs = self.get_queryset()
         aggregates = build_borrow_status_aggregates(base_qs)
-        qs = self._apply_list_filters(base_qs, allow_requester_filter=True, allow_pic_filter=True)
+        qs = base_qs
         page = self.paginate_queryset(qs)
         serializer = BorrowListSerializer(page if page is not None else qs, many=True)
         if page is not None:
@@ -1615,10 +1672,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all/requesters')
     def requester_options(self, request):
-        if not self._can_manage_all_borrows():
+        if not self._can_access_borrow_approval():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon peminjaman alat.")
         sync_borrow_statuses()
-        return build_requester_dropdown_response(super().get_queryset())
+        return build_requester_dropdown_response(self.get_queryset())
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
@@ -2279,32 +2336,58 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
 
         sync_booking_statuses()
         sync_use_statuses()
+        sync_borrow_statuses()
 
         now = timezone.now()
+        is_pic_scope_role = is_reviewer_or_above(request.user)
 
-        bookings = list(
-            Booking.objects
-            .filter(requested_by=profile)
-            .select_related("room")
-            .order_by("-created_at")
-        )
-        uses = list(
-            Use.objects
-            .filter(requested_by=profile)
-            .select_related("equipment")
-            .order_by("-created_at")
-        )
-        borrows = list(
-            Borrow.objects
-            .filter(requested_by=profile)
-            .select_related("equipment")
-            .order_by("-created_at")
-        )
-        pengujians = list(
-            Pengujian.objects
-            .filter(requested_by=profile)
-            .order_by("-created_at")
-        )
+        if is_pic_scope_role:
+            bookings = list(
+                Booking.objects
+                .filter(room__pics__id=profile.id)
+                .select_related("room", "requested_by")
+                .distinct()
+                .order_by("-created_at")
+            )
+            uses = list(
+                Use.objects
+                .filter(equipment__room__pics__id=profile.id)
+                .select_related("equipment", "equipment__room", "requested_by")
+                .distinct()
+                .order_by("-created_at")
+            )
+            borrows = list(
+                Borrow.objects
+                .filter(equipment__room__pics__id=profile.id)
+                .select_related("equipment", "equipment__room", "requested_by")
+                .distinct()
+                .order_by("-created_at")
+            )
+            pengujians = []
+        else:
+            bookings = list(
+                Booking.objects
+                .filter(requested_by=profile)
+                .select_related("room")
+                .order_by("-created_at")
+            )
+            uses = list(
+                Use.objects
+                .filter(requested_by=profile)
+                .select_related("equipment", "equipment__room")
+                .order_by("-created_at")
+            )
+            borrows = list(
+                Borrow.objects
+                .filter(requested_by=profile)
+                .select_related("equipment", "equipment__room")
+                .order_by("-created_at")
+            )
+            pengujians = list(
+                Pengujian.objects
+                .filter(requested_by=profile)
+                .order_by("-created_at")
+            )
 
         def status_count(items, *statuses):
             normalized_targets = {normalize_status_value(status) for status in statuses}
@@ -2320,7 +2403,7 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                     "type": "Booking Ruangan",
                     "start_time": item.start_time,
                     "end_time": item.end_time,
-                    "href": f"/booking-rooms/{item.id}",
+                    "href": f"/booking-rooms/approval/{item.id}" if is_pic_scope_role else f"/booking-rooms/{item.id}",
                 })
 
         for item in uses:
@@ -2331,7 +2414,7 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                     "type": "Penggunaan Alat",
                     "start_time": item.start_time,
                     "end_time": item.end_time,
-                    "href": f"/use-equipment/{item.id}",
+                    "href": f"/use-equipment/approval/{item.id}" if is_pic_scope_role else f"/use-equipment/{item.id}",
                 })
 
         for item in borrows:
@@ -2342,7 +2425,7 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                     "type": "Peminjaman Alat",
                     "start_time": item.start_time,
                     "end_time": item.end_time,
-                    "href": "/borrow-equipment",
+                    "href": f"/borrow-equipment/approval/{item.id}" if is_pic_scope_role else f"/borrow-equipment/{item.id}",
                 })
 
         upcoming_items.sort(key=lambda item: item["start_time"])
@@ -2358,7 +2441,7 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                 "type": "Booking Ruangan",
                 "status": item.status,
                 "created_at": item.created_at,
-                "href": f"/booking-rooms/{item.id}",
+                "href": f"/booking-rooms/approval/{item.id}" if is_pic_scope_role else f"/booking-rooms/{item.id}",
             })
 
         for item in uses:
@@ -2369,7 +2452,7 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                 "type": "Penggunaan Alat",
                 "status": item.status,
                 "created_at": item.created_at,
-                "href": f"/use-equipment/{item.id}",
+                "href": f"/use-equipment/approval/{item.id}" if is_pic_scope_role else f"/use-equipment/{item.id}",
             })
 
         for item in borrows:
@@ -2380,7 +2463,7 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                 "type": "Peminjaman Alat",
                 "status": item.status,
                 "created_at": item.created_at,
-                "href": "/borrow-equipment",
+                "href": f"/borrow-equipment/approval/{item.id}" if is_pic_scope_role else f"/borrow-equipment/{item.id}",
             })
 
         for item in pengujians:
@@ -2881,15 +2964,36 @@ class UseViewSet(viewsets.ModelViewSet):
         instance.delete()
 
     def _is_staff_or_above(self):
-        return is_staff_or_above(self.request.user)
+        return is_reviewer_or_above(self.request.user)
+
+    def _can_manage_all_uses(self):
+        return can_manage_all_approval_records(self.request.user)
 
     def _current_profile(self):
         return getattr(self.request.user, "profile", None)
 
+    def _is_room_pic_for_use(self, use_item):
+        profile = self._current_profile()
+        room = getattr(getattr(use_item, "equipment", None), "room", None)
+        if not profile or room is None:
+            return False
+        return room.pics.filter(id=profile.id).exists()
+
+    def _can_review_use(self, use_item):
+        return self._can_manage_all_uses() or self._is_room_pic_for_use(use_item)
+
+    def _ensure_use_access(self, use_item):
+        current_profile = self._current_profile()
+        if current_profile and use_item.requested_by_id == current_profile.id:
+            return
+        if self._can_review_use(use_item):
+            return
+        raise PermissionDenied("Anda tidak memiliki akses ke pengajuan penggunaan alat ini.")
+
     def _ensure_review_permission(self, use_item):
-        if not self._is_staff_or_above():
+        if not self._can_review_use(use_item):
             raise PermissionDenied(
-                "Hanya Staff, Admin, atau SuperAdministrator yang dapat memproses penggunaan alat."
+                "Hanya PIC ruangan alat terkait atau Admin yang dapat memproses penggunaan alat."
             )
 
         current_profile = self._current_profile()
@@ -2998,21 +3102,24 @@ class UseViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         self._auto_update_use_statuses()
         qs = super().get_queryset()
+        profile = self._current_profile()
         if self.action == "my":
-            qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
+            qs = qs.filter(requested_by=profile)
             return self._apply_list_filters(qs, allow_requester_filter=False)
 
-        if self.action == "all":
-            return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
-
-        if self.action == "list":
-            if not self._is_staff_or_above():
-                qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
-            return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
-
         if not self._is_staff_or_above():
-            qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
-        return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
+            qs = qs.filter(requested_by=profile)
+            return self._apply_list_filters(qs, allow_requester_filter=False)
+
+        if self._can_manage_all_uses():
+            return self._apply_list_filters(qs, allow_requester_filter=True)
+
+        if profile is None:
+            return qs.none()
+        qs = qs.filter(
+            Q(requested_by_id=profile.id) | Q(equipment__room__pics__id=profile.id)
+        ).distinct()
+        return self._apply_list_filters(qs, allow_requester_filter=False)
 
     def _apply_export_search(self, qs):
         query = (self.request.query_params.get('q') or '').strip()
@@ -3029,6 +3136,12 @@ class UseViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self._ensure_use_access(instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     def perform_destroy(self, instance):
         self._delete_use_instance(instance)
@@ -3094,9 +3207,9 @@ class UseViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data penggunaan alat.")
 
         self._auto_update_use_statuses()
-        base_qs = super().get_queryset()
+        base_qs = self.get_queryset()
         aggregates = build_status_aggregates(base_qs)
-        qs = self._apply_list_filters(base_qs, allow_requester_filter=True)
+        qs = base_qs
         page = self.paginate_queryset(qs)
         serializer = UseListSerializer(page if page is not None else qs, many=True)
         if page is not None:
@@ -3122,7 +3235,7 @@ class UseViewSet(viewsets.ModelViewSet):
         if not self._is_staff_or_above():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon penggunaan alat.")
         self._auto_update_use_statuses()
-        return build_requester_dropdown_response(super().get_queryset())
+        return build_requester_dropdown_response(self.get_queryset())
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
