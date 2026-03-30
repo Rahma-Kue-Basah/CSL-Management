@@ -3,25 +3,26 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CalendarClock,
-  Check,
   CheckCircle2,
   Eye,
   Loader2,
   Package,
   RotateCcw,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
 
+import { DashboardDetailReviewDialog } from "@/components/dashboard/layout/DashboardDetailReviewDialog";
 import { DataPagination } from "@/components/shared/data-pagination";
+import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
+import type { ProgressStepItem } from "@/components/shared/progress-steps";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
-import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { useUses } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-format";
+import { getUseProgressFlow } from "@/lib/request-progress";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
@@ -115,28 +116,39 @@ export default function UseEquipmentListContent({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { profile } = useLoadProfile();
-  const { updateUseStatus, pendingAction } = useUpdateUseStatus();
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
-  const [confirmState, setConfirmState] = useState<{
-    useId: string | number;
-    type: "approve" | "reject";
+  const [reviewUseId, setReviewUseId] = useState<string | null>(null);
+  const [progressState, setProgressState] = useState<{
+    code: string;
+    steps: ProgressStepItem[];
   } | null>(null);
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("q") ?? "";
+  const equipment = searchParams.get("equipment") ?? "";
+  const room = searchParams.get("room") ?? "";
+  const requestedBy = searchParams.get("requested_by") ?? "";
   const createdAfter = searchParams.get("created_after") ?? "";
   const createdBefore = searchParams.get("created_before") ?? "";
 
   useEffect(() => {
     setPage(1);
-  }, [status, search, createdAfter, createdBefore]);
+  }, [status, search, equipment, room, requestedBy, createdAfter, createdBefore]);
 
   const { uses, totalCount, aggregates, isLoading, hasLoadedOnce, error } = useUses(
     page,
     PAGE_SIZE,
     {
+      q: search,
       status,
-      requestedBy: scope === "my" ? String(profile?.id ?? "") : "",
+      requestedBy:
+        scope === "my"
+          ? String(profile?.id ?? "")
+          : scope === "all"
+            ? requestedBy
+            : "",
+      equipment,
+      room,
       createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
       createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
@@ -144,25 +156,13 @@ export default function UseEquipmentListContent({
     scope,
   );
 
-  const filteredUses = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const equipmentUses = uses.filter(
-      (item) => item.equipmentName && item.equipmentName !== "-",
-    );
-
-    if (!query) return equipmentUses;
-    return equipmentUses.filter((item) => {
-      const haystack = [
-        item.code,
-        item.equipmentName,
-        item.requesterName,
-        item.purpose,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [uses, search]);
+  const filteredUses = useMemo(
+    () =>
+      uses.filter(
+        (item) => item.equipmentName && item.equipmentName !== "-",
+      ),
+    [uses],
+  );
 
   const normalizedRole = normalizeRoleValue(profile?.role);
   const canReviewUses =
@@ -181,26 +181,6 @@ export default function UseEquipmentListContent({
   const completedCount = aggregates.completed;
   const rejectedCount = aggregates.rejected;
   const expiredCount = aggregates.expired;
-
-  const handleUseAction = async () => {
-    if (!confirmState) return;
-
-    const { useId, type } = confirmState;
-    const result = await updateUseStatus(useId, type);
-
-    if (result.ok) {
-      toast.success(
-        type === "approve"
-          ? "Pengajuan penggunaan alat berhasil disetujui."
-          : "Pengajuan penggunaan alat berhasil ditolak.",
-      );
-      setReloadKey((prev) => prev + 1);
-      setConfirmState(null);
-      return;
-    }
-
-    toast.error(result.message);
-  };
 
   return (
     <section className="space-y-4">
@@ -253,9 +233,6 @@ export default function UseEquipmentListContent({
         <table className="w-full min-w-[1120px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
-              <th className="sticky left-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[1px_0_0_0_rgba(51,65,85,1)]">
-                Aksi
-              </th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Alat</th>
               {showRequesterColumn ? (
@@ -265,6 +242,9 @@ export default function UseEquipmentListContent({
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Selesai</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Tujuan</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Status</th>
+              <th className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
+                Aksi
+              </th>
             </tr>
           </thead>
           <tbody className="text-sm">
@@ -280,54 +260,6 @@ export default function UseEquipmentListContent({
             ) : filteredUses.length ? (
               filteredUses.map((item) => (
                 <tr key={String(item.id)} className="border-b last:border-b-0">
-                  <td className="sticky left-0 z-10 bg-white px-3 py-2.5 text-center shadow-[1px_0_0_0_rgba(226,232,240,1)]">
-                    <div className="flex items-center justify-center gap-2">
-                      {canReviewUses && isPendingStatus(item.status) ? (
-                        <>
-                          <TableActionIconButton
-                            type="button"
-                            label="Approve"
-                            icon={<Check className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
-                            onClick={() =>
-                              setConfirmState({
-                                useId: item.id,
-                                type: "approve",
-                              })
-                            }
-                            disabled={pendingAction.useId === item.id}
-                          />
-                          <TableActionIconButton
-                            type="button"
-                            label="Reject"
-                            icon={<X className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
-                            onClick={() =>
-                              setConfirmState({
-                                useId: item.id,
-                                type: "reject",
-                              })
-                            }
-                            disabled={pendingAction.useId === item.id}
-                          />
-                        </>
-                      ) : null}
-                      <TableActionIconButton
-                        type="button"
-                        label="Lihat detail"
-                        icon={<Eye className="h-3.5 w-3.5" />}
-                        variant="outline"
-                        className="border-slate-300 text-slate-700"
-                        onClick={() =>
-                          router.push(
-                            scope === "all"
-                              ? `/use-equipment/approval/${item.id}`
-                              : `/use-equipment/${item.id}`,
-                          )
-                        }
-                      />
-                    </div>
-                  </td>
                   <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
                     {item.code}
                   </td>
@@ -343,11 +275,44 @@ export default function UseEquipmentListContent({
                   </td>
                   <td className="px-3 py-2.5 text-slate-700">{item.purpose}</td>
                   <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProgressState({
+                          code: item.code,
+                          steps: getUseProgressFlow(item),
+                        })
+                      }
+                      className={`inline-flex cursor-pointer rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                     >
                       {getStatusDisplayLabel(item.status)}
-                    </span>
+                    </button>
+                  </td>
+                  <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
+                    <div className="flex items-center justify-center gap-2">
+                      {canReviewUses ? (
+                        <TableActionIconButton
+                          type="button"
+                          label="Review"
+                          icon={<ShieldCheck className="h-3.5 w-3.5" />}
+                          className="w-8 rounded-md border border-sky-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
+                          onClick={() => setReviewUseId(String(item.id))}
+                        />
+                      ) : null}
+                      <TableActionIconButton
+                        type="button"
+                        label="Lihat detail"
+                        icon={<Eye className="h-3.5 w-3.5" />}
+                        className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
+                        onClick={() =>
+                          router.push(
+                            scope === "all"
+                              ? `/use-equipment/approval/${item.id}`
+                              : `/use-equipment/${item.id}`,
+                          )
+                        }
+                      />
+                    </div>
                   </td>
                 </tr>
               ))
@@ -371,16 +336,26 @@ export default function UseEquipmentListContent({
         isLoading={isLoading}
         onPageChange={setPage}
       />
-
-      <StatusConfirmDialog
-        open={Boolean(confirmState)}
-        actionType={confirmState?.type ?? null}
+      <DashboardDetailReviewDialog
+        open={Boolean(reviewUseId)}
         onOpenChange={(open) => {
-          if (!open) setConfirmState(null);
+          if (!open) setReviewUseId(null);
         }}
-        onConfirm={handleUseAction}
-        isSubmitting={pendingAction.useId === confirmState?.useId}
-        subjectLabel="pengajuan penggunaan alat ini"
+        onActionComplete={() => setReloadKey((prev) => prev + 1)}
+        context={
+          reviewUseId
+            ? { kind: "use", id: reviewUseId }
+            : null
+        }
+      />
+      <RequestProgressDialog
+        open={Boolean(progressState)}
+        onOpenChange={(open) => {
+          if (!open) setProgressState(null);
+        }}
+        title="Progress Penggunaan Alat"
+        code={progressState?.code ?? ""}
+        steps={progressState?.steps ?? []}
       />
     </section>
   );

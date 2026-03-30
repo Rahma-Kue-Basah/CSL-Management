@@ -463,12 +463,24 @@ class BookingSerializer(serializers.ModelSerializer):
             "status",
             "approved_by",
             "approved_by_detail",
+            "approved_at",
+            "rejected_at",
+            "expired_at",
+            "completed_at",
             "equipment_items",
             "equipment_items_detail",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ['requested_by', 'code', 'approved_by']
+        read_only_fields = [
+            'requested_by',
+            'code',
+            'approved_by',
+            'approved_at',
+            'rejected_at',
+            'expired_at',
+            'completed_at',
+        ]
 
 
 class BookingListSerializer(serializers.ModelSerializer):
@@ -495,6 +507,10 @@ class BookingListSerializer(serializers.ModelSerializer):
             "status",
             "requested_by_detail",
             "approved_by_detail",
+            "approved_at",
+            "rejected_at",
+            "expired_at",
+            "completed_at",
             "room_detail",
             "equipment_items_detail",
             "created_at",
@@ -523,9 +539,14 @@ class BookingUserListSerializer(serializers.ModelSerializer):
             "purpose",
             "status",
             "requested_by_detail",
+            "approved_at",
+            "rejected_at",
+            "expired_at",
+            "completed_at",
             "room_detail",
             "equipment_items_detail",
             "created_at",
+            "updated_at",
         ]
 
 
@@ -620,6 +641,15 @@ class BorrowListSerializer(serializers.ModelSerializer):
             "status",
             "requested_by_detail",
             "approved_by_detail",
+            "approved_at",
+            "rejected_at",
+            "expired_at",
+            "borrowed_at",
+            "returned_pending_inspection_at",
+            "inspected_at",
+            "returned_at",
+            "overdue_at",
+            "lost_damaged_at",
             "equipment_detail",
             "created_at",
             "updated_at",
@@ -878,6 +908,9 @@ class PengujianListSerializer(serializers.ModelSerializer):
             "status",
             "requested_by_detail",
             "approved_by_detail",
+            "approved_at",
+            "rejected_at",
+            "completed_at",
             "created_at",
             "updated_at",
         ]
@@ -966,6 +999,10 @@ class UseListSerializer(serializers.ModelSerializer):
             "status",
             "requested_by_detail",
             "approved_by_detail",
+            "approved_at",
+            "rejected_at",
+            "expired_at",
+            "completed_at",
             "equipment_detail",
             "created_at",
             "updated_at",

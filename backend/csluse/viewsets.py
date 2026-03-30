@@ -420,13 +420,13 @@ def sync_booking_statuses():
     now = timezone.now()
     (
         Booking.objects
-        .filter(status="Pending", end_time__lt=now)
-        .update(status="Expired", updated_at=now)
+        .filter(status="Pending", end_time__lt=now, expired_at__isnull=True)
+        .update(status="Expired", expired_at=now, updated_at=now)
     )
     (
         Booking.objects
-        .filter(status="Approved", end_time__lt=now)
-        .update(status="Completed", updated_at=now)
+        .filter(status="Approved", end_time__lt=now, completed_at__isnull=True)
+        .update(status="Completed", completed_at=now, updated_at=now)
     )
 
 
@@ -434,13 +434,13 @@ def sync_use_statuses():
     now = timezone.now()
     (
         Use.objects
-        .filter(status="Pending", end_time__lt=now)
-        .update(status="Expired", updated_at=now)
+        .filter(status="Pending", end_time__lt=now, expired_at__isnull=True)
+        .update(status="Expired", expired_at=now, updated_at=now)
     )
     (
         Use.objects
-        .filter(status="Pending", end_time__isnull=True, start_time__lt=now)
-        .update(status="Expired", updated_at=now)
+        .filter(status="Pending", end_time__isnull=True, start_time__lt=now, expired_at__isnull=True)
+        .update(status="Expired", expired_at=now, updated_at=now)
     )
 
 
@@ -448,17 +448,18 @@ def sync_borrow_statuses():
     now = timezone.now()
     (
         Borrow.objects
-        .filter(status="Pending", start_time__lt=now)
-        .update(status="Expired", updated_at=now)
+        .filter(status="Pending", start_time__lt=now, expired_at__isnull=True)
+        .update(status="Expired", expired_at=now, updated_at=now)
     )
     overdue_borrows = list(
         Borrow.objects
-        .filter(status="Borrowed", end_time__lt=now)
+        .filter(status="Borrowed", end_time__lt=now, overdue_at__isnull=True)
         .select_related("requested_by", "equipment")
     )
     if overdue_borrows:
         Borrow.objects.filter(pk__in=[item.pk for item in overdue_borrows]).update(
             status="Overdue",
+            overdue_at=now,
             updated_at=now,
         )
         for item in overdue_borrows:
@@ -1014,6 +1015,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         return super().list(request, *args, **kwargs)
 
     def _apply_list_filters(self, qs, allow_requester_filter: bool):
+        query = (self.request.query_params.get('q') or '').strip()
         status_param = self.request.query_params.get('status')
         room_id = self.request.query_params.get('room')
         equipment_id = self.request.query_params.get('equipment')
@@ -1025,6 +1027,16 @@ class BookingViewSet(viewsets.ModelViewSet):
         created_after = self.request.query_params.get('created_after')
         created_before = self.request.query_params.get('created_before')
 
+        if query:
+            qs = qs.filter(
+                Q(code__icontains=query)
+                | Q(room__name__icontains=query)
+                | Q(requested_by__full_name__icontains=query)
+                | Q(requested_by__user__email__icontains=query)
+                | Q(purpose__icontains=query)
+                | Q(attendee_names__icontains=query)
+                | Q(equipment_items__equipment__name__icontains=query)
+            ).distinct()
         if status_param:
             qs = qs.filter(status=normalize_status_value(status_param))
         if room_id:
@@ -1215,7 +1227,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             data={'status': 'Approved', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=actor_profile)
+        now = timezone.now()
+        serializer.save(approved_by=actor_profile, approved_at=now)
         _notify_request_status(instance, kind="booking", status_value="Approved", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
@@ -1230,7 +1243,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             data={'status': 'Rejected', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=actor_profile)
+        now = timezone.now()
+        serializer.save(approved_by=actor_profile, rejected_at=now)
         _notify_request_status(instance, kind="booking", status_value="Rejected", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
@@ -1244,7 +1258,8 @@ class BookingViewSet(viewsets.ModelViewSet):
             data={'status': 'Completed', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        now = timezone.now()
+        serializer.save(completed_at=now)
         return Response(serializer.data)
 
 class BorrowViewSet(viewsets.ModelViewSet):
@@ -1347,6 +1362,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
         allow_requester_filter=False,
         allow_pic_filter=False,
     ):
+        query = (self.request.query_params.get('q') or '').strip()
         status_param = self.request.query_params.get('status')
         equipment_id = self.request.query_params.get('equipment')
         room_id = self.request.query_params.get('room')
@@ -1358,6 +1374,14 @@ class BorrowViewSet(viewsets.ModelViewSet):
         created_after = self.request.query_params.get('created_after')
         created_before = self.request.query_params.get('created_before')
 
+        if query:
+            qs = qs.filter(
+                Q(code__icontains=query)
+                | Q(equipment__name__icontains=query)
+                | Q(requested_by__full_name__icontains=query)
+                | Q(requested_by__user__email__icontains=query)
+                | Q(purpose__icontains=query)
+            ).distinct()
         if status_param:
             qs = qs.filter(status=normalize_status_value(status_param))
         if equipment_id:
@@ -1608,7 +1632,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
             data={'status': 'Approved', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=actor_profile)
+        now = timezone.now()
+        serializer.save(approved_by=actor_profile, approved_at=now)
         _notify_request_status(instance, kind="borrow", status_value="Approved", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
@@ -1624,7 +1649,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
             data={'status': 'Rejected', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=actor_profile)
+        now = timezone.now()
+        serializer.save(approved_by=actor_profile, rejected_at=now)
         _notify_request_status(instance, kind="borrow", status_value="Rejected", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
@@ -1639,7 +1665,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
             data={'status': 'Borrowed', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        now = timezone.now()
+        serializer.save(borrowed_at=now)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], url_path='receive-return')
@@ -1663,7 +1690,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
             allow_end_time_actual=True,
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        now = timezone.now()
+        serializer.save(returned_pending_inspection_at=now)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], url_path='finalize-return')
@@ -1686,7 +1714,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
             allow_end_time_actual='end_time_actual' in payload,
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        now = timezone.now()
+        serializer.save(inspected_at=now, returned_at=now)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], url_path='mark-damaged')
@@ -1712,7 +1741,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
             },
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        now = timezone.now()
+        serializer.save(inspected_at=now, lost_damaged_at=now)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], url_path='mark-lost')
@@ -1738,7 +1768,8 @@ class BorrowViewSet(viewsets.ModelViewSet):
             },
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        now = timezone.now()
+        serializer.save(inspected_at=now, lost_damaged_at=now)
         return Response(serializer.data)
 
     @action(detail=True, methods=['post'], url_path='return')
@@ -2591,6 +2622,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
         )
 
     def _apply_list_filters(self, qs, *, allow_requester_filter=False):
+        query = (self.request.query_params.get('q') or '').strip()
         status_param = self.request.query_params.get('status')
         requested_by = self.request.query_params.get('requested_by')
         department = self.request.query_params.get('department')
@@ -2598,6 +2630,14 @@ class PengujianViewSet(viewsets.ModelViewSet):
         created_after = self.request.query_params.get('created_after')
         created_before = self.request.query_params.get('created_before')
 
+        if query:
+            qs = qs.filter(
+                Q(code__icontains=query)
+                | Q(name__icontains=query)
+                | Q(institution__icontains=query)
+                | Q(email__icontains=query)
+                | Q(sample_type__icontains=query)
+            ).distinct()
         if status_param:
             qs = qs.filter(status=normalize_status_value(status_param))
         if requested_by and allow_requester_filter:
@@ -2747,7 +2787,8 @@ class PengujianViewSet(viewsets.ModelViewSet):
             data={'status': 'Approved', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=actor_profile)
+        now = timezone.now()
+        serializer.save(approved_by=actor_profile, approved_at=now)
         _notify_request_status(instance, kind="pengujian", status_value="Approved", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
@@ -2780,7 +2821,8 @@ class PengujianViewSet(viewsets.ModelViewSet):
             data={'status': 'Rejected', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=actor_profile)
+        now = timezone.now()
+        serializer.save(approved_by=actor_profile, rejected_at=now)
         _notify_request_status(instance, kind="pengujian", status_value="Rejected", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
@@ -2794,7 +2836,8 @@ class PengujianViewSet(viewsets.ModelViewSet):
             data={'status': 'Completed', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        now = timezone.now()
+        serializer.save(completed_at=now)
         return Response(serializer.data)
 
 
@@ -2883,6 +2926,7 @@ class UseViewSet(viewsets.ModelViewSet):
         )
 
     def _apply_list_filters(self, qs, *, allow_requester_filter=False):
+        query = (self.request.query_params.get('q') or '').strip()
         status_param = self.request.query_params.get('status')
         equipment_id = self.request.query_params.get('equipment')
         room_id = self.request.query_params.get('room')
@@ -2894,6 +2938,15 @@ class UseViewSet(viewsets.ModelViewSet):
         created_after = self.request.query_params.get('created_after')
         created_before = self.request.query_params.get('created_before')
 
+        if query:
+            qs = qs.filter(
+                Q(code__icontains=query)
+                | Q(equipment__name__icontains=query)
+                | Q(equipment__room__name__icontains=query)
+                | Q(requested_by__full_name__icontains=query)
+                | Q(requested_by__user__email__icontains=query)
+                | Q(purpose__icontains=query)
+            ).distinct()
         if status_param:
             qs = qs.filter(status=normalize_status_value(status_param))
         if equipment_id:
@@ -3082,7 +3135,8 @@ class UseViewSet(viewsets.ModelViewSet):
             data={'status': 'Approved', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=actor_profile)
+        now = timezone.now()
+        serializer.save(approved_by=actor_profile, approved_at=now)
         _notify_request_status(instance, kind="use", status_value="Approved", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
@@ -3097,7 +3151,8 @@ class UseViewSet(viewsets.ModelViewSet):
             data={'status': 'Rejected', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save(approved_by=actor_profile)
+        now = timezone.now()
+        serializer.save(approved_by=actor_profile, rejected_at=now)
         _notify_request_status(instance, kind="use", status_value="Rejected", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
@@ -3111,7 +3166,8 @@ class UseViewSet(viewsets.ModelViewSet):
             data={'status': 'Completed', **request.data},
         )
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        now = timezone.now()
+        serializer.save(completed_at=now)
         return Response(serializer.data)
 
 

@@ -250,13 +250,13 @@ export default function BookingRoomsFormPage() {
     const attendeeCount = Number(formData.attendeeCount);
     if (!Number.isInteger(attendeeCount) || attendeeCount <= 0) {
       setValidationMessage(
-        "Jumlah orang harus berupa angka bulat lebih dari 0.",
+        "Jumlah peserta harus berupa angka bulat lebih dari 0.",
       );
       return false;
     }
     if (selectedRoom && attendeeCount > selectedRoom.capacity) {
       setValidationMessage(
-        `Jumlah orang tidak boleh melebihi kapasitas ruangan (${selectedRoom.capacity} orang).`,
+        `Jumlah peserta tidak boleh melebihi kapasitas ruangan (${selectedRoom.capacity} peserta).`,
       );
       return false;
     }
@@ -416,7 +416,7 @@ export default function BookingRoomsFormPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600">
-              Jumlah Orang <span className="text-rose-600">*</span>
+              Jumlah Peserta <span className="text-rose-600">*</span>
             </label>
             <Input
               type="number"
@@ -433,7 +433,7 @@ export default function BookingRoomsFormPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600">
-              Nama Orang
+              Nama Peserta
             </label>
             <Input
               type="text"
@@ -618,10 +618,10 @@ export default function BookingRoomsFormPage() {
           value={formatLocalDateTimeAsWib(formData.endTime)}
         />
         <SubmissionSummaryItem
-          label="Jumlah Orang"
+          label="Jumlah Peserta"
           value={formData.attendeeCount}
         />
-        <SubmissionSummaryItem label="Nama Orang" value={formData.attendeeNames} />
+        <SubmissionSummaryItem label="Nama Peserta" value={formData.attendeeNames} />
         <SubmissionSummaryItem label="Peralatan" value={selectedEquipmentLabel} />
         <SubmissionSummaryItem label="Catatan" value={formData.note} />
       </SubmissionConfirmDialog>

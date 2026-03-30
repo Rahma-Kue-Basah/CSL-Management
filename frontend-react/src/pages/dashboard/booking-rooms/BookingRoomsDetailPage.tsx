@@ -10,9 +10,10 @@ import {
   UserRound,
 } from "lucide-react";
 import { useParams, usePathname, useRouter } from "next/navigation";
-import { Steps } from "rsuite";
 
 import { Button } from "@/components/ui/button";
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
+import { ProgressSteps } from "@/components/shared/progress-steps";
 import { useBookingDetail } from "@/hooks/bookings/use-bookings";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
@@ -28,12 +29,14 @@ type BookingFlowStep = {
   state: "finish" | "process" | "wait" | "error";
 };
 
-function normalizeStatus(value: string) {
-  return value.toLowerCase();
+function hasDisplayValue(value?: string | null) {
+  if (!value) return false;
+  const normalized = value.trim();
+  return normalized !== "" && normalized !== "-";
 }
 
-function isPendingStatus(value: string) {
-  return normalizeStatus(value) === "pending";
+function normalizeStatus(value: string) {
+  return value.toLowerCase();
 }
 
 function getBookingFlow(booking: {
@@ -51,11 +54,6 @@ function getBookingFlow(booking: {
       state: "finish",
     },
     {
-      key: "review",
-      label: "Diproses",
-      state: "wait",
-    },
-    {
       key: "approved",
       label: "Disetujui",
       state: "wait",
@@ -68,60 +66,45 @@ function getBookingFlow(booking: {
   ];
 
   if (status === "pending") {
-    baseSteps[1].state = "process";
     return baseSteps;
   }
   if (status === "approved") {
     baseSteps[1].state = "finish";
+    baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
     baseSteps[2].state = "process";
-    baseSteps[2].time = formatDateTimeWib(booking.updatedAt);
     return baseSteps;
   }
   if (status === "completed") {
     baseSteps[1].state = "finish";
+    baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
     baseSteps[2].state = "finish";
     baseSteps[2].time = formatDateTimeWib(booking.updatedAt);
-    baseSteps[3].state = "process";
-    baseSteps[3].time = formatDateTimeWib(booking.updatedAt);
     return baseSteps;
   }
   if (status === "rejected") {
-    baseSteps[1].state = "error";
-    baseSteps[1].label = "Ditolak";
-    baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
+    baseSteps[1] = {
+      key: "rejected",
+      label: "Ditolak",
+      time: formatDateTimeWib(booking.updatedAt),
+      state: "error",
+    };
     return baseSteps.slice(0, 2);
   }
   if (status === "expired") {
-    baseSteps[1].state = "error";
-    baseSteps[1].label = "Kedaluwarsa";
-    baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
+    baseSteps[1] = {
+      key: "expired",
+      label: "Kedaluwarsa",
+      time: formatDateTimeWib(booking.updatedAt),
+      state: "error",
+    };
     return baseSteps.slice(0, 2);
   }
-  baseSteps[1].state = "process";
   return baseSteps;
 }
 
 function BookingFlow({ steps }: { steps: BookingFlowStep[] }) {
-  const currentIndex = Math.max(
-    0,
-    steps.findIndex(
-      (step) => step.state === "process" || step.state === "error",
-    ),
-  );
-
   return (
-    <div className="booking-flow mt-3 overflow-x-auto pb-1">
-      <Steps current={currentIndex} className="min-w-[720px]">
-        {steps.map((step) => (
-          <Steps.Item
-            key={step.key}
-            title={step.label}
-            status={step.state}
-            description={step.time || " "}
-          />
-        ))}
-      </Steps>
-    </div>
+    <ProgressSteps steps={steps} minWidthClassName="min-w-[720px]" />
   );
 }
 
@@ -212,6 +195,52 @@ function DetailSection({
   );
 }
 
+function DetailCard({
+  title,
+  subtitle,
+  icon,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900">{title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">{children}</div>
+    </section>
+  );
+}
+
+function DetailMetaItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  if (!hasDisplayValue(value)) return null;
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-right text-xs leading-5 text-slate-800">{value}</p>
+    </div>
+  );
+}
+
 export default function BookingRoomsDetailPage() {
   const router = useRouter();
   const pathname = usePathname();
@@ -223,8 +252,10 @@ export default function BookingRoomsDetailPage() {
   const backLabel = pathname.startsWith("/booking-rooms/approval/")
     ? "Kembali ke Daftar Pengajuan"
     : "Kembali ke Pengajuan Saya";
+  const isApprovalPage = pathname.startsWith("/booking-rooms/approval/");
+  const [reloadKey, setReloadKey] = useState(0);
 
-  const { booking, setBooking, isLoading, error } = useBookingDetail(id);
+  const { booking, isLoading, error } = useBookingDetail(id, reloadKey);
 
   if (isLoading) {
     return (
@@ -309,70 +340,153 @@ export default function BookingRoomsDetailPage() {
         <BookingFlow steps={flowSteps} />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-        <div className="space-y-4">
-          <DetailSection
-            title="Informasi Ruangan"
-            icon={<MapPinned className="h-4 w-4" />}
-          >
-            <div className="grid gap-3 md:grid-cols-2">
-              <DetailItem label="Ruangan" value={booking.roomName} />
-              <DetailItem
-                label="Nomor Ruangan"
-                value={booking.roomNumber || "-"}
-              />
-              <DetailItem label="Jumlah Orang" value={booking.attendeeCount} />
-              <DetailItem label="Nama Orang" value={booking.attendeeNames} />
-              <EquipmentItemsDetail items={booking.equipmentItems} />
-            </div>
-          </DetailSection>
+      <div
+        className={
+          isApprovalPage
+            ? "grid gap-4 xl:grid-cols-[1.35fr_0.65fr]"
+            : "grid gap-4 xl:grid-cols-[1.1fr_0.9fr]"
+        }
+      >
+        {isApprovalPage ? (
+          <>
+            <div className="space-y-4">
+              <DetailCard
+                title="Detail Peminjaman Lab"
+                subtitle="Ringkasan data permohonan yang diajukan oleh pemohon."
+                icon={<MapPinned className="h-4 w-4" />}
+              >
+                <DetailMetaItem label="Ruangan" value={booking.roomName} />
+                <DetailMetaItem
+                  label="Nomor Ruangan"
+                  value={booking.roomNumber || "-"}
+                />
+                <DetailMetaItem
+                  label="Waktu Mulai"
+                  value={formatDateTimeWib(booking.startTime)}
+                />
+                <DetailMetaItem
+                  label="Waktu Selesai"
+                  value={formatDateTimeWib(booking.endTime)}
+                />
+                <DetailMetaItem label="Jumlah Peserta" value={booking.attendeeCount} />
+                <DetailMetaItem label="Nama Peserta" value={booking.attendeeNames} />
+                <DetailMetaItem label="Tujuan" value={booking.purpose} />
+                <DetailMetaItem label="Catatan" value={booking.note || "-"} />
+              </DetailCard>
 
-          <DetailSection
-            title="Waktu Pengajuan"
-            icon={<CalendarClock className="h-4 w-4" />}
-          >
-            <div className="grid gap-3 md:grid-cols-2">
-              <DetailItem
-                label="Waktu Mulai (WIB)"
-                value={formatDateTimeWib(booking.startTime)}
-              />
-              <DetailItem
-                label="Waktu Selesai (WIB)"
-                value={formatDateTimeWib(booking.endTime)}
-              />
-              <DetailItem
-                label="Status Saat Ini"
-                value={booking.status}
-                variant="status"
-              />
-            </div>
-          </DetailSection>
-        </div>
+              {booking.equipmentItems.length ? (
+                <DetailCard
+                  title="Peralatan Tambahan"
+                  subtitle="Daftar peralatan pendukung yang ikut diminta dalam pengajuan."
+                  icon={<NotebookPen className="h-4 w-4" />}
+                >
+                  {booking.equipmentItems.map((item) => (
+                    <div
+                      key={item.id || `${item.equipmentName}-${item.quantity}`}
+                      className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3"
+                    >
+                      <p className="text-xs text-slate-800">{item.equipmentName}</p>
+                      <p className="text-right text-xs font-medium leading-5 text-slate-800">
+                        {item.quantity}
+                      </p>
+                    </div>
+                  ))}
+                </DetailCard>
+              ) : null}
 
-        <div className="space-y-4">
-          <DetailSection
-            title="Informasi Pemohon"
-            icon={<UserRound className="h-4 w-4" />}
-          >
-            <div className="grid gap-3">
-              <DetailItem label="Peminjam" value={booking.requesterName} />
-              <DetailItem
-                label="Disetujui Oleh"
-                value={booking.approvedByName || "-"}
-              />
+              <DetailCard
+                title="Informasi Permohonan"
+                subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+                icon={<UserRound className="h-4 w-4" />}
+              >
+                <DetailMetaItem label="Pemohon" value={booking.requesterName} />
+                <DetailMetaItem
+                  label="Status Saat Ini"
+                  value={getStatusDisplayLabel(booking.status)}
+                />
+                <DetailMetaItem
+                  label="Disetujui Oleh"
+                  value={booking.approvedByName || "-"}
+                />
+              </DetailCard>
             </div>
-          </DetailSection>
 
-          <DetailSection
-            title="Keterangan Pengajuan"
-            icon={<NotebookPen className="h-4 w-4" />}
-          >
-            <div className="grid gap-3">
-              <DetailItem label="Tujuan" value={booking.purpose} />
-              <DetailItem label="Catatan" value={booking.note || "-"} />
+            <div className="space-y-4">
+              {id ? (
+                <DashboardDetailReviewPanel
+                  context={{ kind: "booking", id }}
+                  onActionComplete={() => setReloadKey((prev) => prev + 1)}
+                />
+              ) : null}
             </div>
-          </DetailSection>
-        </div>
+          </>
+        ) : (
+          <>
+            <div className="space-y-4">
+              <DetailCard
+                title="Detail Peminjaman Lab"
+                subtitle="Ringkasan data permohonan yang diajukan oleh pemohon."
+                icon={<MapPinned className="h-4 w-4" />}
+              >
+                <DetailMetaItem label="Ruangan" value={booking.roomName} />
+                <DetailMetaItem
+                  label="Nomor Ruangan"
+                  value={booking.roomNumber || "-"}
+                />
+                <DetailMetaItem
+                  label="Waktu Mulai"
+                  value={formatDateTimeWib(booking.startTime)}
+                />
+                <DetailMetaItem
+                  label="Waktu Selesai"
+                  value={formatDateTimeWib(booking.endTime)}
+                />
+                <DetailMetaItem label="Jumlah Peserta" value={booking.attendeeCount} />
+                <DetailMetaItem label="Nama Peserta" value={booking.attendeeNames} />
+                <DetailMetaItem label="Tujuan" value={booking.purpose} />
+                <DetailMetaItem label="Catatan" value={booking.note || "-"} />
+              </DetailCard>
+
+              {booking.equipmentItems.length ? (
+                <DetailCard
+                  title="Peralatan Tambahan"
+                  subtitle="Daftar peralatan pendukung yang ikut diminta dalam pengajuan."
+                  icon={<NotebookPen className="h-4 w-4" />}
+                >
+                  {booking.equipmentItems.map((item) => (
+                    <div
+                      key={item.id || `${item.equipmentName}-${item.quantity}`}
+                      className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3"
+                    >
+                      <p className="text-xs text-slate-800">{item.equipmentName}</p>
+                      <p className="text-right text-xs font-medium leading-5 text-slate-800">
+                        {item.quantity}
+                      </p>
+                    </div>
+                  ))}
+                </DetailCard>
+              ) : null}
+            </div>
+
+            <div className="space-y-4">
+              <DetailCard
+                title="Informasi Permohonan"
+                subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+                icon={<UserRound className="h-4 w-4" />}
+              >
+                <DetailMetaItem label="Pemohon" value={booking.requesterName} />
+                <DetailMetaItem
+                  label="Status Saat Ini"
+                  value={getStatusDisplayLabel(booking.status)}
+                />
+                <DetailMetaItem
+                  label="Disetujui Oleh"
+                  value={booking.approvedByName || "-"}
+                />
+              </DetailCard>
+            </div>
+          </>
+        )}
       </div>
 
     </section>

@@ -11,9 +11,11 @@ import {
 import { authFetch } from "@/lib/auth";
 
 export type UseFilters = {
+  q?: string;
   status?: string;
   department?: string;
   equipment?: string;
+  room?: string;
   createdAfter?: string;
   createdBefore?: string;
   requestedBy?: string;
@@ -40,6 +42,10 @@ export type UseRow = {
   endTime: string;
   createdAt: string;
   updatedAt: string;
+  approvedAt: string;
+  rejectedAt: string;
+  expiredAt: string;
+  completedAt: string;
   note: string;
 };
 
@@ -54,6 +60,10 @@ type ApiUse = {
   end_time?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  approved_at?: string | null;
+  rejected_at?: string | null;
+  expired_at?: string | null;
+  completed_at?: string | null;
   equipment?: string | number | null;
   equipment_detail?: {
     id?: string | number | null;
@@ -139,11 +149,18 @@ export function mapUse(item: ApiUse): UseRow {
     endTime: String(item.end_time ?? "-"),
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
+    approvedAt: String(item.approved_at ?? "-"),
+    rejectedAt: String(item.rejected_at ?? "-"),
+    expiredAt: String(item.expired_at ?? "-"),
+    completedAt: String(item.completed_at ?? "-"),
     note: String(item.note ?? ""),
   };
 }
 
-export function useUseDetail(id?: string | number | null) {
+export function useUseDetail(
+  id?: string | number | null,
+  reloadKey = 0,
+) {
   const [useItem, setUseItem] = useState<UseRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -188,7 +205,7 @@ export function useUseDetail(id?: string | number | null) {
       isAborted = true;
       controller.abort();
     };
-  }, [id]);
+  }, [id, reloadKey]);
 
   return {
     useItem,
@@ -250,6 +267,7 @@ export function useUses(
         const url = new URL(listEndpoint, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
+        if (filters.q) url.searchParams.set("q", filters.q);
         if (filters.status) url.searchParams.set("status", filters.status);
         if (filters.requestedBy && scope !== "my") {
           url.searchParams.set("requested_by", filters.requestedBy);
@@ -259,6 +277,9 @@ export function useUses(
         }
         if (filters.equipment) {
           url.searchParams.set("equipment", filters.equipment);
+        }
+        if (filters.room) {
+          url.searchParams.set("room", filters.room);
         }
         if (filters.createdAfter) {
           url.searchParams.set("created_after", filters.createdAfter);
@@ -310,9 +331,11 @@ export function useUses(
   }, [
     page,
     pageSize,
+    filters.q,
     filters.status,
     filters.department,
     filters.equipment,
+    filters.room,
     filters.createdAfter,
     filters.createdBefore,
     filters.requestedBy,

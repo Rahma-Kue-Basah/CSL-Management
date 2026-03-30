@@ -23,7 +23,8 @@ export function TableActionIconButton({
       <Button
         size={size}
         className={cn(
-          size === "sm" ? "h-8" : undefined,
+        size === "sm" ? "h-8" : undefined,
+          "cursor-pointer",
           className,
         )}
         {...props}

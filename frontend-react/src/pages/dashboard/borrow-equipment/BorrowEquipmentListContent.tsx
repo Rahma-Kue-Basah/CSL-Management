@@ -3,30 +3,30 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CalendarClock,
-  Check,
   CheckCircle2,
   Eye,
-  Handshake,
   Hourglass,
   Loader2,
   Package,
   RotateCcw,
+  ShieldCheck,
   Truck,
   Undo2,
   X,
 } from "lucide-react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
 
+import { DashboardDetailReviewDialog } from "@/components/dashboard/layout/DashboardDetailReviewDialog";
 import { DataPagination } from "@/components/shared/data-pagination";
+import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
+import type { ProgressStepItem } from "@/components/shared/progress-steps";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import { useBorrows } from "@/hooks/borrows/use-borrows";
-import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { toEndOfDay, toStartOfDay } from "@/lib/date";
 import { formatDateTimeWib } from "@/lib/date-format";
+import { getBorrowProgressFlow } from "@/lib/request-progress";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
@@ -34,14 +34,6 @@ import {
 } from "@/lib/status";
 
 const PAGE_SIZE = 10;
-
-function isPendingStatus(status: string) {
-  return status.toLowerCase() === "pending";
-}
-
-function isApprovedStatus(status: string) {
-  return status.toLowerCase() === "approved";
-}
 
 function SummaryCard({
   label,
@@ -100,7 +92,9 @@ function SummaryCard({
           <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
             {label}
           </p>
-          <p className={`text-2xl font-semibold leading-none ${toneClass.value}`}>
+          <p
+            className={`text-2xl font-semibold leading-none ${toneClass.value}`}
+          >
             {value}
           </p>
         </div>
@@ -120,29 +114,38 @@ export default function BorrowEquipmentListContent({
   const navigate = useNavigate();
   const { profile } = useLoadProfile();
   const [searchParams] = useSearchParams();
-  const { updateBorrowStatus, pendingAction } = useUpdateBorrowStatus();
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
-  const [confirmState, setConfirmState] = useState<{
-    borrowId: string | number;
-    type: "approve" | "reject" | "handover";
+  const [reviewBorrowId, setReviewBorrowId] = useState<string | null>(null);
+  const [progressState, setProgressState] = useState<{
+    code: string;
+    steps: ProgressStepItem[];
   } | null>(null);
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("q") ?? "";
+  const equipment = searchParams.get("equipment") ?? "";
+  const requestedBy = searchParams.get("requested_by") ?? "";
   const createdAfter = searchParams.get("created_after") ?? "";
   const createdBefore = searchParams.get("created_before") ?? "";
 
   useEffect(() => {
     setPage(1);
-  }, [status, search, createdAfter, createdBefore]);
+  }, [status, search, equipment, requestedBy, createdAfter, createdBefore]);
 
   const { borrows, totalCount, aggregates, isLoading, hasLoadedOnce, error } =
     useBorrows(
       page,
       PAGE_SIZE,
       {
+        q: search,
         status,
-        requestedBy: scope === "my" ? String(profile.id ?? "") : "",
+        requestedBy:
+          scope === "my"
+            ? String(profile.id ?? "")
+            : scope === "all"
+              ? requestedBy
+              : "",
+        equipment,
         createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
         createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
       },
@@ -154,19 +157,9 @@ export default function BorrowEquipmentListContent({
     () =>
       borrows.filter((item) => {
         if (!item.equipmentName || item.equipmentName === "-") return false;
-        const query = search.trim().toLowerCase();
-        if (!query) return true;
-        const haystack = [
-          item.code,
-          item.equipmentName,
-          item.requesterName,
-          item.purpose,
-        ]
-          .join(" ")
-          .toLowerCase();
-        return haystack.includes(query);
+        return true;
       }),
-    [borrows, search],
+    [borrows],
   );
 
   const normalizedRole = normalizeRoleValue(profile?.role);
@@ -181,28 +174,6 @@ export default function BorrowEquipmentListContent({
     1,
     Math.ceil((totalCount || filteredBorrows.length) / PAGE_SIZE),
   );
-
-  const handleBorrowAction = async () => {
-    if (!confirmState) return;
-
-    const { borrowId, type } = confirmState;
-    const result = await updateBorrowStatus(borrowId, type);
-
-    if (result.ok) {
-      toast.success(
-        type === "approve"
-          ? "Pengajuan peminjaman alat berhasil disetujui."
-          : type === "reject"
-            ? "Pengajuan peminjaman alat berhasil ditolak."
-            : "Alat berhasil ditandai sudah diserahkan ke peminjam.",
-      );
-      setReloadKey((prev) => prev + 1);
-      setConfirmState(null);
-      return;
-    }
-
-    toast.error(result.message);
-  };
 
   return (
     <section className="space-y-4">
@@ -261,25 +232,44 @@ export default function BorrowEquipmentListContent({
         <table className="w-full min-w-[1120px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
-              <th className="sticky left-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[1px_0_0_0_rgba(51,65,85,1)]">
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Kode
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Alat
+              </th>
+              {showRequesterColumn ? (
+                <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                  Pemohon
+                </th>
+              ) : null}
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Tujuan
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Jumlah
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Waktu Mulai
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Waktu Selesai
+              </th>
+              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
+                Status
+              </th>
+              <th className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
                 Aksi
               </th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Alat</th>
-              {showRequesterColumn ? (
-                <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Pemohon</th>
-              ) : null}
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Jumlah</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Mulai</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Waktu Selesai</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Tujuan</th>
-              <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Status</th>
             </tr>
           </thead>
           <tbody className="text-sm">
             {isLoading || !hasLoadedOnce ? (
               <tr>
-                <td colSpan={showRequesterColumn ? 9 : 8} className="px-3 py-10 text-center text-slate-500">
+                <td
+                  colSpan={showRequesterColumn ? 9 : 8}
+                  className="px-3 py-10 text-center text-slate-500"
+                >
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Memuat data...
@@ -289,59 +279,57 @@ export default function BorrowEquipmentListContent({
             ) : filteredBorrows.length ? (
               filteredBorrows.map((item) => (
                 <tr key={String(item.id)} className="border-b last:border-b-0">
-                  <td className="sticky left-0 z-10 bg-white px-3 py-2.5 text-center shadow-[1px_0_0_0_rgba(226,232,240,1)]">
+                  <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
+                    {item.code}
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">
+                    {item.equipmentName}
+                  </td>
+                  {showRequesterColumn ? (
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      {item.requesterName}
+                    </td>
+                  ) : null}
+                  <td className="px-3 py-2.5 text-slate-700">{item.purpose}</td>
+                  <td className="px-3 py-2.5 whitespace-nowrap">
+                    {item.quantity}
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {formatDateTimeWib(item.startTime)}
+                  </td>
+                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                    {formatDateTimeWib(item.endTime)}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProgressState({
+                          code: item.code,
+                          steps: getBorrowProgressFlow(item),
+                        })
+                      }
+                      className={`inline-flex cursor-pointer rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                    >
+                      {getStatusDisplayLabel(item.status)}
+                    </button>
+                  </td>
+                  <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
-                      {canReviewBorrows && isPendingStatus(item.status) ? (
-                        <>
-                          <TableActionIconButton
-                            type="button"
-                            label="Approve"
-                            icon={<Check className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
-                            onClick={() =>
-                              setConfirmState({
-                                borrowId: item.id,
-                                type: "approve",
-                              })
-                            }
-                            disabled={pendingAction.borrowId === item.id}
-                          />
-                          <TableActionIconButton
-                            type="button"
-                            label="Reject"
-                            icon={<X className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
-                            onClick={() =>
-                              setConfirmState({
-                                borrowId: item.id,
-                                type: "reject",
-                              })
-                            }
-                            disabled={pendingAction.borrowId === item.id}
-                          />
-                        </>
-                      ) : null}
-                      {canReviewBorrows && isApprovedStatus(item.status) ? (
+                      {canReviewBorrows ? (
                         <TableActionIconButton
                           type="button"
-                          label="Serah terima alat"
-                          icon={<Handshake className="h-3.5 w-3.5" />}
+                          label="Review"
+                          icon={<ShieldCheck className="h-3.5 w-3.5" />}
                           className="w-8 rounded-md border border-sky-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
-                          onClick={() =>
-                            setConfirmState({
-                              borrowId: item.id,
-                              type: "handover",
-                            })
-                          }
-                          disabled={pendingAction.borrowId === item.id}
+                          onClick={() => setReviewBorrowId(String(item.id))}
                         />
                       ) : null}
                       <TableActionIconButton
                         type="button"
                         label="Lihat detail"
                         icon={<Eye className="h-3.5 w-3.5" />}
-                        variant="outline"
-                        className="border-slate-300 text-slate-700"
+                        className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
                         onClick={() =>
                           navigate(
                             scope === "all"
@@ -352,33 +340,14 @@ export default function BorrowEquipmentListContent({
                       />
                     </div>
                   </td>
-                  <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
-                    {item.code}
-                  </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap">{item.equipmentName}</td>
-                  {showRequesterColumn ? (
-                    <td className="px-3 py-2.5 whitespace-nowrap">{item.requesterName}</td>
-                  ) : null}
-                  <td className="px-3 py-2.5 whitespace-nowrap">{item.quantity}</td>
-                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
-                    {formatDateTimeWib(item.startTime)}
-                  </td>
-                  <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
-                    {formatDateTimeWib(item.endTime)}
-                  </td>
-                  <td className="px-3 py-2.5 text-slate-700">{item.purpose}</td>
-                  <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
-                    >
-                      {getStatusDisplayLabel(item.status)}
-                    </span>
-                  </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan={showRequesterColumn ? 9 : 8} className="px-3 py-10 text-center text-slate-500">
+                <td
+                  colSpan={showRequesterColumn ? 9 : 8}
+                  className="px-3 py-10 text-center text-slate-500"
+                >
                   {emptyMessage}
                 </td>
               </tr>
@@ -396,26 +365,22 @@ export default function BorrowEquipmentListContent({
         isLoading={isLoading}
         onPageChange={setPage}
       />
-
-      <StatusConfirmDialog
-        open={Boolean(confirmState)}
-        actionType={
-          confirmState?.type === "reject"
-            ? "reject"
-            : confirmState?.type
-              ? "approve"
-              : null
-        }
+      <DashboardDetailReviewDialog
+        open={Boolean(reviewBorrowId)}
         onOpenChange={(open) => {
-          if (!open) setConfirmState(null);
+          if (!open) setReviewBorrowId(null);
         }}
-        onConfirm={handleBorrowAction}
-        isSubmitting={pendingAction.borrowId === confirmState?.borrowId}
-        subjectLabel={
-          confirmState?.type === "handover"
-            ? "serah-terima alat ini"
-            : "pengajuan peminjaman alat ini"
-        }
+        onActionComplete={() => setReloadKey((prev) => prev + 1)}
+        context={reviewBorrowId ? { kind: "borrow", id: reviewBorrowId } : null}
+      />
+      <RequestProgressDialog
+        open={Boolean(progressState)}
+        onOpenChange={(open) => {
+          if (!open) setProgressState(null);
+        }}
+        title="Progress Peminjaman Alat"
+        code={progressState?.code ?? ""}
+        steps={progressState?.steps ?? []}
       />
     </section>
   );

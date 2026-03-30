@@ -183,8 +183,8 @@ export default function AdminRoomBookingRecordDetailContent({
               />
               <AdminRecordDetailItem label="Status" value={booking.status} status />
               <AdminRecordDetailItem label="Tujuan" value={booking.purpose} />
-              <AdminRecordDetailItem label="Jumlah Orang" value={booking.attendeeCount} />
-              <AdminRecordDetailItem label="Nama Orang" value={booking.attendeeNames} />
+              <AdminRecordDetailItem label="Jumlah Peserta" value={booking.attendeeCount} />
+              <AdminRecordDetailItem label="Nama Peserta" value={booking.attendeeNames} />
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
 

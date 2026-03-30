@@ -29,7 +29,7 @@ import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { getStatusDisplayLabel } from "@/lib/status";
 
-type ReviewContext =
+export type ReviewContext =
   | { kind: "booking"; id: string }
   | { kind: "use"; id: string }
   | { kind: "borrow"; id: string }
@@ -88,7 +88,13 @@ function PanelErrorState({ message }: { message: string }) {
   );
 }
 
-function BookingReviewPanel({ id }: { id: string }) {
+function BookingReviewPanel({
+  id,
+  onActionComplete,
+}: {
+  id: string;
+  onActionComplete?: () => void;
+}) {
   const { profile } = useLoadProfile();
   const { booking, setBooking, isLoading, error } = useBookingDetail(id);
   const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
@@ -143,6 +149,7 @@ function BookingReviewPanel({ id }: { id: string }) {
         ? "Pengajuan booking berhasil disetujui."
         : "Pengajuan booking berhasil ditolak.",
     );
+    onActionComplete?.();
   };
 
   return (
@@ -152,6 +159,12 @@ function BookingReviewPanel({ id }: { id: string }) {
         code={booking.code}
         meta={[
           { label: "Pemohon", value: booking.requesterName },
+          { label: "Prodi Pemohon", value: booking.requesterDepartment || "-" },
+          { label: "Tanggal Dibuat", value: formatDateTimeWib(booking.createdAt) },
+          { label: "Ruangan", value: booking.roomName || "-" },
+          ...(booking.equipmentName && booking.equipmentName !== "-"
+            ? [{ label: "Peralatan", value: booking.equipmentName }]
+            : []),
           { label: "Ditujukan ke PIC", value: booking.roomPicName || "-" },
           {
             label: "Batas waktu approval",
@@ -197,7 +210,13 @@ function BookingReviewPanel({ id }: { id: string }) {
   );
 }
 
-function UseReviewPanel({ id }: { id: string }) {
+function UseReviewPanel({
+  id,
+  onActionComplete,
+}: {
+  id: string;
+  onActionComplete?: () => void;
+}) {
   const { profile } = useLoadProfile();
   const { useItem, setUseItem, isLoading, error } = useUseDetail(id);
   const { updateUseStatus, pendingAction } = useUpdateUseStatus();
@@ -249,6 +268,7 @@ function UseReviewPanel({ id }: { id: string }) {
         ? "Pengajuan penggunaan alat berhasil disetujui."
         : "Pengajuan penggunaan alat berhasil ditolak.",
     );
+    onActionComplete?.();
   };
 
   return (
@@ -258,6 +278,10 @@ function UseReviewPanel({ id }: { id: string }) {
         code={useItem.code}
         meta={[
           { label: "Pemohon", value: useItem.requesterName },
+          { label: "Prodi Pemohon", value: useItem.requesterDepartment || "-" },
+          { label: "Tanggal Dibuat", value: formatDateTimeWib(useItem.createdAt) },
+          { label: "Alat", value: useItem.equipmentName || "-" },
+          { label: "Ruangan", value: useItem.roomName || "-" },
           { label: "Ditujukan ke PIC", value: useItem.roomPicName || "-" },
           {
             label: "Batas waktu approval",
@@ -303,7 +327,13 @@ function UseReviewPanel({ id }: { id: string }) {
   );
 }
 
-function BorrowReviewPanel({ id }: { id: string }) {
+function BorrowReviewPanel({
+  id,
+  onActionComplete,
+}: {
+  id: string;
+  onActionComplete?: () => void;
+}) {
   const { profile } = useLoadProfile();
   const { borrow, setBorrow, isLoading, error } = useBorrowDetail(id);
   const { updateBorrowStatus, pendingAction } = useUpdateBorrowStatus();
@@ -376,6 +406,7 @@ function BorrowReviewPanel({ id }: { id: string }) {
             ? "Serah-terima alat berhasil dikonfirmasi."
             : "Pengembalian alat berhasil difinalisasi.",
     );
+    onActionComplete?.();
   };
 
   const handleReturnSubmit = async () => {
@@ -401,6 +432,7 @@ function BorrowReviewPanel({ id }: { id: string }) {
     );
     setIsReturnConfirmOpen(false);
     toast.success("Pengembalian alat diterima dan menunggu inspeksi.");
+    onActionComplete?.();
   };
 
   const handleInspectionSubmit = async () => {
@@ -436,10 +468,15 @@ function BorrowReviewPanel({ id }: { id: string }) {
         ? "Borrow ditandai sebagai rusak."
         : "Borrow ditandai sebagai hilang.",
     );
+    onActionComplete?.();
   };
 
   const reviewMeta = [
     { label: "Pemohon", value: borrow.requesterName },
+    { label: "Prodi Pemohon", value: borrow.requesterDepartment || "-" },
+    { label: "Tanggal Dibuat", value: formatDateTimeWib(borrow.createdAt) },
+    { label: "Alat", value: borrow.equipmentName || "-" },
+    { label: "Ruangan", value: borrow.roomName || "-" },
     { label: "Ditujukan ke PIC", value: borrow.roomPicName || "-" },
     {
       label: "Batas waktu approval",
@@ -640,16 +677,20 @@ export function parseReviewContext(pathname: string): ReviewContext {
 
 export function DashboardDetailReviewPanel({
   context,
+  onActionComplete,
 }: {
   context: Exclude<ReviewContext, null>;
+  onActionComplete?: () => void;
 }) {
   if (context.kind === "booking") {
-    return <BookingReviewPanel id={context.id} />;
+    return (
+      <BookingReviewPanel id={context.id} onActionComplete={onActionComplete} />
+    );
   }
 
   if (context.kind === "use") {
-    return <UseReviewPanel id={context.id} />;
+    return <UseReviewPanel id={context.id} onActionComplete={onActionComplete} />;
   }
 
-  return <BorrowReviewPanel id={context.id} />;
+  return <BorrowReviewPanel id={context.id} onActionComplete={onActionComplete} />;
 }

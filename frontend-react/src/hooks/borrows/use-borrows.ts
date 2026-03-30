@@ -11,6 +11,7 @@ import {
 import { authFetch } from "@/lib/auth";
 
 export type BorrowFilters = {
+  q?: string;
   status?: string;
   requestedBy?: string;
   department?: string;
@@ -41,6 +42,15 @@ export type BorrowRow = {
   endTimeActual: string;
   createdAt: string;
   updatedAt: string;
+  approvedAt: string;
+  rejectedAt: string;
+  expiredAt: string;
+  borrowedAt: string;
+  returnedPendingInspectionAt: string;
+  inspectedAt: string;
+  returnedAt: string;
+  overdueAt: string;
+  lostDamagedAt: string;
   note: string;
   inspectionNote: string;
 };
@@ -58,6 +68,15 @@ type ApiBorrow = {
   end_time_actual?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  approved_at?: string | null;
+  rejected_at?: string | null;
+  expired_at?: string | null;
+  borrowed_at?: string | null;
+  returned_pending_inspection_at?: string | null;
+  inspected_at?: string | null;
+  returned_at?: string | null;
+  overdue_at?: string | null;
+  lost_damaged_at?: string | null;
   equipment?: string | number | null;
   equipment_detail?: {
     id?: string | number | null;
@@ -152,12 +171,24 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
     endTimeActual: String(item.end_time_actual ?? "-"),
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
+    approvedAt: String(item.approved_at ?? "-"),
+    rejectedAt: String(item.rejected_at ?? "-"),
+    expiredAt: String(item.expired_at ?? "-"),
+    borrowedAt: String(item.borrowed_at ?? "-"),
+    returnedPendingInspectionAt: String(item.returned_pending_inspection_at ?? "-"),
+    inspectedAt: String(item.inspected_at ?? "-"),
+    returnedAt: String(item.returned_at ?? "-"),
+    overdueAt: String(item.overdue_at ?? "-"),
+    lostDamagedAt: String(item.lost_damaged_at ?? "-"),
     note: String(item.note ?? ""),
     inspectionNote: String(item.inspection_note ?? ""),
   };
 }
 
-export function useBorrowDetail(id?: string | number | null) {
+export function useBorrowDetail(
+  id?: string | number | null,
+  reloadKey = 0,
+) {
   const [borrow, setBorrow] = useState<BorrowRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -202,7 +233,7 @@ export function useBorrowDetail(id?: string | number | null) {
       isAborted = true;
       controller.abort();
     };
-  }, [id]);
+  }, [id, reloadKey]);
 
   return {
     borrow,
@@ -276,6 +307,7 @@ export function useBorrows(
         const url = new URL(listEndpoint, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
+        if (filters.q) url.searchParams.set("q", filters.q);
         if (filters.status) url.searchParams.set("status", filters.status);
         if (filters.requestedBy && scope !== "my") {
           url.searchParams.set("requested_by", filters.requestedBy);
@@ -342,6 +374,7 @@ export function useBorrows(
   }, [
     page,
     pageSize,
+    filters.q,
     filters.status,
     filters.requestedBy,
     filters.department,

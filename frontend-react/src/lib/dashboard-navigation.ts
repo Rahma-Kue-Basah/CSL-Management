@@ -57,8 +57,8 @@ const TOP_NAV_MENU_CONFIG: Array<Pick<TopNavItem, "id" | "label" | "href">> = [
   { id: "schedule", label: "Lihat Jadwal", href: "/schedule" },
   { id: "booking-rooms", label: "Peminjaman Lab" },
   { id: "use-equipment", label: "Penggunaan Alat" },
-  { id: "sample-testing", label: "Pengujian Sampel" },
   { id: "borrow-equipment", label: "Peminjaman Alat" },
+  { id: "sample-testing", label: "Pengujian Sampel" },
 ];
 
 export function getHeaderIcon(menuId: string, actionId: string | null) {

@@ -11,19 +11,22 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import Link from "next/link";
-import {
-  DashboardDetailReviewPanel,
-  parseReviewContext,
-} from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { Button } from "@/components/ui/button";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
+import {
+  API_BOOKINGS_ALL_REQUESTERS,
+  API_BORROWS_ALL_REQUESTERS,
+  API_USES_ALL_REQUESTERS,
+} from "@/constants/api";
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
   EQUIPMENT_STATUS_OPTIONS,
   MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
 import { useChangePassword } from "@/hooks/auth/use-change-password";
+import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
+import { useHistoryRequesterOptions } from "@/hooks/history/use-history-requester-options";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { formatDateKey, parseDateKey } from "@/lib/date";
 import { BORROW_STATUS_OPTIONS, REQUEST_STATUS_OPTIONS } from "@/lib/status";
@@ -51,6 +54,7 @@ type RequestFilterConfig = {
   dateRange?: DateRange;
   placeholder: string;
   statusOptions: Array<{ value: string; label: string }>;
+  extraFields?: ReactNode;
   onKeywordChange: (value: string) => void;
   onStatusChange: (value: string) => void;
   onDateRangeChange: (value: DateRange | undefined) => void;
@@ -119,20 +123,39 @@ export function DashboardActionPanel({
   const searchParams = useSearchParams();
   const needsRoomOptions =
     menu.id === "schedule" ||
+    menu.id === "booking-rooms" ||
     menu.id === "use-equipment" ||
     menu.id === "borrow-equipment";
   const { rooms } = useRoomOptions(needsRoomOptions);
+  const { equipments: useEquipmentOptionsList } = useEquipmentOptions(
+    "",
+    "",
+    menu.id === "use-equipment",
+  );
+  const { equipments: borrowEquipmentOptionsList } = useEquipmentOptions(
+    "",
+    "",
+    menu.id === "borrow-equipment",
+    true,
+  );
   const scheduleKeyword = searchParams.get("q") ?? "";
   const scheduleRoom = searchParams.get("room") ?? "";
   const scheduleCategory = searchParams.get("category") ?? "";
   const bookingKeyword = searchParams.get("q") ?? "";
   const bookingStatus = searchParams.get("status") ?? "";
+  const bookingRoom = searchParams.get("room") ?? "";
+  const bookingRequester = searchParams.get("requested_by") ?? "";
   const bookingCreatedAfter = searchParams.get("created_after") ?? "";
   const bookingCreatedBefore = searchParams.get("created_before") ?? "";
   const borrowKeyword = searchParams.get("q") ?? "";
   const borrowStatus = searchParams.get("status") ?? "";
+  const borrowEquipment = searchParams.get("equipment") ?? "";
+  const borrowRequester = searchParams.get("requested_by") ?? "";
   const borrowCreatedAfter = searchParams.get("created_after") ?? "";
   const borrowCreatedBefore = searchParams.get("created_before") ?? "";
+  const useEquipment = searchParams.get("equipment") ?? "";
+  const useRoom = searchParams.get("room") ?? "";
+  const useRequester = searchParams.get("requested_by") ?? "";
   const bookingCreatedRange: DateRange | undefined =
     bookingCreatedAfter || bookingCreatedBefore
       ? {
@@ -165,8 +188,18 @@ export function DashboardActionPanel({
   const isBorrowEquipmentListPage = pathname === "/borrow-equipment/equipment";
   const isSampleTestingRequestListPage = pathname === "/sample-testing";
   const isSampleTestingAllRequestsPage = pathname === "/sample-testing/approval";
-  const reviewContext = parseReviewContext(pathname);
-
+  const { requesters: bookingRequesters } = useHistoryRequesterOptions(
+    API_BOOKINGS_ALL_REQUESTERS,
+    isBookingAllRequestsPage,
+  );
+  const { requesters: useRequesters } = useHistoryRequesterOptions(
+    API_USES_ALL_REQUESTERS,
+    isUseAllRequestsPage,
+  );
+  const { requesters: borrowRequesters } = useHistoryRequesterOptions(
+    API_BORROWS_ALL_REQUESTERS,
+    isBorrowAllRequestsPage,
+  );
   const replaceCurrentPath = (params: URLSearchParams) => {
     const next = params.toString();
     router.replace(next ? `${pathname}?${next}` : pathname);
@@ -205,7 +238,14 @@ export function DashboardActionPanel({
   };
 
   const updateBookingFilter = (
-    key: "q" | "status" | "created_after" | "created_before",
+    key:
+      | "q"
+      | "status"
+      | "created_after"
+      | "created_before"
+      | "room"
+      | "requested_by"
+      | "equipment",
     value: string,
   ) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -218,7 +258,13 @@ export function DashboardActionPanel({
   };
 
   const updateBorrowFilter = (
-    key: "q" | "status" | "created_after" | "created_before",
+    key:
+      | "q"
+      | "status"
+      | "created_after"
+      | "created_before"
+      | "equipment"
+      | "requested_by",
     value: string,
   ) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -304,6 +350,7 @@ export function DashboardActionPanel({
     dateRange,
     placeholder,
     statusOptions,
+    extraFields,
     onKeywordChange,
     onStatusChange,
     onDateRangeChange,
@@ -332,6 +379,7 @@ export function DashboardActionPanel({
           ))}
         </select>
       </FilterField>
+      {extraFields}
       <FilterField label="Tanggal Dibuat">
         <DateRangePicker
           value={dateRange}
@@ -616,13 +664,6 @@ export function DashboardActionPanel({
                     isSampleTestingRequestListPage,
                     isSampleTestingAllRequestsPage,
                   );
-                const showDetailReviewPanel =
-                  action.id === "all-requests" &&
-                  reviewContext &&
-                  ((menu.id === "booking-rooms" && reviewContext.kind === "booking") ||
-                    (menu.id === "use-equipment" && reviewContext.kind === "use") ||
-                    (menu.id === "borrow-equipment" && reviewContext.kind === "borrow"));
-
                 return (
                   <div key={action.id} className="space-y-3">
                     <Link
@@ -651,8 +692,46 @@ export function DashboardActionPanel({
                           keyword: bookingKeyword,
                           status: bookingStatus,
                           dateRange: bookingCreatedRange,
-                          placeholder: "Kode, ruangan",
+                          placeholder: "Cari pengajuan...",
                           statusOptions: REQUEST_STATUS_OPTIONS,
+                          extraFields: showBookingFilters ? (
+                            <>
+                              <FilterField label="Ruangan">
+                                <select
+                                  value={bookingRoom}
+                                  onChange={(event) =>
+                                    updateBookingFilter("room", event.target.value)
+                                  }
+                                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                >
+                                  <option value="">Semua Ruangan</option>
+                                  {rooms.map((room) => (
+                                    <option key={room.id} value={room.id}>
+                                      {room.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </FilterField>
+                              {isBookingAllRequestsPage ? (
+                                <FilterField label="Pemohon">
+                                  <select
+                                    value={bookingRequester}
+                                    onChange={(event) =>
+                                      updateBookingFilter("requested_by", event.target.value)
+                                    }
+                                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                  >
+                                    <option value="">Semua Pemohon</option>
+                                    {bookingRequesters.map((requester) => (
+                                      <option key={requester.id} value={requester.id}>
+                                        {requester.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </FilterField>
+                              ) : null}
+                            </>
+                          ) : undefined,
                           onKeywordChange: (value) =>
                             updateBookingFilter("q", value),
                           onStatusChange: (value) =>
@@ -663,6 +742,8 @@ export function DashboardActionPanel({
                             resetFilters([
                               "q",
                               "status",
+                              "room",
+                              "requested_by",
                               "created_after",
                               "created_before",
                             ]),
@@ -676,8 +757,62 @@ export function DashboardActionPanel({
                           keyword: bookingKeyword,
                           status: bookingStatus,
                           dateRange: bookingCreatedRange,
-                          placeholder: "Kode, alat",
+                          placeholder: "Cari pengajuan...",
                           statusOptions: REQUEST_STATUS_OPTIONS,
+                          extraFields: (
+                            <>
+                              <FilterField label="Alat">
+                                <select
+                                  value={useEquipment}
+                                  onChange={(event) =>
+                                    updateBookingFilter("equipment", event.target.value)
+                                  }
+                                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                >
+                                  <option value="">Semua Alat</option>
+                                  {useEquipmentOptionsList.map((equipment) => (
+                                    <option key={equipment.id} value={equipment.id}>
+                                      {equipment.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </FilterField>
+                              <FilterField label="Ruangan">
+                                <select
+                                  value={useRoom}
+                                  onChange={(event) =>
+                                    updateBookingFilter("room", event.target.value)
+                                  }
+                                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                >
+                                  <option value="">Semua Ruangan</option>
+                                  {rooms.map((room) => (
+                                    <option key={room.id} value={room.id}>
+                                      {room.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </FilterField>
+                              {isUseAllRequestsPage ? (
+                                <FilterField label="Pemohon">
+                                  <select
+                                    value={useRequester}
+                                    onChange={(event) =>
+                                      updateBookingFilter("requested_by", event.target.value)
+                                    }
+                                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                  >
+                                    <option value="">Semua Pemohon</option>
+                                    {useRequesters.map((requester) => (
+                                      <option key={requester.id} value={requester.id}>
+                                        {requester.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </FilterField>
+                              ) : null}
+                            </>
+                          ),
                           onKeywordChange: (value) =>
                             updateBookingFilter("q", value),
                           onStatusChange: (value) =>
@@ -688,6 +823,9 @@ export function DashboardActionPanel({
                             resetFilters([
                               "q",
                               "status",
+                              "equipment",
+                              "room",
+                              "requested_by",
                               "created_after",
                               "created_before",
                             ]),
@@ -727,8 +865,46 @@ export function DashboardActionPanel({
                           keyword: borrowKeyword,
                           status: borrowStatus,
                           dateRange: borrowCreatedRange,
-                          placeholder: "Kode, alat",
+                          placeholder: "Cari pengajuan...",
                           statusOptions: BORROW_STATUS_OPTIONS,
+                          extraFields: (
+                            <>
+                              <FilterField label="Alat">
+                                <select
+                                  value={borrowEquipment}
+                                  onChange={(event) =>
+                                    updateBorrowFilter("equipment", event.target.value)
+                                  }
+                                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                >
+                                  <option value="">Semua Alat</option>
+                                  {borrowEquipmentOptionsList.map((equipment) => (
+                                    <option key={equipment.id} value={equipment.id}>
+                                      {equipment.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </FilterField>
+                              {isBorrowAllRequestsPage ? (
+                                <FilterField label="Pemohon">
+                                  <select
+                                    value={borrowRequester}
+                                    onChange={(event) =>
+                                      updateBorrowFilter("requested_by", event.target.value)
+                                    }
+                                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                  >
+                                    <option value="">Semua Pemohon</option>
+                                    {borrowRequesters.map((requester) => (
+                                      <option key={requester.id} value={requester.id}>
+                                        {requester.label}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </FilterField>
+                              ) : null}
+                            </>
+                          ),
                           onKeywordChange: (value) =>
                             updateBorrowFilter("q", value),
                           onStatusChange: (value) =>
@@ -739,6 +915,8 @@ export function DashboardActionPanel({
                             resetFilters([
                               "q",
                               "status",
+                              "equipment",
+                              "requested_by",
                               "created_after",
                               "created_before",
                             ]),
@@ -760,10 +938,6 @@ export function DashboardActionPanel({
                             resetFilters(["q", "category", "room"]),
                         })
                       : null}
-
-                    {showDetailReviewPanel ? (
-                      <DashboardDetailReviewPanel context={reviewContext} />
-                    ) : null}
                   </div>
                 );
               })

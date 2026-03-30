@@ -162,6 +162,10 @@ class Booking(BaseModel):
         blank=True,
         related_name='approved_bookings',
     )
+    approved_at = models.DateTimeField(blank=True, null=True)
+    rejected_at = models.DateTimeField(blank=True, null=True)
+    expired_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.code:
@@ -228,6 +232,10 @@ class Use(BaseModel):
         blank=True,
         related_name='approved_uses',
     )
+    approved_at = models.DateTimeField(blank=True, null=True)
+    rejected_at = models.DateTimeField(blank=True, null=True)
+    expired_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.code:
@@ -284,6 +292,15 @@ class Borrow(BaseModel):
         blank=True,
         related_name='approved_borrows',
     )
+    approved_at = models.DateTimeField(blank=True, null=True)
+    rejected_at = models.DateTimeField(blank=True, null=True)
+    expired_at = models.DateTimeField(blank=True, null=True)
+    borrowed_at = models.DateTimeField(blank=True, null=True)
+    returned_pending_inspection_at = models.DateTimeField(blank=True, null=True)
+    inspected_at = models.DateTimeField(blank=True, null=True)
+    returned_at = models.DateTimeField(blank=True, null=True)
+    overdue_at = models.DateTimeField(blank=True, null=True)
+    lost_damaged_at = models.DateTimeField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.code:
@@ -338,6 +355,9 @@ class Pengujian(BaseModel):
 
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
     code = models.CharField(max_length=12, unique=True, editable=False, null=True)
+    approved_at = models.DateTimeField(blank=True, null=True)
+    rejected_at = models.DateTimeField(blank=True, null=True)
+    completed_at = models.DateTimeField(blank=True, null=True)
 
     def save(self, *args, **kwargs):
         if not self.code:

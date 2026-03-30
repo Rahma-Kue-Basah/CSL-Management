@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Steps } from "rsuite";
 import {
   ArrowLeft,
   CalendarClock,
@@ -15,25 +14,10 @@ import {
   Wrench,
 } from "lucide-react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
-
-import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
+import { ProgressSteps } from "@/components/shared/progress-steps";
 import { useBorrowDetail } from "@/hooks/borrows/use-borrows";
-import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
@@ -44,29 +28,14 @@ type BorrowFlowStep = {
   state: "finish" | "process" | "wait" | "error";
 };
 
+function hasDisplayValue(value?: string | null) {
+  if (!value) return false;
+  const normalized = value.trim();
+  return normalized !== "" && normalized !== "-";
+}
+
 function normalizeStatus(value: string) {
   return value.toLowerCase();
-}
-
-function isPendingStatus(value: string) {
-  return normalizeStatus(value) === "pending";
-}
-
-function canReturnStatus(value: string) {
-  const normalized = normalizeStatus(value);
-  return normalized === "borrowed" || normalized === "overdue";
-}
-
-function isApprovedStatus(value: string) {
-  return normalizeStatus(value) === "approved";
-}
-
-function isInspectionPendingStatus(value: string) {
-  const normalized = normalizeStatus(value);
-  return (
-    normalized === "returned pending inspection" ||
-    normalized === "returned_pending_inspection"
-  );
 }
 
 function getBorrowFlow(item: {
@@ -83,11 +52,6 @@ function getBorrowFlow(item: {
       label: "Diajukan",
       time: formatDateTimeWib(item.createdAt),
       state: "finish",
-    },
-    {
-      key: "review",
-      label: "Diproses",
-      state: "wait",
     },
     {
       key: "approved",
@@ -117,17 +81,17 @@ function getBorrowFlow(item: {
   ];
 
   if (status === "pending") {
-    baseSteps[1].state = "process";
     return baseSteps;
   }
   if (status === "approved") {
     baseSteps[1].state = "finish";
+    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
     baseSteps[2].state = "process";
-    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
     return baseSteps;
   }
   if (status === "borrowed") {
     baseSteps[1].state = "finish";
+    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
     baseSteps[2].state = "finish";
     baseSteps[2].time = formatDateTimeWib(item.updatedAt);
     baseSteps[3].state = "process";
@@ -135,14 +99,15 @@ function getBorrowFlow(item: {
   }
   if (status === "returned") {
     baseSteps[1].state = "finish";
+    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
     baseSteps[2].state = "finish";
+    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
     baseSteps[3].state = "finish";
+    baseSteps[3].time = formatDateTimeWib(item.endTimeActual || item.updatedAt);
     baseSteps[4].state = "finish";
-    baseSteps[4].time = formatDateTimeWib(item.endTimeActual || item.updatedAt);
+    baseSteps[4].time = formatDateTimeWib(item.updatedAt);
     baseSteps[5].state = "finish";
     baseSteps[5].time = formatDateTimeWib(item.updatedAt);
-    baseSteps[6].state = "finish";
-    baseSteps[6].time = formatDateTimeWib(item.updatedAt);
     return baseSteps;
   }
   if (
@@ -150,68 +115,107 @@ function getBorrowFlow(item: {
     status === "returned_pending_inspection"
   ) {
     baseSteps[1].state = "finish";
+    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
     baseSteps[2].state = "finish";
+    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
     baseSteps[3].state = "finish";
+    baseSteps[3].time = formatDateTimeWib(item.endTimeActual || item.updatedAt);
     baseSteps[4].state = "process";
-    baseSteps[4].time = formatDateTimeWib(item.endTimeActual || item.updatedAt);
     return baseSteps;
   }
   if (status === "rejected") {
-    baseSteps[1].state = "error";
-    baseSteps[1].label = "Ditolak";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1] = {
+      key: "rejected",
+      label: "Ditolak",
+      time: formatDateTimeWib(item.updatedAt),
+      state: "error",
+    };
     return baseSteps.slice(0, 2);
   }
   if (status === "expired") {
-    baseSteps[1].state = "error";
-    baseSteps[1].label = "Expired";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1] = {
+      key: "expired",
+      label: "Expired",
+      time: formatDateTimeWib(item.updatedAt),
+      state: "error",
+    };
     return baseSteps.slice(0, 2);
   }
   if (status === "overdue") {
     baseSteps[1].state = "finish";
-    baseSteps[2].state = "finish";
-    baseSteps[3].state = "error";
-    baseSteps[3].label = "Terlambat";
-    baseSteps[3].time = formatDateTimeWib(item.updatedAt);
-    return baseSteps.slice(0, 4);
+    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[2].state = "error";
+    baseSteps[2].label = "Terlambat";
+    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
+    return baseSteps.slice(0, 3);
   }
   if (status === "lost/damaged") {
     baseSteps[1].state = "finish";
+    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
     baseSteps[2].state = "finish";
+    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
     baseSteps[3].state = "finish";
-    baseSteps[4].state = "finish";
-    baseSteps[4].time = formatDateTimeWib(item.endTimeActual || item.updatedAt);
-    baseSteps[5].state = "error";
-    baseSteps[5].label = "Hilang/Rusak";
-    baseSteps[5].time = formatDateTimeWib(item.updatedAt);
-    return baseSteps;
+    baseSteps[3].time = formatDateTimeWib(item.endTimeActual || item.updatedAt);
+    baseSteps[4] = {
+      key: "lost-damaged",
+      label: "Hilang/Rusak",
+      time: formatDateTimeWib(item.updatedAt),
+      state: "error",
+    };
+    return baseSteps.slice(0, 5);
   }
 
-  baseSteps[1].state = "process";
   return baseSteps;
 }
 
 function BorrowFlow({ steps }: { steps: BorrowFlowStep[] }) {
-  const currentIndex = Math.max(
-    0,
-    steps.findIndex(
-      (step) => step.state === "process" || step.state === "error",
-    ),
+  return (
+    <ProgressSteps steps={steps} minWidthClassName="min-w-[760px]" />
   );
+}
+
+function DetailCard({
+  title,
+  subtitle,
+  icon,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900">{title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">{children}</div>
+    </section>
+  );
+}
+
+function DetailMetaItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  if (!hasDisplayValue(value)) return null;
 
   return (
-    <div className="booking-flow mt-3 overflow-x-auto pb-1">
-      <Steps current={currentIndex} className="min-w-[760px]">
-        {steps.map((step) => (
-          <Steps.Item
-            key={step.key}
-            title={step.label}
-            status={step.state}
-            description={step.time || " "}
-          />
-        ))}
-      </Steps>
+    <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-right text-xs leading-5 text-slate-800">{value}</p>
     </div>
   );
 }
@@ -219,18 +223,9 @@ function BorrowFlow({ steps }: { steps: BorrowFlowStep[] }) {
 export default function BorrowEquipmentDetailPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile } = useLoadProfile();
-  const { updateBorrowStatus, pendingAction } = useUpdateBorrowStatus();
   const { id } = useParams();
-  const { borrow: item, setBorrow, isLoading, error } = useBorrowDetail(id);
-  const [confirmType, setConfirmType] = useState<
-    "approve" | "reject" | "handover" | "receive_return" | "finalize_return" | null
-  >(null);
-  const [isReturnConfirmOpen, setIsReturnConfirmOpen] = useState(false);
-  const [inspectionAction, setInspectionAction] = useState<
-    "mark_damaged" | "mark_lost" | null
-  >(null);
-  const [inspectionNote, setInspectionNote] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const { borrow: item, isLoading, error } = useBorrowDetail(id, reloadKey);
 
   const isAllPage = location.pathname.startsWith("/borrow-equipment/approval/");
   const backHref = isAllPage ? "/borrow-equipment/approval" : "/borrow-equipment";
@@ -271,149 +266,6 @@ export default function BorrowEquipmentDetailPage() {
       </section>
     );
   }
-
-  const normalizedRole = normalizeRoleValue(profile?.role);
-  const canReviewBorrow =
-    isAllPage &&
-    (normalizedRole === ROLE_VALUES.ADMIN ||
-      normalizedRole === ROLE_VALUES.LECTURER ||
-      normalizedRole === ROLE_VALUES.STAFF) &&
-    isPendingStatus(item.status);
-  const canHandoverBorrow =
-    isAllPage &&
-    (normalizedRole === ROLE_VALUES.ADMIN ||
-      normalizedRole === ROLE_VALUES.LECTURER ||
-      normalizedRole === ROLE_VALUES.STAFF) &&
-    isApprovedStatus(item.status);
-  const canConfirmReturn =
-    isAllPage &&
-    (normalizedRole === ROLE_VALUES.ADMIN ||
-      normalizedRole === ROLE_VALUES.LECTURER ||
-      normalizedRole === ROLE_VALUES.STAFF) &&
-    canReturnStatus(item.status);
-  const canFinalizeInspection =
-    isAllPage &&
-    (normalizedRole === ROLE_VALUES.ADMIN ||
-      normalizedRole === ROLE_VALUES.LECTURER ||
-      normalizedRole === ROLE_VALUES.STAFF) &&
-    isInspectionPendingStatus(item.status);
-
-  const handleBorrowAction = async () => {
-    if (!confirmType) return;
-
-    const type = confirmType;
-    const result = await updateBorrowStatus(item.id, type);
-
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
-    }
-
-    const now = new Date().toISOString();
-    setBorrow((current) =>
-      current
-        ? {
-            ...current,
-            status:
-              type === "approve"
-                ? "Approved"
-                : type === "reject"
-                  ? "Rejected"
-                  : type === "handover"
-                    ? "Borrowed"
-                    : type === "receive_return"
-                      ? "Returned Pending Inspection"
-                      : "Returned",
-            updatedAt: now,
-            endTimeActual:
-              type === "receive_return"
-                ? now
-                : current.endTimeActual,
-            approvedById:
-              type === "approve"
-                ? String(profile?.id ?? current.approvedById)
-                : current.approvedById,
-            approvedByName:
-              type === "approve"
-                ? profile?.name || current.approvedByName
-                : current.approvedByName,
-          }
-        : current,
-    );
-    setConfirmType(null);
-
-    toast.success(
-      type === "approve"
-        ? "Pengajuan peminjaman alat berhasil disetujui."
-        : type === "reject"
-          ? "Pengajuan peminjaman alat berhasil ditolak."
-          : type === "handover"
-            ? "Serah-terima alat berhasil dikonfirmasi."
-            : type === "receive_return"
-              ? "Pengembalian alat diterima dan menunggu inspeksi."
-              : "Pengembalian alat berhasil difinalisasi.",
-    );
-  };
-
-  const handleReturnSubmit = async () => {
-    const now = new Date().toISOString();
-    const result = await updateBorrowStatus(item.id, "receive_return", {
-      endTimeActual: now,
-    });
-
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
-    }
-
-    setBorrow((current) =>
-      current
-        ? {
-            ...current,
-            status: "Returned Pending Inspection",
-            updatedAt: now,
-            endTimeActual: now,
-          }
-        : current,
-    );
-    setIsReturnConfirmOpen(false);
-    toast.success("Pengembalian alat diterima dan menunggu inspeksi.");
-  };
-
-  const handleInspectionSubmit = async () => {
-    if (!inspectionAction || !inspectionNote.trim()) {
-      toast.error("Catatan inspeksi wajib diisi.");
-      return;
-    }
-
-    const result = await updateBorrowStatus(item.id, inspectionAction, {
-      inspectionNote,
-    });
-
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
-    }
-
-    const now = new Date().toISOString();
-    setBorrow((current) =>
-      current
-        ? {
-            ...current,
-            status: "Lost/Damaged",
-            updatedAt: now,
-            inspectionNote: inspectionNote.trim(),
-          }
-        : current,
-    );
-    setInspectionAction(null);
-    setInspectionNote("");
-    toast.success(
-      inspectionAction === "mark_damaged"
-        ? "Borrow ditandai sebagai rusak."
-        : "Borrow ditandai sebagai hilang.",
-    );
-  };
 
   const flowSteps = getBorrowFlow({
     status: item.status,
@@ -456,190 +308,168 @@ export default function BorrowEquipmentDetailPage() {
         <BorrowFlow steps={flowSteps} />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <Wrench className="h-4 w-4 text-slate-600" />
-            <h3 className="text-sm font-semibold text-slate-900">Informasi Utama</h3>
-          </div>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Alat</dt>
-              <dd className="mt-1 text-sm text-slate-800">{item.equipmentName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Jumlah</dt>
-              <dd className="mt-1 text-sm text-slate-800">{item.quantity}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Pemohon</dt>
-              <dd className="mt-1 text-sm text-slate-800">{item.requesterName}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Disetujui Oleh</dt>
-              <dd className="mt-1 text-sm text-slate-800">{item.approvedByName || "-"}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <CalendarClock className="h-4 w-4 text-slate-600" />
-            <h3 className="text-sm font-semibold text-slate-900">Waktu Peminjaman</h3>
-          </div>
-          <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Waktu Mulai</dt>
-              <dd className="mt-1 text-sm text-slate-800">{formatDateTimeWib(item.startTime)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Waktu Selesai</dt>
-              <dd className="mt-1 text-sm text-slate-800">{formatDateTimeWib(item.endTime)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Pengembalian Aktual</dt>
-              <dd className="mt-1 text-sm text-slate-800">{formatDateTimeWib(item.endTimeActual)}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Diupdate</dt>
-              <dd className="mt-1 text-sm text-slate-800">{formatDateTimeWib(item.updatedAt)}</dd>
-            </div>
-          </dl>
-        </div>
-      </div>
-
-      <div className="grid gap-4 lg:grid-cols-2">
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <NotebookPen className="h-4 w-4 text-slate-600" />
-            <h3 className="text-sm font-semibold text-slate-900">Keterangan Pengajuan</h3>
-          </div>
-          <dl className="space-y-4">
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Tujuan</dt>
-              <dd className="mt-1 text-sm text-slate-800">{item.purpose}</dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Catatan Pemohon</dt>
-              <dd className="mt-1 text-sm text-slate-800">{item.note || "-"}</dd>
-            </div>
-          </dl>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-5">
-          <div className="mb-4 flex items-center gap-2">
-            <TriangleAlert className="h-4 w-4 text-slate-600" />
-            <h3 className="text-sm font-semibold text-slate-900">Hasil Inspeksi</h3>
-          </div>
-          <dl className="space-y-4">
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Status Akhir</dt>
-              <dd className="mt-1 text-sm text-slate-800">
-                {item.status === "Lost/Damaged"
-                  ? "Hilang/Rusak"
-                  : getStatusDisplayLabel(item.status)}
-              </dd>
-            </div>
-            <div>
-              <dt className="text-xs font-medium text-slate-500">Catatan Inspeksi</dt>
-              <dd className="mt-1 text-sm text-slate-800">
-                {item.inspectionNote || "-"}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </div>
-
-      <StatusConfirmDialog
-        open={Boolean(confirmType)}
-        actionType={confirmType === "reject" ? "reject" : confirmType ? "approve" : null}
-        onOpenChange={(open) => {
-          if (!open) setConfirmType(null);
-        }}
-        onConfirm={handleBorrowAction}
-        isSubmitting={pendingAction.borrowId === item.id}
-        subjectLabel={
-          confirmType === "handover"
-            ? "serah-terima alat ini"
-            : confirmType === "receive_return"
-              ? "penerimaan pengembalian alat ini"
-              : confirmType === "finalize_return"
-                ? "finalisasi pengembalian alat ini"
-                : "pengajuan peminjaman alat ini"
+      <div
+        className={
+          isAllPage
+            ? "grid gap-4 xl:grid-cols-[1.35fr_0.65fr]"
+            : "space-y-4"
         }
-      />
-
-      <StatusConfirmDialog
-        open={isReturnConfirmOpen}
-        actionType="approve"
-        onOpenChange={setIsReturnConfirmOpen}
-        onConfirm={handleReturnSubmit}
-        isSubmitting={
-          pendingAction.borrowId === item.id &&
-          pendingAction.type === "receive_return"
-        }
-        subjectLabel="pengembalian alat ini"
-      />
-
-      <AlertDialog
-        open={Boolean(inspectionAction)}
-        onOpenChange={(open) => {
-          if (!open) {
-            setInspectionAction(null);
-            setInspectionNote("");
-          }
-        }}
       >
-        <AlertDialogContent className="max-w-lg border-slate-200 shadow-[0_24px_60px_rgba(15,23,42,0.18)]">
-          <AlertDialogHeader className="place-items-start text-left">
-            <AlertDialogTitle>
-              {inspectionAction === "mark_damaged"
-                ? "Tandai Alat Rusak"
-                : "Tandai Alat Hilang"}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Isi catatan inspeksi laboran sebelum menyimpan hasil akhir pengembalian.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+        {isAllPage ? (
+          <>
+            <div className="space-y-4">
+              <DetailCard
+                title="Detail Peminjaman Alat"
+                subtitle="Ringkasan data peminjaman alat yang diajukan oleh pemohon."
+                icon={<Wrench className="h-4 w-4" />}
+              >
+                <DetailMetaItem label="Alat" value={item.equipmentName} />
+                <DetailMetaItem label="Jumlah" value={item.quantity} />
+                <DetailMetaItem
+                  label="Waktu Mulai"
+                  value={formatDateTimeWib(item.startTime)}
+                />
+                <DetailMetaItem
+                  label="Waktu Selesai"
+                  value={formatDateTimeWib(item.endTime)}
+                />
+                <DetailMetaItem label="Tujuan" value={item.purpose} />
+                <DetailMetaItem label="Catatan Pemohon" value={item.note || "-"} />
+              </DetailCard>
 
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-600">Catatan Inspeksi</label>
-            <Textarea
-              value={inspectionNote}
-              onChange={(event) => setInspectionNote(event.target.value)}
-              placeholder="Jelaskan hasil inspeksi, kerusakan, atau kehilangan alat"
-              className="min-h-28 border-slate-300 bg-white"
-              disabled={pendingAction.borrowId === item.id}
-            />
-          </div>
+              <DetailCard
+                title="Informasi Permohonan"
+                subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+                icon={<CalendarClock className="h-4 w-4" />}
+              >
+                <DetailMetaItem label="Pemohon" value={item.requesterName} />
+                <DetailMetaItem
+                  label="Status Saat Ini"
+                  value={getStatusDisplayLabel(item.status)}
+                />
+                <DetailMetaItem
+                  label="Disetujui Oleh"
+                  value={item.approvedByName || "-"}
+                />
+                <DetailMetaItem
+                  label="Pengembalian Aktual"
+                  value={formatDateTimeWib(item.endTimeActual)}
+                />
+              </DetailCard>
+            </div>
 
-          <AlertDialogFooter className="border-t border-slate-200 pt-4">
-            <AlertDialogCancel disabled={pendingAction.borrowId === item.id}>
-              Batal
-            </AlertDialogCancel>
-            <AlertDialogAction
-              disabled={pendingAction.borrowId === item.id || !inspectionNote.trim()}
-              onClick={() => void handleInspectionSubmit()}
-              className={
-                inspectionAction === "mark_damaged"
-                  ? "rounded-md bg-amber-600 text-white hover:bg-amber-700"
-                  : "rounded-md bg-rose-600 text-white hover:bg-rose-700"
-              }
-            >
-              {pendingAction.borrowId === item.id ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Memproses...
-                </>
-              ) : inspectionAction === "mark_damaged" ? (
-                "Simpan Sebagai Rusak"
-              ) : (
-                "Simpan Sebagai Hilang"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+            <div className="space-y-4">
+              {id ? (
+                <DashboardDetailReviewPanel
+                  context={{ kind: "borrow", id }}
+                  onActionComplete={() => setReloadKey((prev) => prev + 1)}
+                />
+              ) : null}
+
+              {hasDisplayValue(item.inspectionNote) ||
+              item.status === "Lost/Damaged" ? (
+                <section className="rounded-xl border border-slate-200 bg-white p-5">
+                  <div className="mb-4 flex items-center gap-2">
+                    <TriangleAlert className="h-4 w-4 text-slate-600" />
+                    <h3 className="text-sm font-semibold text-slate-900">Hasil Inspeksi</h3>
+                  </div>
+                  <dl className="space-y-4">
+                    <div>
+                      <dt className="text-xs font-medium text-slate-500">Status Akhir</dt>
+                      <dd className="mt-1 text-sm text-slate-800">
+                        {item.status === "Lost/Damaged"
+                          ? "Hilang/Rusak"
+                          : getStatusDisplayLabel(item.status)}
+                      </dd>
+                    </div>
+                    {hasDisplayValue(item.inspectionNote) ? (
+                      <div>
+                        <dt className="text-xs font-medium text-slate-500">Catatan Inspeksi</dt>
+                        <dd className="mt-1 text-sm text-slate-800">
+                          {item.inspectionNote}
+                        </dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                </section>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+              <div className="space-y-4">
+                <DetailCard
+                  title="Detail Peminjaman Alat"
+                  subtitle="Ringkasan data peminjaman alat yang diajukan oleh pemohon."
+                  icon={<Wrench className="h-4 w-4" />}
+                >
+                  <DetailMetaItem label="Alat" value={item.equipmentName} />
+                  <DetailMetaItem label="Jumlah" value={item.quantity} />
+                  <DetailMetaItem
+                    label="Waktu Mulai"
+                    value={formatDateTimeWib(item.startTime)}
+                  />
+                  <DetailMetaItem
+                    label="Waktu Selesai"
+                    value={formatDateTimeWib(item.endTime)}
+                  />
+                  <DetailMetaItem label="Tujuan" value={item.purpose} />
+                  <DetailMetaItem label="Catatan Pemohon" value={item.note || "-"} />
+                </DetailCard>
+              </div>
+
+              <div className="space-y-4">
+                <DetailCard
+                  title="Informasi Permohonan"
+                  subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+                  icon={<CalendarClock className="h-4 w-4" />}
+                >
+                  <DetailMetaItem label="Pemohon" value={item.requesterName} />
+                  <DetailMetaItem
+                    label="Status Saat Ini"
+                    value={getStatusDisplayLabel(item.status)}
+                  />
+                  <DetailMetaItem
+                    label="Disetujui Oleh"
+                    value={item.approvedByName || "-"}
+                  />
+                  <DetailMetaItem
+                    label="Pengembalian Aktual"
+                    value={formatDateTimeWib(item.endTimeActual)}
+                  />
+                </DetailCard>
+
+                {hasDisplayValue(item.inspectionNote) ||
+                item.status === "Lost/Damaged" ? (
+                  <section className="rounded-xl border border-slate-200 bg-white p-5">
+                    <div className="mb-4 flex items-center gap-2">
+                      <TriangleAlert className="h-4 w-4 text-slate-600" />
+                      <h3 className="text-sm font-semibold text-slate-900">Hasil Inspeksi</h3>
+                    </div>
+                    <dl className="space-y-4">
+                      <div>
+                        <dt className="text-xs font-medium text-slate-500">Status Akhir</dt>
+                        <dd className="mt-1 text-sm text-slate-800">
+                          {item.status === "Lost/Damaged"
+                            ? "Hilang/Rusak"
+                            : getStatusDisplayLabel(item.status)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-medium text-slate-500">Catatan Inspeksi</dt>
+                        <dd className="mt-1 text-sm text-slate-800">
+                          {item.inspectionNote || "-"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
+                ) : null}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </section>
   );
 }

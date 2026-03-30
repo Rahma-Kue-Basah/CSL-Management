@@ -11,6 +11,7 @@ import {
 import { authFetch } from "@/lib/auth";
 
 export type BookingFilters = {
+  q?: string;
   status?: string;
   requestedBy?: string;
   department?: string;
@@ -40,6 +41,10 @@ export type BookingRow = {
   attendeeNames: string;
   createdAt: string;
   updatedAt: string;
+  approvedAt: string;
+  rejectedAt: string;
+  expiredAt: string;
+  completedAt: string;
   approvedById: string;
   approvedByName: string;
   approvedByEmail: string;
@@ -67,6 +72,10 @@ type ApiBooking = {
   attendee_names?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  approved_at?: string | null;
+  rejected_at?: string | null;
+  expired_at?: string | null;
+  completed_at?: string | null;
   room?: string | number | null;
   room_detail?: {
     id?: string | number | null;
@@ -175,6 +184,10 @@ export function mapBooking(item: ApiBooking): BookingRow {
     attendeeNames: String(item.attendee_names ?? "-"),
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
+    approvedAt: String(item.approved_at ?? "-"),
+    rejectedAt: String(item.rejected_at ?? "-"),
+    expiredAt: String(item.expired_at ?? "-"),
+    completedAt: String(item.completed_at ?? "-"),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     approvedByEmail: String(item.approved_by_detail?.email ?? "-"),
@@ -188,7 +201,10 @@ export function mapBooking(item: ApiBooking): BookingRow {
   };
 }
 
-export function useBookingDetail(id?: string | number | null) {
+export function useBookingDetail(
+  id?: string | number | null,
+  reloadKey = 0,
+) {
   const [booking, setBooking] = useState<BookingRow | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -233,7 +249,7 @@ export function useBookingDetail(id?: string | number | null) {
       isAborted = true;
       controller.abort();
     };
-  }, [id]);
+  }, [id, reloadKey]);
 
   return {
     booking,
@@ -278,6 +294,7 @@ export function useBookings(
         const url = new URL(listEndpoint, window.location.origin);
         url.searchParams.set("page", String(page));
         url.searchParams.set("page_size", String(pageSize));
+        if (filters.q) url.searchParams.set("q", filters.q);
         if (filters.status) url.searchParams.set("status", filters.status);
         if (filters.requestedBy && scope !== "my") {
           url.searchParams.set("requested_by", filters.requestedBy);
@@ -338,6 +355,7 @@ export function useBookings(
   }, [
     page,
     pageSize,
+    filters.q,
     filters.status,
     filters.requestedBy,
     filters.department,

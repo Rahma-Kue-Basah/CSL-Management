@@ -7,28 +7,29 @@ import {
   CheckCircle2,
   Eye,
   Loader2,
-  Check,
   RotateCcw,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { toast } from "sonner";
 
+import { DashboardDetailReviewDialog } from "@/components/dashboard/layout/DashboardDetailReviewDialog";
 import { DataPagination } from "@/components/shared/data-pagination";
+import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
+import type { ProgressStepItem } from "@/components/shared/progress-steps";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import {
   useBookings,
   type BookingListScope,
 } from "@/hooks/bookings/use-bookings";
-import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import {
   toEndOfDay,
   toStartOfDay,
 } from "@/lib/date";
 import { formatDateTimeWib } from "@/lib/date-format";
+import { getBookingProgressFlow } from "@/lib/request-progress";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
@@ -120,27 +121,32 @@ export default function BookingRoomsListContent({
   const router = useRouter();
   const searchParams = useSearchParams();
   const { profile } = useLoadProfile();
-  const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
-  const [confirmState, setConfirmState] = useState<{
-    bookingId: string | number;
-    type: "approve" | "reject";
+  const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
+  const [progressState, setProgressState] = useState<{
+    code: string;
+    steps: ProgressStepItem[];
   } | null>(null);
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("q") ?? "";
+  const room = searchParams.get("room") ?? "";
+  const requestedBy = searchParams.get("requested_by") ?? "";
   const createdAfter = searchParams.get("created_after") ?? "";
   const createdBefore = searchParams.get("created_before") ?? "";
 
   useEffect(() => {
     setPage(1);
-  }, [status, search, createdAfter, createdBefore]);
+  }, [status, search, room, requestedBy, createdAfter, createdBefore]);
 
   const { bookings, totalCount, aggregates, isLoading, hasLoadedOnce, error } = useBookings(
     page,
     PAGE_SIZE,
     {
+      q: search,
       status,
+      room,
+      requestedBy: scope === "all" ? requestedBy : "",
       createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
       createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
@@ -156,25 +162,13 @@ export default function BookingRoomsListContent({
       normalizedRole === ROLE_VALUES.STAFF);
   const showRequesterColumn = scope === "all";
 
-  const filteredBookings = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    const roomBookings = bookings.filter(
-      (booking) => booking.roomName && booking.roomName !== "-",
-    );
-
-    if (!query) return roomBookings;
-    return roomBookings.filter((booking) => {
-      const haystack = [
-        booking.code,
-        booking.roomName,
-        booking.requesterName,
-        booking.purpose,
-      ]
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(query);
-    });
-  }, [bookings, search]);
+  const filteredBookings = useMemo(
+    () =>
+      bookings.filter(
+        (booking) => booking.roomName && booking.roomName !== "-",
+      ),
+    [bookings],
+  );
   const totalPages = Math.max(
     1,
     Math.ceil((totalCount || filteredBookings.length) / PAGE_SIZE),
@@ -184,26 +178,6 @@ export default function BookingRoomsListContent({
   const completedCount = aggregates.completed;
   const rejectedCount = aggregates.rejected;
   const expiredCount = aggregates.expired;
-
-  const handleBookingAction = async () => {
-    if (!confirmState) return;
-
-    const { bookingId, type } = confirmState;
-    const result = await updateBookingStatus(bookingId, type);
-
-    if (result.ok) {
-      toast.success(
-        type === "approve"
-          ? "Pengajuan booking berhasil disetujui."
-          : "Pengajuan booking berhasil ditolak.",
-      );
-      setReloadKey((prev) => prev + 1);
-      setConfirmState(null);
-      return;
-    }
-
-    toast.error(result.message);
-  };
 
   return (
     <section className="space-y-4">
@@ -256,9 +230,6 @@ export default function BookingRoomsListContent({
         <table className="w-full min-w-[1120px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
-              <th className="sticky left-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 whitespace-nowrap shadow-[1px_0_0_0_rgba(51,65,85,1)]">
-                Aksi
-              </th>
               <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
                 Kode
               </th>
@@ -271,16 +242,20 @@ export default function BookingRoomsListContent({
                 </th>
               ) : null}
               <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
+                Tujuan
+              </th>
+              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
                 Waktu Mulai
               </th>
               <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
                 Waktu Selesai
               </th>
-              <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
-                Tujuan
-              </th>
+              
               <th className="px-3 py-3 font-medium text-slate-50 whitespace-nowrap">
                 Status
+              </th>
+              <th className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 whitespace-nowrap shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
+                Aksi
               </th>
             </tr>
           </thead>
@@ -303,54 +278,6 @@ export default function BookingRoomsListContent({
                   key={String(booking.id)}
                   className="border-b last:border-b-0"
                 >
-                  <td className="sticky left-0 z-10 bg-white px-3 py-2.5 text-center shadow-[1px_0_0_0_rgba(226,232,240,1)]">
-                    <div className="flex items-center justify-center gap-2">
-                      {canReviewBookings && isPendingStatus(booking.status) ? (
-                        <>
-                          <TableActionIconButton
-                            type="button"
-                            label="Approve"
-                            icon={<Check className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
-                            onClick={() =>
-                              setConfirmState({
-                                bookingId: booking.id,
-                                type: "approve",
-                              })
-                            }
-                            disabled={pendingAction.bookingId === booking.id}
-                          />
-                          <TableActionIconButton
-                            type="button"
-                            label="Reject"
-                            icon={<X className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
-                            onClick={() =>
-                              setConfirmState({
-                                bookingId: booking.id,
-                                type: "reject",
-                              })
-                            }
-                            disabled={pendingAction.bookingId === booking.id}
-                          />
-                        </>
-                      ) : null}
-                      <TableActionIconButton
-                        type="button"
-                        label="Lihat detail"
-                        icon={<Eye className="h-3.5 w-3.5" />}
-                        variant="outline"
-                        className="border-slate-300 text-slate-700"
-                        onClick={() =>
-                          router.push(
-                            scope === "all"
-                              ? `/booking-rooms/approval/${booking.id}`
-                              : `/booking-rooms/${booking.id}`,
-                          )
-                        }
-                      />
-                    </div>
-                  </td>
                   <td className="px-3 py-2.5 font-medium text-slate-800 whitespace-nowrap">
                     {booking.code}
                   </td>
@@ -360,21 +287,55 @@ export default function BookingRoomsListContent({
                       {booking.requesterName}
                     </td>
                   ) : null}
+                  <td className="px-3 py-2.5 text-slate-700">
+                    {booking.purpose}
+                  </td>
                   <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
                     {formatDateTimeWib(booking.startTime)}
                   </td>
                   <td className="px-3 py-2.5 text-slate-700 whitespace-nowrap">
                     {formatDateTimeWib(booking.endTime)}
                   </td>
-                  <td className="px-3 py-2.5 text-slate-700">
-                    {booking.purpose}
-                  </td>
+                  
                   <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(booking.status)}`}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setProgressState({
+                          code: booking.code,
+                          steps: getBookingProgressFlow(booking),
+                        })
+                      }
+                      className={`inline-flex cursor-pointer rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(booking.status)}`}
                     >
                       {getStatusDisplayLabel(booking.status)}
-                    </span>
+                    </button>
+                  </td>
+                  <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
+                    <div className="flex items-center justify-center gap-2">
+                      {canReviewBookings ? (
+                        <TableActionIconButton
+                          type="button"
+                          label="Review"
+                          icon={<ShieldCheck className="h-3.5 w-3.5" />}
+                          className="w-8 rounded-md border border-sky-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
+                          onClick={() => setReviewBookingId(String(booking.id))}
+                        />
+                      ) : null}
+                      <TableActionIconButton
+                        type="button"
+                        label="Lihat detail"
+                        icon={<Eye className="h-3.5 w-3.5" />}
+                        className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
+                        onClick={() =>
+                          router.push(
+                            scope === "all"
+                              ? `/booking-rooms/approval/${booking.id}`
+                              : `/booking-rooms/${booking.id}`,
+                          )
+                        }
+                      />
+                    </div>
                   </td>
                 </tr>
               ))
@@ -401,16 +362,26 @@ export default function BookingRoomsListContent({
         isLoading={isLoading}
         onPageChange={setPage}
       />
-
-      <StatusConfirmDialog
-        open={Boolean(confirmState)}
-        actionType={confirmState?.type ?? null}
+      <DashboardDetailReviewDialog
+        open={Boolean(reviewBookingId)}
         onOpenChange={(open) => {
-          if (!open) setConfirmState(null);
+          if (!open) setReviewBookingId(null);
         }}
-        onConfirm={handleBookingAction}
-        isSubmitting={pendingAction.bookingId === confirmState?.bookingId}
-        subjectLabel="pengajuan peminjaman lab ini"
+        onActionComplete={() => setReloadKey((prev) => prev + 1)}
+        context={
+          reviewBookingId
+            ? { kind: "booking", id: reviewBookingId }
+            : null
+        }
+      />
+      <RequestProgressDialog
+        open={Boolean(progressState)}
+        onOpenChange={(open) => {
+          if (!open) setProgressState(null);
+        }}
+        title="Progress Peminjaman Lab"
+        code={progressState?.code ?? ""}
+        steps={progressState?.steps ?? []}
       />
     </section>
   );

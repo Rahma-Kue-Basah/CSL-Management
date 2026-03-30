@@ -25,21 +25,20 @@ export function RequestReviewCard({
 }: RequestReviewCardProps) {
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
-      <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
-          <ClipboardCheck className="h-4 w-4" />
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex min-w-0 items-start gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
+            <ClipboardCheck className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-semibold text-slate-900">Review Pengajuan</p>
+            <p className="mt-1 text-xs font-medium tracking-wide text-slate-500">
+              {code}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold text-slate-900">Review Pengajuan</p>
-          <p className="mt-1 text-xs font-medium tracking-wide text-slate-500">
-            {code}
-          </p>
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap items-center gap-3">
         <span
-          className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(status)}`}
+          className={`inline-flex w-fit shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(status)}`}
         >
           {getStatusDisplayLabel(status)}
         </span>
@@ -64,7 +63,7 @@ export function RequestReviewCard({
           <div className="flex flex-wrap items-center gap-2">{children}</div>
         ) : (
           <p className="text-sm text-slate-500">
-            Belum ada aksi review yang tersedia untuk pengajuan ini.
+            Tidak ada aksi review yang tersedia untuk pengajuan ini.
           </p>
         )}
       </div>
