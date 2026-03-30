@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { DateRange } from "react-day-picker";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import {
@@ -75,6 +75,11 @@ type EquipmentFilterConfig = {
   onMoveableChange?: (value: string) => void;
 };
 
+const FILTER_CONTROL_CLASS =
+  "h-8 w-full rounded-md border border-slate-200 px-2.5 text-xs outline-none transition focus:border-[#0048B4]";
+
+const FILTER_BUTTON_CLASS = "h-8 w-full px-2 text-xs";
+
 function FilterCard({
   title,
   children,
@@ -83,11 +88,11 @@ function FilterCard({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-[#D2DDED] bg-white p-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+    <div className="rounded-lg border border-[#D2DDED] bg-white p-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
         {title}
       </p>
-      <div className="mt-2 space-y-2">{children}</div>
+      <div className="mt-1.5 space-y-1.5">{children}</div>
     </div>
   );
 }
@@ -100,9 +105,70 @@ function FilterField({
   children: ReactNode;
 }) {
   return (
-    <div className="space-y-1">
-      <label className="text-xs font-medium text-slate-600">{label}</label>
+    <div className="space-y-0.5">
+      <label className="text-[11px] font-medium text-slate-600">{label}</label>
       {children}
+    </div>
+  );
+}
+
+function DebouncedSearchInput({
+  value,
+  onChange,
+  placeholder,
+  className = "h-8 text-xs placeholder:text-xs",
+  delay = 350,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  className?: string;
+  delay?: number;
+}) {
+  const [draft, setDraft] = useState(value);
+
+  useEffect(() => {
+    setDraft(value);
+  }, [value]);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      if (draft !== value) {
+        onChange(draft);
+      }
+    }, delay);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [delay, draft, onChange, value]);
+
+  return (
+    <Input
+      value={draft}
+      onChange={(event) => setDraft(event.target.value)}
+      type="search"
+      placeholder={placeholder}
+      className={className}
+    />
+  );
+}
+
+function AnimatedFilterSection({
+  show,
+  children,
+}: {
+  show: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div
+      aria-hidden={!show}
+      className={`overflow-hidden transition-all duration-250 ease-out ${
+        show
+          ? "mt-3 max-h-[1200px] translate-y-0 opacity-100"
+          : "pointer-events-none mt-0 max-h-0 -translate-y-1 opacity-0"
+      }`}
+    >
+      <div className={show ? "pt-0" : "pt-0"}>{children}</div>
     </div>
   );
 }
@@ -358,19 +424,18 @@ export function DashboardActionPanel({
   }: RequestFilterConfig) => (
     <FilterCard title="Filter Pengajuan">
       <FilterField label="Cari">
-        <Input
+        <DebouncedSearchInput
           value={keyword}
-          onChange={(event) => onKeywordChange(event.target.value)}
-          type="search"
+          onChange={onKeywordChange}
           placeholder={placeholder}
-          className="h-9"
+          className="h-8 text-xs placeholder:text-xs"
         />
       </FilterField>
       <FilterField label="Status">
         <select
           value={status}
           onChange={(event) => onStatusChange(event.target.value)}
-          className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+          className={FILTER_CONTROL_CLASS}
         >
           {statusOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -385,10 +450,10 @@ export function DashboardActionPanel({
           value={dateRange}
           onChange={onDateRangeChange}
           clearable
-          buttonClassName="h-9 border-slate-200 px-3"
+          buttonClassName="h-8 border-slate-200 px-2.5 text-xs"
         />
       </FilterField>
-      <Button type="button" variant="outline" className="w-full" onClick={onReset}>
+      <Button type="button" variant="outline" className={FILTER_BUTTON_CLASS} onClick={onReset}>
         Reset Filter
       </Button>
     </FilterCard>
@@ -397,19 +462,18 @@ export function DashboardActionPanel({
   const renderRoomFilters = () => (
     <FilterCard title="Filter Ruangan">
       <FilterField label="Cari">
-        <Input
+        <DebouncedSearchInput
           value={roomKeyword}
-          onChange={(event) => updateRoomFilter("q", event.target.value)}
-          type="search"
+          onChange={(value) => updateRoomFilter("q", value)}
           placeholder="Nama ruangan atau nomor"
-          className="h-9"
+          className="h-8 text-xs placeholder:text-xs"
         />
       </FilterField>
       <FilterField label="Lantai">
         <select
           value={roomFloor}
           onChange={(event) => updateRoomFilter("floor", event.target.value)}
-          className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+          className={FILTER_CONTROL_CLASS}
         >
           <option value="">Semua Lantai</option>
           <option value="1">Lantai 1</option>
@@ -422,7 +486,7 @@ export function DashboardActionPanel({
       <Button
         type="button"
         variant="outline"
-        className="w-full"
+        className={FILTER_BUTTON_CLASS}
         onClick={() => resetFilters(["q", "floor"])}
       >
         Reset Filter
@@ -445,12 +509,11 @@ export function DashboardActionPanel({
   }: EquipmentFilterConfig) => (
     <FilterCard title="Filter Peralatan">
       <FilterField label="Cari">
-        <Input
+        <DebouncedSearchInput
           value={keyword}
-          onChange={(event) => onKeywordChange(event.target.value)}
-          type="search"
+          onChange={onKeywordChange}
           placeholder="Nama atau kategori"
-          className="h-9"
+          className="h-8 text-xs placeholder:text-xs"
         />
       </FilterField>
       {typeof status === "string" && onStatusChange ? (
@@ -458,7 +521,7 @@ export function DashboardActionPanel({
           <select
             value={status}
             onChange={(event) => onStatusChange(event.target.value)}
-            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+            className={FILTER_CONTROL_CLASS}
           >
             <option value="">Semua Status</option>
             {EQUIPMENT_STATUS_OPTIONS.map((option) => (
@@ -473,7 +536,7 @@ export function DashboardActionPanel({
         <select
           value={category}
           onChange={(event) => onCategoryChange(event.target.value)}
-          className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+          className={FILTER_CONTROL_CLASS}
         >
           <option value="">Semua Kategori</option>
           {EQUIPMENT_CATEGORY_OPTIONS.map((option) => (
@@ -487,7 +550,7 @@ export function DashboardActionPanel({
         <select
           value={room}
           onChange={(event) => onRoomChange(event.target.value)}
-          className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+          className={FILTER_CONTROL_CLASS}
         >
           <option value="">Semua Ruangan</option>
           {rooms.map((roomOption) => (
@@ -502,7 +565,7 @@ export function DashboardActionPanel({
           <select
             value={moveable}
             onChange={(event) => onMoveableChange(event.target.value)}
-            className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+            className={FILTER_CONTROL_CLASS}
           >
             <option value="">Semua</option>
             {MOVEABLE_OPTIONS.map((option) => (
@@ -513,7 +576,7 @@ export function DashboardActionPanel({
           </select>
         </FilterField>
       ) : null}
-      <Button type="button" variant="outline" className="w-full" onClick={onReset}>
+      <Button type="button" variant="outline" className={FILTER_BUTTON_CLASS} onClick={onReset}>
         Reset Filter
       </Button>
     </FilterCard>
@@ -564,14 +627,13 @@ export function DashboardActionPanel({
           {menu.id === "schedule" && (
             <FilterCard title="Filter Jadwal">
               <FilterField label="Cari Agenda">
-                <Input
+                <DebouncedSearchInput
                   value={scheduleKeyword}
-                  onChange={(event) =>
-                    updateScheduleFilter("q", event.target.value)
+                  onChange={(value) =>
+                    updateScheduleFilter("q", value)
                   }
-                  type="text"
                   placeholder="Cari jadwal lab..."
-                  className="h-9"
+                  className="h-8 text-xs placeholder:text-xs"
                 />
               </FilterField>
               <FilterField label="Kategori">
@@ -580,7 +642,7 @@ export function DashboardActionPanel({
                   onChange={(event) =>
                     updateScheduleFilter("category", event.target.value)
                   }
-                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                  className={FILTER_CONTROL_CLASS}
                 >
                   <option value="">Semua Kategori</option>
                   <option value="schedule">Jadwal Umum</option>
@@ -593,7 +655,7 @@ export function DashboardActionPanel({
                   onChange={(event) =>
                     updateScheduleFilter("room", event.target.value)
                   }
-                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                  className={FILTER_CONTROL_CLASS}
                 >
                   <option value="">Semua Ruangan</option>
                   {rooms.map((room) => (
@@ -606,7 +668,7 @@ export function DashboardActionPanel({
               <Button
                 type="button"
                 variant="outline"
-                className="w-full"
+                className={FILTER_BUTTON_CLASS}
                 onClick={() => resetFilters(["q", "category", "room"])}
               >
                 Reset Filter
@@ -665,7 +727,7 @@ export function DashboardActionPanel({
                     isSampleTestingAllRequestsPage,
                   );
                 return (
-                  <div key={action.id} className="space-y-3">
+                  <div key={action.id}>
                     <Link
                       href={getActionHref(action.id)}
                       onClick={(event) => {
@@ -687,8 +749,8 @@ export function DashboardActionPanel({
                       <ChevronRight className="h-4 w-4 opacity-70" />
                     </Link>
 
-                    {showBookingFilters || showSampleTestingFilters
-                      ? renderRequestFilters({
+                    <AnimatedFilterSection show={showBookingFilters || showSampleTestingFilters}>
+                      {renderRequestFilters({
                           keyword: bookingKeyword,
                           status: bookingStatus,
                           dateRange: bookingCreatedRange,
@@ -698,11 +760,11 @@ export function DashboardActionPanel({
                             <>
                               <FilterField label="Ruangan">
                                 <select
-                                  value={bookingRoom}
+                                    value={bookingRoom}
                                   onChange={(event) =>
                                     updateBookingFilter("room", event.target.value)
                                   }
-                                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                  className={FILTER_CONTROL_CLASS}
                                 >
                                   <option value="">Semua Ruangan</option>
                                   {rooms.map((room) => (
@@ -719,7 +781,7 @@ export function DashboardActionPanel({
                                     onChange={(event) =>
                                       updateBookingFilter("requested_by", event.target.value)
                                     }
-                                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                    className={FILTER_CONTROL_CLASS}
                                   >
                                     <option value="">Semua Pemohon</option>
                                     {bookingRequesters.map((requester) => (
@@ -747,13 +809,15 @@ export function DashboardActionPanel({
                               "created_after",
                               "created_before",
                             ]),
-                        })
-                      : null}
+                        })}
+                    </AnimatedFilterSection>
 
-                    {showRoomFilters ? renderRoomFilters() : null}
+                    <AnimatedFilterSection show={showRoomFilters}>
+                      {renderRoomFilters()}
+                    </AnimatedFilterSection>
 
-                    {showUseFilters
-                      ? renderRequestFilters({
+                    <AnimatedFilterSection show={showUseFilters}>
+                      {renderRequestFilters({
                           keyword: bookingKeyword,
                           status: bookingStatus,
                           dateRange: bookingCreatedRange,
@@ -767,7 +831,7 @@ export function DashboardActionPanel({
                                   onChange={(event) =>
                                     updateBookingFilter("equipment", event.target.value)
                                   }
-                                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                  className={FILTER_CONTROL_CLASS}
                                 >
                                   <option value="">Semua Alat</option>
                                   {useEquipmentOptionsList.map((equipment) => (
@@ -783,7 +847,7 @@ export function DashboardActionPanel({
                                   onChange={(event) =>
                                     updateBookingFilter("room", event.target.value)
                                   }
-                                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                  className={FILTER_CONTROL_CLASS}
                                 >
                                   <option value="">Semua Ruangan</option>
                                   {rooms.map((room) => (
@@ -800,7 +864,7 @@ export function DashboardActionPanel({
                                     onChange={(event) =>
                                       updateBookingFilter("requested_by", event.target.value)
                                     }
-                                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                    className={FILTER_CONTROL_CLASS}
                                   >
                                     <option value="">Semua Pemohon</option>
                                     {useRequesters.map((requester) => (
@@ -829,11 +893,11 @@ export function DashboardActionPanel({
                               "created_after",
                               "created_before",
                             ]),
-                        })
-                      : null}
+                        })}
+                    </AnimatedFilterSection>
 
-                    {showEquipmentFilters
-                      ? renderEquipmentFilters({
+                    <AnimatedFilterSection show={showEquipmentFilters}>
+                      {renderEquipmentFilters({
                           keyword: equipmentKeyword,
                           status: equipmentStatus,
                           category: equipmentCategory,
@@ -857,11 +921,11 @@ export function DashboardActionPanel({
                               "room",
                               "moveable",
                             ]),
-                        })
-                      : null}
+                        })}
+                    </AnimatedFilterSection>
 
-                    {showBorrowFilters
-                      ? renderRequestFilters({
+                    <AnimatedFilterSection show={showBorrowFilters}>
+                      {renderRequestFilters({
                           keyword: borrowKeyword,
                           status: borrowStatus,
                           dateRange: borrowCreatedRange,
@@ -875,7 +939,7 @@ export function DashboardActionPanel({
                                   onChange={(event) =>
                                     updateBorrowFilter("equipment", event.target.value)
                                   }
-                                  className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                  className={FILTER_CONTROL_CLASS}
                                 >
                                   <option value="">Semua Alat</option>
                                   {borrowEquipmentOptionsList.map((equipment) => (
@@ -892,7 +956,7 @@ export function DashboardActionPanel({
                                     onChange={(event) =>
                                       updateBorrowFilter("requested_by", event.target.value)
                                     }
-                                    className="h-9 w-full rounded-md border border-slate-200 px-3 text-sm outline-none transition focus:border-[#0048B4]"
+                                    className={FILTER_CONTROL_CLASS}
                                   >
                                     <option value="">Semua Pemohon</option>
                                     {borrowRequesters.map((requester) => (
@@ -920,11 +984,11 @@ export function DashboardActionPanel({
                               "created_after",
                               "created_before",
                             ]),
-                        })
-                      : null}
+                        })}
+                    </AnimatedFilterSection>
 
-                    {showBorrowEquipmentFilters
-                      ? renderEquipmentFilters({
+                    <AnimatedFilterSection show={showBorrowEquipmentFilters}>
+                      {renderEquipmentFilters({
                           keyword: equipmentKeyword,
                           category: equipmentCategory,
                           room: equipmentRoom,
@@ -936,8 +1000,8 @@ export function DashboardActionPanel({
                             updateEquipmentFilter("room", value),
                           onReset: () =>
                             resetFilters(["q", "category", "room"]),
-                        })
-                      : null}
+                        })}
+                    </AnimatedFilterSection>
                   </div>
                 );
               })

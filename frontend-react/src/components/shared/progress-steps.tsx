@@ -13,6 +13,8 @@ export type ProgressStepItem = {
   state: ProgressStepState;
 };
 
+const MISSING_TIME_FALLBACK = "Waktu belum tercatat";
+
 function getStepTone(state: ProgressStepState) {
   switch (state) {
     case "finish":
@@ -88,6 +90,12 @@ export function ProgressSteps({
           {steps.map((step, index) => {
             const tone = getStepTone(step.state);
             const isLast = index === steps.length - 1;
+            const resolvedTime =
+              step.time && step.time !== "-"
+                ? step.time
+                : step.state === "wait"
+                  ? ""
+                  : MISSING_TIME_FALLBACK;
 
             return (
               <div key={step.key} className="flex gap-3">
@@ -114,9 +122,9 @@ export function ProgressSteps({
                   <p className={cn("text-sm font-medium leading-snug", tone.title)}>
                     {step.label}
                   </p>
-                  {step.time ? (
+                  {resolvedTime ? (
                     <p className={cn("mt-1 text-xs leading-snug", tone.time)}>
-                      {step.time}
+                      {resolvedTime}
                     </p>
                   ) : null}
                 </div>
@@ -134,6 +142,12 @@ export function ProgressSteps({
         {steps.map((step, index) => {
           const tone = getStepTone(step.state);
           const isLast = index === steps.length - 1;
+          const resolvedTime =
+            step.time && step.time !== "-"
+              ? step.time
+              : step.state === "wait"
+                ? " "
+                : MISSING_TIME_FALLBACK;
 
           return (
             <div key={step.key} className="flex min-w-0 flex-1 items-start">
@@ -160,7 +174,7 @@ export function ProgressSteps({
                     tone.time,
                   )}
                 >
-                  {step.time || " "}
+                  {resolvedTime}
                 </p>
               </div>
               {!isLast ? (
