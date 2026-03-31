@@ -6,14 +6,12 @@ import { API_SCHEDULES } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type ScheduleCategory =
-  | "Practicum"
-  | "Maintenance"
-  | "Agenda"
-  | "Other";
+  | "Practicum";
 
 export type ScheduleItem = {
   id: string | number;
   title: string;
+  class_name?: string | null;
   description: string;
   start_time: string;
   end_time: string;

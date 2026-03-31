@@ -790,6 +790,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "title",
+            "class_name",
             "description",
             "start_time",
             "end_time",
@@ -824,23 +825,8 @@ class CalendarEventSerializer(serializers.Serializer):
     id = serializers.CharField()
     source = serializers.CharField()
     title = serializers.CharField()
-    description = serializers.CharField(
-        allow_blank=True,
-        allow_null=True,
-        required=False,
-    )
     start_time = serializers.DateTimeField()
     end_time = serializers.DateTimeField(allow_null=True)
-    category = serializers.CharField(
-        allow_blank=True,
-        allow_null=True,
-        required=False,
-    )
-    status = serializers.CharField(
-        allow_blank=True,
-        allow_null=True,
-        required=False,
-    )
     room_id = serializers.UUIDField(allow_null=True, required=False)
     room_name = serializers.CharField(
         allow_blank=True,
@@ -848,11 +834,6 @@ class CalendarEventSerializer(serializers.Serializer):
         required=False,
     )
     requested_by_name = serializers.CharField(
-        allow_blank=True,
-        allow_null=True,
-        required=False,
-    )
-    requested_by_role = serializers.CharField(
         allow_blank=True,
         allow_null=True,
         required=False,

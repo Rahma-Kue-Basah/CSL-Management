@@ -1,6 +1,6 @@
 "use client";
 
-import { formatDateTimeWib, formatHourLabel } from "@/lib/date-format";
+import { formatHourLabel } from "@/lib/date-format";
 
 type HourlyScheduleEvent = {
   id: string | number;
@@ -9,20 +9,29 @@ type HourlyScheduleEvent = {
   room_name?: string | null;
   start_time: string;
   end_time?: string | null;
+  requested_by_name?: string | null;
 };
 
-function mapSourceLabel(source: string) {
-  if (source === "schedule") return "Jadwal";
-  if (source === "booking") return "Peminjaman Lab";
-  if (source === "use") return "Penggunaan Alat";
-  return source;
-}
+function getStickyNoteTone(source: string) {
+  if (source === "schedule") {
+    return {
+      card: "border-sky-200 bg-[#DDF2FF] shadow-[0_6px_14px_rgba(14,116,144,0.08)]",
+      tape: "before:bg-white/45",
+      overlay:
+        "after:bg-[linear-gradient(180deg,rgba(255,255,255,0.1),transparent_30%)]",
+      chip: "ring-sky-200/70 bg-white/85 text-slate-700",
+      meta: "text-sky-800/70",
+    };
+  }
 
-function sourceTone(source: string) {
-  if (source === "schedule") return "bg-sky-100 text-sky-700";
-  if (source === "booking") return "bg-emerald-100 text-emerald-700";
-  if (source === "use") return "bg-amber-100 text-amber-700";
-  return "bg-slate-100 text-slate-700";
+  return {
+    card: "border-amber-200 bg-[#FFF3A6] shadow-[0_6px_14px_rgba(120,84,0,0.08)]",
+    tape: "before:bg-white/45",
+    overlay:
+      "after:bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent_30%)]",
+    chip: "ring-amber-300/60 bg-white/85 text-slate-700",
+    meta: "text-amber-800/70",
+  };
 }
 
 function getEventHourRange(event: {
@@ -152,6 +161,8 @@ export function HourlyScheduleTable({
                     );
                   }
 
+                  const noteTone = getStickyNoteTone(event.source);
+
                   return (
                     <td
                       key={`${event.source}-${event.id}-${laneIndex}-${hour}`}
@@ -159,29 +170,31 @@ export function HourlyScheduleTable({
                       className={`border-b border-slate-200 px-3 py-3 align-top ${
                         laneIndex < laneCount - 1 ? "border-r" : ""
                       }`}
-                    >
+                      >
                       <div
-                        className="h-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"
+                        className={`relative h-full rounded-[18px] px-3 py-3 before:absolute before:left-1/2 before:top-2 before:h-4 before:w-14 before:-translate-x-1/2 before:rounded-sm after:absolute after:inset-0 after:rounded-[18px] after:content-[''] ${noteTone.card} ${noteTone.tape} ${noteTone.overlay}`}
                         style={{ minHeight: `${event.rowSpan * 56}px` }}
                       >
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span
-                            className={`rounded-full px-2 py-1 text-xs font-medium ${sourceTone(event.source)}`}
-                          >
-                            {mapSourceLabel(event.source)}
+                        {event.room_name ? (
+                          <div className="relative z-10 flex justify-center">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ${noteTone.chip}`}>
+                              {event.room_name}
+                            </span>
+                          </div>
+                        ) : null}
+                        <div className={`relative ${event.room_name ? "mt-3" : ""}`}>
+                          <span className={`text-xs font-medium ${noteTone.meta}`}>
+                            {event.rowSpan} jam
                           </span>
-                          <span className="text-xs text-slate-500">
-                            {event.room_name || "Tanpa ruangan"}
-                          </span>
-                          {event.rowSpan > 1 ? (
-                            <span className="text-xs text-slate-400">{event.rowSpan} jam</span>
-                          ) : null}
                         </div>
-                        <p className="mt-2 font-medium text-slate-900">{event.title}</p>
-                        <p className="mt-1 text-xs text-slate-500">
-                          {formatDateTimeWib(event.start_time)}
-                          {event.end_time ? ` - ${formatDateTimeWib(event.end_time)}` : ""}
-                        </p>
+                        <p className="relative mt-3 font-semibold text-slate-900">{event.title}</p>
+                        {event.requested_by_name ? (
+                          <p className="relative mt-3 text-xs font-medium text-slate-700">
+                            {event.source === "schedule"
+                              ? `Kelas ${event.requested_by_name}`
+                              : `Oleh ${event.requested_by_name}`}
+                          </p>
+                        ) : null}
                       </div>
                     </td>
                   );

@@ -160,8 +160,8 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   },
   {
     id: "schedule",
-    label: "Jadwal Lab",
-    description: "Kelola agenda lab dan jadwal kegiatan mendatang.",
+    label: "Jadwal Praktikum",
+    description: "Lihat jadwal praktikum dan booking laboratorium.",
     href: "/schedule",
     icon: CalendarDays,
     actions: [],

@@ -456,20 +456,18 @@ class Announcement(BaseModel):
 
 class Schedule(BaseModel):
     CATEGORY_CHOICES = [
-        ('Practicum', 'Practicum'),
-        ('Maintenance', 'Maintenance'),
-        ('Agenda', 'Agenda'),
-        ('Other', 'Other'),
+        ('Practicum', 'Praktikum'),
     ]
 
     title = models.CharField(max_length=255)
+    class_name = models.CharField(max_length=255, blank=True, null=True)
     description = models.CharField(max_length=2000, blank=True, null=True)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     category = models.CharField(
         max_length=20,
         choices=CATEGORY_CHOICES,
-        default='Other',
+        default='Practicum',
     )
 
     room = models.ForeignKey(

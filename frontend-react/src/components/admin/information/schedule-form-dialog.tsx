@@ -18,15 +18,13 @@ import { toWibIsoString } from "@/lib/date-format";
 const DIALOG_WIDTH_CLASS = `${USER_MODAL_WIDTH_CLASS} gap-0 p-0 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`;
 
 export type ScheduleCategory =
-  | "Practicum"
-  | "Maintenance"
-  | "Agenda"
-  | "Other";
+  | "Practicum";
 
 export type ScheduleDetailMode = "view" | "edit";
 
 export type ScheduleFormState = {
   title: string;
+  className: string;
   description: string;
   category: ScheduleCategory;
   room: string;
@@ -36,10 +34,11 @@ export type ScheduleFormState = {
 
 export const SCHEDULE_CATEGORIES: ScheduleCategory[] = [
   "Practicum",
-  "Maintenance",
-  "Agenda",
-  "Other",
 ];
+
+function getScheduleCategoryLabel(category: ScheduleCategory | string) {
+  return category === "Practicum" ? "Praktikum" : category;
+}
 
 function combineDateTime(date: Date | undefined, time: string) {
   if (!date || !time) return "";
@@ -184,6 +183,7 @@ export function validateScheduleForm(
   setError: (message: string) => void,
 ) {
   const title = form.title.trim();
+  const className = form.className.trim();
   const description = form.description.trim();
   const startTime = form.startTime.trim();
   const endTime = form.endTime.trim();
@@ -203,6 +203,7 @@ export function validateScheduleForm(
 
   return {
     title,
+    class_name: className || null,
     description,
     category: form.category,
     room: form.room || null,
@@ -309,7 +310,7 @@ export function ScheduleFormDialog({
           <>
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <ScheduleDetailField label="Judul Jadwal" value={form.title} />
-              <ScheduleDetailField label="Kategori" value={form.category} />
+              <ScheduleDetailField label="Kelas" value={form.className} />
               <ScheduleDetailField label="Waktu Mulai" value={form.startTime.replace("T", " ")} />
               <ScheduleDetailField label="Waktu Selesai" value={form.endTime.replace("T", " ")} />
               <ScheduleDetailField
@@ -338,18 +339,13 @@ export function ScheduleFormDialog({
               </label>
 
               <label className="space-y-2">
-                <span className="text-sm font-medium text-slate-800">Kategori</span>
-                <select
-                  value={form.category}
-                  onChange={(event) => onChange("category", event.target.value as ScheduleCategory)}
-                  className="h-11 w-full rounded-md border border-sky-300 bg-sky-50/60 px-3 text-sm text-slate-700 outline-none focus:border-sky-600 focus:ring-[3px] focus:ring-sky-200"
-                >
-                  {SCHEDULE_CATEGORIES.map((category) => (
-                    <option key={category} value={category}>
-                      {category}
-                    </option>
-                  ))}
-                </select>
+                <span className="text-sm font-medium text-slate-800">Kelas</span>
+                <Input
+                  value={form.className}
+                  onChange={(event) => onChange("className", event.target.value)}
+                  placeholder="Contoh: TI-2A"
+                  className="h-11 border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
+                />
               </label>
 
               <div className="grid grid-cols-1 gap-4 md:col-span-2 md:grid-cols-2">

@@ -9,20 +9,16 @@ export type CalendarEvent = {
   id: string;
   source: "schedule" | "booking" | "use" | string;
   title: string;
-  description?: string | null;
   start_time: string;
   end_time?: string | null;
-  category?: string | null;
-  status?: string | null;
   room_id?: string | null;
   room_name?: string | null;
   requested_by_name?: string | null;
-  requested_by_role?: string | null;
 };
 
 export function useCalendarEvents(
-  start: string,
-  end: string,
+  start?: string,
+  end?: string,
   filters: { room?: string } = {},
   reloadKey = 0,
 ) {
@@ -31,12 +27,6 @@ export function useCalendarEvents(
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!start || !end) {
-      setEvents([]);
-      setIsLoading(false);
-      return;
-    }
-
     const controller = new AbortController();
     let isAborted = false;
 
@@ -46,8 +36,8 @@ export function useCalendarEvents(
 
       try {
         const url = new URL(API_CALENDAR, window.location.origin);
-        url.searchParams.set("start", start);
-        url.searchParams.set("end", end);
+        if (start) url.searchParams.set("start", start);
+        if (end) url.searchParams.set("end", end);
         if (filters.room) url.searchParams.set("room", filters.room);
 
         const response = await authFetch(url.toString(), {

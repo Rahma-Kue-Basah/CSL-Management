@@ -41,8 +41,9 @@ const PAGE_SIZE = 20;
 
 const EMPTY_FORM: ScheduleFormState = {
   title: "",
+  className: "",
   description: "",
-  category: "Agenda",
+  category: "Practicum",
   room: "",
   startTime: "",
   endTime: "",
@@ -130,12 +131,7 @@ export default function AdminSchedulePage() {
   const {
     events,
     error: calendarError,
-  } = useCalendarEvents(
-    yearBounds.start,
-    yearBounds.end,
-    { room: calendarRoomFilter },
-    reloadKey,
-  );
+  } = useCalendarEvents(undefined, undefined, { room: calendarRoomFilter }, reloadKey);
   const {
     rows,
     totalCount,
@@ -199,7 +195,7 @@ export default function AdminSchedulePage() {
       if (!isWithinRange(item.start_time, calendarDateRange)) return false;
       if (!normalizedQuery) return true;
       return normalizeText(
-        `${item.title} ${item.description ?? ""} ${item.room_name ?? ""} ${item.requested_by_name ?? ""}`,
+        `${item.title} ${item.room_name ?? ""} ${item.requested_by_name ?? ""}`,
       ).includes(normalizedQuery);
     });
   }, [events, calendarQuery, calendarRoomFilter, calendarSourceFilter, calendarDateRange]);
@@ -224,7 +220,7 @@ export default function AdminSchedulePage() {
         tone: "from-sky-500/15 to-sky-100",
       },
       {
-        label: "Jadwal",
+        label: "Praktikum",
         value: String(scheduleCount),
         tone: "from-emerald-500/15 to-emerald-100",
       },
@@ -259,7 +255,6 @@ export default function AdminSchedulePage() {
         roomName: item.room_name ?? "-",
         startTime: item.start_time,
         endTime: item.end_time,
-        categoryLabel: item.category_label,
         scheduleItem:
           item.source === "schedule" && item.schedule_item ? item.schedule_item : undefined,
       })),
@@ -320,8 +315,9 @@ export default function AdminSchedulePage() {
     setDetailMode(mode);
     setDetailForm({
       title: item.title,
+      className: item.class_name ?? "",
       description: item.description ?? "",
-      category: (item.category as ScheduleCategory) || "Agenda",
+      category: (item.category as ScheduleCategory) || "Practicum",
       room: item.room ? String(item.room) : "",
       startTime: formatDateTimeLocalInput(item.start_time),
       endTime: formatDateTimeLocalInput(item.end_time),
@@ -442,8 +438,9 @@ export default function AdminSchedulePage() {
           if (!detailTarget) return;
           setDetailForm({
             title: detailTarget.title,
+            className: detailTarget.class_name ?? "",
             description: detailTarget.description ?? "",
-            category: (detailTarget.category as ScheduleCategory) || "Agenda",
+            category: (detailTarget.category as ScheduleCategory) || "Practicum",
             room: detailTarget.room ? String(detailTarget.room) : "",
             startTime: formatDateTimeLocalInput(detailTarget.start_time),
             endTime: formatDateTimeLocalInput(detailTarget.end_time),

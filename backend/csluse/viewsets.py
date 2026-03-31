@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.utils import timezone
@@ -2127,7 +2127,11 @@ class ScheduleViewSet(viewsets.ModelViewSet):
         if room_id:
             qs = qs.filter(room_id=room_id)
         if search:
-            qs = qs.filter(Q(title__icontains=search) | Q(description__icontains=search))
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(class_name__icontains=search)
+            )
         start = parse_datetime(start_raw) if start_raw else None
         end = parse_datetime(end_raw) if end_raw else None
         if start:
@@ -2351,10 +2355,29 @@ class CalendarViewSet(viewsets.ViewSet):
         end = parse_datetime(end_raw) if end_raw else None
 
         if not start or not end:
-            return Response(
-                {'detail': 'start and end query params (ISO datetime) are required'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            now = timezone.localtime(timezone.now())
+            first_day_current_month = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+            if first_day_current_month.month == 1:
+                start = first_day_current_month.replace(year=first_day_current_month.year - 1, month=12)
+            else:
+                start = first_day_current_month.replace(month=first_day_current_month.month - 1)
+
+            if first_day_current_month.month == 12:
+                next_month = first_day_current_month.replace(year=first_day_current_month.year + 1, month=1)
+            else:
+                next_month = first_day_current_month.replace(month=first_day_current_month.month + 1)
+
+            if next_month.month == 12:
+                month_after_next = next_month.replace(year=next_month.year + 1, month=1)
+            else:
+                month_after_next = next_month.replace(month=next_month.month + 1)
+
+            if month_after_next.month == 12:
+                month_after_that = month_after_next.replace(year=month_after_next.year + 1, month=1)
+            else:
+                month_after_that = month_after_next.replace(month=month_after_next.month + 1)
+
+            end = month_after_that - timedelta(microseconds=1)
 
         if timezone.is_naive(start):
             start = timezone.make_aware(start, timezone.get_default_timezone())
@@ -2395,76 +2418,27 @@ class CalendarViewSet(viewsets.ViewSet):
             items.append({
                 'id': str(item.id),
                 'source': 'schedule',
-                'title': item.title,
-                'description': item.description,
+                'title': f'Praktikum ({item.title})',
                 'start_time': item.start_time,
                 'end_time': item.end_time,
-                'category': item.category,
-                'status': 'Scheduled',
                 'room_id': item.room_id,
                 'room_name': item.room.name if item.room else None,
-                'requested_by_name': _profile_display_name(item.created_by),
-                'requested_by_role': _profile_role(item.created_by),
+                'requested_by_name': item.class_name,
             })
 
         for item in booking_qs:
-            title = _event_title_with_requester(
-                item.room.name if item.room else 'Booking Ruangan',
-                item.requested_by,
-            )
+            room_name = item.room.name if item.room else 'Lab'
+            title = f'Peminjaman Lab ({room_name})'
             items.append({
                 'id': str(item.id),
                 'source': 'booking',
                 'title': title,
-                'description': item.note,
                 'start_time': item.start_time,
                 'end_time': item.end_time,
-                'category': 'Booking',
-                'status': item.status,
                 'room_id': item.room_id,
                 'room_name': item.room.name if item.room else None,
                 'requested_by_name': _profile_display_name(item.requested_by),
-                'requested_by_role': _profile_role(item.requested_by),
             })
-
-        if (
-            has_role(request.user, STAFF)
-            or has_role(request.user, ADMINISTRATOR)
-            or has_role(request.user, SUPER_ADMINISTRATOR)
-        ):
-            use_qs = (
-                Use.objects
-                .filter(
-                    start_time__lt=end,
-                    status__in=['Approved', 'Completed'],
-                )
-                .filter(Q(end_time__isnull=True) | Q(end_time__gt=start))
-                .select_related('equipment', 'equipment__room', 'requested_by')
-            )
-
-            if room_id:
-                use_qs = use_qs.filter(equipment__room_id=room_id)
-
-            for item in use_qs:
-                room = item.equipment.room if item.equipment else None
-                title = _event_title_with_requester(
-                    f'Penggunaan Alat - {item.equipment.name}',
-                    item.requested_by,
-                )
-                items.append({
-                    'id': str(item.id),
-                    'source': 'use',
-                    'title': title,
-                    'description': item.note,
-                    'start_time': item.start_time,
-                    'end_time': item.end_time,
-                    'category': 'Equipment Use',
-                    'status': item.status,
-                    'room_id': room.id if room else None,
-                    'room_name': room.name if room else None,
-                    'requested_by_name': _profile_display_name(item.requested_by),
-                    'requested_by_role': _profile_role(item.requested_by),
-                })
 
         items.sort(key=lambda item: (item['start_time'], item['title']))
         serializer = CalendarEventSerializer(items, many=True)

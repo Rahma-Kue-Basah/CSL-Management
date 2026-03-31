@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { DateRange } from "react-day-picker";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { Calendar as RsuiteCalendar } from "rsuite";
 import {
   ChevronRight,
   ChevronsLeft,
@@ -25,6 +26,7 @@ import {
   MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
 import { useChangePassword } from "@/hooks/auth/use-change-password";
+import { useCalendarEvents } from "@/hooks/calendar/use-calendar-events";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useHistoryRequesterOptions } from "@/hooks/history/use-history-requester-options";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
@@ -217,6 +219,12 @@ export function DashboardActionPanel({
   const scheduleKeyword = searchParams.get("q") ?? "";
   const scheduleRoom = searchParams.get("room") ?? "";
   const scheduleCategory = searchParams.get("category") ?? "";
+  const { events: scheduleCalendarEvents } = useCalendarEvents(
+    undefined,
+    undefined,
+    menu.id === "schedule" && scheduleRoom ? { room: scheduleRoom } : {},
+  );
+  const scheduleDate = searchParams.get("date") ?? "";
   const bookingKeyword = searchParams.get("q") ?? "";
   const bookingStatus = searchParams.get("status") ?? "";
   const bookingRoom = searchParams.get("room") ?? "";
@@ -246,6 +254,30 @@ export function DashboardActionPanel({
           to: borrowCreatedBefore ? parseDateKey(borrowCreatedBefore) : undefined,
         }
       : undefined;
+  const visibleScheduleCalendarDates = useMemo(() => {
+    if (menu.id !== "schedule") return new Set<string>();
+    const normalizedScheduleQuery = scheduleKeyword.trim().toLowerCase();
+
+    return new Set(
+      scheduleCalendarEvents
+        .filter((item) => {
+          if (scheduleCategory && item.source !== scheduleCategory) return false;
+          if (normalizedScheduleQuery) {
+            const haystack = `${item.title} ${item.room_name ?? ""} ${item.requested_by_name ?? ""}`
+              .trim()
+              .toLowerCase();
+            if (!haystack.includes(normalizedScheduleQuery)) return false;
+          }
+          return true;
+        })
+        .map((item) => formatDateKey(new Date(item.start_time))),
+    );
+  }, [
+    menu.id,
+    scheduleCalendarEvents,
+    scheduleCategory,
+    scheduleKeyword,
+  ]);
   const roomKeyword = searchParams.get("q") ?? "";
   const roomFloor = searchParams.get("floor") ?? "";
   const equipmentKeyword = searchParams.get("q") ?? "";
@@ -305,7 +337,7 @@ export function DashboardActionPanel({
     actionParam === currentActionId && menuParam === menu.id;
 
   const updateScheduleFilter = (
-    key: "q" | "room" | "category",
+    key: "q" | "room" | "category" | "date",
     value: string,
   ) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -698,14 +730,34 @@ export function DashboardActionPanel({
           </div>
 
           {menu.id === "schedule" && (
-            <FilterCard title="Filter Jadwal">
-              <FilterField label="Cari Agenda">
+            <>
+              <FilterCard title="">
+                <div className="overflow-hidden rounded-lg border border-slate-200 bg-white p-2">
+                  <RsuiteCalendar
+                    compact
+                    value={scheduleDate ? parseDateKey(scheduleDate) : new Date()}
+                    onSelect={(value) =>
+                      updateScheduleFilter("date", value ? formatDateKey(value) : "")
+                    }
+                    renderCell={(date) =>
+                      visibleScheduleCalendarDates.has(formatDateKey(date)) ? (
+                        <div className="mt-1 flex justify-center">
+                          <span className="block h-1.5 w-1.5 rounded-full bg-[#0048B4]" />
+                        </div>
+                      ) : null
+                    }
+                    style={{ width: "100%" }}
+                  />
+                </div>
+              </FilterCard>
+              <FilterCard title="Filter Jadwal">
+              <FilterField label="Cari Jadwal">
                 <DebouncedSearchInput
                   value={scheduleKeyword}
                   onChange={(value) =>
                     updateScheduleFilter("q", value)
                   }
-                  placeholder="Cari jadwal lab..."
+                  placeholder="Cari jadwal praktikum..."
                   className="h-8 text-xs placeholder:text-xs"
                 />
               </FilterField>
@@ -718,7 +770,7 @@ export function DashboardActionPanel({
                   className={FILTER_CONTROL_CLASS}
                 >
                   <option value="">Semua Kategori</option>
-                  <option value="schedule">Jadwal Umum</option>
+                  <option value="schedule">Jadwal Praktikum</option>
                   <option value="booking">Peminjaman Lab</option>
                 </select>
               </FilterField>
@@ -742,11 +794,12 @@ export function DashboardActionPanel({
                 type="button"
                 variant="outline"
                 className={FILTER_BUTTON_CLASS}
-                onClick={() => resetFilters(["q", "category", "room"])}
+                onClick={() => resetFilters(["q", "category", "room", "date"])}
               >
                 Reset Filter
               </Button>
-            </FilterCard>
+              </FilterCard>
+            </>
           )}
 
           {menu.actions.length > 0

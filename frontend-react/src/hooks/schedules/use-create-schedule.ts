@@ -8,6 +8,7 @@ import type { ScheduleItem } from "@/hooks/schedules/use-schedules";
 
 type CreateSchedulePayload = {
   title: string;
+  class_name?: string | null;
   description?: string | null;
   start_time: string;
   end_time: string;

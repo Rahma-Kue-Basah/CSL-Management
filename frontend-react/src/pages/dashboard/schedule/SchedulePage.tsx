@@ -1,24 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { Badge, Calendar as RsuiteCalendar } from "rsuite";
-import { CalendarDays, Clock3 } from "lucide-react";
+import { Clock3 } from "lucide-react";
 
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCalendarEvents } from "@/hooks/calendar/use-calendar-events";
+import { parseDateKey } from "@/lib/date";
 import { formatHourLabel } from "@/lib/date-format";
-import { getInitialsFromText } from "@/lib/formatters";
 import { normalizeText } from "@/lib/text";
-
-function getYearBounds(date: Date) {
-  const year = date.getFullYear();
-  return {
-    start: new Date(year, 0, 1, 0, 0, 0).toISOString(),
-    end: new Date(year, 11, 31, 23, 59, 59).toISOString(),
-  };
-}
 
 function isSameDay(left: Date, right: Date) {
   return (
@@ -26,31 +17,6 @@ function isSameDay(left: Date, right: Date) {
     left.getMonth() === right.getMonth() &&
     left.getDate() === right.getDate()
   );
-}
-
-function isSameMonth(left: Date, right: Date) {
-  return (
-    left.getFullYear() === right.getFullYear() &&
-    left.getMonth() === right.getMonth()
-  );
-}
-
-function mapSourceLabel(source: string) {
-  if (source === "schedule") return "Jadwal Umum";
-  if (source === "booking") return "Peminjaman Lab";
-  return source;
-}
-
-function sourceTone(source: string) {
-  if (source === "schedule") return "bg-sky-100 text-sky-700";
-  if (source === "booking") return "bg-emerald-100 text-emerald-700";
-  return "bg-slate-100 text-slate-700";
-}
-
-function getCalendarDotClass(source: string) {
-  if (source === "schedule") return "bg-sky-500";
-  if (source === "booking") return "bg-emerald-500";
-  return "bg-slate-500";
 }
 
 function getStickyNoteTone(source: string) {
@@ -104,13 +70,10 @@ function HourlyScheduleTable({
     id: string | number;
     source: string;
     title: string;
-    category?: string | null;
-    status?: string | null;
     room_name?: string | null;
     start_time: string;
     end_time?: string | null;
     requested_by_name?: string | null;
-    requested_by_role?: string | null;
   }>;
   title?: string;
 }) {
@@ -120,13 +83,10 @@ function HourlyScheduleTable({
     id: string | number;
     source: string;
     title: string;
-    category?: string | null;
-    status?: string | null;
     room_name?: string | null;
     start_time: string;
     end_time?: string | null;
     requested_by_name?: string | null;
-    requested_by_role?: string | null;
     lane: number;
     startHour: number;
     rowSpan: number;
@@ -245,32 +205,27 @@ function HourlyScheduleTable({
                           className={`relative h-full rounded-[18px] px-3 py-3 before:absolute before:left-1/2 before:top-2 before:h-4 before:w-14 before:-translate-x-1/2 before:rounded-sm after:absolute after:inset-0 after:rounded-[18px] after:content-[''] ${noteTone.card} ${noteTone.tape} ${noteTone.overlay}`}
                           style={{ minHeight: `${event.rowSpan * 56}px` }}
                         >
-                          <div className="relative flex flex-wrap items-center gap-2">
-                            <span
-                              className={`rounded-full px-2 py-1 text-xs font-medium shadow-sm ${sourceTone(event.source)}`}
-                            >
-                              {mapSourceLabel(event.source)}
+                          {event.room_name ? (
+                            <div className="relative z-10 flex justify-center">
+                              <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium ring-1 ${noteTone.chip}`}>
+                                {event.room_name}
+                              </span>
+                            </div>
+                          ) : null}
+                          <div className={`relative ${event.room_name ? "mt-3" : ""}`}>
+                            <span className={`text-xs font-medium ${noteTone.meta}`}>
+                              {event.rowSpan} jam
                             </span>
-                            {event.category ? (
-                              <span className={`rounded-full px-2 py-1 text-xs font-medium ring-1 ${noteTone.chip}`}>
-                                {event.category}
-                              </span>
-                            ) : null}
-                            {event.rowSpan > 1 ? (
-                              <span className={`text-xs ${noteTone.meta}`}>
-                                {event.rowSpan} jam
-                              </span>
-                            ) : null}
                           </div>
                           <p className="relative mt-3 font-semibold text-slate-900">
                             {event.title}
                           </p>
                           <div className="relative mt-3 grid gap-2 text-xs text-slate-600">
-                            {event.source !== "schedule" &&
-                            event.requested_by_name ? (
-                              <p className={`inline-flex w-fit rounded-full px-2 py-1 ring-1 ${noteTone.chip}`}>
-                                {`Oleh ${getInitialsFromText(event.requested_by_name)} `}
-                                ({event.requested_by_role || "User"})
+                            {event.requested_by_name ? (
+                              <p className="font-medium text-slate-700">
+                                {event.source === "schedule"
+                                  ? `Kelas ${event.requested_by_name}`
+                                  : `Oleh ${event.requested_by_name}`}
                               </p>
                             ) : null}
                           </div>
@@ -290,15 +245,12 @@ function HourlyScheduleTable({
 
 export default function SchedulePage() {
   const searchParams = useSearchParams();
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const query = searchParams.get("q") ?? "";
   const roomFilter = searchParams.get("room") ?? "";
   const categoryFilter = searchParams.get("category") ?? "";
-  const yearBounds = useMemo(() => getYearBounds(selectedDate), [selectedDate]);
-  const { events, isLoading, error } = useCalendarEvents(
-    yearBounds.start,
-    yearBounds.end,
-  );
+  const selectedDateParam = searchParams.get("date") ?? "";
+  const selectedDate = selectedDateParam ? parseDateKey(selectedDateParam) ?? new Date() : new Date();
+  const { events, isLoading, error } = useCalendarEvents();
 
   const filteredEvents = useMemo(() => {
     const normalizedQuery = normalizeText(query);
@@ -306,58 +258,9 @@ export default function SchedulePage() {
       if (categoryFilter && item.source !== categoryFilter) return false;
       if (roomFilter && item.room_id !== roomFilter) return false;
       if (!normalizedQuery) return true;
-      return normalizeText(
-        `${item.title} ${item.description ?? ""} ${item.room_name ?? ""}`,
-      ).includes(normalizedQuery);
+      return normalizeText(`${item.title} ${item.room_name ?? ""}`).includes(normalizedQuery);
     });
   }, [categoryFilter, events, query, roomFilter]);
-
-  const monthSummaryEvents = useMemo(() => {
-    return events.filter((item) =>
-      isSameMonth(new Date(item.start_time), selectedDate),
-    );
-  }, [events, selectedDate]);
-
-  const monthEvents = useMemo(() => {
-    return filteredEvents.filter((item) =>
-      isSameMonth(new Date(item.start_time), selectedDate),
-    );
-  }, [filteredEvents, selectedDate]);
-
-  const monthKpis = useMemo(() => {
-    const scheduleCount = monthSummaryEvents.filter(
-      (item) => item.source === "schedule",
-    ).length;
-    const bookingCount = monthSummaryEvents.filter(
-      (item) => item.source === "booking",
-    ).length;
-    const roomCount = new Set(
-      monthSummaryEvents.map((item) => item.room_name).filter(Boolean),
-    ).size;
-
-    return [
-      {
-        label: "Agenda Bulan Ini",
-        value: String(monthSummaryEvents.length),
-        tone: "from-sky-500/15 to-sky-100",
-      },
-      {
-        label: "Jadwal Umum",
-        value: String(scheduleCount),
-        tone: "from-emerald-500/15 to-emerald-100",
-      },
-      {
-        label: "Booking Disetujui",
-        value: String(bookingCount),
-        tone: "from-amber-500/15 to-amber-100",
-      },
-      {
-        label: "Ruangan Aktif",
-        value: String(roomCount),
-        tone: "from-violet-500/15 to-violet-100",
-      },
-    ];
-  }, [monthSummaryEvents]);
 
   const selectedDayEvents = useMemo(() => {
     return filteredEvents
@@ -369,94 +272,11 @@ export default function SchedulePage() {
       );
   }, [filteredEvents, selectedDate]);
 
-  const renderCell = (date: Date) => {
-    const dayItems = filteredEvents.filter((item) =>
-      isSameDay(new Date(item.start_time), date),
-    );
-
-    if (!dayItems.length) return null;
-
-    const hasBooking = dayItems.some((item) => item.source === "booking");
-    const markerClass = hasBooking
-      ? getCalendarDotClass("booking")
-      : getCalendarDotClass("schedule");
-
-    return (
-      <div className="mt-1 flex justify-center">
-        <Badge className="!mr-0">
-          <span className={`block h-2 w-2 rounded-full ${markerClass}`} />
-        </Badge>
-      </div>
-    );
-  };
-
   return (
     <section className="space-y-4">
       {error ? (
         <InlineErrorAlert>{error}</InlineErrorAlert>
       ) : null}
-
-      <div className="grid items-start gap-4 xl:grid-cols-[auto_minmax(0,1fr)]">
-        <div className="order-1 space-y-3 xl:order-2">
-          <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
-            <div className="border-b border-slate-200 bg-gradient-to-r from-slate-50 via-white to-slate-50 px-4 py-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Ringkasan Bulan
-              </p>
-              <p className="mt-2 text-lg font-semibold text-slate-900">
-                {selectedDate.toLocaleDateString("id-ID", {
-                  month: "long",
-                  year: "numeric",
-                })}
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Rekap agenda dan booking pada bulan yang sedang dipilih.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 p-4 2xl:grid-cols-4">
-              {monthKpis.map((item) => (
-                <div
-                  key={`sidebar-${item.label}`}
-                  className={`rounded-2xl border border-slate-200 bg-gradient-to-br ${item.tone} px-4 py-4`}
-                >
-                  <p className="text-[11px] font-semibold uppercase tracking-wide text-slate-500">
-                    {item.label}
-                  </p>
-                  <p className="mt-3 text-3xl font-semibold leading-none text-slate-900">
-                    {item.value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </article>
-          <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-              Tanggal Terpilih
-            </p>
-            <p className="mt-2 text-lg font-semibold text-slate-900">
-              {selectedDate.toLocaleDateString("id-ID", {
-                day: "2-digit",
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
-            {/* <p className="mt-2 text-sm text-slate-500">
-              Agenda harian difokuskan pada tabel per jam di bawah.
-            </p> */}
-          </article>
-        </div>
-
-        <div className="order-2 w-full max-w-full justify-self-start overflow-x-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-[0_10px_24px_rgba(15,23,42,0.05)] sm:inline-block sm:w-fit sm:p-4 xl:order-1">
-          <RsuiteCalendar
-            compact
-            value={selectedDate}
-            onSelect={(value) => setSelectedDate(value ?? new Date())}
-            renderCell={renderCell}
-            style={{ width: "100%", maxWidth: 388 }}
-          />
-        </div>
-      </div>
 
       <HourlyScheduleTable
         events={selectedDayEvents}

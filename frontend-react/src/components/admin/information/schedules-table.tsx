@@ -14,7 +14,6 @@ export type ScheduleTableRow = {
   roomName: string;
   startTime: string;
   endTime?: string | null;
-  categoryLabel: string;
   scheduleItem?: ScheduleItem;
 };
 
@@ -64,7 +63,7 @@ export function SchedulesTable({
 }: SchedulesTableProps) {
   return (
     <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
-      <table className="w-full min-w-[1168px] table-fixed">
+      <table className="w-full min-w-[1028px] table-fixed">
         <thead className="border-b border-slate-800 bg-slate-900">
           <tr className="text-left text-sm">
             <th className="w-12 px-3 py-3 text-center font-medium text-slate-50">
@@ -83,7 +82,6 @@ export function SchedulesTable({
             <th className="w-[160px] px-3 py-3 font-medium text-slate-50">Tanggal</th>
             <th className="w-[180px] px-3 py-3 font-medium text-slate-50">Waktu Mulai</th>
             <th className="w-[180px] px-3 py-3 font-medium text-slate-50">Waktu Selesai</th>
-            <th className="w-[140px] px-3 py-3 font-medium text-slate-50">Kategori</th>
             <th className="sticky right-0 z-10 relative w-[140px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
               Aksi
             </th>
@@ -92,7 +90,7 @@ export function SchedulesTable({
         <tbody className="text-sm">
           {isLoading ? (
             <tr>
-              <td colSpan={9} className="px-3 py-8 text-center">
+              <td colSpan={8} className="px-3 py-8 text-center">
                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
@@ -127,7 +125,7 @@ export function SchedulesTable({
                         : "bg-emerald-100 text-emerald-700"
                     }`}
                   >
-                    {item.source === "schedule" ? "Jadwal" : "Booking"}
+                    {item.source === "schedule" ? "Jadwal Praktikum" : "Booking"}
                   </span>
                 </td>
                 <td className="px-3 py-2 align-middle text-muted-foreground">
@@ -142,11 +140,6 @@ export function SchedulesTable({
                 </td>
                 <td className="px-3 py-2 align-middle">{formatTimeWib(item.startTime)}</td>
                 <td className="px-3 py-2 align-middle">{formatTimeWib(item.endTime)}</td>
-                <td className="px-3 py-2 align-middle">
-                  <span className="inline-flex items-center rounded-full bg-sky-100 px-2.5 py-0.5 text-xs font-semibold text-sky-700">
-                    {item.categoryLabel}
-                  </span>
-                </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 align-middle before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   {isSchedule ? (
                     <div className="flex justify-center gap-2">
@@ -193,7 +186,7 @@ export function SchedulesTable({
             )})
           ) : (
             <tr>
-              <td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">
+              <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
                 {emptyMessage}
               </td>
             </tr>
