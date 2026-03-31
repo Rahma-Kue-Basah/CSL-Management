@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2, Plus, Trash2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -72,6 +72,7 @@ const initialFormData: FormData = {
 
 export default function BookingRoomsFormPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const { profile } = useLoadProfile();
@@ -93,6 +94,7 @@ export default function BookingRoomsFormPage() {
   } = useEquipmentOptions("", formData.roomId, Boolean(formData.roomId));
   const { createBookingRoom, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBookingRoom();
+  const preselectedRoomId = searchParams.get("room") ?? "";
   const isGuestUser = profile.role === "Guest";
   const isWorkshopPurpose = formData.purpose === WORKSHOP_PURPOSE;
 
@@ -143,6 +145,12 @@ export default function BookingRoomsFormPage() {
       })),
     [equipmentOptions],
   );
+
+  useEffect(() => {
+    if (!preselectedRoomId || formData.roomId) return;
+    if (!rooms.some((room) => room.id === preselectedRoomId)) return;
+    setFormData((prev) => ({ ...prev, roomId: preselectedRoomId }));
+  }, [formData.roomId, preselectedRoomId, rooms]);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,

@@ -8,3 +8,6 @@ export const REQUEST_PURPOSE_OPTIONS: SelectOption[] = [
   { value: "Research", label: "Penelitian" },
   { value: WORKSHOP_PURPOSE, label: "Workshop" },
 ];
+
+export const REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP: SelectOption[] =
+  REQUEST_PURPOSE_OPTIONS.filter((option) => option.value !== WORKSHOP_PURPOSE);

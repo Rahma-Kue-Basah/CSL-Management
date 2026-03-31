@@ -10,6 +10,11 @@ import {
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
+import {
+  AdminFilterField,
+  AdminFilterGrid,
+  ADMIN_FILTER_SELECT_CLASS,
+} from "@/components/admin/admin-filter-fields";
 import AnnouncementBulkActions from "@/components/admin/information/AnnouncementBulkActions";
 import AnnouncementTable from "@/components/admin/information/AnnouncementTable";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
@@ -395,12 +400,9 @@ export default function AdminAnnouncementPage() {
           setPage(1);
         }}
       >
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_220px_220px]">
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-800">
-              Pencarian
-            </label>
-            <div className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5">
+        <AdminFilterGrid columns={3}>
+          <AdminFilterField label="Pencarian">
+            <div className="flex min-w-0 items-center gap-2 rounded-md border border-slate-400 bg-white px-2 py-1">
               {isSearchDebouncing ? (
                 <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
               ) : (
@@ -410,38 +412,32 @@ export default function AdminAnnouncementPage() {
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Cari judul atau isi pengumuman"
-                className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+                className="h-6 border-0 bg-transparent px-0 text-xs shadow-none focus-visible:ring-0"
               />
             </div>
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-800">
-              Tanggal
-            </label>
+          </AdminFilterField>
+          <AdminFilterField label="Tanggal">
             <DatePicker
               value={parseDateKey(dateFilter)}
               onChange={(value) => setDateFilter(value ? formatDateKey(value) : "")}
               clearable
               className="w-full"
-              buttonClassName="h-11 rounded-lg border-slate-300 px-3 py-2.5 text-sm"
+              buttonClassName="h-8 rounded-md border-slate-400 px-2 py-0 text-xs"
             />
-          </div>
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-800">
-              Urutkan
-            </label>
+          </AdminFilterField>
+          <AdminFilterField label="Urutkan">
             <select
               value={sortOrder}
               onChange={(event) =>
                 setSortOrder(event.target.value as SortOrder)
               }
-              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm outline-none focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-200"
+              className={ADMIN_FILTER_SELECT_CLASS}
             >
               <option value="newest">Terbaru</option>
               <option value="oldest">Terlama</option>
             </select>
-          </div>
-        </div>
+          </AdminFilterField>
+        </AdminFilterGrid>
       </AdminFilterCard>
 
       {errorMessage ? (

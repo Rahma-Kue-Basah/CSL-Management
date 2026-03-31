@@ -11,6 +11,12 @@ import AdminRecordSummaryCards from "@/components/admin/history/AdminHistorySumm
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
+import {
+  AdminFilterField,
+  AdminFilterGrid,
+  ADMIN_FILTER_INPUT_CLASS,
+  ADMIN_FILTER_SELECT_CLASS,
+} from "@/components/admin/admin-filter-fields";
 import BulkCreateDialog from "@/components/admin/user-management/BulkCreateDialog";
 import CreateUserDialog from "@/components/admin/user-management/CreateUserDialog";
 import UserBulkActions from "@/components/admin/user-management/UserBulkActions";
@@ -228,28 +234,23 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
               onToggle={() => setFilterOpen((prev) => !prev)}
               onReset={resetFilters}
             >
-              <form
-                className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
-                onSubmit={(event) => {
-                  event.preventDefault();
-                  setPage(1);
-                }}
-              >
-                <div className="min-w-0">
-                  <label className="mb-1 block text-xs font-semibold text-slate-900/90">
-                    Cari
-                  </label>
+              <form onSubmit={(event) => {
+                event.preventDefault();
+                setPage(1);
+              }}>
+                <AdminFilterGrid columns={4}>
+                <AdminFilterField label="Cari">
                   <Input
                     type="search"
                     value={search}
                     placeholder="Nama, email, atau ID"
-                    className="h-9 border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                    className={ADMIN_FILTER_INPUT_CLASS}
                     onChange={(event) => {
                       setSearch(event.target.value);
                       setPage(1);
                     }}
                   />
-                </div>
+                </AdminFilterField>
 
                 <SelectField
                   label="Department"
@@ -278,6 +279,7 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
                     setPage(1);
                   }}
                 />
+                </AdminFilterGrid>
               </form>
             </AdminFilterCard>
           ) : null}
@@ -437,14 +439,11 @@ type SelectFieldProps = {
 
 function SelectField({ label, value, options, onChange }: SelectFieldProps) {
   return (
-    <div className="min-w-0">
-      <label className="mb-1 block text-xs font-semibold text-slate-900/90">
-        {label}
-      </label>
+    <AdminFilterField label={label}>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-md border border-slate-400 bg-white px-3 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+        className={ADMIN_FILTER_SELECT_CLASS}
       >
         <option value="">Semua</option>
         {options.map((opt) => (
@@ -453,6 +452,6 @@ function SelectField({ label, value, options, onChange }: SelectFieldProps) {
           </option>
         ))}
       </select>
-    </div>
+    </AdminFilterField>
   );
 }

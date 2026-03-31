@@ -89,6 +89,7 @@ class Equipment(BaseModel):
     CATEGORY_CHOICES = [
         ('Electricity', 'Electricity'),
         ('Electronics', 'Electronics'),
+        ('Computer', 'Computer'),
         ('Large Equipment', 'Large Equipment'), 
         ('Furniture', 'Furniture'),
         ('Glassware', 'Glassware'),

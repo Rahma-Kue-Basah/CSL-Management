@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { Box, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -12,107 +12,95 @@ import {
   ADMIN_FILTER_INPUT_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
 } from "@/components/admin/admin-filter-fields";
-import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
-import { DataPagination } from "@/components/shared/data-pagination";
-import AdminRoomDetailDialog from "@/components/admin/inventory/AdminRoomDetailDialog";
-import RoomEquipmentsDialog from "@/components/admin/inventory/RoomEquipmentsDialog";
-import RoomCreateDialog from "@/components/admin/inventory/RoomCreateDialog";
-import RoomTable from "@/components/admin/inventory/RoomTable";
 import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
+import AdminSoftwareDetailDialog from "@/components/admin/inventory/AdminSoftwareDetailDialog";
+import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
+import SoftwareCreateDialog from "@/components/admin/inventory/SoftwareCreateDialog";
+import SoftwareTable from "@/components/admin/inventory/SoftwareTable";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import { DataPagination } from "@/components/shared/data-pagination";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { API_ROOMS_EXPORT } from "@/constants/api";
+import { API_SOFTWARES_EXPORT } from "@/constants/api";
 import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
-import { useDeleteRoom } from "@/hooks/rooms/use-delete-room";
-import { mapRoom, useRooms, type RoomRow } from "@/hooks/rooms/use-rooms";
+import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
+import { useDeleteSoftware } from "@/hooks/softwares/use-delete-software";
+import { mapSoftware, useSoftwares, type SoftwareRow } from "@/hooks/softwares/use-softwares";
 import { usePicUsers } from "@/hooks/users/use-pic-users";
-import { ROOM_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
+import { SOFTWARE_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
 import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
 
 const PAGE_SIZE = 20;
 
-export default function AdminRoomsPage() {
+export default function AdminSoftwarePage() {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [floor, setFloor] = useState("");
+  const [equipment, setEquipment] = useState("");
   const [pic, setPic] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
-  const [detailRoom, setDetailRoom] = useState<RoomRow | null>(null);
-  const [equipmentRoom, setEquipmentRoom] = useState<RoomRow | null>(null);
+  const [detailSoftware, setDetailSoftware] = useState<SoftwareRow | null>(null);
   const [detailMode, setDetailMode] = useState<"view" | "edit">("view");
-  const [deleteCandidate, setDeleteCandidate] = useState<RoomRow | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<SoftwareRow | null>(null);
   const [selectedIds, setSelectedIds] = useState<Array<string | number>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
   const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
 
+  const { equipments: equipmentOptions, isLoading: isLoadingEquipments } = useEquipmentOptions();
   const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } = usePicUsers();
-  const {
-    deleteRoom,
-    deleteRooms,
-    isDeleting,
-  } = useDeleteRoom();
+  const { deleteSoftware, deleteSoftwares, isDeleting } = useDeleteSoftware();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const { rooms, totalCount, isLoading, hasLoadedOnce, error } = useRooms(
+  const { softwares, totalCount, isLoading, hasLoadedOnce, error } = useSoftwares(
     page,
     PAGE_SIZE,
     {
-      floor,
+      equipment,
       pic,
       search: debouncedSearch,
     },
     reloadKey,
   );
 
-  const totalRooms = totalCount || rooms.length;
+  const totalSoftwares = totalCount || softwares.length;
   const totalPages = useMemo(
-    () => Math.max(1, Math.ceil((totalCount || rooms.length) / PAGE_SIZE)),
-    [totalCount, rooms.length],
+    () => Math.max(1, Math.ceil((totalCount || softwares.length) / PAGE_SIZE)),
+    [totalCount, softwares.length],
   );
 
   const selectedCount = selectedIds.length;
   const selectedRows = useMemo(
-    () => rooms.filter((room) => selectedIds.some((id) => String(id) === String(room.id))),
-    [rooms, selectedIds],
+    () => softwares.filter((item) => selectedIds.some((id) => String(id) === String(item.id))),
+    [selectedIds, softwares],
   );
 
   const allVisibleSelected =
-    rooms.length > 0 && rooms.every((room) => selectedIds.includes(room.id));
+    softwares.length > 0 && softwares.every((item) => selectedIds.includes(item.id));
   const someVisibleSelected =
-    rooms.some((room) => selectedIds.includes(room.id)) && !allVisibleSelected;
+    softwares.some((item) => selectedIds.includes(item.id)) && !allVisibleSelected;
 
   useEffect(() => {
     setSelectedIds((prev) =>
-      prev.filter((id) => rooms.some((room) => String(room.id) === String(id))),
+      prev.filter((id) => softwares.some((item) => String(item.id) === String(id))),
     );
-  }, [rooms]);
+  }, [softwares]);
 
   useEffect(() => {
-    if (!detailRoom) return;
-    const latestRoom = rooms.find((room) => String(room.id) === String(detailRoom.id));
-    if (latestRoom) {
-      setDetailRoom(latestRoom);
+    if (!detailSoftware) return;
+    const latestSoftware = softwares.find((item) => String(item.id) === String(detailSoftware.id));
+    if (latestSoftware) {
+      setDetailSoftware(latestSoftware);
     }
-  }, [detailRoom, rooms]);
-
-  useEffect(() => {
-    if (!equipmentRoom) return;
-    const latestRoom = rooms.find((room) => String(room.id) === String(equipmentRoom.id));
-    if (latestRoom) {
-      setEquipmentRoom(latestRoom);
-    }
-  }, [equipmentRoom, rooms]);
+  }, [detailSoftware, softwares]);
 
   useEffect(() => {
     if (!selectAllRef.current) return;
@@ -120,51 +108,51 @@ export default function AdminRoomsPage() {
   }, [someVisibleSelected]);
 
   const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } = useAdminRecordExport({
-    endpoint: API_ROOMS_EXPORT,
+    endpoint: API_SOFTWARES_EXPORT,
     filters: {
-      floor,
+      equipment,
       pic,
       q: debouncedSearch,
     },
-    mapItem: mapRoom,
-    title: "Inventarisasi Ruangan",
-    pdfFilename: "inventarisasi-ruangan.pdf",
-    excelFilename: "inventarisasi-ruangan.xlsx",
-    columns: ROOM_EXPORT_COLUMNS,
-    emptyMessage: "Tidak ada data ruangan untuk diunduh.",
-    pdfSuccessMessage: "PDF ruangan berhasil diunduh.",
-    excelSuccessMessage: "Excel ruangan berhasil diunduh.",
+    mapItem: mapSoftware,
+    title: "Inventarisasi Software",
+    pdfFilename: "inventarisasi-software.pdf",
+    excelFilename: "inventarisasi-software.xlsx",
+    columns: SOFTWARE_EXPORT_COLUMNS,
+    emptyMessage: "Tidak ada data software untuk diunduh.",
+    pdfSuccessMessage: "PDF software berhasil diunduh.",
+    excelSuccessMessage: "Excel software berhasil diunduh.",
   });
 
   const resetFilters = () => {
     setSearch("");
     setDebouncedSearch("");
-    setFloor("");
+    setEquipment("");
     setPic("");
     setPage(1);
   };
 
-  const handleCreated = () => {
+  const handleCreatedOrUpdated = () => {
     setReloadKey((prev) => prev + 1);
     setPage(1);
   };
 
-  const handleDelete = async (room: RoomRow) => {
-    const result = await deleteRoom(room.id);
+  const handleDelete = async (item: SoftwareRow) => {
+    const result = await deleteSoftware(item.id);
     if (!result.ok) return;
 
     setDeleteCandidate(null);
-    setSelectedIds((prev) => prev.filter((id) => String(id) !== String(room.id)));
+    setSelectedIds((prev) => prev.filter((id) => String(id) !== String(item.id)));
     setReloadKey((prev) => prev + 1);
-    toast.success("Ruangan berhasil dihapus.");
+    toast.success("Software berhasil dihapus.");
   };
 
   const handleBulkDelete = async () => {
     if (!selectedIds.length) return;
 
-    const result = await deleteRooms(selectedIds);
+    const result = await deleteSoftwares(selectedIds);
     if (!result.ok) {
-      toast.error(result.message || "Gagal menghapus ruangan terpilih.");
+      toast.error(result.message || "Gagal menghapus software terpilih.");
       return;
     }
 
@@ -175,28 +163,26 @@ export default function AdminRoomsPage() {
 
     if ((result.failedCount ?? 0) > 0) {
       toast.warning(
-        `${result.deletedCount ?? 0} ruangan berhasil dihapus, ${result.failedCount ?? 0} gagal.`,
+        `${result.deletedCount ?? 0} software berhasil dihapus, ${result.failedCount ?? 0} gagal.`,
       );
       return;
     }
 
-    toast.success(`${result.deletedCount ?? 0} ruangan berhasil dihapus.`);
+    toast.success(`${result.deletedCount ?? 0} software berhasil dihapus.`);
   };
 
   const handleExportSelectedPdf = async () => {
     try {
       setIsExportingSelectedPdf(true);
-      if (!selectedRows.length) {
-        throw new Error("Pilih minimal satu ruangan untuk diunduh.");
-      }
+      if (!selectedRows.length) throw new Error("Pilih minimal satu software untuk diunduh.");
       exportAdminRecordPdf({
-        title: "Inventarisasi Ruangan",
+        title: "Inventarisasi Software",
         subtitle: `Total data: ${selectedRows.length}`,
-        filename: "inventarisasi-ruangan-selected.pdf",
-        columns: ROOM_EXPORT_COLUMNS,
+        filename: "inventarisasi-software-selected.pdf",
+        columns: SOFTWARE_EXPORT_COLUMNS,
         rows: selectedRows,
       });
-      toast.success("PDF ruangan terpilih berhasil diunduh.");
+      toast.success("PDF software terpilih berhasil diunduh.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal mengunduh PDF.");
     } finally {
@@ -207,16 +193,14 @@ export default function AdminRoomsPage() {
   const handleExportSelectedExcel = async () => {
     try {
       setIsExportingSelectedExcel(true);
-      if (!selectedRows.length) {
-        throw new Error("Pilih minimal satu ruangan untuk diunduh.");
-      }
+      if (!selectedRows.length) throw new Error("Pilih minimal satu software untuk diunduh.");
       exportAdminRecordExcel({
-        title: "Inventarisasi Ruangan",
-        filename: "inventarisasi-ruangan-selected.xlsx",
-        columns: ROOM_EXPORT_COLUMNS,
+        title: "Inventarisasi Software",
+        filename: "inventarisasi-software-selected.xlsx",
+        columns: SOFTWARE_EXPORT_COLUMNS,
         rows: selectedRows,
       });
-      toast.success("Excel ruangan terpilih berhasil diunduh.");
+      toast.success("Excel software terpilih berhasil diunduh.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Gagal mengunduh Excel.");
     } finally {
@@ -229,9 +213,9 @@ export default function AdminRoomsPage() {
       <div className="flex w-full min-w-0 flex-col gap-4 lg:flex-row lg:items-start">
         <div className="w-full min-w-0 space-y-4">
           <AdminPageHeader
-            title="Inventarisasi Ruangan"
-            description={`Total ${totalRooms} ruangan terdaftar.`}
-            icon={<Plus className="h-5 w-5 text-sky-200" />}
+            title="Inventarisasi Software"
+            description={`Total ${totalSoftwares} software terdaftar.`}
+            icon={<Box className="h-5 w-5 text-sky-200" />}
           />
 
           <AdminFilterCard
@@ -239,59 +223,66 @@ export default function AdminRoomsPage() {
             onToggle={() => setFilterOpen((prev) => !prev)}
             onReset={resetFilters}
           >
-        <form onSubmit={(event) => {
-          event.preventDefault();
-          setPage(1);
-        }}>
-          <AdminFilterGrid columns={6}>
-          <AdminFilterField label="Cari">
-            <Input
-              type="search"
-              value={search}
-              placeholder="Nama ruangan atau nomor"
-              className={ADMIN_FILTER_INPUT_CLASS}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-            />
-          </AdminFilterField>
-          <AdminFilterField label="Lantai">
-            <Input
-              value={floor}
-              placeholder="Semua"
-              className={ADMIN_FILTER_INPUT_CLASS}
-              onChange={(event) => {
-                setFloor(event.target.value);
-                setPage(1);
-              }}
-            />
-          </AdminFilterField>
-          <AdminFilterField label="PIC">
-            <select
-              value={pic}
-              onChange={(event) => {
-                setPic(event.target.value);
-                setPage(1);
-              }}
-              className={ADMIN_FILTER_SELECT_CLASS}
-              disabled={isLoadingFilterPics}
-            >
-              <option value="">{isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}</option>
+            <form onSubmit={(event) => {
+              event.preventDefault();
+              setPage(1);
+            }}>
+              <AdminFilterGrid columns={6}>
+              <AdminFilterField label="Cari">
+                <Input
+                  type="search"
+                  value={search}
+                  placeholder="Nama software, versi, lisensi"
+                  className={ADMIN_FILTER_INPUT_CLASS}
+                  onChange={(event) => {
+                    setSearch(event.target.value);
+                    setPage(1);
+                  }}
+                />
+              </AdminFilterField>
+              <AdminFilterField label="Peralatan">
+                <select
+                  value={equipment}
+                  onChange={(event) => {
+                    setEquipment(event.target.value);
+                    setPage(1);
+                  }}
+                  className={ADMIN_FILTER_SELECT_CLASS}
+                  disabled={isLoadingEquipments}
+                >
+                  <option value="">
+                    {isLoadingEquipments ? "Memuat peralatan..." : "Semua peralatan"}
+                  </option>
+                  {equipmentOptions.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.label}
+                    </option>
+                    ))}
+                  </select>
+              </AdminFilterField>
+              <AdminFilterField label="PIC">
+                <select
+                  value={pic}
+                  onChange={(event) => {
+                    setPic(event.target.value);
+                    setPage(1);
+                  }}
+                  className={ADMIN_FILTER_SELECT_CLASS}
+                  disabled={isLoadingFilterPics}
+                >
+                  <option value="">{isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}</option>
                   {filterPicUsers.map((user) => (
                     <option key={user.id} value={user.id}>
                       {user.name}
                     </option>
-                ))}
-              </select>
-          </AdminFilterField>
-          </AdminFilterGrid>
-        </form>
-      </AdminFilterCard>
+                    ))}
+                  </select>
+              </AdminFilterField>
+              </AdminFilterGrid>
+            </form>
+          </AdminFilterCard>
 
-          {error ? (
-            <InlineErrorAlert>{error}</InlineErrorAlert>
-          ) : null}
+          {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <InventoryBulkActions
@@ -324,13 +315,13 @@ export default function AdminRoomsPage() {
               />
               <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
                 <Plus className="h-4 w-4" />
-                Tambah Ruangan
+                Tambah Software
               </Button>
             </div>
           </div>
 
-          <RoomTable
-            rooms={rooms}
+          <SoftwareTable
+            softwares={softwares}
             isLoading={isLoading}
             hasLoadedOnce={hasLoadedOnce}
             selectedIds={selectedIds}
@@ -341,29 +332,26 @@ export default function AdminRoomsPage() {
             onToggleSelectAllVisible={(checked) => {
               if (!checked) {
                 setSelectedIds((prev) =>
-                  prev.filter((id) => !rooms.some((room) => String(room.id) === String(id))),
+                  prev.filter((id) => !softwares.some((item) => String(item.id) === String(id))),
                 );
                 return;
               }
               setSelectedIds((prev) => {
                 const next = new Set(prev);
-                rooms.forEach((room) => next.add(room.id));
+                softwares.forEach((item) => next.add(item.id));
                 return Array.from(next);
               });
             }}
-            onToggleItemSelection={(room) => {
+            onToggleItemSelection={(item) => {
               setSelectedIds((prev) =>
-                prev.includes(room.id)
-                  ? prev.filter((itemId) => itemId !== room.id)
-                  : [...prev, room.id],
+                prev.includes(item.id)
+                  ? prev.filter((itemId) => itemId !== item.id)
+                  : [...prev, item.id],
               );
             }}
-            onOpenDetail={(room, mode) => {
+            onOpenDetail={(item, mode) => {
               setDetailMode(mode);
-              setDetailRoom(room);
-            }}
-            onOpenEquipments={(room) => {
-              setEquipmentRoom(room);
+              setDetailSoftware(item);
             }}
             onDeleteCandidateChange={setDeleteCandidate}
             onDelete={handleDelete}
@@ -372,25 +360,25 @@ export default function AdminRoomsPage() {
           <DataPagination
             page={page}
             totalPages={totalPages}
-            totalCount={totalRooms}
+            totalCount={totalSoftwares}
             pageSize={PAGE_SIZE}
-            itemLabel="ruangan"
+            itemLabel="software"
             isLoading={isLoading}
             onPageChange={setPage}
           />
         </div>
       </div>
 
-      <RoomCreateDialog
+      <SoftwareCreateDialog
         open={createOpen}
         onOpenChange={setCreateOpen}
-        onCreated={handleCreated}
+        onCreated={handleCreatedOrUpdated}
       />
 
       <ConfirmDeleteDialog
         open={isBulkDeleteOpen}
-        title="Hapus ruangan terpilih?"
-        description={`${selectedCount} ruangan yang dipilih akan dihapus permanen.`}
+        title="Hapus software terpilih?"
+        description={`${selectedCount} software yang dipilih akan dihapus permanen.`}
         isDeleting={isDeleting}
         onOpenChange={setIsBulkDeleteOpen}
         onConfirm={() => {
@@ -398,32 +386,21 @@ export default function AdminRoomsPage() {
         }}
       />
 
-      <AdminRoomDetailDialog
-        open={Boolean(detailRoom)}
-        room={detailRoom}
+      <AdminSoftwareDetailDialog
+        open={Boolean(detailSoftware)}
+        software={detailSoftware}
         initialMode={detailMode}
         onOpenChange={(open) => {
           if (!open) {
-            setDetailRoom(null);
+            setDetailSoftware(null);
             setDetailMode("view");
           }
         }}
         onUpdated={() => setReloadKey((prev) => prev + 1)}
         onDeleted={() => {
-          setDetailRoom(null);
+          setDetailSoftware(null);
           setDetailMode("view");
           setReloadKey((prev) => prev + 1);
-        }}
-      />
-
-      <RoomEquipmentsDialog
-        open={Boolean(equipmentRoom)}
-        roomId={equipmentRoom?.id ?? null}
-        roomName={equipmentRoom?.name ?? null}
-        onOpenChange={(open: boolean) => {
-          if (!open) {
-            setEquipmentRoom(null);
-          }
         }}
       />
     </section>

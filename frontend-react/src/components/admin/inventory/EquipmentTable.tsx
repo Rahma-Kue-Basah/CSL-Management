@@ -4,7 +4,7 @@ import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
-import { Button } from "@/components/ui/button";
+import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import type { EquipmentRow } from "@/hooks/equipments/use-equipments";
 
 type EquipmentTableProps = {
@@ -17,9 +17,11 @@ type EquipmentTableProps = {
   deleteCandidate: EquipmentRow | null;
   statusStyles: Record<string, string>;
   formatStatus: (value: string) => string;
+  togglingEquipmentId?: string | number | null;
   selectAllRef: RefObject<HTMLInputElement | null>;
   onToggleSelectAllVisible: (checked: boolean) => void;
   onToggleItemSelection: (equipment: EquipmentRow) => void;
+  onToggleAvailability: (equipment: EquipmentRow, nextChecked: boolean) => void;
   onOpenDetail: (equipment: EquipmentRow, mode: "view" | "edit") => void;
   onDeleteCandidateChange: (equipment: EquipmentRow | null) => void;
   onDelete: (equipment: EquipmentRow) => void;
@@ -35,13 +37,17 @@ export default function EquipmentTable({
   deleteCandidate,
   statusStyles,
   formatStatus,
+  togglingEquipmentId,
   selectAllRef,
   onToggleSelectAllVisible,
   onToggleItemSelection,
+  onToggleAvailability,
   onOpenDetail,
   onDeleteCandidateChange,
   onDelete,
 }: EquipmentTableProps) {
+  const isAvailable = (status: string) => status.trim().toLowerCase() === "available";
+
   return (
     <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
       <table className="w-full min-w-[1160px] table-fixed">
@@ -92,11 +98,34 @@ export default function EquipmentTable({
                 <td className="truncate px-3 py-2 align-middle font-medium">{item.name}</td>
                 <td className="truncate px-3 py-2 align-middle text-muted-foreground">{item.category}</td>
                 <td className="px-3 py-2 align-middle">
-                  <span
-                    className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${statusStyles[item.status] || "bg-muted text-muted-foreground"}`}
-                  >
-                    {formatStatus(item.status)}
-                  </span>
+                  <label className="inline-flex items-center gap-2">
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={isAvailable(item.status)}
+                      aria-label={`Ubah status available untuk ${item.name}`}
+                      onClick={() => onToggleAvailability(item, !isAvailable(item.status))}
+                      disabled={String(togglingEquipmentId ?? "") === String(item.id)}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                        isAvailable(item.status) ? "bg-emerald-500" : "bg-slate-300"
+                      } ${
+                        String(togglingEquipmentId ?? "") === String(item.id)
+                          ? "cursor-not-allowed opacity-60"
+                          : ""
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                          isAvailable(item.status) ? "translate-x-5" : "translate-x-1"
+                        }`}
+                      />
+                    </button>
+                    <span
+                      className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${statusStyles[item.status] || "bg-muted text-muted-foreground"}`}
+                    >
+                      {formatStatus(item.status)}
+                    </span>
+                  </label>
                 </td>
                 <td className="px-3 py-2 align-middle text-muted-foreground">{item.quantity}</td>
                 <td className="truncate px-3 py-2 align-middle text-muted-foreground">{item.roomName}</td>
@@ -105,12 +134,20 @@ export default function EquipmentTable({
                 </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 align-middle shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.18)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
-                    <Button variant="outline" size="icon-sm" onClick={() => onOpenDetail(item, "view")}>
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button variant="outline" size="icon-sm" onClick={() => onOpenDetail(item, "edit")}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
+                    <TableActionIconButton
+                      label="Lihat detail"
+                      variant="outline"
+                      size="icon-sm"
+                      onClick={() => onOpenDetail(item, "view")}
+                      icon={<Eye className="h-4 w-4" />}
+                    />
+                    <TableActionIconButton
+                      label="Edit peralatan"
+                      variant="outline"
+                      size="icon-sm"
+                      onClick={() => onOpenDetail(item, "edit")}
+                      icon={<Pencil className="h-4 w-4" />}
+                    />
                     <ConfirmDeleteDialog
                       open={deleteCandidate?.id === item.id}
                       onOpenChange={(open) => onDeleteCandidateChange(open ? item : null)}
@@ -122,9 +159,13 @@ export default function EquipmentTable({
                       isDeleting={isDeleting}
                       onConfirm={() => onDelete(item)}
                       trigger={
-                        <Button variant="outline" size="icon-sm" disabled={isDeleting}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <TableActionIconButton
+                          label="Hapus peralatan"
+                          variant="outline"
+                          size="icon-sm"
+                          disabled={isDeleting}
+                          icon={<Trash2 className="h-4 w-4 text-destructive" />}
+                        />
                       }
                     />
                   </div>

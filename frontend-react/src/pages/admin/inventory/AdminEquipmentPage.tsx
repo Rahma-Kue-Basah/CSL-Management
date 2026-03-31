@@ -6,6 +6,12 @@ import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
+import {
+  AdminFilterField,
+  AdminFilterGrid,
+  ADMIN_FILTER_INPUT_CLASS,
+  ADMIN_FILTER_SELECT_CLASS,
+} from "@/components/admin/admin-filter-fields";
 import EquipmentCreateDialog from "@/components/admin/inventory/EquipmentCreateDialog";
 import AdminEquipmentDetailDialog from "@/components/admin/inventory/AdminEquipmentDetailDialog";
 import EquipmentTable from "@/components/admin/inventory/EquipmentTable";
@@ -25,7 +31,9 @@ import { API_EQUIPMENTS_EXPORT } from "@/constants/api";
 import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 import { useDeleteEquipment } from "@/hooks/equipments/use-delete-equipment";
 import { mapEquipment, useEquipments, type EquipmentRow } from "@/hooks/equipments/use-equipments";
+import { useUpdateEquipment } from "@/hooks/equipments/use-update-equipment";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { usePicUsers } from "@/hooks/users/use-pic-users";
 import { EQUIPMENT_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
 import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
 
@@ -55,14 +63,11 @@ function FilterSelectField({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="min-w-0">
-      <label className="mb-1 block text-xs font-semibold text-slate-900/90">
-        {label}
-      </label>
+    <AdminFilterField label={label}>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+        className={ADMIN_FILTER_SELECT_CLASS}
       >
         <option value="">Semua</option>
         {options.map((option) => (
@@ -71,7 +76,7 @@ function FilterSelectField({
           </option>
         ))}
       </select>
-    </div>
+    </AdminFilterField>
   );
 }
 
@@ -83,6 +88,7 @@ export default function AdminEquipmentsPage() {
   const [status, setStatus] = useState("");
   const [category, setCategory] = useState("");
   const [room, setRoom] = useState("");
+  const [pic, setPic] = useState("");
   const [moveable, setMoveable] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -94,9 +100,12 @@ export default function AdminEquipmentsPage() {
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
   const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
+  const [togglingEquipmentId, setTogglingEquipmentId] = useState<string | number | null>(null);
 
   const { rooms: filterRooms, isLoading: isLoadingFilterRooms } = useRoomOptions();
+  const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } = usePicUsers();
   const { deleteEquipment, deleteEquipments, isDeleting } = useDeleteEquipment();
+  const { updateEquipment } = useUpdateEquipment();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
@@ -111,6 +120,7 @@ export default function AdminEquipmentsPage() {
       status,
       category,
       room,
+      pic,
       is_moveable: moveable,
     },
     reloadKey,
@@ -140,6 +150,14 @@ export default function AdminEquipmentsPage() {
   }, [equipments]);
 
   useEffect(() => {
+    if (!detailEquipment) return;
+    const latestEquipment = equipments.find((item) => String(item.id) === String(detailEquipment.id));
+    if (latestEquipment) {
+      setDetailEquipment(latestEquipment);
+    }
+  }, [detailEquipment, equipments]);
+
+  useEffect(() => {
     if (!selectAllRef.current) return;
     selectAllRef.current.indeterminate = someVisibleSelected;
   }, [someVisibleSelected]);
@@ -150,6 +168,7 @@ export default function AdminEquipmentsPage() {
       status,
       category,
       room,
+      pic,
       is_moveable: moveable,
       q: debouncedSearch,
     },
@@ -169,6 +188,7 @@ export default function AdminEquipmentsPage() {
     setStatus("");
     setCategory("");
     setRoom("");
+    setPic("");
     setMoveable("");
     setPage(1);
   };
@@ -186,6 +206,29 @@ export default function AdminEquipmentsPage() {
     setSelectedIds((prev) => prev.filter((id) => String(id) !== String(item.id)));
     setReloadKey((prev) => prev + 1);
     toast.success("Peralatan berhasil dihapus.");
+  };
+
+  const handleToggleAvailability = async (item: EquipmentRow, nextChecked: boolean) => {
+    setTogglingEquipmentId(item.id);
+    const result = await updateEquipment(item.id, {
+      name: item.name,
+      quantity: item.quantity,
+      category: item.category,
+      roomId: item.roomId,
+      status: nextChecked ? "Available" : "In Storage",
+      isMoveable: item.isMoveable,
+      description: item.description,
+      imageId: item.imageId,
+    });
+    setTogglingEquipmentId(null);
+
+    if (!result.ok) {
+      toast.error(result.message || "Gagal memperbarui status peralatan.");
+      return;
+    }
+
+    setReloadKey((prev) => prev + 1);
+    toast.success(`Status peralatan diubah menjadi ${nextChecked ? "Available" : "In Storage"}.`);
   };
 
   const handleBulkDelete = async () => {
@@ -268,67 +311,59 @@ export default function AdminEquipmentsPage() {
             onToggle={() => setFilterOpen((prev) => !prev)}
             onReset={resetFilters}
           >
-            <form
-              className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5"
-              onSubmit={(event) => {
-                event.preventDefault();
-                setPage(1);
-              }}
-            >
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
-                  Cari
-                </label>
+            <form onSubmit={(event) => {
+              event.preventDefault();
+              setPage(1);
+            }}>
+              <AdminFilterGrid columns={6}>
+                <AdminFilterField label="Cari">
                 <Input
                   type="search"
                   value={search}
                   placeholder="Nama atau kategori"
-                  className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+                  className={ADMIN_FILTER_INPUT_CLASS}
                   onChange={(event) => {
                     setSearch(event.target.value);
                     setPage(1);
                   }}
                 />
-              </div>
+                </AdminFilterField>
 
-              <FilterSelectField
-                label="Status"
-                value={status}
-                options={EQUIPMENT_STATUS_OPTIONS}
-                onChange={(value) => {
-                  setStatus(value);
-                  setPage(1);
-                }}
-              />
-              <FilterSelectField
-                label="Kategori"
-                value={category}
-                options={EQUIPMENT_CATEGORY_OPTIONS}
-                onChange={(value) => {
-                  setCategory(value);
-                  setPage(1);
-                }}
-              />
-              <FilterSelectField
-                label="Moveable"
-                value={moveable}
-                options={MOVEABLE_OPTIONS}
-                onChange={(value) => {
-                  setMoveable(value);
-                  setPage(1);
-                }}
-              />
-              <div className="min-w-0">
-                <label className="mb-1 block text-xs font-semibold text-slate-900/90">
-                  Ruangan
-                </label>
+                <FilterSelectField
+                  label="Status"
+                  value={status}
+                  options={EQUIPMENT_STATUS_OPTIONS}
+                  onChange={(value) => {
+                    setStatus(value);
+                    setPage(1);
+                  }}
+                />
+                <FilterSelectField
+                  label="Kategori"
+                  value={category}
+                  options={EQUIPMENT_CATEGORY_OPTIONS}
+                  onChange={(value) => {
+                    setCategory(value);
+                    setPage(1);
+                  }}
+                />
+                <FilterSelectField
+                  label="Moveable"
+                  value={moveable}
+                  options={MOVEABLE_OPTIONS}
+                  onChange={(value) => {
+                    setMoveable(value);
+                    setPage(1);
+                  }}
+                />
+                <AdminFilterField label="Ruangan">
                 <select
                   value={room}
                   onChange={(event) => {
                     setRoom(event.target.value);
                     setPage(1);
                   }}
-                  className="h-9 w-full rounded-md border border-slate-400 bg-white px-2 text-sm outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                  className={ADMIN_FILTER_SELECT_CLASS}
                   disabled={isLoadingFilterRooms}
                 >
                   <option value="">
@@ -338,9 +373,28 @@ export default function AdminEquipmentsPage() {
                     <option key={roomItem.id} value={roomItem.id}>
                       {roomItem.label}
                     </option>
-                  ))}
-                </select>
-              </div>
+                    ))}
+                  </select>
+                </AdminFilterField>
+                <AdminFilterField label="PIC">
+                <select
+                  value={pic}
+                  onChange={(event) => {
+                    setPic(event.target.value);
+                    setPage(1);
+                  }}
+                  className={ADMIN_FILTER_SELECT_CLASS}
+                  disabled={isLoadingFilterPics}
+                >
+                  <option value="">{isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}</option>
+                  {filterPicUsers.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.name}
+                    </option>
+                    ))}
+                  </select>
+                </AdminFilterField>
+              </AdminFilterGrid>
             </form>
           </AdminFilterCard>
 
@@ -394,6 +448,7 @@ export default function AdminEquipmentsPage() {
             deleteCandidate={deleteCandidate}
             statusStyles={STATUS_STYLES}
             formatStatus={formatStatus}
+            togglingEquipmentId={togglingEquipmentId}
             selectAllRef={selectAllRef}
             onToggleSelectAllVisible={(checked) => {
               if (!checked) {
@@ -414,6 +469,9 @@ export default function AdminEquipmentsPage() {
                   ? prev.filter((itemId) => itemId !== item.id)
                   : [...prev, item.id],
               );
+            }}
+            onToggleAvailability={(item, nextChecked) => {
+              void handleToggleAvailability(item, nextChecked);
             }}
             onOpenDetail={(item, mode) => {
               setDetailMode(mode);

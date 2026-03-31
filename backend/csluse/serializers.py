@@ -9,6 +9,7 @@ from .models import (
     Image,
     Room,
     Equipment,
+    Software,
     Booking,
     BookingEquipmentItem,
     Borrow,
@@ -182,6 +183,52 @@ class EquipmentDropdownSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "quantity",
+        ]
+
+
+class SoftwareEquipmentListSerializer(serializers.ModelSerializer):
+    room_detail = EquipmentRoomListSerializer(source="room", read_only=True)
+
+    class Meta:
+        model = Equipment
+        fields = [
+            "id",
+            "name",
+            "room_detail",
+        ]
+
+
+class SoftwareSerializer(serializers.ModelSerializer):
+    equipment_detail = SoftwareEquipmentListSerializer(source="equipment", read_only=True)
+
+    class Meta:
+        model = Software
+        fields = [
+            "id",
+            "name",
+            "description",
+            "version",
+            "license_info",
+            "license_expiration",
+            "equipment",
+            "equipment_detail",
+        ]
+
+
+class SoftwareListSerializer(serializers.ModelSerializer):
+    equipment_detail = SoftwareEquipmentListSerializer(source="equipment", read_only=True)
+
+    class Meta:
+        model = Software
+        fields = [
+            "id",
+            "name",
+            "description",
+            "version",
+            "license_info",
+            "license_expiration",
+            "equipment",
+            "equipment_detail",
         ]
 
 

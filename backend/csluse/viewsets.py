@@ -18,6 +18,7 @@ from .models import (
     Image,
     Room,
     Equipment,
+    Software,
     Booking,
     Borrow,
     Facility,
@@ -37,6 +38,8 @@ from .serializers import (
     EquipmentSerializer,
     EquipmentListSerializer,
     EquipmentDropdownSerializer,
+    SoftwareSerializer,
+    SoftwareListSerializer,
     BookingSerializer,
     BookingListSerializer,
     BookingUserListSerializer,
@@ -1271,6 +1274,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
+
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
         instance = self.get_object()
@@ -1316,6 +1320,142 @@ class BookingViewSet(viewsets.ModelViewSet):
         now = timezone.now()
         serializer.save(completed_at=now)
         return Response(serializer.data)
+
+class SoftwareViewSet(viewsets.ModelViewSet):
+    queryset = (
+        Software.objects
+        .select_related('equipment', 'equipment__room')
+        .order_by('-created_at')
+    )
+    serializer_class = SoftwareSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return SoftwareListSerializer
+        return SoftwareSerializer
+
+    def get_permissions(self):
+        if self.action == "create":
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
+            return [IsAuthenticated(), IsAdministratorOrAbove()]
+        return super().get_permissions()
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("equipment", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("room", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("pic", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="PIC of the room"),
+            OpenApiParameter("pic_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="Alias for pic"),
+            OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        equipment_id = self.request.query_params.get('equipment')
+        room_id = self.request.query_params.get('room')
+        pic_id = self.request.query_params.get('pic') or self.request.query_params.get('pic_id')
+        query = (self.request.query_params.get('q') or self.request.query_params.get('search') or '').strip()
+
+        if equipment_id:
+            qs = qs.filter(equipment_id=equipment_id)
+        if room_id:
+            qs = qs.filter(equipment__room_id=room_id)
+        if pic_id:
+            qs = qs.filter(equipment__room__pics__id=pic_id).distinct()
+        if query:
+            qs = qs.filter(
+                Q(name__icontains=query)
+                | Q(version__icontains=query)
+                | Q(license_info__icontains=query)
+                | Q(description__icontains=query)
+                | Q(equipment__name__icontains=query)
+                | Q(equipment__room__name__icontains=query)
+            ).distinct()
+        return qs
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            CHANGE,
+            "Updated software via CSL Admin (inventory).",
+        )
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            ADDITION,
+            "Created software via CSL Admin (inventory).",
+        )
+
+    def _delete_software_instance(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted software via CSL Admin (inventory).",
+        )
+        super().perform_destroy(instance)
+
+    def perform_destroy(self, instance):
+        self._delete_software_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not is_administrator_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data software.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        software_map = {
+            str(item.id): item
+            for item in Software.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in software_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            software = software_map.get(str(item_id))
+            if software is None:
+                continue
+            self._delete_software_instance(software)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua software terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian software tidak ditemukan."
+                ),
+            },
+            status=response_status,
+        )
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = SoftwareListSerializer(queryset, many=True)
+        return Response(serializer.data)
+
 
 class BorrowViewSet(viewsets.ModelViewSet):
     queryset = (

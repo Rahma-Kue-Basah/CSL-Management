@@ -12,6 +12,11 @@ import {
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
+import {
+  AdminFilterField,
+  AdminFilterGrid,
+  ADMIN_FILTER_INPUT_CLASS,
+} from "@/components/admin/admin-filter-fields";
 import StructureOrganizationFormDialog, {
   type StructureOrganizationFormData,
 } from "@/components/admin/lab-profile/structure-organization-form-dialog";
@@ -562,22 +567,18 @@ export default function StructureOrgansPage() {
         onToggle={() => setFilterOpen((prev) => !prev)}
         onReset={resetFilters}
       >
-        <form
-          className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
-          onSubmit={(event) => event.preventDefault()}
-        >
-          <div className="min-w-0">
-            <label className="mb-1 block text-xs font-semibold text-slate-900/90">
-              Cari
-            </label>
+        <form onSubmit={(event) => event.preventDefault()}>
+          <AdminFilterGrid columns={4}>
+          <AdminFilterField label="Cari">
             <Input
               type="search"
               value={search}
               placeholder="Cari jabatan atau nama"
-              className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"
+              className={ADMIN_FILTER_INPUT_CLASS}
               onChange={(event) => setSearch(event.target.value)}
             />
-          </div>
+          </AdminFilterField>
+          </AdminFilterGrid>
         </form>
       </AdminFilterCard>
 

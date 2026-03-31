@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Eye, Loader2 } from "lucide-react";
+import { CalendarPlus2, Eye, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { DataPagination } from "@/components/shared/data-pagination";
@@ -37,7 +37,7 @@ export default function RoomsListPage() {
       ) : null}
 
       <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[860px] table-fixed">
+        <table className="w-full min-w-[920px] table-fixed">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
               <th className="w-[200px] px-3 py-3 font-medium text-slate-50">Nama Ruangan</th>
@@ -46,7 +46,7 @@ export default function RoomsListPage() {
               <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Kapasitas</th>
               <th className="w-[200px] px-3 py-3 font-medium text-slate-50">PIC</th>
               <th className="w-[250px] px-3 py-3 font-medium text-slate-50">Deskripsi</th>
-              <th className="sticky right-0 z-20 w-[120px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
+              <th className="sticky right-0 z-20 w-[150px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
                 Aksi
               </th>
             </tr>
@@ -71,13 +71,22 @@ export default function RoomsListPage() {
                   <td className="truncate px-3 py-2.5">{room.picName}</td>
                   <td className="truncate px-3 py-2.5">{room.description || "-"}</td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
-                    <TableActionIconButton
-                      type="button"
-                      label="Lihat detail"
-                      icon={<Eye className="h-3.5 w-3.5" />}
-                      className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
-                      onClick={() => router.push(`/rooms/${room.id}`)}
-                    />
+                    <div className="flex justify-center gap-2">
+                      <TableActionIconButton
+                        type="button"
+                        label="Lihat detail"
+                        icon={<Eye className="h-3.5 w-3.5" />}
+                        className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
+                        onClick={() => router.push(`/rooms/${room.id}`)}
+                      />
+                      <TableActionIconButton
+                        type="button"
+                        label="Ajukan booking"
+                        icon={<CalendarPlus2 className="h-3.5 w-3.5" />}
+                        className="w-8 rounded-md border border-slate-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
+                        onClick={() => router.push(`/booking-rooms/form?room=${room.id}`)}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))

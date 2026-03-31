@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { Loader2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import {
@@ -20,7 +20,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreateBorrow } from "@/hooks/borrows/use-create-borrow";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
-import { REQUEST_PURPOSE_OPTIONS } from "@/constants/request-purpose";
+import { REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP } from "@/constants/request-purpose";
 import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import {
   combineDateTime,
@@ -58,6 +58,7 @@ const initialFormData: FormData = {
 
 export default function BorrowEquipmentFormPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const { profile } = useLoadProfile();
@@ -71,10 +72,11 @@ export default function BorrowEquipmentFormPage() {
     equipments,
     isLoading: isLoadingEquipments,
     error: equipmentError,
-  } = useEquipmentOptions("available", "", true, true);
+  } = useEquipmentOptions("Available", "", true, true);
   const { createBorrow, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBorrow();
   const isGuestUser = profile.role === "Guest";
+  const preselectedEquipmentId = searchParams.get("equipment") ?? "";
 
   const equipmentOptions = useMemo<SelectOption[]>(
     () =>
@@ -92,10 +94,16 @@ export default function BorrowEquipmentFormPage() {
   );
   const selectedPurposeLabel = useMemo(
     () =>
-      REQUEST_PURPOSE_OPTIONS.find((option) => option.value === formData.purpose)
+      REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.find((option) => option.value === formData.purpose)
         ?.label ?? "-",
     [formData.purpose],
   );
+
+  useEffect(() => {
+    if (!preselectedEquipmentId || formData.equipmentId) return;
+    if (!equipments.some((equipment) => equipment.id === preselectedEquipmentId)) return;
+    setFormData((prev) => ({ ...prev, equipmentId: preselectedEquipmentId }));
+  }, [equipments, formData.equipmentId, preselectedEquipmentId]);
   const minEndDate = startDate ? new Date(startDate) : new Date(today);
   if (minEndDate) {
     minEndDate.setHours(0, 0, 0, 0);
@@ -187,7 +195,7 @@ export default function BorrowEquipmentFormPage() {
       return "Waktu selesai harus setelah waktu mulai.";
     }
     if (!formData.purpose.trim()) return "Pilih tujuan peminjaman.";
-    if (!REQUEST_PURPOSE_OPTIONS.some((option) => option.value === formData.purpose)) {
+    if (!REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.some((option) => option.value === formData.purpose)) {
       return "Tujuan peminjaman tidak valid.";
     }
 
@@ -288,7 +296,7 @@ export default function BorrowEquipmentFormPage() {
             <DashboardComboboxField
               label="Tujuan Peminjaman"
               value={formData.purpose}
-              options={REQUEST_PURPOSE_OPTIONS}
+              options={REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP}
               placeholder="Pilih tujuan"
               emptyText="Pilihan tujuan tidak tersedia"
               disabled={isSubmitting}

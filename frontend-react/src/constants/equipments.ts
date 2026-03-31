@@ -1,21 +1,22 @@
 const EQUIPMENT_CATEGORY_OPTIONS = [
-  { value: "electricity", label: "Electricity" },
-  { value: "electronics", label: "Electronics" },
-  { value: "large_equipment", label: "Large Equipment" },
-  { value: "furniture", label: "Furniture" },
-  { value: "glassware", label: "Glassware" },
-  { value: "chemicals", label: "Chemicals" },
-  { value: "tools", label: "Tools" },
-  { value: "safety", label: "Safety Equipment" },
-  { value: "other", label: "Other" },
+  { value: "Electricity", label: "Electricity" },
+  { value: "Electronics", label: "Electronics" },
+  { value: "Computer", label: "Computer" },
+  { value: "Large Equipment", label: "Large Equipment" },
+  { value: "Furniture", label: "Furniture" },
+  { value: "Glassware", label: "Glassware" },
+  { value: "Chemicals", label: "Chemicals" },
+  { value: "Tools", label: "Tools" },
+  { value: "Safety Equipment", label: "Safety Equipment" },
+  { value: "Other", label: "Other" },
 ];
 
 const EQUIPMENT_STATUS_OPTIONS = [
-  { value: "available", label: "Available" },
-  { value: "borrowed", label: "Borrowed" },
-  { value: "maintenance", label: "Maintenance" },
-  { value: "broken", label: "Broken" },
-  { value: "storage", label: "Storage" },
+  { value: "Available", label: "Available" },
+  { value: "Borrowed", label: "Borrowed" },
+  { value: "Under Maintenance", label: "Under Maintenance" },
+  { value: "Broken", label: "Broken" },
+  { value: "In Storage", label: "In Storage" },
 ];
 
 const MOVEABLE_OPTIONS = [

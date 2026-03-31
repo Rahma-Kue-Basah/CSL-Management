@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import type { Faq } from "@/hooks/faqs/use-faqs";
 import { formatDateTimeId } from "@/lib/date-format";
 import { summarizeText } from "@/lib/text";
@@ -100,31 +101,31 @@ export default function FaqTable({
                 </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 align-top shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.18)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
-                    <Button
+                    <TableActionIconButton
+                      label="Lihat detail"
                       type="button"
                       variant="outline"
                       size="icon-sm"
                       onClick={() => onView(item)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
+                      icon={<Eye className="h-4 w-4" />}
+                    />
+                    <TableActionIconButton
+                      label="Edit FAQ"
                       type="button"
                       variant="outline"
                       size="icon-sm"
                       onClick={() => onEdit(item)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
+                      icon={<Pencil className="h-4 w-4" />}
+                    />
+                    <TableActionIconButton
+                      label="Hapus FAQ"
                       type="button"
                       variant="outline"
                       size="icon-sm"
                       className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                       onClick={() => onDelete(item)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                      icon={<Trash2 className="h-4 w-4" />}
+                    />
                   </div>
                 </td>
               </tr>

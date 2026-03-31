@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
+  EQUIPMENT_STATUS_OPTIONS,
   MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
 import { useDeleteEquipment } from "@/hooks/equipments/use-delete-equipment";
@@ -38,6 +39,10 @@ type AdminEquipmentDetailDialogProps = {
 
 function formatStatus(value: string) {
   return value ? value.charAt(0).toUpperCase() + value.slice(1) : "-";
+}
+
+function isAvailableStatus(value: string) {
+  return value.trim().toLowerCase() === "available";
 }
 
 function DetailField({
@@ -144,6 +149,7 @@ export default function AdminEquipmentDetailDialog({
     name: "",
     quantity: "",
     category: "",
+    status: "",
     roomId: "",
     isMoveable: "true",
     description: "",
@@ -189,6 +195,7 @@ export default function AdminEquipmentDetailDialog({
       name: equipment.name,
       quantity: equipment.quantity,
       category: equipment.category,
+      status: equipment.status,
       roomId: equipment.roomId,
       isMoveable: String(equipment.isMoveable),
       description: equipment.description,
@@ -210,6 +217,7 @@ export default function AdminEquipmentDetailDialog({
       name: "",
       quantity: "",
       category: "",
+      status: "",
       roomId: "",
       isMoveable: "true",
       description: "",
@@ -245,6 +253,7 @@ export default function AdminEquipmentDetailDialog({
       name: formData.name,
       quantity: formData.quantity,
       category: formData.category,
+      status: formData.status,
       roomId: formData.roomId,
       isMoveable: formData.isMoveable === "true",
       description: formData.description,
@@ -269,6 +278,26 @@ export default function AdminEquipmentDetailDialog({
     onOpenChange(false);
     resetState();
     toast.success("Peralatan berhasil dihapus.");
+  };
+
+  const handleToggleAvailability = async (nextChecked: boolean) => {
+    if (!equipment) return;
+    setUpdateErrorMessage("");
+
+    const result = await updateEquipment(equipment.id, {
+      name: equipment.name,
+      quantity: equipment.quantity,
+      category: equipment.category,
+      roomId: equipment.roomId,
+      status: nextChecked ? "Available" : "In Storage",
+      isMoveable: equipment.isMoveable,
+      description: equipment.description,
+      imageId: equipment.imageId,
+    });
+    if (!result.ok) return;
+
+    onUpdated();
+    toast.success(`Status peralatan diubah menjadi ${nextChecked ? "Available" : "In Storage"}.`);
   };
 
   return (
@@ -348,6 +377,15 @@ export default function AdminEquipmentDetailDialog({
                   }
                 />
                 <SelectDetailField
+                  label="Status"
+                  value={isEditing ? formData.status : equipment.status}
+                  editable={isEditing}
+                  options={EQUIPMENT_STATUS_OPTIONS}
+                  onChange={(value) =>
+                    setFormData((prev) => ({ ...prev, status: value }))
+                  }
+                />
+                <SelectDetailField
                   label="Ruangan"
                   value={isEditing ? formData.roomId : equipment.roomName}
                   editable={isEditing}
@@ -385,10 +423,33 @@ export default function AdminEquipmentDetailDialog({
                     setFormData((prev) => ({ ...prev, isMoveable: value }))
                   }
                 />
-                <DetailField
-                  label="Status"
-                  value={formatStatus(equipment.status)}
-                />
+                {!isEditing ? (
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-slate-700">Available</p>
+                    <label className="inline-flex items-center gap-3">
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={isAvailableStatus(equipment.status)}
+                        aria-label={`Ubah status available untuk ${equipment.name}`}
+                        onClick={() => void handleToggleAvailability(!isAvailableStatus(equipment.status))}
+                        disabled={isSubmitting}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition ${
+                          isAvailableStatus(equipment.status) ? "bg-emerald-500" : "bg-slate-300"
+                        } ${isSubmitting ? "cursor-not-allowed opacity-60" : ""}`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white transition ${
+                            isAvailableStatus(equipment.status) ? "translate-x-5" : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                      <span className="text-sm text-slate-700">
+                        {isAvailableStatus(equipment.status) ? "Aktif" : "Nonaktif"}
+                      </span>
+                    </label>
+                  </div>
+                ) : null}
 
                 <div className="space-y-1 md:col-span-2">
                   <p className="text-xs font-medium text-slate-700">
@@ -484,6 +545,7 @@ export default function AdminEquipmentDetailDialog({
                       name: equipment.name,
                       quantity: equipment.quantity,
                       category: equipment.category,
+                      status: equipment.status,
                       roomId: equipment.roomId,
                       isMoveable: String(equipment.isMoveable),
                       description: equipment.description,

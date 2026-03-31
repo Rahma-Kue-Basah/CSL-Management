@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, CalendarPlus2, Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -72,10 +72,16 @@ export default function RoomDetailPage() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900">Detail Ruangan</h2>
-        <Button type="button" variant="outline" onClick={() => router.push("/rooms")}>
-          <ArrowLeft className="h-4 w-4" />
-          Kembali
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" onClick={() => router.push(`/booking-rooms/form?room=${room.id}`)}>
+            <CalendarPlus2 className="h-4 w-4" />
+            Ajukan Booking
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.push("/rooms")}>
+            <ArrowLeft className="h-4 w-4" />
+            Kembali
+          </Button>
+        </div>
       </div>
 
       {room.imageUrl ? (

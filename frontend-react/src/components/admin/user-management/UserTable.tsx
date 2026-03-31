@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import { USER_TYPE_VALUES } from "@/constants/user-types";
 import { getUserInitials, type UserRow } from "@/hooks/users/use-users";
 import type { UserDetailMode } from "@/components/admin/user-management/user-management-fields";
@@ -130,32 +131,32 @@ export default function UserTable({
                 </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.18)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
-                    <Button
+                    <TableActionIconButton
+                      label="Lihat detail"
                       variant="outline"
                       size="icon-sm"
                       onClick={() => onOpenDetail(user, "view")}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                      icon={<Eye className="h-4 w-4" />}
+                    />
                     {canManageUsers ? (
-                      <Button
+                      <TableActionIconButton
+                        label="Edit user"
                         variant="outline"
                         size="icon-sm"
                         disabled={isDeleting}
                         onClick={() => onOpenDetail(user, "edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                        icon={<Pencil className="h-4 w-4" />}
+                      />
                     ) : null}
                     {canManageUsers ? (
-                      <Button
+                      <TableActionIconButton
+                        label="Hapus user"
                         variant="outline"
                         size="icon-sm"
                         disabled={isDeleting}
                         onClick={() => onDelete(user)}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                        icon={<Trash2 className="h-4 w-4 text-destructive" />}
+                      />
                     ) : null}
                   </div>
                 </td>

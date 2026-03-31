@@ -11,6 +11,7 @@ type UpdateEquipmentPayload = {
   quantity: string;
   category: string;
   roomId: string;
+  status?: string;
   isMoveable: boolean;
   description?: string;
   imageId?: string | number | null;
@@ -22,6 +23,7 @@ function parseEquipmentError(data: unknown, fallback = "Gagal memperbarui perala
     "name",
     "quantity",
     "category",
+    "status",
     "room",
     "is_moveable",
     "image",
@@ -84,6 +86,7 @@ export function useUpdateEquipment() {
         is_moveable: payload.isMoveable,
         description: payload.description?.trim() || "",
       };
+      if (payload.status?.trim()) body.status = payload.status.trim();
 
       if (nextImageId) body.image = nextImageId;
 

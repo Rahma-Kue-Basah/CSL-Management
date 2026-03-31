@@ -7,6 +7,7 @@ import type { PengujianRow } from "@/hooks/pengujians/use-pengujians";
 import type { UserRow } from "@/hooks/users/use-users";
 import type { RoomRow } from "@/hooks/rooms/use-rooms";
 import type { EquipmentRow } from "@/hooks/equipments/use-equipments";
+import type { SoftwareRow } from "@/hooks/softwares/use-softwares";
 import { formatDateTimeId } from "@/lib/date-format";
 import { getStatusDisplayLabel } from "@/lib/status";
 
@@ -113,6 +114,15 @@ export const EQUIPMENT_EXPORT_COLUMNS: ExportColumn<EquipmentRow>[] = [
   { header: "Jumlah", cell: (item) => item.quantity },
   { header: "Ruangan", cell: (item) => item.roomName || "-" },
   { header: "Moveable", cell: (item) => (item.isMoveable ? "Ya" : "Tidak") },
+];
+
+export const SOFTWARE_EXPORT_COLUMNS: ExportColumn<SoftwareRow>[] = [
+  { header: "Nama", cell: (item) => item.name },
+  { header: "Versi", cell: (item) => item.version || "-" },
+  { header: "Lisensi", cell: (item) => item.licenseInfo || "-" },
+  { header: "Expired", cell: (item) => item.licenseExpiration || "-" },
+  { header: "Peralatan", cell: (item) => item.equipmentName || "-" },
+  { header: "Ruangan", cell: (item) => item.roomName || "-" },
 ];
 
 function formatStatus(value?: string | null) {

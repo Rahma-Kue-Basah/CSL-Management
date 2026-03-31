@@ -4,6 +4,11 @@ import { Search } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
+import {
+  AdminFilterField,
+  AdminFilterGrid,
+  ADMIN_FILTER_SELECT_CLASS,
+} from "@/components/admin/admin-filter-fields";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Input } from "@/components/ui/input";
 
@@ -60,38 +65,27 @@ export function ScheduleFilters({
   const hasDateFilter = typeof onDateRangeChange === "function";
   const hasSortOrder =
     typeof sortOrder === "string" && typeof onSortOrderChange === "function";
-  const totalColumns =
-    2 + Number(hasSourceFilter) + Number(hasDateFilter) + Number(hasSortOrder);
-  const columnClass =
-    totalColumns >= 5
-      ? "md:grid-cols-5"
-      : totalColumns === 4
-        ? "md:grid-cols-4"
-        : totalColumns === 3
-          ? "md:grid-cols-3"
-          : "md:grid-cols-2";
+  const totalColumns = (2 + Number(hasSourceFilter) + Number(hasDateFilter) + Number(hasSortOrder)) as 2 | 3 | 4 | 5;
 
   return (
     <AdminFilterCard open={open} onToggle={onToggle} onReset={onReset}>
-      <div className={`grid grid-cols-1 gap-3 ${columnClass}`}>
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-slate-800">Pencarian</label>
-          <div className="flex min-w-0 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-2.5">
+      <AdminFilterGrid columns={totalColumns}>
+        <AdminFilterField label="Pencarian">
+          <div className="flex min-w-0 items-center gap-2 rounded-md border border-slate-400 bg-white px-2 py-1">
             <Search className="h-4 w-4 text-slate-400" />
             <Input
               value={query}
               onChange={(event) => onQueryChange(event.target.value)}
               placeholder="Cari judul, deskripsi, atau agenda"
-              className="h-6 border-0 bg-transparent px-0 text-sm shadow-none focus-visible:ring-0"
+              className="h-6 border-0 bg-transparent px-0 text-xs placeholder:text-xs shadow-none focus-visible:ring-0"
             />
           </div>
-        </div>
-        <div className="space-y-2">
-          <label className="text-xs font-medium text-slate-800">Ruangan</label>
+        </AdminFilterField>
+        <AdminFilterField label="Ruangan">
           <select
             value={roomFilter}
             onChange={(event) => onRoomFilterChange(event.target.value)}
-            className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+            className={ADMIN_FILTER_SELECT_CLASS}
           >
             <option value="">Semua Ruangan</option>
             {rooms.map((room) => (
@@ -100,51 +94,48 @@ export function ScheduleFilters({
               </option>
             ))}
           </select>
-        </div>
+        </AdminFilterField>
         {hasSourceFilter ? (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-800">Sumber</label>
+          <AdminFilterField label="Sumber">
             <select
               value={sourceFilter}
               onChange={(event) => onSourceFilterChange(event.target.value)}
-              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              className={ADMIN_FILTER_SELECT_CLASS}
             >
               {sourceOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>
-              ))}
-            </select>
-          </div>
+                ))}
+              </select>
+          </AdminFilterField>
         ) : null}
         {hasDateFilter ? (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-800">Cari Tanggal</label>
+          <AdminFilterField label="Cari Tanggal">
             <DateRangePicker
               value={dateRange}
               onChange={onDateRangeChange}
               clearable
               className="w-full"
-              buttonClassName="h-11 rounded-lg border-slate-300 px-3 py-2.5 text-sm"
+              buttonClassName="h-8 rounded-md border-slate-400 px-2 py-0 text-xs"
             />
-          </div>
+          </AdminFilterField>
         ) : null}
         {hasSortOrder ? (
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-slate-800">Urutkan</label>
+          <AdminFilterField label="Urutkan">
             <select
               value={sortOrder}
               onChange={(event) => onSortOrderChange(event.target.value)}
-              className="h-11 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm text-slate-700 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-100"
+              className={ADMIN_FILTER_SELECT_CLASS}
             >
               <option value="newest">Tanggal Terbaru</option>
               <option value="oldest">Tanggal Terlama</option>
               <option value="title-asc">Judul A-Z</option>
               <option value="title-desc">Judul Z-A</option>
             </select>
-          </div>
+          </AdminFilterField>
         ) : null}
-      </div>
+      </AdminFilterGrid>
     </AdminFilterCard>
   );
 }

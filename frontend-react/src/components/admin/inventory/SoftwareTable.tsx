@@ -1,32 +1,30 @@
 "use client";
 
 import type { RefObject } from "react";
-import { Boxes, Eye, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import { Button } from "@/components/ui/button";
-import type { RoomRow } from "@/hooks/rooms/use-rooms";
+import type { SoftwareRow } from "@/hooks/softwares/use-softwares";
 
-type RoomTableProps = {
-  rooms: RoomRow[];
+type SoftwareTableProps = {
+  softwares: SoftwareRow[];
   isLoading: boolean;
   hasLoadedOnce: boolean;
   selectedIds: Array<string | number>;
   allVisibleSelected: boolean;
   isDeleting: boolean;
-  deleteCandidate: RoomRow | null;
+  deleteCandidate: SoftwareRow | null;
   selectAllRef: RefObject<HTMLInputElement | null>;
   onToggleSelectAllVisible: (checked: boolean) => void;
-  onToggleItemSelection: (room: RoomRow) => void;
-  onOpenDetail: (room: RoomRow, mode: "view" | "edit") => void;
-  onOpenEquipments: (room: RoomRow) => void;
-  onDeleteCandidateChange: (room: RoomRow | null) => void;
-  onDelete: (room: RoomRow) => void;
+  onToggleItemSelection: (software: SoftwareRow) => void;
+  onOpenDetail: (software: SoftwareRow, mode: "view" | "edit") => void;
+  onDeleteCandidateChange: (software: SoftwareRow | null) => void;
+  onDelete: (software: SoftwareRow) => void;
 };
 
-export default function RoomTable({
-  rooms,
+export default function SoftwareTable({
+  softwares,
   isLoading,
   hasLoadedOnce,
   selectedIds,
@@ -37,13 +35,12 @@ export default function RoomTable({
   onToggleSelectAllVisible,
   onToggleItemSelection,
   onOpenDetail,
-  onOpenEquipments,
   onDeleteCandidateChange,
   onDelete,
-}: RoomTableProps) {
+}: SoftwareTableProps) {
   return (
     <div className="w-full min-w-0 overflow-x-auto rounded border border-slate-200 bg-card [scrollbar-width:thin]">
-      <table className="w-full min-w-[1160px] table-fixed">
+      <table className="w-full min-w-[1120px] table-fixed">
         <thead className="border-b border-slate-800 bg-slate-900">
           <tr className="text-left text-sm">
             <th className="w-12 px-3 py-3 text-center font-medium text-slate-50">
@@ -53,16 +50,16 @@ export default function RoomTable({
                 className="h-4 w-4 rounded border-slate-300 align-middle"
                 checked={allVisibleSelected}
                 onChange={(event) => onToggleSelectAllVisible(event.target.checked)}
-                aria-label="Pilih semua ruangan yang tampil"
+                aria-label="Pilih semua software yang tampil"
               />
             </th>
-            <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Nama</th>
-            <th className="w-[96px] px-3 py-3 font-medium text-slate-50">Nomor</th>
-            <th className="w-[84px] px-3 py-3 font-medium text-slate-50">Lantai</th>
-            <th className="w-[96px] px-3 py-3 font-medium text-slate-50">Kapasitas</th>
-            <th className="w-[420px] px-3 py-3 font-medium text-slate-50">Deskripsi</th>
-            <th className="w-[230px] px-3 py-3 font-medium text-slate-50">PIC</th>
-            <th className="sticky right-0 z-10 relative w-[188px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.35)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
+            <th className="w-[220px] px-3 py-3 font-medium text-slate-50">Nama</th>
+            <th className="w-[100px] px-3 py-3 font-medium text-slate-50">Versi</th>
+            <th className="w-[220px] px-3 py-3 font-medium text-slate-50">Lisensi</th>
+            <th className="w-[160px] px-3 py-3 font-medium text-slate-50">Expired</th>
+            <th className="w-[210px] px-3 py-3 font-medium text-slate-50">Peralatan</th>
+            <th className="w-[170px] px-3 py-3 font-medium text-slate-50">Ruangan</th>
+            <th className="sticky right-0 z-10 relative w-[144px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.35)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-700">
               Aksi
             </th>
           </tr>
@@ -76,64 +73,53 @@ export default function RoomTable({
                 </div>
               </td>
             </tr>
-          ) : rooms.length ? (
-            rooms.map((room) => (
-              <tr key={String(room.id)} className="border-b last:border-b-0">
+          ) : softwares.length ? (
+            softwares.map((item) => (
+              <tr key={String(item.id)} className="border-b last:border-b-0">
                 <td className="px-3 py-2 text-center align-middle">
                   <input
                     type="checkbox"
                     className="h-4 w-4 rounded border-slate-300 align-middle"
-                    checked={selectedIds.includes(room.id)}
-                    onChange={() => onToggleItemSelection(room)}
-                    aria-label={`Pilih ruangan ${room.name}`}
+                    checked={selectedIds.includes(item.id)}
+                    onChange={() => onToggleItemSelection(item)}
+                    aria-label={`Pilih software ${item.name}`}
                   />
                 </td>
-                <td className="truncate px-3 py-2 align-middle font-medium">{room.name}</td>
-                <td className="truncate px-3 py-2 align-middle text-muted-foreground">{room.number}</td>
-                <td className="px-3 py-2 align-middle text-muted-foreground">{room.floor}</td>
-                <td className="px-3 py-2 align-middle text-muted-foreground">{room.capacity}</td>
-                <td className="px-3 py-2">
-                  <div className="whitespace-normal wrap-break-word text-muted-foreground">
-                    {room.description || "-"}
-                  </div>
-                </td>
-                <td className="truncate px-3 py-2 align-middle text-muted-foreground">{room.picName}</td>
+                <td className="truncate px-3 py-2 align-middle font-medium">{item.name}</td>
+                <td className="px-3 py-2 align-middle text-muted-foreground">{item.version || "-"}</td>
+                <td className="truncate px-3 py-2 align-middle text-muted-foreground">{item.licenseInfo || "-"}</td>
+                <td className="px-3 py-2 align-middle text-muted-foreground">{item.licenseExpiration || "-"}</td>
+                <td className="truncate px-3 py-2 align-middle text-muted-foreground">{item.equipmentName}</td>
+                <td className="truncate px-3 py-2 align-middle text-muted-foreground">{item.roomName}</td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 align-middle shadow-[-6px_0_10px_-10px_rgba(15,23,42,0.18)] before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
                     <TableActionIconButton
                       label="Lihat detail"
                       variant="outline"
                       size="icon-sm"
-                      onClick={() => onOpenDetail(room, "view")}
+                      onClick={() => onOpenDetail(item, "view")}
                       icon={<Eye className="h-4 w-4" />}
                     />
                     <TableActionIconButton
-                      label="Lihat peralatan"
+                      label="Edit software"
                       variant="outline"
                       size="icon-sm"
-                      onClick={() => onOpenEquipments(room)}
-                      icon={<Boxes className="h-4 w-4" />}
-                    />
-                    <TableActionIconButton
-                      label="Edit ruangan"
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={() => onOpenDetail(room, "edit")}
+                      onClick={() => onOpenDetail(item, "edit")}
                       icon={<Pencil className="h-4 w-4" />}
                     />
                     <ConfirmDeleteDialog
-                      open={deleteCandidate?.id === room.id}
-                      onOpenChange={(open) => onDeleteCandidateChange(open ? room : null)}
+                      open={deleteCandidate?.id === item.id}
+                      onOpenChange={(open) => onDeleteCandidateChange(open ? item : null)}
                       size="sm"
                       headerClassName="place-items-start text-left"
                       footerClassName="sm:justify-start"
-                      title="Hapus ruangan?"
-                      description={`Ruangan ${room.name} akan dihapus.`}
+                      title="Hapus software?"
+                      description={`Software ${item.name} akan dihapus.`}
                       isDeleting={isDeleting}
-                      onConfirm={() => onDelete(room)}
+                      onConfirm={() => onDelete(item)}
                       trigger={
                         <TableActionIconButton
-                          label="Hapus ruangan"
+                          label="Hapus software"
                           variant="outline"
                           size="icon-sm"
                           disabled={isDeleting}
@@ -148,7 +134,7 @@ export default function RoomTable({
           ) : (
             <tr>
               <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
-                Tidak ada data ruangan.
+                Tidak ada data software.
               </td>
             </tr>
           )}

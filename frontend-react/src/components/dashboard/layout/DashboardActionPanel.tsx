@@ -75,6 +75,16 @@ type EquipmentFilterConfig = {
   onMoveableChange?: (value: string) => void;
 };
 
+type SoftwareFilterConfig = {
+  keyword: string;
+  equipment: string;
+  room: string;
+  onKeywordChange: (value: string) => void;
+  onEquipmentChange: (value: string) => void;
+  onRoomChange: (value: string) => void;
+  onReset: () => void;
+};
+
 const FILTER_CONTROL_CLASS =
   "h-8 w-full rounded-md border border-slate-200 px-2.5 text-xs outline-none transition focus:border-[#0048B4]";
 
@@ -243,12 +253,16 @@ export function DashboardActionPanel({
   const equipmentCategory = searchParams.get("category") ?? "";
   const equipmentRoom = searchParams.get("room") ?? "";
   const equipmentMoveable = searchParams.get("moveable") ?? "";
+  const softwareKeyword = searchParams.get("q") ?? "";
+  const softwareEquipment = searchParams.get("equipment") ?? "";
+  const softwareRoom = searchParams.get("room") ?? "";
   const isBookingRequestListPage = pathname === "/booking-rooms";
   const isBookingAllRequestsPage = pathname === "/booking-rooms/approval";
   const isRoomsListPage = pathname === "/rooms";
   const isUseRequestListPage = pathname === "/use-equipment";
   const isUseAllRequestsPage = pathname === "/use-equipment/approval";
   const isEquipmentListPage = pathname === "/equipment";
+  const isSoftwareListPage = pathname === "/software";
   const isBorrowRequestListPage = pathname === "/borrow-equipment";
   const isBorrowAllRequestsPage = pathname === "/borrow-equipment/approval";
   const isBorrowEquipmentListPage = pathname === "/borrow-equipment/equipment";
@@ -399,6 +413,19 @@ export function DashboardActionPanel({
 
   const updateEquipmentFilter = (
     key: "q" | "status" | "category" | "room" | "moveable",
+    value: string,
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    replaceCurrentPath(params);
+  };
+
+  const updateSoftwareFilter = (
+    key: "q" | "equipment" | "room",
     value: string,
   ) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -576,6 +603,58 @@ export function DashboardActionPanel({
     </FilterCard>
   );
 
+  const renderSoftwareFilters = ({
+    keyword,
+    equipment,
+    room,
+    onKeywordChange,
+    onEquipmentChange,
+    onRoomChange,
+    onReset,
+  }: SoftwareFilterConfig) => (
+    <FilterCard title="Filter Software">
+      <FilterField label="Cari">
+        <DebouncedSearchInput
+          value={keyword}
+          onChange={onKeywordChange}
+          placeholder="Nama software"
+          className="h-8 text-xs placeholder:text-xs"
+        />
+      </FilterField>
+      <FilterField label="Peralatan">
+        <select
+          value={equipment}
+          onChange={(event) => onEquipmentChange(event.target.value)}
+          className={FILTER_CONTROL_CLASS}
+        >
+          <option value="">Semua Peralatan</option>
+          {useEquipmentOptionsList.map((equipmentOption) => (
+            <option key={equipmentOption.id} value={equipmentOption.id}>
+              {equipmentOption.label}
+            </option>
+          ))}
+        </select>
+      </FilterField>
+      <FilterField label="Ruangan">
+        <select
+          value={room}
+          onChange={(event) => onRoomChange(event.target.value)}
+          className={FILTER_CONTROL_CLASS}
+        >
+          <option value="">Semua Ruangan</option>
+          {rooms.map((roomOption) => (
+            <option key={roomOption.id} value={roomOption.id}>
+              {roomOption.label}
+            </option>
+          ))}
+        </select>
+      </FilterField>
+      <Button type="button" variant="outline" className={FILTER_BUTTON_CLASS} onClick={onReset}>
+        Reset Filter
+      </Button>
+    </FilterCard>
+  );
+
   const handleActionClick = () => {
     if (mobile) onClose();
   };
@@ -699,6 +778,11 @@ export function DashboardActionPanel({
                   actionIsActive &&
                   action.id === "equipment" &&
                   isEquipmentListPage;
+                const showSoftwareFilters =
+                  menu.id === "use-equipment" &&
+                  actionIsActive &&
+                  action.id === "software" &&
+                  isSoftwareListPage;
                 const showBorrowFilters =
                   menu.id === "borrow-equipment" &&
                   isActionPathActive(
@@ -914,6 +998,26 @@ export function DashboardActionPanel({
                               "category",
                               "room",
                               "moveable",
+                            ]),
+                        })}
+                    </AnimatedFilterSection>
+
+                    <AnimatedFilterSection show={showSoftwareFilters}>
+                      {renderSoftwareFilters({
+                          keyword: softwareKeyword,
+                          equipment: softwareEquipment,
+                          room: softwareRoom,
+                          onKeywordChange: (value) =>
+                            updateSoftwareFilter("q", value),
+                          onEquipmentChange: (value) =>
+                            updateSoftwareFilter("equipment", value),
+                          onRoomChange: (value) =>
+                            updateSoftwareFilter("room", value),
+                          onReset: () =>
+                            resetFilters([
+                              "q",
+                              "equipment",
+                              "room",
                             ]),
                         })}
                     </AnimatedFilterSection>

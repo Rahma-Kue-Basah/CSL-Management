@@ -22,6 +22,7 @@ export function useEquipmentOptions(
   room = "",
   enabled = true,
   isMoveable?: boolean,
+  category = "",
 ) {
   const [equipments, setEquipments] = useState<EquipmentOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -45,6 +46,7 @@ export function useEquipmentOptions(
         const url = new URL(API_EQUIPMENTS_DROPDOWN, window.location.origin);
         if (status) url.searchParams.set("status", status);
         if (room) url.searchParams.set("room", room);
+        if (category) url.searchParams.set("category", category);
         if (typeof isMoveable === "boolean") {
           url.searchParams.set("is_moveable", String(isMoveable));
         }
@@ -79,7 +81,7 @@ export function useEquipmentOptions(
       isAborted = true;
       controller.abort();
     };
-  }, [status, room, enabled, isMoveable]);
+  }, [status, room, enabled, isMoveable, category]);
 
   return { equipments, isLoading, error };
 }

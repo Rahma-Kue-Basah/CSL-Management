@@ -238,6 +238,13 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         href: "/equipment",
         allowedRoles: CATALOG_ACCESS_ROLES,
       },
+      {
+        id: "software",
+        label: "Daftar Software",
+        description: "Lihat daftar software yang tersedia pada peralatan laboratorium.",
+        href: "/software",
+        allowedRoles: CATALOG_ACCESS_ROLES,
+      },
     ],
   },
   {
@@ -463,6 +470,9 @@ export function parseDashboardPath(pathname: string) {
   }
   if (parts[0] === "equipment") {
     return { menu: "use-equipment", action: "equipment" };
+  }
+  if (parts[0] === "software") {
+    return { menu: "use-equipment", action: "software" };
   }
   if (parts[0] === "sample-testing") {
     if (parts[1] === "approval") {

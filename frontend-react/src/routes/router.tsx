@@ -36,6 +36,7 @@ import UseEquipmentListPage from "@/pages/dashboard/use-equipment/UseEquipmentLi
 import UseEquipmentAllListPage from "@/pages/dashboard/use-equipment/UseEquipmentAllListPage";
 import UseEquipmentFormPage from "@/pages/dashboard/use-equipment/UseEquipmentFormPage";
 import EquipmentListPage from "@/pages/dashboard/use-equipment/EquipmentListPage";
+import SoftwareListPage from "@/pages/dashboard/use-equipment/SoftwareListPage";
 import EquipmentDetailPage from "@/pages/dashboard/use-equipment/EquipmentDetailPage";
 import UseEquipmentDetailPage from "@/pages/dashboard/use-equipment/UseEquipmentDetailPage";
 import SampleTestingListPage from "@/pages/dashboard/sample-testing/SampleTestingListPage";
@@ -53,6 +54,7 @@ import AdminSchedulePage from "@/pages/admin/information/AdminSchedulePage";
 import AdminAnnouncementPage from "@/pages/admin/information/AdminAnnouncementPage";
 import AdminFaqPage from "@/pages/admin/information/AdminFaqPage";
 import AdminEquipmentPage from "@/pages/admin/inventory/AdminEquipmentPage";
+import AdminSoftwarePage from "@/pages/admin/inventory/AdminSoftwarePage";
 import AdminRoomPage from "@/pages/admin/inventory/AdminRoomPage";
 import AdminRoomBookingHistoryPage from "@/pages/admin/history/AdminRoomBookingHistoryPage";
 import AdminEquipmentUsageHistoryPage from "@/pages/admin/history/AdminEquipmentUsageHistoryPage";
@@ -261,6 +263,14 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: "software",
+        element: (
+          <RequireMenuAccess menuId="use-equipment">
+            <SoftwareListPage />
+          </RequireMenuAccess>
+        ),
+      },
+      {
         path: "equipment/:id",
         element: (
           <RequireMenuAccess menuId="use-equipment">
@@ -412,6 +422,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, element: <Navigate to="equipment" replace /> },
           { path: "equipment", element: <AdminEquipmentPage /> },
+          { path: "software", element: <AdminSoftwarePage /> },
           { path: "rooms", element: <AdminRoomPage /> },
         ],
       },

@@ -118,6 +118,12 @@ const API_EQUIPMENTS_BULK_DELETE = `${API_EQUIPMENTS}bulk-delete/`;
 const API_EQUIPMENT_DETAIL = (id: string | number) =>
   `${API_EQUIPMENTS}${id}/`;
 
+const API_SOFTWARES = `${API_BASE_URL}/softwares/`;
+const API_SOFTWARES_EXPORT = `${API_SOFTWARES}export/`;
+const API_SOFTWARES_BULK_DELETE = `${API_SOFTWARES}bulk-delete/`;
+const API_SOFTWARE_DETAIL = (id: string | number) =>
+  `${API_SOFTWARES}${id}/`;
+
 // REGION: Images API Endpoints
 const API_IMAGES = `${API_BASE_URL}/images/`;
 const API_IMAGE_DETAIL = (id: string | number) => `${API_IMAGES}${id}/`;
@@ -228,6 +234,10 @@ export {
   API_EQUIPMENTS_EXPORT,
   API_EQUIPMENTS_BULK_DELETE,
   API_EQUIPMENT_DETAIL,
+  API_SOFTWARES,
+  API_SOFTWARES_EXPORT,
+  API_SOFTWARES_BULK_DELETE,
+  API_SOFTWARE_DETAIL,
   API_IMAGES,
   API_IMAGE_DETAIL,
   API_ROOMS,

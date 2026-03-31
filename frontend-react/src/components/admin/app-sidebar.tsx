@@ -124,6 +124,7 @@ const adminMenuConfig: MenuConfig[] = [
     items: [
       { label: "Ruangan", href: "/admin/inventory/rooms" },
       { label: "Peralatan", href: "/admin/inventory/equipment" },
+      { label: "Software", href: "/admin/inventory/software" },
     ],
   },
   {

@@ -9,6 +9,7 @@ export type EquipmentFilters = {
   status?: string;
   category?: string;
   room?: string;
+  pic?: string;
   is_moveable?: string;
   search?: string;
 };
@@ -92,6 +93,7 @@ export function useEquipments(page: number, pageSize = 10, filters: EquipmentFil
         if (filters.status) url.searchParams.set("status", filters.status);
         if (filters.category) url.searchParams.set("category", filters.category);
         if (filters.room) url.searchParams.set("room", filters.room);
+        if (filters.pic) url.searchParams.set("pic", filters.pic);
         if (filters.is_moveable !== undefined && filters.is_moveable !== "") {
           url.searchParams.set("is_moveable", filters.is_moveable);
         }
@@ -129,7 +131,7 @@ export function useEquipments(page: number, pageSize = 10, filters: EquipmentFil
       isAborted = true;
       controller.abort();
     };
-  }, [page, pageSize, filters.status, filters.category, filters.room, filters.is_moveable, filters.search, reloadKey]);
+  }, [page, pageSize, filters.status, filters.category, filters.room, filters.pic, filters.is_moveable, filters.search, reloadKey]);
 
   return {
     equipments,

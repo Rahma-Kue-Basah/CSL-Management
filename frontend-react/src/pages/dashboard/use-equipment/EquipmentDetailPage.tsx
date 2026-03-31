@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, ClipboardPlus, Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -76,10 +76,16 @@ export default function EquipmentDetailPage() {
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-900">Detail Alat</h2>
-        <Button type="button" variant="outline" onClick={() => router.push("/equipment")}>
-          <ArrowLeft className="h-4 w-4" />
-          Kembali
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button type="button" onClick={() => router.push(`/use-equipment/form?equipment=${equipment.id}`)}>
+            <ClipboardPlus className="h-4 w-4" />
+            Ajukan Penggunaan
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.push("/equipment")}>
+            <ArrowLeft className="h-4 w-4" />
+            Kembali
+          </Button>
+        </div>
       </div>
 
       {equipment.imageUrl ? (

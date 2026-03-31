@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Loader2 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -18,7 +18,7 @@ import { Input } from "@/components/ui/input";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useCreateUse } from "@/hooks/uses/use-create-use";
-import { REQUEST_PURPOSE_OPTIONS } from "@/constants/request-purpose";
+import { REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP } from "@/constants/request-purpose";
 import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import {
   combineDateTime,
@@ -56,6 +56,7 @@ const initialFormData: FormData = {
 
 export default function UseEquipmentFormPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const { profile } = useLoadProfile();
@@ -69,9 +70,10 @@ export default function UseEquipmentFormPage() {
     equipments,
     isLoading: isLoadingEquipments,
     error: equipmentError,
-  } = useEquipmentOptions("available");
+  } = useEquipmentOptions("Available");
   const { createUse, isSubmitting, errorMessage, setErrorMessage } = useCreateUse();
   const isGuestUser = profile.role === "Guest";
+  const preselectedEquipmentId = searchParams.get("equipment") ?? "";
 
   const minEndDate = startDate ? new Date(startDate) : new Date(today);
   if (minEndDate) {
@@ -95,6 +97,12 @@ export default function UseEquipmentFormPage() {
       })),
     [equipments],
   );
+
+  useEffect(() => {
+    if (!preselectedEquipmentId || formData.equipmentId) return;
+    if (!equipments.some((equipment) => equipment.id === preselectedEquipmentId)) return;
+    setFormData((prev) => ({ ...prev, equipmentId: preselectedEquipmentId }));
+  }, [equipments, formData.equipmentId, preselectedEquipmentId]);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -163,7 +171,7 @@ export default function UseEquipmentFormPage() {
       setValidationMessage("Tujuan penggunaan alat wajib diisi.");
       return false;
     }
-    if (!REQUEST_PURPOSE_OPTIONS.some((option) => option.value === formData.purpose)) {
+    if (!REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.some((option) => option.value === formData.purpose)) {
       setValidationMessage("Pilihan tujuan tidak valid.");
       return false;
     }
@@ -273,7 +281,7 @@ export default function UseEquipmentFormPage() {
           <DashboardComboboxField
             label="Tujuan"
             value={formData.purpose}
-            options={REQUEST_PURPOSE_OPTIONS}
+            options={REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP}
             placeholder="Pilih tujuan"
             emptyText="Tujuan tidak ditemukan."
             disabled={isSubmitting}
@@ -442,7 +450,7 @@ export default function UseEquipmentFormPage() {
         <SubmissionSummaryItem
           label="Tujuan"
           value={
-            REQUEST_PURPOSE_OPTIONS.find((option) => option.value === formData.purpose)
+            REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.find((option) => option.value === formData.purpose)
               ?.label ?? formData.purpose
           }
         />

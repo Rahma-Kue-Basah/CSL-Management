@@ -4,6 +4,7 @@ import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import type { ScheduleItem } from "@/hooks/schedules/use-schedules";
 
 export type ScheduleTableRow = {
@@ -149,42 +150,42 @@ export function SchedulesTable({
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 align-middle before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   {isSchedule ? (
                     <div className="flex justify-center gap-2">
-                      <Button
+                      <TableActionIconButton
+                        label="Lihat detail"
                         type="button"
                         variant="outline"
                         size="icon-sm"
                         onClick={() => onView(item.scheduleItem as ScheduleItem)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button
+                        icon={<Eye className="h-4 w-4" />}
+                      />
+                      <TableActionIconButton
+                        label="Edit jadwal"
                         type="button"
                         variant="outline"
                         size="icon-sm"
                         onClick={() => onEdit(item.scheduleItem as ScheduleItem)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
+                        icon={<Pencil className="h-4 w-4" />}
+                      />
+                      <TableActionIconButton
+                        label="Hapus jadwal"
                         type="button"
                         variant="outline"
                         size="icon-sm"
                         className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
                         onClick={() => onDelete(item.scheduleItem as ScheduleItem)}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        icon={<Trash2 className="h-4 w-4" />}
+                      />
                     </div>
                   ) : (
                     <div className="flex justify-center">
-                      <Button
+                      <TableActionIconButton
+                        label="Lihat booking"
                         type="button"
                         variant="outline"
                         size="icon-sm"
                         onClick={() => onViewBooking(item.id)}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
+                        icon={<Eye className="h-4 w-4" />}
+                      />
                     </div>
                   )}
                 </td>
