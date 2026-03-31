@@ -81,14 +81,14 @@ class CsluseWorkflowRegressionTests(APITestCase):
             defaults={
                 "role": role,
                 "full_name": full_name,
-                "user_type": "INTERNAL",
+                "user_type": "Internal",
             },
         )
         profile.refresh_from_db()
         return user, profile
 
     def test_booking_requesters_endpoint_returns_unique_requesters(self):
-        self.student_profile.department = "DIGITAL BUSINESS TECHNOLOGY"
+        self.student_profile.department = "Digital Business Technology"
         self.student_profile.save(update_fields=["department"])
         self.create_booking(self.student_profile)
         self.create_use(self.student_profile)
@@ -99,7 +99,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], str(self.student_profile.id))
-        self.assertEqual(response.data[0]["department"], "DIGITAL BUSINESS TECHNOLOGY")
+        self.assertEqual(response.data[0]["department"], "Digital Business Technology")
 
     def test_booking_all_supports_department_and_room_filters(self):
         other_user, other_profile = self.create_user_with_profile(
@@ -107,9 +107,9 @@ class CsluseWorkflowRegressionTests(APITestCase):
             "Student",
             "Other Student",
         )
-        other_profile.department = "BUSINESS MATHEMATICS"
+        other_profile.department = "Business Mathematics"
         other_profile.save(update_fields=["department"])
-        self.student_profile.department = "DIGITAL BUSINESS TECHNOLOGY"
+        self.student_profile.department = "Digital Business Technology"
         self.student_profile.save(update_fields=["department"])
 
         self.create_booking(self.student_profile)
@@ -124,7 +124,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(
             response.data["results"][0]["requested_by_detail"]["department"],
-            "DIGITAL BUSINESS TECHNOLOGY",
+            "Digital Business Technology",
         )
 
     def future_window(self, *, days=1, start_hour=9, duration_hours=2):
@@ -146,7 +146,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             start_time=start,
             end_time=end,
             attendee_count=1,
-            purpose="Research",
+            purpose="Penelitian",
         )
 
     def create_booking_for_room(self, requested_by, room):
@@ -157,7 +157,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             start_time=start,
             end_time=end,
             attendee_count=1,
-            purpose="Research",
+            purpose="Penelitian",
         )
 
     def create_use(self, requested_by, *, status="Pending", approved_by=None):
@@ -168,7 +168,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             quantity=1,
             start_time=start,
             end_time=end,
-            purpose="Research",
+            purpose="Penelitian",
             status=status,
             approved_by=approved_by,
         )
@@ -181,7 +181,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             quantity=1,
             start_time=start,
             end_time=end,
-            purpose="Research",
+            purpose="Penelitian",
             status=status,
             approved_by=approved_by,
         )
@@ -194,7 +194,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             quantity=1,
             start_time=start,
             end_time=end,
-            purpose="Research",
+            purpose="Penelitian",
             status=status,
             approved_by=approved_by,
         )
@@ -207,7 +207,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             quantity=1,
             start_time=start,
             end_time=end,
-            purpose="Research",
+            purpose="Penelitian",
             status=status,
             approved_by=approved_by,
         )

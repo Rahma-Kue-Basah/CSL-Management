@@ -20,6 +20,7 @@ import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import {
+  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
   REQUEST_PURPOSE_OPTIONS,
   WORKSHOP_PURPOSE,
 } from "@/constants/request-purpose";
@@ -54,7 +55,7 @@ type FormData = {
 
 const initialFormData: FormData = {
   roomId: "",
-  purpose: "Research",
+  purpose: "Penelitian",
   startTime: "",
   endTime: "",
   attendeeCount: "1",
@@ -97,6 +98,9 @@ export default function BookingRoomsFormPage() {
   const preselectedRoomId = searchParams.get("room") ?? "";
   const isGuestUser = profile.role === "Guest";
   const isWorkshopPurpose = formData.purpose === WORKSHOP_PURPOSE;
+  const availablePurposeOptions = isGuestUser
+    ? REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP
+    : REQUEST_PURPOSE_OPTIONS;
 
   const minEndDate = startDate ? new Date(startDate) : new Date(today);
   if (minEndDate) {
@@ -151,6 +155,17 @@ export default function BookingRoomsFormPage() {
     if (!rooms.some((room) => room.id === preselectedRoomId)) return;
     setFormData((prev) => ({ ...prev, roomId: preselectedRoomId }));
   }, [formData.roomId, preselectedRoomId, rooms]);
+
+  useEffect(() => {
+    if (!isGuestUser || formData.purpose !== WORKSHOP_PURPOSE) return;
+    setFormData((prev) => ({
+      ...prev,
+      purpose: "Penelitian",
+      workshopInstitution: "",
+      workshopPic: "",
+      workshopTitle: "",
+    }));
+  }, [formData.purpose, isGuestUser]);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -277,7 +292,7 @@ export default function BookingRoomsFormPage() {
       setValidationMessage("Tujuan penggunaan ruangan wajib diisi.");
       return false;
     }
-    if (!REQUEST_PURPOSE_OPTIONS.some((option) => option.value === formData.purpose)) {
+    if (!availablePurposeOptions.some((option) => option.value === formData.purpose)) {
       setValidationMessage("Pilihan tujuan tidak valid.");
       return false;
     }
@@ -425,7 +440,7 @@ export default function BookingRoomsFormPage() {
           <DashboardComboboxField
             label="Tujuan"
             value={formData.purpose}
-            options={REQUEST_PURPOSE_OPTIONS}
+              options={availablePurposeOptions}
             placeholder="Pilih tujuan"
             emptyText="Tujuan tidak ditemukan."
             disabled={isSubmitting}
@@ -805,20 +820,28 @@ export default function BookingRoomsFormPage() {
             value={formData.requesterMentor}
           />
         ) : null}
-        <SubmissionSummaryItem label="Institusi" value={formData.institution} />
-        <SubmissionSummaryItem
-          label="Alamat Institusi"
-          value={formData.institutionAddress}
-        />
-        <SubmissionSummaryItem
-          label="Judul Workshop"
-          value={formData.workshopTitle}
-        />
-        <SubmissionSummaryItem label="PIC Workshop" value={formData.workshopPic} />
-        <SubmissionSummaryItem
-          label="Institusi Workshop"
-          value={formData.workshopInstitution}
-        />
+        {isGuestUser ? (
+          <>
+            <SubmissionSummaryItem label="Institusi" value={formData.institution} />
+            <SubmissionSummaryItem
+              label="Alamat Institusi"
+              value={formData.institutionAddress}
+            />
+          </>
+        ) : null}
+        {isWorkshopPurpose ? (
+          <>
+            <SubmissionSummaryItem
+              label="Judul Workshop"
+              value={formData.workshopTitle}
+            />
+            <SubmissionSummaryItem label="PIC Workshop" value={formData.workshopPic} />
+            <SubmissionSummaryItem
+              label="Institusi Workshop"
+              value={formData.workshopInstitution}
+            />
+          </>
+        ) : null}
         <SubmissionSummaryItem label="Peralatan" value={selectedEquipmentLabel} />
         <SubmissionSummaryItem label="Catatan" value={formData.note} />
       </SubmissionConfirmDialog>

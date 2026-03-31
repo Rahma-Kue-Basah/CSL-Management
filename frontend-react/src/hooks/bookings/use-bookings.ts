@@ -50,6 +50,7 @@ export type BookingRow = {
   updatedAt: string;
   approvedAt: string;
   rejectedAt: string;
+  rejectionNote: string;
   expiredAt: string;
   completedAt: string;
   approvedById: string;
@@ -88,6 +89,7 @@ type ApiBooking = {
   updated_at?: string | null;
   approved_at?: string | null;
   rejected_at?: string | null;
+  rejection_note?: string | null;
   expired_at?: string | null;
   completed_at?: string | null;
   room?: string | number | null;
@@ -207,6 +209,7 @@ export function mapBooking(item: ApiBooking): BookingRow {
     updatedAt: String(item.updated_at ?? "-"),
     approvedAt: String(item.approved_at ?? "-"),
     rejectedAt: String(item.rejected_at ?? "-"),
+    rejectionNote: String(item.rejection_note ?? ""),
     expiredAt: String(item.expired_at ?? "-"),
     completedAt: String(item.completed_at ?? "-"),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
@@ -225,12 +228,32 @@ export function mapBooking(item: ApiBooking): BookingRow {
 export function useBookingDetail(
   id?: string | number | null,
   reloadKey = 0,
+  options?: {
+    enabled?: boolean;
+    initialBooking?: BookingRow | null;
+  },
 ) {
-  const [booking, setBooking] = useState<BookingRow | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const enabled = options?.enabled ?? true;
+  const [booking, setBooking] = useState<BookingRow | null>(
+    options?.initialBooking ?? null,
+  );
+  const [isLoading, setIsLoading] = useState(
+    enabled && Boolean(id) && !options?.initialBooking,
+  );
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (typeof options?.initialBooking === "undefined") return;
+    setBooking(options.initialBooking ?? null);
+  }, [options?.initialBooking]);
+
+  useEffect(() => {
+    if (!enabled) {
+      setError("");
+      setIsLoading(false);
+      return;
+    }
+
     if (!id) {
       setBooking(null);
       setError("");
@@ -270,7 +293,7 @@ export function useBookingDetail(
       isAborted = true;
       controller.abort();
     };
-  }, [id, reloadKey]);
+  }, [enabled, id, reloadKey]);
 
   return {
     booking,

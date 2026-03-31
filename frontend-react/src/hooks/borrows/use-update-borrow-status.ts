@@ -42,7 +42,7 @@ export function useUpdateBorrowStatus() {
   const updateBorrowStatus = async (
     borrowId: string | number,
     type: BorrowStatusActionType,
-    payload?: { endTimeActual?: string; inspectionNote?: string },
+    payload?: { endTimeActual?: string; inspectionNote?: string; rejectionNote?: string },
   ) => {
     setPendingAction({ borrowId, type });
 
@@ -71,6 +71,9 @@ export function useUpdateBorrowStatus() {
         payload?.inspectionNote?.trim()
       ) {
         body.inspection_note = payload.inspectionNote.trim();
+      }
+      if (type === "reject" && payload?.rejectionNote?.trim()) {
+        body.rejection_note = payload.rejectionNote.trim();
       }
 
       const response = await authFetch(targetUrl, {

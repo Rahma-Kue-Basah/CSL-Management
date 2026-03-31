@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check, Handshake, Loader2, RotateCcw, ShieldCheck, TriangleAlert, X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -18,16 +18,30 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  API_BOOKING_REVIEW_CHECK,
+  API_BORROW_REVIEW_CHECK,
+  API_USE_REVIEW_CHECK,
+} from "@/constants/api";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import { useBookingDetail } from "@/hooks/bookings/use-bookings";
+import { authFetch } from "@/lib/auth";
+import {
+  useBookingDetail,
+  type BookingRow,
+} from "@/hooks/bookings/use-bookings";
 import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
-import { useBorrowDetail } from "@/hooks/borrows/use-borrows";
+import {
+  useBorrowDetail,
+  type BorrowRow,
+} from "@/hooks/borrows/use-borrows";
 import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
-import { useUseDetail } from "@/hooks/uses/use-uses";
+import {
+  useUseDetail,
+  type UseRow,
+} from "@/hooks/uses/use-uses";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { formatDateTimeWib } from "@/lib/date-format";
-import { getStatusDisplayLabel } from "@/lib/status";
 
 export type ReviewContext =
   | { kind: "booking"; id: string }
@@ -69,6 +83,30 @@ function isReviewerRole(role: string | null | undefined) {
   );
 }
 
+type ReviewIssue = {
+  label: string;
+  value: string;
+};
+
+type ReviewCheckResponse = {
+  issues?: ReviewIssue[];
+  passed_indicators?: string[];
+};
+
+async function loadReviewIssues(url: string) {
+  const response = await authFetch(url, { method: "GET" });
+  if (!response.ok) {
+    throw new Error(`Gagal memuat review check (${response.status})`);
+  }
+  const payload = (await response.json()) as ReviewCheckResponse;
+  return {
+    issues: Array.isArray(payload.issues) ? payload.issues : [],
+    passedIndicators: Array.isArray(payload.passed_indicators)
+      ? payload.passed_indicators
+      : [],
+  };
+}
+
 function PanelLoadingState() {
   return (
     <div className="rounded-lg border border-[#D2DDED] bg-white px-4 py-6 text-sm text-slate-500">
@@ -91,16 +129,79 @@ function PanelErrorState({ message }: { message: string }) {
 function BookingReviewPanel({
   id,
   onActionComplete,
+  initialBooking,
 }: {
   id: string;
   onActionComplete?: () => void;
+  initialBooking?: BookingRow | null;
 }) {
   const { profile } = useLoadProfile();
-  const { booking, setBooking, isLoading, error } = useBookingDetail(id);
+  const { booking, setBooking, isLoading, error } = useBookingDetail(id, 0, {
+    enabled: !initialBooking,
+    initialBooking,
+  });
   const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
+  const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
+  const [passedIndicators, setPassedIndicators] = useState<string[]>([]);
+  const [issuesLoading, setIssuesLoading] = useState(true);
   const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
     null,
   );
+  const shouldShowBookingReviewCheck = isPendingStatus(booking?.status ?? "");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadIssues = async () => {
+      if (!booking) {
+        if (isMounted) {
+          setReviewIssues([]);
+          setPassedIndicators([]);
+          setIssuesLoading(false);
+        }
+        return;
+      }
+
+      if (!shouldShowBookingReviewCheck) {
+        if (isMounted) {
+          setReviewIssues([]);
+          setPassedIndicators([]);
+          setIssuesLoading(false);
+        }
+        return;
+      }
+
+      setIssuesLoading(true);
+
+      try {
+        const result = await loadReviewIssues(API_BOOKING_REVIEW_CHECK(booking.id));
+        if (isMounted) {
+          setReviewIssues(result.issues);
+          setPassedIndicators(result.passedIndicators);
+          setIssuesLoading(false);
+        }
+      } catch {
+        if (isMounted) {
+          setReviewIssues([
+            {
+              label: "Review check belum tersedia",
+              value: "Sistem tidak berhasil memeriksa catatan review saat ini. Cek ulang data sebelum approve.",
+            },
+          ]);
+          setPassedIndicators([]);
+          setIssuesLoading(false);
+        }
+      }
+    };
+
+    void loadIssues();
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    booking?.id,
+    shouldShowBookingReviewCheck,
+  ]);
 
   if (isLoading) return <PanelLoadingState />;
   if (error || !booking) {
@@ -110,11 +211,15 @@ function BookingReviewPanel({
   const canReviewBooking =
     isReviewerRole(profile?.role) && isPendingStatus(booking.status);
 
-  const handleBookingAction = async () => {
+  const handleBookingAction = async (rejectionNote?: string) => {
     if (!confirmType) return;
 
     const type = confirmType;
-    const result = await updateBookingStatus(booking.id, type);
+    const result = await updateBookingStatus(
+      booking.id,
+      type,
+      type === "reject" ? { rejectionNote } : undefined,
+    );
     if (!result.ok) {
       toast.error(result.message);
       return;
@@ -127,6 +232,8 @@ function BookingReviewPanel({
             ...current,
             status: type === "approve" ? "Approved" : "Rejected",
             updatedAt: now,
+            rejectionNote:
+              type === "reject" ? String(rejectionNote ?? current.rejectionNote ?? "") : current.rejectionNote,
             approvedById:
               type === "approve"
                 ? String(profile?.id ?? current.approvedById)
@@ -158,19 +265,26 @@ function BookingReviewPanel({
         status={booking.status}
         code={booking.code}
         meta={[
-          { label: "Pemohon", value: booking.requesterName },
-          { label: "Prodi Pemohon", value: booking.requesterDepartment || "-" },
-          { label: "Tanggal Dibuat", value: formatDateTimeWib(booking.createdAt) },
           { label: "Ruangan", value: booking.roomName || "-" },
           ...(booking.equipmentName && booking.equipmentName !== "-"
             ? [{ label: "Peralatan", value: booking.equipmentName }]
             : []),
+          { label: "Pemohon", value: booking.requesterName },
+          { label: "Tanggal Dibuat", value: formatDateTimeWib(booking.createdAt) },
           { label: "Ditujukan ke PIC", value: booking.roomPicName || "-" },
           {
             label: "Batas waktu approval",
             value: formatDateTimeWib(booking.startTime),
           },
         ]}
+        checklist={shouldShowBookingReviewCheck ? reviewIssues : []}
+        checklistLoading={shouldShowBookingReviewCheck ? issuesLoading : false}
+        checklistEmptyMessage={
+          shouldShowBookingReviewCheck
+            ? "Tidak ada catatan review. Pengajuan ini siap diproses."
+            : undefined
+        }
+        checklistPassedIndicators={shouldShowBookingReviewCheck ? passedIndicators : []}
       >
         {canReviewBooking ? (
           <>
@@ -205,6 +319,7 @@ function BookingReviewPanel({
         onConfirm={handleBookingAction}
         isSubmitting={pendingAction.bookingId === booking.id}
         subjectLabel="pengajuan peminjaman lab ini"
+        requireReasonOnReject
       />
     </>
   );
@@ -213,16 +328,78 @@ function BookingReviewPanel({
 function UseReviewPanel({
   id,
   onActionComplete,
+  initialUseItem,
 }: {
   id: string;
   onActionComplete?: () => void;
+  initialUseItem?: UseRow | null;
 }) {
   const { profile } = useLoadProfile();
-  const { useItem, setUseItem, isLoading, error } = useUseDetail(id);
+  const { useItem, setUseItem, isLoading, error } = useUseDetail(id, 0, {
+    enabled: !initialUseItem,
+    initialUseItem,
+  });
   const { updateUseStatus, pendingAction } = useUpdateUseStatus();
+  const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
+  const [passedIndicators, setPassedIndicators] = useState<string[]>([]);
+  const [issuesLoading, setIssuesLoading] = useState(true);
   const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
     null,
   );
+  const shouldShowUseReviewCheck = isPendingStatus(useItem?.status ?? "");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadIssues = async () => {
+      if (!useItem) {
+        if (isMounted) {
+          setReviewIssues([]);
+          setPassedIndicators([]);
+          setIssuesLoading(false);
+        }
+        return;
+      }
+
+      if (!shouldShowUseReviewCheck) {
+        if (isMounted) {
+          setReviewIssues([]);
+          setPassedIndicators([]);
+          setIssuesLoading(false);
+        }
+        return;
+      }
+
+      setIssuesLoading(true);
+      try {
+        const result = await loadReviewIssues(API_USE_REVIEW_CHECK(useItem.id));
+        if (isMounted) {
+          setReviewIssues(result.issues);
+          setPassedIndicators(result.passedIndicators);
+          setIssuesLoading(false);
+        }
+      } catch {
+        if (isMounted) {
+          setReviewIssues([
+            {
+              label: "Review check belum tersedia",
+              value: "Sistem tidak berhasil memeriksa catatan review saat ini. Cek ulang data sebelum approve.",
+            },
+          ]);
+          setPassedIndicators([]);
+          setIssuesLoading(false);
+        }
+      }
+    };
+
+    void loadIssues();
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    useItem?.id,
+    shouldShowUseReviewCheck,
+  ]);
 
   if (isLoading) return <PanelLoadingState />;
   if (error || !useItem) {
@@ -233,11 +410,15 @@ function UseReviewPanel({
 
   const canReviewUse = isReviewerRole(profile?.role) && isPendingStatus(useItem.status);
 
-  const handleUseAction = async () => {
+  const handleUseAction = async (rejectionNote?: string) => {
     if (!confirmType) return;
 
     const type = confirmType;
-    const result = await updateUseStatus(useItem.id, type);
+    const result = await updateUseStatus(
+      useItem.id,
+      type,
+      type === "reject" ? { rejectionNote } : undefined,
+    );
     if (!result.ok) {
       toast.error(result.message);
       return;
@@ -250,6 +431,8 @@ function UseReviewPanel({
             ...current,
             status: type === "approve" ? "Approved" : "Rejected",
             updatedAt: now,
+            rejectionNote:
+              type === "reject" ? String(rejectionNote ?? current.rejectionNote ?? "") : current.rejectionNote,
             approvedById:
               type === "approve"
                 ? String(profile?.id ?? current.approvedById)
@@ -277,17 +460,24 @@ function UseReviewPanel({
         status={useItem.status}
         code={useItem.code}
         meta={[
-          { label: "Pemohon", value: useItem.requesterName },
-          { label: "Prodi Pemohon", value: useItem.requesterDepartment || "-" },
-          { label: "Tanggal Dibuat", value: formatDateTimeWib(useItem.createdAt) },
           { label: "Alat", value: useItem.equipmentName || "-" },
           { label: "Ruangan", value: useItem.roomName || "-" },
+          { label: "Pemohon", value: useItem.requesterName },
+          { label: "Tanggal Dibuat", value: formatDateTimeWib(useItem.createdAt) },
           { label: "Ditujukan ke PIC", value: useItem.roomPicName || "-" },
           {
             label: "Batas waktu approval",
             value: formatDateTimeWib(useItem.startTime),
           },
         ]}
+        checklist={shouldShowUseReviewCheck ? reviewIssues : []}
+        checklistLoading={shouldShowUseReviewCheck ? issuesLoading : false}
+        checklistEmptyMessage={
+          shouldShowUseReviewCheck
+            ? "Tidak ada catatan review. Pengajuan ini siap diproses."
+            : undefined
+        }
+        checklistPassedIndicators={shouldShowUseReviewCheck ? passedIndicators : []}
       >
         {canReviewUse ? (
           <>
@@ -322,6 +512,7 @@ function UseReviewPanel({
         onConfirm={handleUseAction}
         isSubmitting={pendingAction.useId === useItem.id}
         subjectLabel="pengajuan penggunaan alat ini"
+        requireReasonOnReject
       />
     </>
   );
@@ -330,13 +521,21 @@ function UseReviewPanel({
 function BorrowReviewPanel({
   id,
   onActionComplete,
+  initialBorrow,
 }: {
   id: string;
   onActionComplete?: () => void;
+  initialBorrow?: BorrowRow | null;
 }) {
   const { profile } = useLoadProfile();
-  const { borrow, setBorrow, isLoading, error } = useBorrowDetail(id);
+  const { borrow, setBorrow, isLoading, error } = useBorrowDetail(id, 0, {
+    enabled: !initialBorrow,
+    initialBorrow,
+  });
   const { updateBorrowStatus, pendingAction } = useUpdateBorrowStatus();
+  const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
+  const [passedIndicators, setPassedIndicators] = useState<string[]>([]);
+  const [issuesLoading, setIssuesLoading] = useState(true);
   const [confirmType, setConfirmType] = useState<
     "approve" | "reject" | "handover" | "finalize_return" | null
   >(null);
@@ -345,6 +544,60 @@ function BorrowReviewPanel({
     "mark_damaged" | "mark_lost" | null
   >(null);
   const [inspectionNote, setInspectionNote] = useState("");
+  const shouldShowBorrowReviewCheck = isPendingStatus(borrow?.status ?? "");
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const loadIssues = async () => {
+      if (!borrow) {
+        if (isMounted) {
+          setReviewIssues([]);
+          setPassedIndicators([]);
+          setIssuesLoading(false);
+        }
+        return;
+      }
+
+      if (!shouldShowBorrowReviewCheck) {
+        if (isMounted) {
+          setReviewIssues([]);
+          setPassedIndicators([]);
+          setIssuesLoading(false);
+        }
+        return;
+      }
+
+      setIssuesLoading(true);
+      try {
+        const result = await loadReviewIssues(API_BORROW_REVIEW_CHECK(borrow.id));
+        if (isMounted) {
+          setReviewIssues(result.issues);
+          setPassedIndicators(result.passedIndicators);
+          setIssuesLoading(false);
+        }
+      } catch {
+        if (isMounted) {
+          setReviewIssues([
+            {
+              label: "Review check belum tersedia",
+              value: "Sistem tidak berhasil memeriksa catatan review saat ini. Cek ulang data sebelum approve.",
+            },
+          ]);
+          setPassedIndicators([]);
+          setIssuesLoading(false);
+        }
+      }
+    };
+
+    void loadIssues();
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    borrow?.id,
+    shouldShowBorrowReviewCheck,
+  ]);
 
   if (isLoading) return <PanelLoadingState />;
   if (error || !borrow) {
@@ -360,11 +613,15 @@ function BorrowReviewPanel({
   const canFinalizeInspection =
     reviewer && isInspectionPendingStatus(borrow.status);
 
-  const handleBorrowAction = async () => {
+  const handleBorrowAction = async (rejectionNote?: string) => {
     if (!confirmType) return;
 
     const type = confirmType;
-    const result = await updateBorrowStatus(borrow.id, type);
+    const result = await updateBorrowStatus(
+      borrow.id,
+      type,
+      type === "reject" ? { rejectionNote } : undefined,
+    );
     if (!result.ok) {
       toast.error(result.message);
       return;
@@ -384,6 +641,8 @@ function BorrowReviewPanel({
                     ? "Borrowed"
                     : "Returned",
             updatedAt: now,
+            rejectionNote:
+              type === "reject" ? String(rejectionNote ?? current.rejectionNote ?? "") : current.rejectionNote,
             approvedById:
               type === "approve"
                 ? String(profile?.id ?? current.approvedById)
@@ -472,11 +731,10 @@ function BorrowReviewPanel({
   };
 
   const reviewMeta = [
-    { label: "Pemohon", value: borrow.requesterName },
-    { label: "Prodi Pemohon", value: borrow.requesterDepartment || "-" },
-    { label: "Tanggal Dibuat", value: formatDateTimeWib(borrow.createdAt) },
     { label: "Alat", value: borrow.equipmentName || "-" },
     { label: "Ruangan", value: borrow.roomName || "-" },
+    { label: "Pemohon", value: borrow.requesterName },
+    { label: "Tanggal Dibuat", value: formatDateTimeWib(borrow.createdAt) },
     { label: "Ditujukan ke PIC", value: borrow.roomPicName || "-" },
     {
       label: "Batas waktu approval",
@@ -490,6 +748,14 @@ function BorrowReviewPanel({
         status={borrow.status}
         code={borrow.code}
         meta={reviewMeta}
+        checklist={shouldShowBorrowReviewCheck ? reviewIssues : []}
+        checklistLoading={shouldShowBorrowReviewCheck ? issuesLoading : false}
+        checklistEmptyMessage={
+          shouldShowBorrowReviewCheck
+            ? "Tidak ada catatan review. Pengajuan ini siap diproses."
+            : undefined
+        }
+        checklistPassedIndicators={shouldShowBorrowReviewCheck ? passedIndicators : []}
       >
         {canReviewBorrow ? (
           <>
@@ -585,6 +851,7 @@ function BorrowReviewPanel({
               ? "finalisasi pengembalian alat ini"
               : "pengajuan peminjaman alat ini"
         }
+        requireReasonOnReject={confirmType === "reject"}
       />
 
       <StatusConfirmDialog
@@ -678,19 +945,41 @@ export function parseReviewContext(pathname: string): ReviewContext {
 export function DashboardDetailReviewPanel({
   context,
   onActionComplete,
+  initialBooking,
+  initialUseItem,
+  initialBorrow,
 }: {
   context: Exclude<ReviewContext, null>;
   onActionComplete?: () => void;
+  initialBooking?: BookingRow | null;
+  initialUseItem?: UseRow | null;
+  initialBorrow?: BorrowRow | null;
 }) {
   if (context.kind === "booking") {
     return (
-      <BookingReviewPanel id={context.id} onActionComplete={onActionComplete} />
+      <BookingReviewPanel
+        id={context.id}
+        onActionComplete={onActionComplete}
+        initialBooking={initialBooking}
+      />
     );
   }
 
   if (context.kind === "use") {
-    return <UseReviewPanel id={context.id} onActionComplete={onActionComplete} />;
+    return (
+      <UseReviewPanel
+        id={context.id}
+        onActionComplete={onActionComplete}
+        initialUseItem={initialUseItem}
+      />
+    );
   }
 
-  return <BorrowReviewPanel id={context.id} onActionComplete={onActionComplete} />;
+  return (
+    <BorrowReviewPanel
+      id={context.id}
+      onActionComplete={onActionComplete}
+      initialBorrow={initialBorrow}
+    />
+  );
 }

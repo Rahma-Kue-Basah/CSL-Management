@@ -44,7 +44,7 @@ type FormData = {
 const initialFormData: FormData = {
   equipmentId: "",
   quantity: "1",
-  purpose: "Research",
+  purpose: "Penelitian",
   startTime: "",
   endTime: "",
   note: "",
@@ -466,15 +466,21 @@ export default function UseEquipmentFormPage() {
           label="Nomor Telepon Pemohon"
           value={formData.requesterPhone}
         />
-        <SubmissionSummaryItem
-          label="Dosen Pembimbing"
-          value={formData.requesterMentor}
-        />
-        <SubmissionSummaryItem label="Institusi" value={formData.institution} />
-        <SubmissionSummaryItem
-          label="Alamat Institusi"
-          value={formData.institutionAddress}
-        />
+        {!isGuestUser ? (
+          <SubmissionSummaryItem
+            label="Dosen Pembimbing"
+            value={formData.requesterMentor}
+          />
+        ) : null}
+        {isGuestUser ? (
+          <>
+            <SubmissionSummaryItem label="Institusi" value={formData.institution} />
+            <SubmissionSummaryItem
+              label="Alamat Institusi"
+              value={formData.institutionAddress}
+            />
+          </>
+        ) : null}
         <SubmissionSummaryItem label="Catatan" value={formData.note} />
       </SubmissionConfirmDialog>
     </section>

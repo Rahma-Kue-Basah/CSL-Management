@@ -16,6 +16,7 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { ProgressSteps } from "@/components/shared/progress-steps";
+import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBorrowDetail } from "@/hooks/borrows/use-borrows";
 import { formatDateTimeWib } from "@/lib/date-format";
@@ -41,7 +42,15 @@ function normalizeStatus(value: string) {
 function getBorrowFlow(item: {
   status: string;
   createdAt: string;
-  updatedAt: string;
+  approvedAt: string;
+  rejectedAt: string;
+  expiredAt: string;
+  borrowedAt: string;
+  returnedPendingInspectionAt: string;
+  inspectedAt: string;
+  returnedAt: string;
+  overdueAt: string;
+  lostDamagedAt: string;
   endTimeActual: string;
 }) {
   const status = normalizeStatus(item.status);
@@ -85,29 +94,31 @@ function getBorrowFlow(item: {
   }
   if (status === "approved") {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
     baseSteps[2].state = "process";
     return baseSteps;
   }
   if (status === "borrowed") {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
     baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[2].time = formatDateTimeWib(item.borrowedAt);
     baseSteps[3].state = "process";
     return baseSteps;
   }
   if (status === "returned") {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
     baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[2].time = formatDateTimeWib(item.borrowedAt);
     baseSteps[3].state = "finish";
-    baseSteps[3].time = formatDateTimeWib(item.endTimeActual || item.updatedAt);
+    baseSteps[3].time = formatDateTimeWib(
+      item.returnedPendingInspectionAt || item.endTimeActual,
+    );
     baseSteps[4].state = "finish";
-    baseSteps[4].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[4].time = formatDateTimeWib(item.inspectedAt);
     baseSteps[5].state = "finish";
-    baseSteps[5].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[5].time = formatDateTimeWib(item.returnedAt || item.inspectedAt);
     return baseSteps;
   }
   if (
@@ -115,11 +126,13 @@ function getBorrowFlow(item: {
     status === "returned_pending_inspection"
   ) {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
     baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[2].time = formatDateTimeWib(item.borrowedAt);
     baseSteps[3].state = "finish";
-    baseSteps[3].time = formatDateTimeWib(item.endTimeActual || item.updatedAt);
+    baseSteps[3].time = formatDateTimeWib(
+      item.returnedPendingInspectionAt || item.endTimeActual,
+    );
     baseSteps[4].state = "process";
     return baseSteps;
   }
@@ -127,7 +140,7 @@ function getBorrowFlow(item: {
     baseSteps[1] = {
       key: "rejected",
       label: "Ditolak",
-      time: formatDateTimeWib(item.updatedAt),
+      time: formatDateTimeWib(item.rejectedAt),
       state: "error",
     };
     return baseSteps.slice(0, 2);
@@ -136,30 +149,32 @@ function getBorrowFlow(item: {
     baseSteps[1] = {
       key: "expired",
       label: "Expired",
-      time: formatDateTimeWib(item.updatedAt),
+      time: formatDateTimeWib(item.expiredAt),
       state: "error",
     };
     return baseSteps.slice(0, 2);
   }
   if (status === "overdue") {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
     baseSteps[2].state = "error";
     baseSteps[2].label = "Terlambat";
-    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[2].time = formatDateTimeWib(item.overdueAt);
     return baseSteps.slice(0, 3);
   }
   if (status === "lost/damaged") {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
     baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[2].time = formatDateTimeWib(item.borrowedAt);
     baseSteps[3].state = "finish";
-    baseSteps[3].time = formatDateTimeWib(item.endTimeActual || item.updatedAt);
+    baseSteps[3].time = formatDateTimeWib(
+      item.returnedPendingInspectionAt || item.endTimeActual,
+    );
     baseSteps[4] = {
       key: "lost-damaged",
       label: "Hilang/Rusak",
-      time: formatDateTimeWib(item.updatedAt),
+      time: formatDateTimeWib(item.lostDamagedAt || item.inspectedAt),
       state: "error",
     };
     return baseSteps.slice(0, 5);
@@ -332,7 +347,15 @@ export default function BorrowEquipmentDetailPage() {
   const flowSteps = getBorrowFlow({
     status: item.status,
     createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
+    approvedAt: item.approvedAt,
+    rejectedAt: item.rejectedAt,
+    expiredAt: item.expiredAt,
+    borrowedAt: item.borrowedAt,
+    returnedPendingInspectionAt: item.returnedPendingInspectionAt,
+    inspectedAt: item.inspectedAt,
+    returnedAt: item.returnedAt,
+    overdueAt: item.overdueAt,
+    lostDamagedAt: item.lostDamagedAt,
     endTimeActual: item.endTimeActual,
   });
 
@@ -412,31 +435,26 @@ export default function BorrowEquipmentDetailPage() {
                 <DetailMetaItem label="Catatan Pemohon" value={item.note || "-"} />
               </DetailCard>
 
-              <DetailCard
-                title="Informasi Permohonan"
-                subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+              <RequestInformationCard
                 icon={<CalendarClock className="h-4 w-4" />}
+                requesterName={item.requesterName}
+                requesterDepartment={item.requesterDepartment}
+                status={item.status}
+                approvedByName={item.approvedByName}
+                rejectionNote={item.rejectionNote}
               >
-                <DetailMetaItem label="Pemohon" value={item.requesterName} />
-                <DetailMetaItem
-                  label="Status Saat Ini"
-                  value={getStatusDisplayLabel(item.status)}
-                />
-                <DetailMetaItem
-                  label="Disetujui Oleh"
-                  value={item.approvedByName || "-"}
-                />
                 <DetailMetaItem
                   label="Pengembalian Aktual"
                   value={formatDateTimeWib(item.endTimeActual)}
                 />
-              </DetailCard>
+              </RequestInformationCard>
             </div>
 
             <div className="space-y-4">
               {id ? (
                 <DashboardDetailReviewPanel
                   context={{ kind: "borrow", id }}
+                  initialBorrow={item}
                   onActionComplete={() => setReloadKey((prev) => prev + 1)}
                 />
               ) : null}
@@ -508,25 +526,19 @@ export default function BorrowEquipmentDetailPage() {
               </div>
 
               <div className="space-y-4">
-                <DetailCard
-                  title="Informasi Permohonan"
-                  subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+                <RequestInformationCard
                   icon={<CalendarClock className="h-4 w-4" />}
+                  requesterName={item.requesterName}
+                  requesterDepartment={item.requesterDepartment}
+                  status={item.status}
+                  approvedByName={item.approvedByName}
+                  rejectionNote={item.rejectionNote}
                 >
-                  <DetailMetaItem label="Pemohon" value={item.requesterName} />
-                  <DetailMetaItem
-                    label="Status Saat Ini"
-                    value={getStatusDisplayLabel(item.status)}
-                  />
-                  <DetailMetaItem
-                    label="Disetujui Oleh"
-                    value={item.approvedByName || "-"}
-                  />
                   <DetailMetaItem
                     label="Pengembalian Aktual"
                     value={formatDateTimeWib(item.endTimeActual)}
                   />
-                </DetailCard>
+                </RequestInformationCard>
 
                 {hasDisplayValue(item.inspectionNote) ||
                 item.status === "Lost/Damaged" ? (

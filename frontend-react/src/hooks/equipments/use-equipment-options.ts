@@ -15,6 +15,10 @@ type ApiEquipmentOption = {
   id?: string | number | null;
   name?: string | null;
   quantity?: number | null;
+  room_detail?: {
+    id?: string | number | null;
+    name?: string | null;
+  } | null;
 };
 
 export function useEquipmentOptions(
@@ -62,7 +66,9 @@ export function useEquipmentOptions(
         const payload = (await response.json()) as ApiEquipmentOption[];
         const mapped = payload.map((item) => ({
           id: String(item.id ?? ""),
-          label: String(item.name ?? "-"),
+          label: item.room_detail?.name
+            ? `${String(item.name ?? "-")} (${String(item.room_detail.name)})`
+            : String(item.name ?? "-"),
           quantity: Number(item.quantity ?? 0),
         }));
         setEquipments(mapped.filter((item) => item.id));

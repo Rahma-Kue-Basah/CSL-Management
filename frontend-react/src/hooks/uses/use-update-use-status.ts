@@ -24,7 +24,11 @@ export function useUpdateUseStatus() {
     type: null,
   });
 
-  const updateUseStatus = async (useId: string | number, type: ActionType) => {
+  const updateUseStatus = async (
+    useId: string | number,
+    type: ActionType,
+    payload?: { rejectionNote?: string },
+  ) => {
     setPendingAction({ useId, type });
 
     try {
@@ -33,7 +37,11 @@ export function useUpdateUseStatus() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify(
+            type === "reject" && payload?.rejectionNote?.trim()
+              ? { rejection_note: payload.rejectionNote.trim() }
+              : {},
+          ),
         },
       );
 

@@ -21,12 +21,20 @@ export function useCalendarEvents(
   end?: string,
   filters: { room?: string } = {},
   reloadKey = 0,
+  enabled = true,
 ) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!enabled) {
+      setEvents([]);
+      setError("");
+      setIsLoading(false);
+      return;
+    }
+
     const controller = new AbortController();
     let isAborted = false;
 
@@ -69,7 +77,7 @@ export function useCalendarEvents(
       isAborted = true;
       controller.abort();
     };
-  }, [start, end, filters.room, reloadKey]);
+  }, [start, end, filters.room, reloadKey, enabled]);
 
   return {
     events,

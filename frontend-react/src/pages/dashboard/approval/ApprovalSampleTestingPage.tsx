@@ -328,7 +328,10 @@ export default function ApprovalSampleTestingPage() {
       />
 
       <Dialog open={Boolean(detailTarget)} onOpenChange={(open) => !open && setDetailTarget(null)}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto border-none bg-transparent p-0 shadow-none sm:max-w-6xl">
+        <DialogContent
+          showCloseButton={false}
+          className="max-h-[85vh] overflow-y-auto border-none bg-transparent p-0 shadow-none sm:max-w-6xl"
+        >
           <DialogHeader>
             <DialogTitle className="sr-only">Detail Pengajuan Pengujian Sampel</DialogTitle>
           </DialogHeader>

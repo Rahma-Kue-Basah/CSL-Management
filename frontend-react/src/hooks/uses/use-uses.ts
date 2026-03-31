@@ -44,6 +44,7 @@ export type UseRow = {
   updatedAt: string;
   approvedAt: string;
   rejectedAt: string;
+  rejectionNote: string;
   expiredAt: string;
   completedAt: string;
   note: string;
@@ -70,6 +71,7 @@ type ApiUse = {
   updated_at?: string | null;
   approved_at?: string | null;
   rejected_at?: string | null;
+  rejection_note?: string | null;
   expired_at?: string | null;
   completed_at?: string | null;
   equipment?: string | number | null;
@@ -159,6 +161,7 @@ export function mapUse(item: ApiUse): UseRow {
     updatedAt: String(item.updated_at ?? "-"),
     approvedAt: String(item.approved_at ?? "-"),
     rejectedAt: String(item.rejected_at ?? "-"),
+    rejectionNote: String(item.rejection_note ?? ""),
     expiredAt: String(item.expired_at ?? "-"),
     completedAt: String(item.completed_at ?? "-"),
     note: String(item.note ?? ""),
@@ -172,12 +175,32 @@ export function mapUse(item: ApiUse): UseRow {
 export function useUseDetail(
   id?: string | number | null,
   reloadKey = 0,
+  options?: {
+    enabled?: boolean;
+    initialUseItem?: UseRow | null;
+  },
 ) {
-  const [useItem, setUseItem] = useState<UseRow | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const enabled = options?.enabled ?? true;
+  const [useItem, setUseItem] = useState<UseRow | null>(
+    options?.initialUseItem ?? null,
+  );
+  const [isLoading, setIsLoading] = useState(
+    enabled && Boolean(id) && !options?.initialUseItem,
+  );
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (typeof options?.initialUseItem === "undefined") return;
+    setUseItem(options.initialUseItem ?? null);
+  }, [options?.initialUseItem]);
+
+  useEffect(() => {
+    if (!enabled) {
+      setError("");
+      setIsLoading(false);
+      return;
+    }
+
     if (!id) {
       setUseItem(null);
       setError("ID penggunaan tidak ditemukan.");
@@ -217,7 +240,7 @@ export function useUseDetail(
       isAborted = true;
       controller.abort();
     };
-  }, [id, reloadKey]);
+  }, [enabled, id, reloadKey]);
 
   return {
     useItem,

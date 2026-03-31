@@ -1,0 +1,80 @@
+"use client";
+
+import type { ReactNode } from "react";
+
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
+
+function hasDisplayValue(value?: string | null) {
+  if (!value) return false;
+  const normalized = value.trim();
+  return normalized !== "" && normalized !== "-";
+}
+
+function DetailMetaItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  if (!hasDisplayValue(value)) return null;
+
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-right text-xs leading-5 text-slate-800">{value}</p>
+    </div>
+  );
+}
+
+export function RequestInformationCard({
+  icon,
+  requesterName,
+  requesterDepartment,
+  status,
+  approvedByName,
+  rejectionNote,
+  children,
+}: {
+  icon: ReactNode;
+  requesterName: string;
+  requesterDepartment?: string;
+  status: string;
+  approvedByName?: string;
+  rejectionNote?: string;
+  children?: ReactNode;
+}) {
+  const approverLabel = status === "Rejected" ? "Ditolak Oleh" : "Disetujui Oleh";
+
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900">Informasi Permohonan</p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            Informasi utama permohonan dan hasil persetujuan saat ini.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 space-y-2">
+        <DetailMetaItem label="Pemohon" value={requesterName} />
+        <DetailMetaItem label="Prodi Pemohon" value={requesterDepartment || "-"} />
+        <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
+          <p className="text-xs text-slate-500">Status Saat Ini</p>
+          <span
+            className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(status)}`}
+          >
+            {getStatusDisplayLabel(status)}
+          </span>
+        </div>
+        <DetailMetaItem label={approverLabel} value={approvedByName || "-"} />
+        <DetailMetaItem label="Alasan Penolakan" value={rejectionNote || "-"} />
+        {children}
+      </div>
+    </section>
+  );
+}

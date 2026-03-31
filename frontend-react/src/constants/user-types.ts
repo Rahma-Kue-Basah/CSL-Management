@@ -1,6 +1,6 @@
 const USER_TYPE_VALUES = {
-  INTERNAL: "INTERNAL",
-  EXTERNAL: "EXTERNAL",
+  INTERNAL: "Internal",
+  EXTERNAL: "External",
 } as const;
 
 const USER_TYPE_LABELS = {
@@ -9,4 +9,3 @@ const USER_TYPE_LABELS = {
 } as const;
 
 export { USER_TYPE_VALUES, USER_TYPE_LABELS };
-

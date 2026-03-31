@@ -77,7 +77,7 @@ class Command(BaseCommand):
 
             profile, _ = Profile.objects.get_or_create(
                 user=user,
-                defaults={"user_type": "EXTERNAL"},
+                defaults={"user_type": "External"},
             )
 
             profile_role_value = str(profile.role or "").strip()

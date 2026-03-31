@@ -75,7 +75,7 @@ def create_profile_for_new_user(sender, instance, created, **kwargs):
         user=instance,
         defaults={
             **({"full_name": full_name} if full_name else {}),
-            "user_type": "EXTERNAL",
+            "user_type": "External",
         },
     )
     
@@ -109,7 +109,7 @@ def sync_group_to_profile_role(sender, instance, action, **kwargs):
 
     profile, _ = Profile.objects.get_or_create(
         user=instance,
-        defaults={"user_type": "EXTERNAL"},
+        defaults={"user_type": "External"},
     )
 
     selected_group_role = _pick_user_group_role(instance)

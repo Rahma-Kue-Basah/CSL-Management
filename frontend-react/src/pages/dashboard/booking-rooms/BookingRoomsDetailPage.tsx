@@ -13,6 +13,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { ProgressSteps } from "@/components/shared/progress-steps";
+import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBookingDetail } from "@/hooks/bookings/use-bookings";
 import { formatDateTimeWib } from "@/lib/date-format";
@@ -42,7 +43,10 @@ function normalizeStatus(value: string) {
 function getBookingFlow(booking: {
   status: string;
   createdAt: string;
-  updatedAt: string;
+  approvedAt: string;
+  rejectedAt: string;
+  expiredAt: string;
+  completedAt: string;
 }) {
   const status = normalizeStatus(booking.status);
 
@@ -70,22 +74,22 @@ function getBookingFlow(booking: {
   }
   if (status === "approved") {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(booking.approvedAt);
     baseSteps[2].state = "process";
     return baseSteps;
   }
   if (status === "completed") {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(booking.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(booking.approvedAt);
     baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(booking.updatedAt);
+    baseSteps[2].time = formatDateTimeWib(booking.completedAt);
     return baseSteps;
   }
   if (status === "rejected") {
     baseSteps[1] = {
       key: "rejected",
       label: "Ditolak",
-      time: formatDateTimeWib(booking.updatedAt),
+      time: formatDateTimeWib(booking.rejectedAt),
       state: "error",
     };
     return baseSteps.slice(0, 2);
@@ -94,7 +98,7 @@ function getBookingFlow(booking: {
     baseSteps[1] = {
       key: "expired",
       label: "Kedaluwarsa",
-      time: formatDateTimeWib(booking.updatedAt),
+      time: formatDateTimeWib(booking.expiredAt),
       state: "error",
     };
     return baseSteps.slice(0, 2);
@@ -364,7 +368,10 @@ export default function BookingRoomsDetailPage() {
   const flowSteps = getBookingFlow({
     status: booking.status,
     createdAt: booking.createdAt,
-    updatedAt: booking.updatedAt,
+    approvedAt: booking.approvedAt,
+    rejectedAt: booking.rejectedAt,
+    expiredAt: booking.expiredAt,
+    completedAt: booking.completedAt,
   });
 
   return (
@@ -475,27 +482,21 @@ export default function BookingRoomsDetailPage() {
                 </DetailCard>
               ) : null}
 
-              <DetailCard
-                title="Informasi Permohonan"
-                subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+              <RequestInformationCard
                 icon={<UserRound className="h-4 w-4" />}
-              >
-                <DetailMetaItem label="Pemohon" value={booking.requesterName} />
-                <DetailMetaItem
-                  label="Status Saat Ini"
-                  value={getStatusDisplayLabel(booking.status)}
-                />
-                <DetailMetaItem
-                  label="Disetujui Oleh"
-                  value={booking.approvedByName || "-"}
-                />
-              </DetailCard>
+                requesterName={booking.requesterName}
+                requesterDepartment={booking.requesterDepartment}
+                status={booking.status}
+                approvedByName={booking.approvedByName}
+                rejectionNote={booking.rejectionNote}
+              />
             </div>
 
             <div className="space-y-4">
               {id ? (
                 <DashboardDetailReviewPanel
                   context={{ kind: "booking", id }}
+                  initialBooking={booking}
                   onActionComplete={() => setReloadKey((prev) => prev + 1)}
                 />
               ) : null}
@@ -572,21 +573,14 @@ export default function BookingRoomsDetailPage() {
             </div>
 
             <div className="space-y-4">
-              <DetailCard
-                title="Informasi Permohonan"
-                subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+              <RequestInformationCard
                 icon={<UserRound className="h-4 w-4" />}
-              >
-                <DetailMetaItem label="Pemohon" value={booking.requesterName} />
-                <DetailMetaItem
-                  label="Status Saat Ini"
-                  value={getStatusDisplayLabel(booking.status)}
-                />
-                <DetailMetaItem
-                  label="Disetujui Oleh"
-                  value={booking.approvedByName || "-"}
-                />
-              </DetailCard>
+                requesterName={booking.requesterName}
+                requesterDepartment={booking.requesterDepartment}
+                status={booking.status}
+                approvedByName={booking.approvedByName}
+                rejectionNote={booking.rejectionNote}
+              />
             </div>
           </>
         )}

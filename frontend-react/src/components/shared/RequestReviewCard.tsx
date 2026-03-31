@@ -10,10 +10,19 @@ type ReviewMetaItem = {
   value: string;
 };
 
+type ReviewChecklistItem = {
+  label: string;
+  value: string;
+};
+
 type RequestReviewCardProps = {
   status: string;
   code: string;
   meta?: ReviewMetaItem[];
+  checklist?: ReviewChecklistItem[];
+  checklistLoading?: boolean;
+  checklistEmptyMessage?: string;
+  checklistPassedIndicators?: string[];
   children?: ReactNode;
 };
 
@@ -21,6 +30,10 @@ export function RequestReviewCard({
   status,
   code,
   meta = [],
+  checklist = [],
+  checklistLoading = false,
+  checklistEmptyMessage,
+  checklistPassedIndicators = [],
   children,
 }: RequestReviewCardProps) {
   return (
@@ -59,9 +72,62 @@ export function RequestReviewCard({
       ) : null}
 
       <div className="mt-4 border-t border-slate-200 pt-4">
+        {checklistLoading ? (
+          <div className="mb-4 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
+            <p className="text-xs text-slate-500">Memeriksa catatan review...</p>
+          </div>
+        ) : null}
+
+        {!checklistLoading && checklist.length ? (
+          <div className="space-y-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Catatan Review
+              </p>
+              <p className="mt-1 text-xs text-slate-500">
+                Hanya item yang perlu perhatian approver yang ditampilkan.
+              </p>
+            </div>
+            <div className="grid gap-2">
+              {checklist.map((item) => (
+                <div
+                  key={`${item.label}-${item.value}`}
+                  className="rounded-md border border-amber-200 bg-amber-50/80 px-4 py-3"
+                >
+                  <p className="text-xs font-medium text-amber-800">{item.label}</p>
+                  <p className="mt-1 text-xs leading-5 text-amber-900">{item.value}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : null}
+
+        {!checklistLoading && !checklist.length && checklistEmptyMessage ? (
+          <div className="mb-4 rounded-md border border-emerald-200 bg-emerald-50/80 px-4 py-3">
+            <p className="text-xs text-emerald-800">{checklistEmptyMessage}</p>
+            {checklistPassedIndicators.length ? (
+              <div className="mt-2 space-y-1">
+                {checklistPassedIndicators.map((item) => (
+                  <p key={item} className="text-xs text-emerald-900">
+                    - {item}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {children ? (
-          <div className="flex flex-wrap items-center gap-2">{children}</div>
-        ) : (
+          <div
+            className={
+              checklistLoading || checklist.length || checklistEmptyMessage
+                ? "mt-4 flex flex-wrap items-center gap-2"
+                : "flex flex-wrap items-center gap-2"
+            }
+          >
+            {children}
+          </div>
+        ) : checklistLoading || checklist.length || checklistEmptyMessage ? null : (
           <p className="text-sm text-slate-500">
             Tidak ada aksi review yang tersedia untuk pengajuan ini.
           </p>

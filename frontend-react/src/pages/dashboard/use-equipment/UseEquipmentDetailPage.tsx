@@ -14,6 +14,7 @@ import { useParams, usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { ProgressSteps } from "@/components/shared/progress-steps";
+import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUseDetail } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-format";
@@ -43,7 +44,10 @@ function normalizeStatus(value: string) {
 function getUseFlow(item: {
   status: string;
   createdAt: string;
-  updatedAt: string;
+  approvedAt: string;
+  rejectedAt: string;
+  expiredAt: string;
+  completedAt: string;
 }) {
   const status = normalizeStatus(item.status);
 
@@ -71,22 +75,22 @@ function getUseFlow(item: {
   }
   if (status === "approved") {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
     baseSteps[2].state = "process";
     return baseSteps;
   }
   if (status === "completed") {
     baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
     baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.updatedAt);
+    baseSteps[2].time = formatDateTimeWib(item.completedAt);
     return baseSteps;
   }
   if (status === "rejected") {
     baseSteps[1] = {
       key: "rejected",
       label: "Ditolak",
-      time: formatDateTimeWib(item.updatedAt),
+      time: formatDateTimeWib(item.rejectedAt),
       state: "error",
     };
     return baseSteps.slice(0, 2);
@@ -95,7 +99,7 @@ function getUseFlow(item: {
     baseSteps[1] = {
       key: "expired",
       label: "Kedaluwarsa",
-      time: formatDateTimeWib(item.updatedAt),
+      time: formatDateTimeWib(item.expiredAt),
       state: "error",
     };
     return baseSteps.slice(0, 2);
@@ -326,7 +330,10 @@ export default function UseEquipmentDetailPage() {
   const flowSteps = getUseFlow({
     status: item.status,
     createdAt: item.createdAt,
-    updatedAt: item.updatedAt,
+    approvedAt: item.approvedAt,
+    rejectedAt: item.rejectedAt,
+    expiredAt: item.expiredAt,
+    completedAt: item.completedAt,
   });
 
   return (
@@ -398,27 +405,21 @@ export default function UseEquipmentDetailPage() {
                 <DetailMetaItem label="Catatan" value={item.note || "-"} />
               </DetailCard>
 
-              <DetailCard
-                title="Informasi Permohonan"
-                subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+              <RequestInformationCard
                 icon={<UserRound className="h-4 w-4" />}
-              >
-                <DetailMetaItem label="Pemohon" value={item.requesterName} />
-                <DetailMetaItem
-                  label="Status Saat Ini"
-                  value={getStatusDisplayLabel(item.status)}
-                />
-                <DetailMetaItem
-                  label="Disetujui Oleh"
-                  value={item.approvedByName || "-"}
-                />
-              </DetailCard>
+                requesterName={item.requesterName}
+                requesterDepartment={item.requesterDepartment}
+                status={item.status}
+                approvedByName={item.approvedByName}
+                rejectionNote={item.rejectionNote}
+              />
             </div>
 
             <div className="space-y-4">
               {id ? (
                 <DashboardDetailReviewPanel
                   context={{ kind: "use", id }}
+                  initialUseItem={item}
                   onActionComplete={() => setReloadKey((prev) => prev + 1)}
                 />
               ) : null}
@@ -462,21 +463,14 @@ export default function UseEquipmentDetailPage() {
             </div>
 
             <div className="space-y-4">
-              <DetailCard
-                title="Informasi Permohonan"
-                subtitle="Informasi utama permohonan dan hasil persetujuan saat ini."
+              <RequestInformationCard
                 icon={<UserRound className="h-4 w-4" />}
-              >
-                <DetailMetaItem label="Pemohon" value={item.requesterName} />
-                <DetailMetaItem
-                  label="Status Saat Ini"
-                  value={getStatusDisplayLabel(item.status)}
-                />
-                <DetailMetaItem
-                  label="Disetujui Oleh"
-                  value={item.approvedByName || "-"}
-                />
-              </DetailCard>
+                requesterName={item.requesterName}
+                requesterDepartment={item.requesterDepartment}
+                status={item.status}
+                approvedByName={item.approvedByName}
+                rejectionNote={item.rejectionNote}
+              />
             </div>
           </>
         )}

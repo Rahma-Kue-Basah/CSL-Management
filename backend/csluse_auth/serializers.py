@@ -267,7 +267,7 @@ class CustomRegisterSerializer(RegisterSerializer):
         user = super().save(request)
         full_name = self.get_cleaned_data().get("full_name")
         defaults = {
-            "user_type": "EXTERNAL",
+            "user_type": "External",
             "role": "Guest",
         }
         if full_name:

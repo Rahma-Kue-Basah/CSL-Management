@@ -20,7 +20,10 @@ export function RequestProgressDialog({
 }: RequestProgressDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-slate-200 shadow-[0_24px_60px_rgba(15,23,42,0.18)] sm:max-w-lg">
+      <DialogContent
+        showCloseButton={false}
+        className="border-slate-200 shadow-[0_24px_60px_rgba(15,23,42,0.18)] sm:max-w-lg"
+      >
         <DialogHeader className="text-left">
           <DialogTitle>{title}</DialogTitle>
         </DialogHeader>

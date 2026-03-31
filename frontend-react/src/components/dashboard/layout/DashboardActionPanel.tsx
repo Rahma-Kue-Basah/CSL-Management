@@ -216,13 +216,16 @@ export function DashboardActionPanel({
     menu.id === "borrow-equipment",
     true,
   );
+  const isScheduleMenu = menu.id === "schedule";
   const scheduleKeyword = searchParams.get("q") ?? "";
   const scheduleRoom = searchParams.get("room") ?? "";
   const scheduleCategory = searchParams.get("category") ?? "";
   const { events: scheduleCalendarEvents } = useCalendarEvents(
     undefined,
     undefined,
-    menu.id === "schedule" && scheduleRoom ? { room: scheduleRoom } : {},
+    isScheduleMenu && scheduleRoom ? { room: scheduleRoom } : {},
+    0,
+    isScheduleMenu,
   );
   const scheduleDate = searchParams.get("date") ?? "";
   const bookingKeyword = searchParams.get("q") ?? "";
@@ -255,7 +258,7 @@ export function DashboardActionPanel({
         }
       : undefined;
   const visibleScheduleCalendarDates = useMemo(() => {
-    if (menu.id !== "schedule") return new Set<string>();
+    if (!isScheduleMenu) return new Set<string>();
     const normalizedScheduleQuery = scheduleKeyword.trim().toLowerCase();
 
     return new Set(
@@ -273,7 +276,7 @@ export function DashboardActionPanel({
         .map((item) => formatDateKey(new Date(item.start_time))),
     );
   }, [
-    menu.id,
+    isScheduleMenu,
     scheduleCalendarEvents,
     scheduleCategory,
     scheduleKeyword,

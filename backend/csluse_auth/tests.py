@@ -25,7 +25,7 @@ class AuthBaseTestMixin:
         department=None,
         batch=None,
         id_number=None,
-        user_type="EXTERNAL",
+        user_type="External",
         institution=None,
         verified=False,
         group_role=None,
@@ -99,35 +99,35 @@ class UserWithProfileViewSetTests(AuthBaseTestMixin, APITestCase):
             email="alice@example.com",
             full_name="Alice Student",
             role="Student",
-            department="DIGITAL BUSINESS TECHNOLOGY",
+            department="Digital Business Technology",
             batch="2024",
             id_number="STD-001",
-            user_type="INTERNAL",
+            user_type="Internal",
             verified=True,
         )
         self.create_user(
             email="bob@example.com",
             full_name="Bob Lecturer",
             role="Lecturer",
-            department="DIGITAL BUSINESS TECHNOLOGY",
+            department="Digital Business Technology",
             id_number="LEC-001",
-            user_type="INTERNAL",
+            user_type="Internal",
         )
         self.create_user(
             email="charlie@example.com",
             full_name="Charlie Student",
             role="Student",
-            department="BUSINESS MATHEMATICS",
+            department="Business Mathematics",
             batch="2024",
             id_number="STD-002",
-            user_type="INTERNAL",
+            user_type="Internal",
             verified=True,
         )
 
         response = self.client.get(
             "/api/admin/users/",
             {
-                "department": "DIGITAL BUSINESS TECHNOLOGY",
+                "department": "Digital Business Technology",
                 "batch": "2024",
                 "search": "Alice",
             },
@@ -184,10 +184,10 @@ class UserWithProfileViewSetTests(AuthBaseTestMixin, APITestCase):
             email="student-filter@example.com",
             full_name="Student Filter",
             role="Student",
-            department="DIGITAL BUSINESS TECHNOLOGY",
+            department="Digital Business Technology",
             batch="2024",
             id_number="STD-010",
-            user_type="INTERNAL",
+            user_type="Internal",
             verified=True,
         )
         self.create_user(
@@ -195,7 +195,7 @@ class UserWithProfileViewSetTests(AuthBaseTestMixin, APITestCase):
             full_name="Guest Filter",
             role="Guest",
             institution="External Lab",
-            user_type="EXTERNAL",
+            user_type="External",
             verified=True,
         )
 
@@ -213,10 +213,10 @@ class JwtCookieAuthFlowTests(AuthBaseTestMixin, APITestCase):
             email="jwt-user@example.com",
             full_name="JWT User",
             role="Student",
-            department="DIGITAL BUSINESS TECHNOLOGY",
+            department="Digital Business Technology",
             batch="2024",
             id_number="STD-999",
-            user_type="INTERNAL",
+            user_type="Internal",
             verified=True,
         )
 
@@ -296,10 +296,10 @@ class AdminDashboardKpisTests(AuthBaseTestMixin, APITestCase):
             email="requester@example.com",
             full_name="Requester User",
             role="Student",
-            department="DIGITAL BUSINESS TECHNOLOGY",
+            department="Digital Business Technology",
             batch="2024",
             id_number="STD-100",
-            user_type="INTERNAL",
+            user_type="Internal",
             verified=True,
         )
         start_time = timezone.localtime(timezone.now()).replace(

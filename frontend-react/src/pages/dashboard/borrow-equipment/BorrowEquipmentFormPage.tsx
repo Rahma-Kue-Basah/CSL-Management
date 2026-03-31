@@ -48,7 +48,7 @@ const initialFormData: FormData = {
   quantity: "1",
   startTime: "",
   endTime: "",
-  purpose: "Research",
+  purpose: "Penelitian",
   note: "",
   requesterPhone: "",
   requesterMentor: "",
@@ -481,15 +481,21 @@ export default function BorrowEquipmentFormPage() {
           label="Nomor Telepon Pemohon"
           value={formData.requesterPhone}
         />
-        <SubmissionSummaryItem
-          label="Dosen Pembimbing"
-          value={formData.requesterMentor}
-        />
-        <SubmissionSummaryItem label="Institusi" value={formData.institution} />
-        <SubmissionSummaryItem
-          label="Alamat Institusi"
-          value={formData.institutionAddress}
-        />
+        {!isGuestUser ? (
+          <SubmissionSummaryItem
+            label="Dosen Pembimbing"
+            value={formData.requesterMentor}
+          />
+        ) : null}
+        {isGuestUser ? (
+          <>
+            <SubmissionSummaryItem label="Institusi" value={formData.institution} />
+            <SubmissionSummaryItem
+              label="Alamat Institusi"
+              value={formData.institutionAddress}
+            />
+          </>
+        ) : null}
         <SubmissionSummaryItem label="Catatan" value={formData.note} />
       </SubmissionConfirmDialog>
     </section>

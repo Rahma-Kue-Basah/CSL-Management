@@ -121,7 +121,7 @@ export default function UserTable({
                 <td className="px-3 py-2">
                   <span
                     className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                      user.userType.toUpperCase() === USER_TYPE_VALUES.INTERNAL
+                      user.userType === USER_TYPE_VALUES.INTERNAL
                         ? "bg-emerald-500/10 text-emerald-600"
                         : "bg-sky-500/10 text-sky-700"
                     }`}

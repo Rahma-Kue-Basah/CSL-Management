@@ -14,14 +14,18 @@ import {
   AlertDialogMedia,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 type StatusConfirmDialogProps = {
   open: boolean;
   actionType: "approve" | "reject" | null;
   onOpenChange: (open: boolean) => void;
-  onConfirm: () => void;
+  onConfirm: (note?: string) => void;
   isSubmitting?: boolean;
   subjectLabel?: string;
+  requireReasonOnReject?: boolean;
+  reasonLabel?: string;
+  reasonPlaceholder?: string;
 };
 
 export default function StatusConfirmDialog({
@@ -31,10 +35,14 @@ export default function StatusConfirmDialog({
   onConfirm,
   isSubmitting = false,
   subjectLabel = "pengajuan ini",
+  requireReasonOnReject = false,
+  reasonLabel = "Alasan penolakan",
+  reasonPlaceholder = "Tuliskan alasan penolakan...",
 }: StatusConfirmDialogProps) {
   const [resolvedActionType, setResolvedActionType] = useState<
     "approve" | "reject" | null
   >(actionType);
+  const [reason, setReason] = useState("");
 
   useEffect(() => {
     if (actionType) {
@@ -42,7 +50,14 @@ export default function StatusConfirmDialog({
     }
   }, [actionType]);
 
+  useEffect(() => {
+    if (!open) {
+      setReason("");
+    }
+  }, [open]);
+
   const isApprove = resolvedActionType === "approve";
+  const shouldCollectReason = !isApprove && requireReasonOnReject;
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -72,11 +87,22 @@ export default function StatusConfirmDialog({
               : `${subjectLabel} akan diproses sebagai data yang ditolak.`}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {shouldCollectReason ? (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-slate-700">{reasonLabel}</p>
+            <Textarea
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              rows={4}
+              placeholder={reasonPlaceholder}
+            />
+          </div>
+        ) : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={isSubmitting}>Batal</AlertDialogCancel>
           <AlertDialogAction
-            onClick={onConfirm}
-            disabled={isSubmitting}
+            onClick={() => onConfirm(shouldCollectReason ? reason : undefined)}
+            disabled={isSubmitting || (shouldCollectReason && !reason.trim())}
             className={
               isApprove
                 ? "rounded-md bg-emerald-600 text-white hover:bg-emerald-700"

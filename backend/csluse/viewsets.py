@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
-from django.db.models import Q
+from django.db.models import Q, Sum
 from rest_framework import viewsets, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
@@ -108,6 +108,330 @@ def is_active_status_filter(value):
     if value is None:
         return False
     return str(value).strip().lower() == "active"
+
+
+def _has_review_value(value):
+    return bool(str(value or "").strip())
+
+
+def _review_issue(label, value):
+    return {
+        "label": str(label),
+        "value": str(value),
+    }
+
+
+def _review_result(*, issues=None, passed_indicators=None):
+    return {
+        "issues": issues or [],
+        "passed_indicators": passed_indicators or [],
+    }
+
+
+def _booking_review_result(booking):
+    issues = []
+    passed_indicators = []
+    required_fields_complete = True
+
+    if not _has_review_value(booking.requester_phone):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Nomor telepon belum diisi",
+                "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
+            )
+        )
+    if not _has_review_value(booking.requester_mentor):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Dosen pembimbing belum diisi",
+                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
+            )
+        )
+    if (booking.attendee_count or 0) > 1 and not _has_review_value(booking.attendee_names):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Nama peserta belum diisi",
+                "Jumlah peserta lebih dari 1, tetapi daftar nama peserta belum dilengkapi.",
+            )
+        )
+    if str(booking.purpose or "").strip() == "Workshop":
+        if not _has_review_value(booking.workshop_title):
+            required_fields_complete = False
+            issues.append(
+                _review_issue(
+                    "Judul workshop belum diisi",
+                    "Pengajuan workshop belum memiliki judul kegiatan.",
+                )
+            )
+        if not _has_review_value(booking.workshop_pic):
+            required_fields_complete = False
+            issues.append(
+                _review_issue(
+                    "PIC workshop belum diisi",
+                    "Pengajuan workshop belum mencantumkan PIC workshop.",
+                )
+            )
+        if not _has_review_value(booking.workshop_institution):
+            required_fields_complete = False
+            issues.append(
+                _review_issue(
+                    "Institusi workshop belum diisi",
+                    "Pengajuan workshop belum mencantumkan institusi workshop.",
+                )
+            )
+
+    practicum_count = 0
+    approved_booking_count = 0
+    if booking.room_id and booking.start_time and booking.end_time:
+        practicum_count = Schedule.objects.filter(
+            room_id=booking.room_id,
+            start_time__lt=booking.end_time,
+            end_time__gt=booking.start_time,
+        ).count()
+        if practicum_count:
+            issues.append(
+                _review_issue(
+                    "Bentrok jadwal praktikum",
+                    f"Ruangan sudah dipakai untuk {practicum_count} jadwal praktikum pada rentang waktu ini.",
+                )
+            )
+
+        approved_booking_count = (
+            Booking.objects.filter(
+                room_id=booking.room_id,
+                status="Approved",
+                start_time__lt=booking.end_time,
+                end_time__gt=booking.start_time,
+            )
+            .exclude(pk=booking.pk)
+            .count()
+        )
+        if approved_booking_count:
+            issues.append(
+                _review_issue(
+                    "Bentrok booking aktif",
+                    f"Ruangan juga memiliki {approved_booking_count} booking lain yang sudah disetujui pada rentang waktu ini.",
+                )
+            )
+
+    if practicum_count == 0:
+        passed_indicators.append("Tidak bentrok dengan jadwal praktikum pada ruangan yang sama")
+    if approved_booking_count == 0:
+        passed_indicators.append("Tidak bentrok dengan booking lain yang sudah disetujui")
+    if required_fields_complete:
+        passed_indicators.append("Field penting untuk approval sudah terisi semua")
+
+    return _review_result(issues=issues, passed_indicators=passed_indicators)
+
+
+def _equipment_review_overlap_issues(
+    *,
+    equipment_id,
+    requested_quantity,
+    stock_quantity,
+    start_time,
+    end_time,
+    exclude_borrow_id=None,
+    exclude_use_id=None,
+):
+    issues = []
+    passed_indicators = []
+    if not equipment_id or not start_time or not end_time:
+        return _review_result(issues=issues, passed_indicators=passed_indicators)
+
+    booking_allocated_qty = (
+        Booking.objects.filter(
+            equipment_items__equipment_id=equipment_id,
+            status__in=["Pending", "Approved"],
+            start_time__lt=end_time,
+            end_time__gt=start_time,
+        )
+        .aggregate(total=Sum("equipment_items__quantity"))
+        .get("total")
+        or 0
+    )
+
+    borrow_qs = Borrow.objects.filter(
+        equipment_id=equipment_id,
+        status__in=["Pending", "Approved", "Borrowed", "Overdue", "Lost/Damaged"],
+        start_time__lt=end_time,
+        end_time__gt=start_time,
+    )
+    if exclude_borrow_id is not None:
+        borrow_qs = borrow_qs.exclude(pk=exclude_borrow_id)
+    borrow_allocated_qty = borrow_qs.aggregate(total=Sum("quantity")).get("total") or 0
+
+    use_qs = Use.objects.filter(
+        equipment_id=equipment_id,
+        status__in=["Pending", "Approved"],
+        start_time__lt=end_time,
+        end_time__gt=start_time,
+    )
+    if exclude_use_id is not None:
+        use_qs = use_qs.exclude(pk=exclude_use_id)
+    use_allocated_qty = use_qs.aggregate(total=Sum("quantity")).get("total") or 0
+
+    allocated_qty = booking_allocated_qty + borrow_allocated_qty + use_allocated_qty
+    remaining_qty = max((stock_quantity or 0) - allocated_qty, 0)
+
+    if requested_quantity > remaining_qty:
+        segments = []
+        if booking_allocated_qty:
+            segments.append(f"{booking_allocated_qty} unit untuk booking")
+        if use_allocated_qty:
+            segments.append(f"{use_allocated_qty} unit untuk penggunaan alat")
+        if borrow_allocated_qty:
+            segments.append(f"{borrow_allocated_qty} unit untuk peminjaman alat")
+        issues.append(
+            _review_issue(
+                "Stok tidak mencukupi pada rentang waktu yang sama",
+                (
+                    f"Stok total alat {stock_quantity} unit. "
+                    f"Sudah teralokasi {allocated_qty} unit"
+                    + (f" ({', '.join(segments)})" if segments else "")
+                    + f", sehingga sisa stok hanya {remaining_qty} unit untuk rentang waktu ini."
+                ),
+            )
+        )
+    else:
+        passed_indicators.append("Sisa stok alat pada rentang waktu yang sama masih mencukupi")
+
+    return _review_result(issues=issues, passed_indicators=passed_indicators)
+
+
+def _use_review_result(use_item):
+    issues = []
+    passed_indicators = []
+    required_fields_complete = True
+
+    if not _has_review_value(use_item.requester_phone):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Nomor telepon belum diisi",
+                "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
+            )
+        )
+    if not _has_review_value(use_item.requester_mentor):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Dosen pembimbing belum diisi",
+                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
+            )
+        )
+
+    equipment = getattr(use_item, "equipment", None)
+    equipment_available = False
+    stock_within_limit = False
+    if equipment is not None:
+        if str(equipment.status or "") != "Available":
+            issues.append(
+                _review_issue(
+                    "Status alat tidak available",
+                    f"Status alat saat ini {equipment.status}. Pastikan alat memang dapat digunakan sebelum approve.",
+                )
+            )
+        else:
+            equipment_available = True
+        if (use_item.quantity or 0) > (equipment.quantity or 0):
+            issues.append(
+                _review_issue(
+                    "Jumlah melebihi stok",
+                    f"Pengajuan meminta {use_item.quantity} unit, sementara stok alat hanya {equipment.quantity}.",
+                )
+            )
+        else:
+            stock_within_limit = True
+
+    overlap_result = _equipment_review_overlap_issues(
+        equipment_id=getattr(use_item, "equipment_id", None),
+        requested_quantity=use_item.quantity or 0,
+        stock_quantity=getattr(equipment, "quantity", 0) if equipment is not None else 0,
+        start_time=use_item.start_time,
+        end_time=use_item.end_time,
+        exclude_use_id=use_item.pk,
+    )
+    issues.extend(overlap_result["issues"])
+    passed_indicators.extend(overlap_result["passed_indicators"])
+
+    if equipment_available:
+        passed_indicators.insert(0, "Status alat masih available")
+    if stock_within_limit:
+        passed_indicators.append("Jumlah pengajuan tidak melebihi stok alat")
+    if required_fields_complete:
+        passed_indicators.append("Field penting untuk approval sudah terisi semua")
+
+    return _review_result(issues=issues, passed_indicators=passed_indicators)
+
+
+def _borrow_review_result(borrow):
+    issues = []
+    passed_indicators = []
+    required_fields_complete = True
+
+    if not _has_review_value(borrow.requester_phone):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Nomor telepon belum diisi",
+                "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
+            )
+        )
+    if not _has_review_value(borrow.requester_mentor):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Dosen pembimbing belum diisi",
+                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
+            )
+        )
+
+    equipment = getattr(borrow, "equipment", None)
+    equipment_available = False
+    stock_within_limit = False
+    if equipment is not None:
+        if str(equipment.status or "") != "Available":
+            issues.append(
+                _review_issue(
+                    "Status alat tidak available",
+                    f"Status alat saat ini {equipment.status}. Pastikan alat memang dapat dipinjam sebelum approve.",
+                )
+            )
+        else:
+            equipment_available = True
+        if (borrow.quantity or 0) > (equipment.quantity or 0):
+            issues.append(
+                _review_issue(
+                    "Jumlah melebihi stok",
+                    f"Pengajuan meminta {borrow.quantity} unit, sementara stok alat hanya {equipment.quantity}.",
+                )
+            )
+        else:
+            stock_within_limit = True
+
+    overlap_result = _equipment_review_overlap_issues(
+        equipment_id=getattr(borrow, "equipment_id", None),
+        requested_quantity=borrow.quantity or 0,
+        stock_quantity=getattr(equipment, "quantity", 0) if equipment is not None else 0,
+        start_time=borrow.start_time,
+        end_time=borrow.end_time,
+        exclude_borrow_id=borrow.pk,
+    )
+    issues.extend(overlap_result["issues"])
+    passed_indicators.extend(overlap_result["passed_indicators"])
+
+    if equipment_available:
+        passed_indicators.insert(0, "Status alat masih available")
+    if stock_within_limit:
+        passed_indicators.append("Jumlah pengajuan tidak melebihi stok alat")
+    if required_fields_complete:
+        passed_indicators.append("Field penting untuk approval sudah terisi semua")
+
+    return _review_result(issues=issues, passed_indicators=passed_indicators)
 
 
 def is_staff_or_above(user):
@@ -1293,6 +1617,12 @@ class BookingViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(qs, many=True)
         return Response(serializer.data)
 
+    @action(detail=True, methods=['get'], url_path='review-check')
+    def review_check(self, request, pk=None):
+        instance = self.get_object()
+        self._ensure_booking_access(instance)
+        return Response(_booking_review_result(instance))
+
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
@@ -1844,6 +2174,12 @@ class BorrowViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon peminjaman alat.")
         sync_borrow_statuses()
         return build_requester_dropdown_response(self.get_queryset())
+
+    @action(detail=True, methods=['get'], url_path='review-check')
+    def review_check(self, request, pk=None):
+        instance = self.get_object()
+        self._ensure_borrow_access(instance)
+        return Response(_borrow_review_result(instance))
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):
@@ -3391,6 +3727,12 @@ class UseViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon penggunaan alat.")
         self._auto_update_use_statuses()
         return build_requester_dropdown_response(self.get_queryset())
+
+    @action(detail=True, methods=['get'], url_path='review-check')
+    def review_check(self, request, pk=None):
+        instance = self.get_object()
+        self._ensure_use_access(instance)
+        return Response(_use_review_result(instance))
 
     @action(detail=True, methods=['post'])
     def approve(self, request, pk=None):

@@ -27,7 +27,7 @@ class CSLUseStatusTestCase(TestCase):
         profile = user.profile
         profile.full_name = full_name
         profile.role = role
-        profile.user_type = "INTERNAL"
+        profile.user_type = "Internal"
         profile.save()
         return profile
 

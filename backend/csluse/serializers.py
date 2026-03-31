@@ -177,12 +177,15 @@ class EquipmentListSerializer(serializers.ModelSerializer):
 
 
 class EquipmentDropdownSerializer(serializers.ModelSerializer):
+    room_detail = EquipmentRoomListSerializer(source="room", read_only=True)
+
     class Meta:
         model = Equipment
         fields = [
             "id",
             "name",
             "quantity",
+            "room_detail",
         ]
 
 
@@ -355,6 +358,7 @@ class BookingSerializer(serializers.ModelSerializer):
         start_time = attrs.get("start_time", getattr(instance, "start_time", None))
         end_time = attrs.get("end_time", getattr(instance, "end_time", None))
         next_status = attrs.get("status", getattr(instance, "status", "Pending"))
+        rejection_note = attrs.get("rejection_note", getattr(instance, "rejection_note", None))
 
         if instance is None:
             if attrs.get("status") not in (None, "Pending"):
@@ -393,6 +397,11 @@ class BookingSerializer(serializers.ModelSerializer):
 
         if attendee_count <= 0:
             raise serializers.ValidationError({"attendee_count": "Jumlah orang harus lebih dari 0."})
+
+        if next_status == "Rejected" and not str(rejection_note or "").strip():
+            raise serializers.ValidationError(
+                {"rejection_note": "Alasan penolakan wajib diisi."}
+            )
 
         if room and attendee_count > room.capacity:
             raise serializers.ValidationError(
@@ -519,6 +528,7 @@ class BookingSerializer(serializers.ModelSerializer):
             "approved_by_detail",
             "approved_at",
             "rejected_at",
+            "rejection_note",
             "expired_at",
             "completed_at",
             "equipment_items",
@@ -570,6 +580,7 @@ class BookingListSerializer(serializers.ModelSerializer):
             "approved_by_detail",
             "approved_at",
             "rejected_at",
+            "rejection_note",
             "expired_at",
             "completed_at",
             "room_detail",
@@ -609,6 +620,7 @@ class BookingUserListSerializer(serializers.ModelSerializer):
             "requested_by_detail",
             "approved_at",
             "rejected_at",
+            "rejection_note",
             "expired_at",
             "completed_at",
             "room_detail",
@@ -627,6 +639,7 @@ class BorrowSerializer(serializers.ModelSerializer):
         instance = getattr(self, "instance", None)
         start_time = attrs.get("start_time", getattr(instance, "start_time", None))
         end_time = attrs.get("end_time", getattr(instance, "end_time", None))
+        rejection_note = attrs.get("rejection_note", getattr(instance, "rejection_note", None))
 
         if end_time is None:
             raise serializers.ValidationError({"end_time": "Waktu selesai peminjaman wajib diisi."})
@@ -681,6 +694,14 @@ class BorrowSerializer(serializers.ModelSerializer):
                 {"inspection_note": "Gunakan action inspeksi borrow untuk mengisi inspection_note."}
             )
 
+        if (
+            attrs.get("status", getattr(instance, "status", "Pending")) == "Rejected"
+            and not str(rejection_note or "").strip()
+        ):
+            raise serializers.ValidationError(
+                {"rejection_note": "Alasan penolakan wajib diisi."}
+            )
+
         return attrs
 
     class Meta:
@@ -711,6 +732,7 @@ class BorrowListSerializer(serializers.ModelSerializer):
             "approved_by_detail",
             "approved_at",
             "rejected_at",
+            "rejection_note",
             "expired_at",
             "borrowed_at",
             "returned_pending_inspection_at",
@@ -975,6 +997,7 @@ class UseSerializer(serializers.ModelSerializer):
         start_time = attrs.get("start_time", getattr(instance, "start_time", None))
         end_time = attrs.get("end_time", getattr(instance, "end_time", None))
         next_status = attrs.get("status", getattr(instance, "status", "Pending"))
+        rejection_note = attrs.get("rejection_note", getattr(instance, "rejection_note", None))
 
         if instance is None:
             if attrs.get("status") not in (None, "Pending"):
@@ -1022,6 +1045,11 @@ class UseSerializer(serializers.ModelSerializer):
                     }
                 )
 
+        if next_status == "Rejected" and not str(rejection_note or "").strip():
+            raise serializers.ValidationError(
+                {"rejection_note": "Alasan penolakan wajib diisi."}
+            )
+
         return attrs
 
     class Meta:
@@ -1050,6 +1078,7 @@ class UseListSerializer(serializers.ModelSerializer):
             "approved_by_detail",
             "approved_at",
             "rejected_at",
+            "rejection_note",
             "expired_at",
             "completed_at",
             "equipment_detail",

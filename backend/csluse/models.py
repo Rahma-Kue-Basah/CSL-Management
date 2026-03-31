@@ -4,14 +4,14 @@ from csluse_auth.models import Profile
 from django.utils import timezone
 
 PURPOSE_CHOICES = [
-    ('Thesis', 'Skripsi/TA'),
-    ('Practicum', 'Praktikum'),
-    ('Research', 'Penelitian'),
+    ('Skripsi/TA', 'Skripsi/TA'),
+    ('Praktikum', 'Praktikum'),
+    ('Penelitian', 'Penelitian'),
     ('Workshop', 'Workshop'),
 ]
 
 def _next_code(model_cls, prefix, yymm):
-    base = f"{prefix}{yymm}-"
+    base = f"{prefix}{yymm}"
     last = (
         model_cls.objects.select_for_update()
         .filter(code__startswith=base)
@@ -20,8 +20,9 @@ def _next_code(model_cls, prefix, yymm):
     )
     if last and last.code:
         try:
-            last_seq = int(last.code.split("-")[-1])
-        except (ValueError, IndexError):
+            suffix = last.code[len(base):].lstrip("-")
+            last_seq = int(suffix)
+        except ValueError:
             last_seq = 0
     else:
         last_seq = 0
@@ -191,6 +192,7 @@ class Booking(BaseModel):
     )
     approved_at = models.DateTimeField(blank=True, null=True)
     rejected_at = models.DateTimeField(blank=True, null=True)
+    rejection_note = models.CharField(max_length=2000, blank=True, null=True)
     expired_at = models.DateTimeField(blank=True, null=True)
     completed_at = models.DateTimeField(blank=True, null=True)
 
@@ -199,7 +201,7 @@ class Booking(BaseModel):
             now = timezone.localtime(timezone.now())
             yymm = now.strftime("%y%m")
             with transaction.atomic():
-                self.code = _next_code(Booking, "PR", yymm)
+                self.code = _next_code(Booking, "PL", yymm)
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -268,6 +270,7 @@ class Use(BaseModel):
     )
     approved_at = models.DateTimeField(blank=True, null=True)
     rejected_at = models.DateTimeField(blank=True, null=True)
+    rejection_note = models.CharField(max_length=2000, blank=True, null=True)
     expired_at = models.DateTimeField(blank=True, null=True)
     completed_at = models.DateTimeField(blank=True, null=True)
 
@@ -276,7 +279,7 @@ class Use(BaseModel):
             now = timezone.localtime(timezone.now())
             yymm = now.strftime("%y%m")
             with transaction.atomic():
-                self.code = _next_code(Use, "US", yymm)
+                self.code = _next_code(Use, "PA", yymm)
         return super().save(*args, **kwargs)
 
     def __str__(self):
@@ -335,6 +338,7 @@ class Borrow(BaseModel):
     )
     approved_at = models.DateTimeField(blank=True, null=True)
     rejected_at = models.DateTimeField(blank=True, null=True)
+    rejection_note = models.CharField(max_length=2000, blank=True, null=True)
     expired_at = models.DateTimeField(blank=True, null=True)
     borrowed_at = models.DateTimeField(blank=True, null=True)
     returned_pending_inspection_at = models.DateTimeField(blank=True, null=True)
@@ -348,7 +352,7 @@ class Borrow(BaseModel):
             now = timezone.localtime(timezone.now())
             yymm = now.strftime("%y%m")
             with transaction.atomic():
-                self.code = _next_code(Borrow, "PA", yymm)
+                self.code = _next_code(Borrow, "PJ", yymm)
         return super().save(*args, **kwargs)
 
     def __str__(self):

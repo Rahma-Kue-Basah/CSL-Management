@@ -44,6 +44,7 @@ export type BorrowRow = {
   updatedAt: string;
   approvedAt: string;
   rejectedAt: string;
+  rejectionNote: string;
   expiredAt: string;
   borrowedAt: string;
   returnedPendingInspectionAt: string;
@@ -78,6 +79,7 @@ type ApiBorrow = {
   updated_at?: string | null;
   approved_at?: string | null;
   rejected_at?: string | null;
+  rejection_note?: string | null;
   expired_at?: string | null;
   borrowed_at?: string | null;
   returned_pending_inspection_at?: string | null;
@@ -181,6 +183,7 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
     updatedAt: String(item.updated_at ?? "-"),
     approvedAt: String(item.approved_at ?? "-"),
     rejectedAt: String(item.rejected_at ?? "-"),
+    rejectionNote: String(item.rejection_note ?? ""),
     expiredAt: String(item.expired_at ?? "-"),
     borrowedAt: String(item.borrowed_at ?? "-"),
     returnedPendingInspectionAt: String(item.returned_pending_inspection_at ?? "-"),
@@ -200,12 +203,32 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
 export function useBorrowDetail(
   id?: string | number | null,
   reloadKey = 0,
+  options?: {
+    enabled?: boolean;
+    initialBorrow?: BorrowRow | null;
+  },
 ) {
-  const [borrow, setBorrow] = useState<BorrowRow | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const enabled = options?.enabled ?? true;
+  const [borrow, setBorrow] = useState<BorrowRow | null>(
+    options?.initialBorrow ?? null,
+  );
+  const [isLoading, setIsLoading] = useState(
+    enabled && Boolean(id) && !options?.initialBorrow,
+  );
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (typeof options?.initialBorrow === "undefined") return;
+    setBorrow(options.initialBorrow ?? null);
+  }, [options?.initialBorrow]);
+
+  useEffect(() => {
+    if (!enabled) {
+      setError("");
+      setIsLoading(false);
+      return;
+    }
+
     if (!id) {
       setBorrow(null);
       setError("");
@@ -245,7 +268,7 @@ export function useBorrowDetail(
       isAborted = true;
       controller.abort();
     };
-  }, [id, reloadKey]);
+  }, [enabled, id, reloadKey]);
 
   return {
     borrow,

@@ -54,6 +54,8 @@ const API_BOOKING_REJECT = (id: string | number) =>
   `${API_BOOKINGS}${id}/reject/`;
 const API_BOOKING_COMPLETE = (id: string | number) =>
   `${API_BOOKINGS}${id}/complete/`;
+const API_BOOKING_REVIEW_CHECK = (id: string | number) =>
+  `${API_BOOKINGS}${id}/review-check/`;
 const API_BOOKINGS_BY_MONTH = `${API_BOOKINGS}by-month/`;
 
 // REGION: Borrows API Endpoints
@@ -80,6 +82,8 @@ const API_BORROW_MARK_LOST = (id: string | number) =>
   `${API_BORROWS}${id}/mark-lost/`;
 const API_BORROW_RETURN = (id: string | number) =>
   `${API_BORROWS}${id}/return/`;
+const API_BORROW_REVIEW_CHECK = (id: string | number) =>
+  `${API_BORROWS}${id}/review-check/`;
 const API_BORROWS_BY_MONTH = `${API_BORROWS}by-month/`;
 
 // REGION: Uses API Endpoints
@@ -93,6 +97,7 @@ const API_USE_DETAIL = (id: string | number) => `${API_USES}${id}/`;
 const API_USE_APPROVE = (id: string | number) => `${API_USES}${id}/approve/`;
 const API_USE_REJECT = (id: string | number) => `${API_USES}${id}/reject/`;
 const API_USE_COMPLETE = (id: string | number) => `${API_USES}${id}/complete/`;
+const API_USE_REVIEW_CHECK = (id: string | number) => `${API_USES}${id}/review-check/`;
 
 // REGION: Pengujians API Endpoints
 const API_PENGUJIANS = `${API_BASE_URL}/pengujians/`;
@@ -117,6 +122,8 @@ const API_EQUIPMENTS_EXPORT = `${API_EQUIPMENTS}export/`;
 const API_EQUIPMENTS_BULK_DELETE = `${API_EQUIPMENTS}bulk-delete/`;
 const API_EQUIPMENT_DETAIL = (id: string | number) =>
   `${API_EQUIPMENTS}${id}/`;
+const API_EQUIPMENT_AVAILABILITY = (id: string | number) =>
+  `${API_EQUIPMENTS}${id}/availability/`;
 
 const API_SOFTWARES = `${API_BASE_URL}/softwares/`;
 const API_SOFTWARES_EXPORT = `${API_SOFTWARES}export/`;
@@ -192,6 +199,7 @@ export {
   API_BOOKING_APPROVE,
   API_BOOKING_REJECT,
   API_BOOKING_COMPLETE,
+  API_BOOKING_REVIEW_CHECK,
   API_BOOKINGS_BY_MONTH,
   API_BORROWS,
   API_BORROWS_MY,
@@ -208,6 +216,7 @@ export {
   API_BORROW_MARK_DAMAGED,
   API_BORROW_MARK_LOST,
   API_BORROW_RETURN,
+  API_BORROW_REVIEW_CHECK,
   API_BORROWS_BY_MONTH,
   API_USES,
   API_USES_MY,
@@ -219,6 +228,7 @@ export {
   API_USE_APPROVE,
   API_USE_REJECT,
   API_USE_COMPLETE,
+  API_USE_REVIEW_CHECK,
   API_PENGUJIANS,
   API_PENGUJIANS_MY,
   API_PENGUJIANS_ALL,
@@ -234,6 +244,7 @@ export {
   API_EQUIPMENTS_EXPORT,
   API_EQUIPMENTS_BULK_DELETE,
   API_EQUIPMENT_DETAIL,
+  API_EQUIPMENT_AVAILABILITY,
   API_SOFTWARES,
   API_SOFTWARES_EXPORT,
   API_SOFTWARES_BULK_DELETE,

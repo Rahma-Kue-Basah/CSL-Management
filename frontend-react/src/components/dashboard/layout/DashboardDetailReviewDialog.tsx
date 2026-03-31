@@ -39,7 +39,10 @@ export function DashboardDetailReviewDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto border-none bg-transparent p-0 shadow-none sm:max-w-2xl">
+      <DialogContent
+        showCloseButton={false}
+        className="max-h-[85vh] overflow-y-auto border-none bg-transparent p-0 shadow-none sm:max-w-2xl"
+      >
         <DialogTitle className="sr-only">{getReviewDialogTitle(context)}</DialogTitle>
         <DashboardDetailReviewPanel
           context={context}

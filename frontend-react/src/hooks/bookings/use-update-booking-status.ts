@@ -30,6 +30,7 @@ export function useUpdateBookingStatus() {
   const updateBookingStatus = async (
     bookingId: string | number,
     type: BookingStatusActionType,
+    payload?: { rejectionNote?: string },
   ) => {
     setPendingAction({ bookingId, type });
 
@@ -41,7 +42,11 @@ export function useUpdateBookingStatus() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({}),
+          body: JSON.stringify(
+            type === "reject" && payload?.rejectionNote?.trim()
+              ? { rejection_note: payload.rejectionNote.trim() }
+              : {},
+          ),
         },
       );
 
