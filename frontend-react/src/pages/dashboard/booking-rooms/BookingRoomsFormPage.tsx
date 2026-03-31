@@ -17,7 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCreateBookingRoom } from "@/hooks/bookings/use-create-booking-room";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import {
+  REQUEST_PURPOSE_OPTIONS,
+  WORKSHOP_PURPOSE,
+} from "@/constants/request-purpose";
 import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import {
   combineDateTime,
@@ -25,7 +30,6 @@ import {
   startOfToday,
   type SelectOption,
 } from "@/components/shared/dashboard-form-fields";
-import { cn } from "@/lib/utils";
 
 type FormData = {
   roomId: string;
@@ -35,27 +39,34 @@ type FormData = {
   attendeeCount: string;
   attendeeNames: string;
   note: string;
+  requesterPhone: string;
+  requesterMentor: string;
+  institution: string;
+  institutionAddress: string;
+  workshopInstitution: string;
+  workshopPic: string;
+  workshopTitle: string;
   equipmentItems: Array<{
     equipmentId: string;
     quantity: string;
   }>;
 };
 
-const PURPOSE_OPTIONS = [
-  { value: "Class", label: "Class" },
-  { value: "Lab Work", label: "Lab Work" },
-  { value: "Research", label: "Research" },
-  { value: "Other", label: "Other" },
-];
-
 const initialFormData: FormData = {
   roomId: "",
-  purpose: "Other",
+  purpose: "Research",
   startTime: "",
   endTime: "",
   attendeeCount: "1",
   attendeeNames: "",
   note: "",
+  requesterPhone: "",
+  requesterMentor: "",
+  institution: "",
+  institutionAddress: "",
+  workshopInstitution: "",
+  workshopPic: "",
+  workshopTitle: "",
   equipmentItems: [],
 };
 
@@ -63,6 +74,7 @@ export default function BookingRoomsFormPage() {
   const router = useRouter();
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const { profile } = useLoadProfile();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -81,6 +93,8 @@ export default function BookingRoomsFormPage() {
   } = useEquipmentOptions("", formData.roomId, Boolean(formData.roomId));
   const { createBookingRoom, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBookingRoom();
+  const isGuestUser = profile.role === "Guest";
+  const isWorkshopPurpose = formData.purpose === WORKSHOP_PURPOSE;
 
   const minEndDate = startDate ? new Date(startDate) : new Date(today);
   if (minEndDate) {
@@ -134,7 +148,13 @@ export default function BookingRoomsFormPage() {
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = event.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === "attendeeCount" && Number(value) <= 1
+        ? { attendeeNames: "" }
+        : {}),
+    }));
     setValidationMessage("");
     setErrorMessage("");
   };
@@ -184,6 +204,16 @@ export default function BookingRoomsFormPage() {
       ...prev,
       [name]: value,
       ...(name === "roomId" ? { equipmentItems: [] } : {}),
+      ...(name === "purpose" && value !== WORKSHOP_PURPOSE
+        ? {
+            workshopInstitution: "",
+            workshopPic: "",
+            workshopTitle: "",
+          }
+        : {}),
+      ...(name === "purpose" && value === WORKSHOP_PURPOSE
+        ? { attendeeNames: "" }
+        : {}),
     }));
     setValidationMessage("");
     setErrorMessage("");
@@ -239,7 +269,7 @@ export default function BookingRoomsFormPage() {
       setValidationMessage("Tujuan penggunaan ruangan wajib diisi.");
       return false;
     }
-    if (!PURPOSE_OPTIONS.some((option) => option.value === formData.purpose)) {
+    if (!REQUEST_PURPOSE_OPTIONS.some((option) => option.value === formData.purpose)) {
       setValidationMessage("Pilihan tujuan tidak valid.");
       return false;
     }
@@ -333,6 +363,13 @@ export default function BookingRoomsFormPage() {
       attendeeCount: Number(formData.attendeeCount),
       attendeeNames: formData.attendeeNames,
       note: formData.note,
+      requesterPhone: formData.requesterPhone,
+      requesterMentor: isGuestUser ? "" : formData.requesterMentor,
+      institution: formData.institution,
+      institutionAddress: formData.institutionAddress,
+      workshopTitle: formData.workshopTitle,
+      workshopPic: formData.workshopPic,
+      workshopInstitution: formData.workshopInstitution,
       equipmentItems: formData.equipmentItems.map((item) => ({
         equipmentId: item.equipmentId,
         quantity: Number(item.quantity),
@@ -380,7 +417,7 @@ export default function BookingRoomsFormPage() {
           <DashboardComboboxField
             label="Tujuan"
             value={formData.purpose}
-            options={PURPOSE_OPTIONS}
+            options={REQUEST_PURPOSE_OPTIONS}
             placeholder="Pilih tujuan"
             emptyText="Tujuan tidak ditemukan."
             disabled={isSubmitting}
@@ -433,18 +470,135 @@ export default function BookingRoomsFormPage() {
 
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-slate-600">
-              Nama Peserta
+              Nomor Telepon Pemohon
             </label>
             <Input
               type="text"
-              name="attendeeNames"
-              value={formData.attendeeNames}
+              name="requesterPhone"
+              value={formData.requesterPhone}
               onChange={handleChange}
-              placeholder="Contoh: Andi, Budi, Citra"
+              placeholder="Contoh: 08123456789"
               className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
               disabled={isSubmitting}
             />
           </div>
+
+          {!isGuestUser ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600">
+                Dosen Pembimbing
+              </label>
+              <Input
+                type="text"
+                name="requesterMentor"
+                value={formData.requesterMentor}
+                onChange={handleChange}
+                placeholder="Nama dosen pembimbing"
+                className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                disabled={isSubmitting}
+              />
+            </div>
+          ) : null}
+
+          {isGuestUser ? (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                  Institusi
+                </label>
+                <Input
+                  type="text"
+                  name="institution"
+                  value={formData.institution}
+                  onChange={handleChange}
+                  placeholder="Nama institusi"
+                  className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                  Alamat Institusi
+                </label>
+                <Input
+                  type="text"
+                  name="institutionAddress"
+                  value={formData.institutionAddress}
+                  onChange={handleChange}
+                  placeholder="Alamat institusi"
+                  className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </>
+          ) : null}
+
+          {isWorkshopPurpose ? (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                  Judul Workshop
+                </label>
+                <Input
+                  type="text"
+                  name="workshopTitle"
+                  value={formData.workshopTitle}
+                  onChange={handleChange}
+                  placeholder="Judul workshop"
+                  className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                  PIC Workshop
+                </label>
+                <Input
+                  type="text"
+                  name="workshopPic"
+                  value={formData.workshopPic}
+                  onChange={handleChange}
+                  placeholder="Nama PIC workshop"
+                  className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                  Institusi Workshop
+                </label>
+                <Input
+                  type="text"
+                  name="workshopInstitution"
+                  value={formData.workshopInstitution}
+                  onChange={handleChange}
+                  placeholder="Nama institusi workshop"
+                  className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </>
+          ) : null}
+
+          {Number(formData.attendeeCount) > 1 && !isWorkshopPurpose ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600">
+                Nama Peserta
+              </label>
+              <Input
+                type="text"
+                name="attendeeNames"
+                value={formData.attendeeNames}
+                onChange={handleChange}
+                placeholder="Contoh: Andi, Budi, Citra"
+                className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                disabled={isSubmitting}
+              />
+            </div>
+          ) : null}
 
           <div className="space-y-3 md:col-span-2">
             <div className="flex items-center justify-between gap-3">
@@ -555,9 +709,6 @@ export default function BookingRoomsFormPage() {
             disabled={isSubmitting}
           />
           <p className="text-[11px] text-slate-500">Maksimal 2000 karakter.</p>
-          <p className="text-[11px] text-amber-700">
-            Peminjaman pada hari Sabtu dan Minggu wajib menginfokan secara mandiri ke PAFM.
-          </p>
         </div>
 
         {validationMessage ? (
@@ -611,7 +762,13 @@ export default function BookingRoomsFormPage() {
         onConfirm={() => void handleConfirmSubmit()}
       >
         <SubmissionSummaryItem label="Ruangan" value={selectedRoomLabel} />
-        <SubmissionSummaryItem label="Tujuan" value={formData.purpose} />
+        <SubmissionSummaryItem
+          label="Tujuan"
+          value={
+            REQUEST_PURPOSE_OPTIONS.find((option) => option.value === formData.purpose)
+              ?.label ?? formData.purpose
+          }
+        />
         <SubmissionSummaryItem
           label="Waktu Mulai (WIB)"
           value={formatLocalDateTimeAsWib(formData.startTime)}
@@ -624,7 +781,36 @@ export default function BookingRoomsFormPage() {
           label="Jumlah Peserta"
           value={formData.attendeeCount}
         />
-        <SubmissionSummaryItem label="Nama Peserta" value={formData.attendeeNames} />
+        {Number(formData.attendeeCount) > 1 && !isWorkshopPurpose ? (
+          <SubmissionSummaryItem
+            label="Nama Peserta"
+            value={formData.attendeeNames}
+          />
+        ) : null}
+        <SubmissionSummaryItem
+          label="Nomor Telepon Pemohon"
+          value={formData.requesterPhone}
+        />
+        {!isGuestUser ? (
+          <SubmissionSummaryItem
+            label="Dosen Pembimbing"
+            value={formData.requesterMentor}
+          />
+        ) : null}
+        <SubmissionSummaryItem label="Institusi" value={formData.institution} />
+        <SubmissionSummaryItem
+          label="Alamat Institusi"
+          value={formData.institutionAddress}
+        />
+        <SubmissionSummaryItem
+          label="Judul Workshop"
+          value={formData.workshopTitle}
+        />
+        <SubmissionSummaryItem label="PIC Workshop" value={formData.workshopPic} />
+        <SubmissionSummaryItem
+          label="Institusi Workshop"
+          value={formData.workshopInstitution}
+        />
         <SubmissionSummaryItem label="Peralatan" value={selectedEquipmentLabel} />
         <SubmissionSummaryItem label="Catatan" value={formData.note} />
       </SubmissionConfirmDialog>

@@ -79,7 +79,7 @@ export function useUpdateRoom() {
       const body: Record<string, string | number | string[] | null> = {
         name: payload.name.trim(),
         number: payload.number.trim(),
-        floor: Number(payload.floor),
+        floor: payload.floor.trim(),
         capacity: Number(payload.capacity),
       };
 

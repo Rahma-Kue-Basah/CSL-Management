@@ -73,7 +73,7 @@ export function useCreateRoom() {
         name: payload.name.trim(),
         capacity: Number(payload.capacity),
         number: payload.number.trim(),
-        floor: Number(payload.floor),
+        floor: payload.floor.trim(),
       };
 
       if (payload.description?.trim()) body.description = payload.description.trim();

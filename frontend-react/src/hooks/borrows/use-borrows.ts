@@ -53,6 +53,10 @@ export type BorrowRow = {
   lostDamagedAt: string;
   note: string;
   inspectionNote: string;
+  requesterPhone: string;
+  requesterMentor: string;
+  institution: string;
+  institutionAddress: string;
 };
 
 type ApiBorrow = {
@@ -62,6 +66,10 @@ type ApiBorrow = {
   purpose?: string | null;
   note?: string | null;
   inspection_note?: string | null;
+  requester_phone?: string | null;
+  requester_mentor?: string | null;
+  institution?: string | null;
+  institution_address?: string | null;
   quantity?: number | string | null;
   start_time?: string | null;
   end_time?: string | null;
@@ -182,6 +190,10 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
     lostDamagedAt: String(item.lost_damaged_at ?? "-"),
     note: String(item.note ?? ""),
     inspectionNote: String(item.inspection_note ?? ""),
+    requesterPhone: String(item.requester_phone ?? "-"),
+    requesterMentor: String(item.requester_mentor ?? "-"),
+    institution: String(item.institution ?? "-"),
+    institutionAddress: String(item.institution_address ?? "-"),
   };
 }
 

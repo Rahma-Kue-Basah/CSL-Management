@@ -1,3 +1,5 @@
+from datetime import timedelta
+
 from django.db.models.signals import m2m_changed, post_delete, pre_save
 from django.dispatch import receiver
 from django.core.exceptions import ValidationError
@@ -51,6 +53,27 @@ def validate_booking_working_hours(start_time, end_time):
         raise ValidationError("Booking end time must be after start time.")
 
 
+def validate_no_weekend_range(start_time, end_time=None, label="time range"):
+    if not start_time:
+        return
+
+    local_start = timezone.localtime(start_time)
+    local_end = timezone.localtime(end_time) if end_time else local_start
+
+    if local_end < local_start:
+        return
+
+    current_day = local_start.date()
+    last_day = local_end.date()
+
+    while current_day <= last_day:
+        if current_day.weekday() >= 5:
+            raise ValidationError(
+                f"{label.capitalize()} cannot be on or pass through Saturday or Sunday."
+            )
+        current_day = current_day + timedelta(days=1)
+
+
 def is_admin_approver(profile):
     if not profile:
         return False
@@ -102,6 +125,7 @@ def validate_booking(sender, instance, **kwargs):
         validate_start_not_in_past(instance.start_time, "booking start time")
 
     validate_booking_working_hours(instance.start_time, instance.end_time)
+    validate_no_weekend_range(instance.start_time, instance.end_time, "booking time range")
 
     # approved_by must be room PIC or Admin (when set)
     if instance.approved_by_id:
@@ -153,6 +177,8 @@ def validate_use(sender, instance, **kwargs):
     if start_time_changed:
         validate_start_not_in_past(instance.start_time, "use start time")
 
+    validate_no_weekend_range(instance.start_time, instance.end_time, "use time range")
+
 @receiver(pre_save, sender=Borrow)
 def validate_borrow(sender, instance, **kwargs):
     """
@@ -176,6 +202,8 @@ def validate_borrow(sender, instance, **kwargs):
     )
     if start_time_changed:
         validate_start_not_in_past(instance.start_time, "borrow start time")
+
+    validate_no_weekend_range(instance.start_time, instance.end_time, "borrow time range")
 
     if instance.equipment_id:
         equipment_qty = instance.equipment.quantity

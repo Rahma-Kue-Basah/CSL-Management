@@ -16,7 +16,9 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useCreateUse } from "@/hooks/uses/use-create-use";
+import { REQUEST_PURPOSE_OPTIONS } from "@/constants/request-purpose";
 import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import {
   combineDateTime,
@@ -33,28 +35,30 @@ type FormData = {
   startTime: string;
   endTime: string;
   note: string;
+  requesterPhone: string;
+  requesterMentor: string;
+  institution: string;
+  institutionAddress: string;
 };
-
-const PURPOSE_OPTIONS = [
-  { value: "Class", label: "Class" },
-  { value: "Lab Work", label: "Lab Work" },
-  { value: "Research", label: "Research" },
-  { value: "Other", label: "Other" },
-];
 
 const initialFormData: FormData = {
   equipmentId: "",
   quantity: "1",
-  purpose: "Other",
+  purpose: "Research",
   startTime: "",
   endTime: "",
   note: "",
+  requesterPhone: "",
+  requesterMentor: "",
+  institution: "",
+  institutionAddress: "",
 };
 
 export default function UseEquipmentFormPage() {
   const router = useRouter();
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const { profile } = useLoadProfile();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -67,6 +71,7 @@ export default function UseEquipmentFormPage() {
     error: equipmentError,
   } = useEquipmentOptions("available");
   const { createUse, isSubmitting, errorMessage, setErrorMessage } = useCreateUse();
+  const isGuestUser = profile.role === "Guest";
 
   const minEndDate = startDate ? new Date(startDate) : new Date(today);
   if (minEndDate) {
@@ -158,7 +163,7 @@ export default function UseEquipmentFormPage() {
       setValidationMessage("Tujuan penggunaan alat wajib diisi.");
       return false;
     }
-    if (!PURPOSE_OPTIONS.some((option) => option.value === formData.purpose)) {
+    if (!REQUEST_PURPOSE_OPTIONS.some((option) => option.value === formData.purpose)) {
       setValidationMessage("Pilihan tujuan tidak valid.");
       return false;
     }
@@ -206,6 +211,10 @@ export default function UseEquipmentFormPage() {
       startTime: toWibIsoString(formData.startTime),
       endTime: formData.endTime ? toWibIsoString(formData.endTime) : undefined,
       note: formData.note,
+      requesterPhone: formData.requesterPhone,
+      requesterMentor: formData.requesterMentor,
+      institution: formData.institution,
+      institutionAddress: formData.institutionAddress,
     });
 
     if (result.ok) {
@@ -264,7 +273,7 @@ export default function UseEquipmentFormPage() {
           <DashboardComboboxField
             label="Tujuan"
             value={formData.purpose}
-            options={PURPOSE_OPTIONS}
+            options={REQUEST_PURPOSE_OPTIONS}
             placeholder="Pilih tujuan"
             emptyText="Tujuan tidak ditemukan."
             disabled={isSubmitting}
@@ -272,7 +281,24 @@ export default function UseEquipmentFormPage() {
             onChange={(value) => handleSelectChange("purpose", value)}
           />
 
-          <div className="space-y-5">
+          {!isGuestUser ? (
+            <div className="space-y-1.5">
+              <label className="text-xs font-medium text-slate-600">
+                Dosen Pembimbing
+              </label>
+              <Input
+                type="text"
+                name="requesterMentor"
+                value={formData.requesterMentor}
+                onChange={handleChange}
+                placeholder="Nama dosen pembimbing"
+                className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                disabled={isSubmitting}
+              />
+            </div>
+          ) : null}
+
+          <div className="space-y-1.5">
             <DashboardDateTimePickerField
               id="start-time"
               label="Waktu Mulai (WIB)"
@@ -284,7 +310,9 @@ export default function UseEquipmentFormPage() {
               onTimeChange={handleStartTimeChange}
               disabled={isSubmitting}
             />
+          </div>
 
+          <div className="space-y-1.5">
             <DashboardDateTimePickerField
               id="end-time"
               label="Waktu Selesai (WIB)"
@@ -298,6 +326,55 @@ export default function UseEquipmentFormPage() {
               required={false}
             />
           </div>
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-slate-600">
+              Nomor Telepon Pemohon
+            </label>
+            <Input
+              type="text"
+              name="requesterPhone"
+              value={formData.requesterPhone}
+              onChange={handleChange}
+              placeholder="Contoh: 08123456789"
+              className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+              disabled={isSubmitting}
+            />
+          </div>
+
+          {isGuestUser ? (
+            <>
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                  Institusi
+                </label>
+                <Input
+                  type="text"
+                  name="institution"
+                  value={formData.institution}
+                  onChange={handleChange}
+                  placeholder="Nama institusi"
+                  className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  disabled={isSubmitting}
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-slate-600">
+                  Alamat Institusi
+                </label>
+                <Input
+                  type="text"
+                  name="institutionAddress"
+                  value={formData.institutionAddress}
+                  onChange={handleChange}
+                  placeholder="Alamat institusi"
+                  className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
+                  disabled={isSubmitting}
+                />
+              </div>
+            </>
+          ) : null}
         </div>
 
         <div className="space-y-1.5">
@@ -362,7 +439,13 @@ export default function UseEquipmentFormPage() {
       >
         <SubmissionSummaryItem label="Alat" value={selectedEquipmentLabel} />
         <SubmissionSummaryItem label="Jumlah" value={formData.quantity} />
-        <SubmissionSummaryItem label="Tujuan" value={formData.purpose} />
+        <SubmissionSummaryItem
+          label="Tujuan"
+          value={
+            REQUEST_PURPOSE_OPTIONS.find((option) => option.value === formData.purpose)
+              ?.label ?? formData.purpose
+          }
+        />
         <SubmissionSummaryItem
           label="Waktu Mulai (WIB)"
           value={formatLocalDateTimeAsWib(formData.startTime)}
@@ -370,6 +453,19 @@ export default function UseEquipmentFormPage() {
         <SubmissionSummaryItem
           label="Waktu Selesai (WIB)"
           value={formatLocalDateTimeAsWib(formData.endTime)}
+        />
+        <SubmissionSummaryItem
+          label="Nomor Telepon Pemohon"
+          value={formData.requesterPhone}
+        />
+        <SubmissionSummaryItem
+          label="Dosen Pembimbing"
+          value={formData.requesterMentor}
+        />
+        <SubmissionSummaryItem label="Institusi" value={formData.institution} />
+        <SubmissionSummaryItem
+          label="Alamat Institusi"
+          value={formData.institutionAddress}
         />
         <SubmissionSummaryItem label="Catatan" value={formData.note} />
       </SubmissionConfirmDialog>

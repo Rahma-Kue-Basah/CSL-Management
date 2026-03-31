@@ -186,8 +186,8 @@ export default function AdminRoomDetailDialog({
       return setUpdateErrorMessage("Nama ruangan wajib diisi.");
     if (!formData.number.trim())
       return setUpdateErrorMessage("Nomor ruangan wajib diisi.");
-    if (!formData.floor || Number(formData.floor) <= 0)
-      return setUpdateErrorMessage("Lantai harus lebih dari 0.");
+    if (!formData.floor.trim())
+      return setUpdateErrorMessage("Lantai wajib diisi.");
     if (!formData.capacity || Number(formData.capacity) <= 0)
       return setUpdateErrorMessage("Kapasitas harus lebih dari 0.");
 
@@ -318,7 +318,6 @@ export default function AdminRoomDetailDialog({
                   label="Lantai"
                   value={isEditing ? formData.floor : room.floor}
                   editable={isEditing}
-                  type="number"
                   onChange={(value) =>
                     setFormData((prev) => ({ ...prev, floor: value }))
                   }

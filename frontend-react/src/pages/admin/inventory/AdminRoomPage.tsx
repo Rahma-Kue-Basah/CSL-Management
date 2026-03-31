@@ -242,7 +242,6 @@ export default function AdminRoomsPage() {
                   Lantai
                 </label>
                 <Input
-                  type="number"
                   value={floor}
                   placeholder="Semua"
                   className="border-slate-400 bg-white shadow-xs focus-visible:border-sky-600 focus-visible:ring-sky-100"

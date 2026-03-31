@@ -90,9 +90,7 @@ export default function RoomCreateDialog({
 
     if (!formData.name.trim()) return setErrorMessage("Nama ruangan wajib diisi.");
     if (!formData.number.trim()) return setErrorMessage("Nomor ruangan wajib diisi.");
-    if (!formData.floor || Number(formData.floor) <= 0) {
-      return setErrorMessage("Lantai harus lebih dari 0.");
-    }
+    if (!formData.floor.trim()) return setErrorMessage("Lantai wajib diisi.");
     if (!formData.capacity || Number(formData.capacity) <= 0) {
       return setErrorMessage("Kapasitas harus lebih dari 0.");
     }
@@ -154,13 +152,11 @@ export default function RoomCreateDialog({
             <div className="space-y-1">
               <label className="text-xs font-medium">Lantai</label>
               <Input
-                type="number"
                 name="floor"
                 value={formData.floor}
                 onChange={handleChange}
-                placeholder="1"
+                placeholder="Contoh: 1 / Ground / Mezzanine"
                 className="border-sky-300 bg-sky-50/60 shadow-sm focus-visible:border-sky-600 focus-visible:ring-sky-200"
-                min="1"
                 required
               />
             </div>

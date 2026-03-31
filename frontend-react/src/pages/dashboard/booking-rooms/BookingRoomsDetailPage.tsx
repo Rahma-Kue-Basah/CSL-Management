@@ -430,6 +430,28 @@ export default function BookingRoomsDetailPage() {
                 <DetailMetaItem label="Jumlah Peserta" value={booking.attendeeCount} />
                 <DetailMetaItem label="Nama Peserta" value={booking.attendeeNames} />
                 <DetailMetaItem label="Tujuan" value={booking.purpose} />
+                <DetailMetaItem
+                  label="Nomor Telepon Pemohon"
+                  value={booking.requesterPhone}
+                />
+                <DetailMetaItem
+                  label="Dosen Pembimbing"
+                  value={booking.requesterMentor}
+                />
+                <DetailMetaItem label="Institusi" value={booking.institution} />
+                <DetailMetaItem
+                  label="Alamat Institusi"
+                  value={booking.institutionAddress}
+                />
+                <DetailMetaItem
+                  label="Judul Workshop"
+                  value={booking.workshopTitle}
+                />
+                <DetailMetaItem label="PIC Workshop" value={booking.workshopPic} />
+                <DetailMetaItem
+                  label="Institusi Workshop"
+                  value={booking.workshopInstitution}
+                />
                 <DetailMetaItem label="Catatan" value={booking.note || "-"} />
               </DetailCard>
 
@@ -503,6 +525,28 @@ export default function BookingRoomsDetailPage() {
                 <DetailMetaItem label="Jumlah Peserta" value={booking.attendeeCount} />
                 <DetailMetaItem label="Nama Peserta" value={booking.attendeeNames} />
                 <DetailMetaItem label="Tujuan" value={booking.purpose} />
+                <DetailMetaItem
+                  label="Nomor Telepon Pemohon"
+                  value={booking.requesterPhone}
+                />
+                <DetailMetaItem
+                  label="Dosen Pembimbing"
+                  value={booking.requesterMentor}
+                />
+                <DetailMetaItem label="Institusi" value={booking.institution} />
+                <DetailMetaItem
+                  label="Alamat Institusi"
+                  value={booking.institutionAddress}
+                />
+                <DetailMetaItem
+                  label="Judul Workshop"
+                  value={booking.workshopTitle}
+                />
+                <DetailMetaItem label="PIC Workshop" value={booking.workshopPic} />
+                <DetailMetaItem
+                  label="Institusi Workshop"
+                  value={booking.workshopInstitution}
+                />
                 <DetailMetaItem label="Catatan" value={booking.note || "-"} />
               </DetailCard>
 

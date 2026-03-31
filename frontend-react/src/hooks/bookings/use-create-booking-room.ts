@@ -17,6 +17,13 @@ type CreateBookingRoomPayload = {
   attendeeCount: number;
   attendeeNames?: string;
   note?: string;
+  requesterPhone?: string;
+  requesterMentor?: string;
+  institution?: string;
+  institutionAddress?: string;
+  workshopTitle?: string;
+  workshopPic?: string;
+  workshopInstitution?: string;
   equipmentItems?: Array<{
     equipmentId: string;
     quantity: number;
@@ -26,6 +33,13 @@ type CreateBookingRoomPayload = {
 function parseBookingError(data: unknown, fallback = "Gagal membuat peminjaman lab.") {
   return extractApiErrorMessage(data, fallback, [
     "attendee_count",
+    "requester_phone",
+    "requester_mentor",
+    "institution",
+    "institution_address",
+    "workshop_title",
+    "workshop_pic",
+    "workshop_institution",
     "room",
     "purpose",
     "start_time",
@@ -53,6 +67,15 @@ export function useCreateBookingRoom() {
       };
       if (payload.attendeeNames?.trim()) body.attendee_names = payload.attendeeNames.trim();
       if (payload.note?.trim()) body.note = payload.note.trim();
+      if (payload.requesterPhone?.trim()) body.requester_phone = payload.requesterPhone.trim();
+      if (payload.requesterMentor?.trim()) body.requester_mentor = payload.requesterMentor.trim();
+      if (payload.institution?.trim()) body.institution = payload.institution.trim();
+      if (payload.institutionAddress?.trim()) body.institution_address = payload.institutionAddress.trim();
+      if (payload.workshopTitle?.trim()) body.workshop_title = payload.workshopTitle.trim();
+      if (payload.workshopPic?.trim()) body.workshop_pic = payload.workshopPic.trim();
+      if (payload.workshopInstitution?.trim()) {
+        body.workshop_institution = payload.workshopInstitution.trim();
+      }
       if (Array.isArray(payload.equipmentItems) && payload.equipmentItems.length > 0) {
         body.equipment_items = payload.equipmentItems.map((item) => ({
           equipment: item.equipmentId.trim(),

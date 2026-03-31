@@ -4,12 +4,11 @@ from csluse_auth.models import Profile
 from django.utils import timezone
 
 PURPOSE_CHOICES = [
-    ('Class', 'Class'),
-    ('Lab Work', 'Lab Work'),
-    ('Research', 'Research'),
-    ('Other', 'Other'),
+    ('Thesis', 'Skripsi/TA'),
+    ('Practicum', 'Praktikum'),
+    ('Research', 'Penelitian'),
+    ('Workshop', 'Workshop'),
 ]
-
 
 def _next_code(model_cls, prefix, yymm):
     base = f"{prefix}{yymm}-"
@@ -58,8 +57,8 @@ class Room(BaseModel):
     name = models.CharField(max_length=255)
     capacity = models.PositiveIntegerField()
     description = models.CharField(max_length=2000, blank=True, null=True)
-    number = models.CharField(max_length=4)
-    floor = models.PositiveIntegerField()
+    number = models.CharField(max_length=25)
+    floor = models.CharField(max_length=25)
     pics = models.ManyToManyField(
         Profile,
         blank=True,
@@ -119,7 +118,22 @@ class Equipment(BaseModel):
 
     def __str__(self):
         return f"{self.name} - {self.room.name} - Qty: {self.quantity}"
+    
+class Software(BaseModel):
+    name = models.CharField(max_length=255)
+    description = models.CharField(max_length=2000, blank=True, null=True)
+    version = models.CharField(max_length=255, blank=True, null=True)
+    license_info = models.CharField(max_length=255, blank=True, null=True)
+    license_expiration = models.DateField(blank=True, null=True)
 
+    equipment = models.ForeignKey(
+        Equipment,
+        on_delete=models.CASCADE,
+        related_name='softwares',
+    )
+
+    def __str__(self):
+        return f"{self.name} - {self.version} - {self.equipment.name}"
 
 class Booking(BaseModel):
     code = models.CharField(max_length=12, unique=True, editable=False, null=True)
@@ -128,6 +142,18 @@ class Booking(BaseModel):
         on_delete=models.CASCADE,
         related_name='bookings',
     )
+    requester_phone = models.CharField(max_length=20, blank=True, null=True)
+    requester_mentor = models.CharField(max_length=255, blank=True, null=True)
+
+    # if role == guest, then fill in institution and institution_address
+    institution = models.CharField(max_length=255, blank=True, null=True)
+    institution_address = models.CharField(max_length=555, blank=True, null=True)
+
+    # if purpose == workshop, then fill in workshop_title and workshop_organizer
+    workshop_title = models.CharField(max_length=255, blank=True, null=True)
+    workshop_pic = models.CharField(max_length=255, blank=True, null=True)
+    workshop_institution = models.CharField(max_length=255, blank=True, null=True)
+
     room = models.ForeignKey(
         Room,
         on_delete=models.CASCADE,
@@ -202,6 +228,13 @@ class Use(BaseModel):
         on_delete=models.CASCADE,
         related_name='uses',
     )   
+    requester_phone = models.CharField(max_length=20, blank=True, null=True)
+    requester_mentor = models.CharField(max_length=255, blank=True, null=True)
+
+    # if role == guest, then fill in institution and institution_address
+    institution = models.CharField(max_length=255, blank=True, null=True)
+    institution_address = models.CharField(max_length=555, blank=True, null=True)
+
     equipment = models.ForeignKey(
         Equipment,
         on_delete=models.CASCADE,
@@ -255,6 +288,13 @@ class Borrow(BaseModel):
         on_delete=models.CASCADE,
         related_name='borrows',
     )
+    requester_phone = models.CharField(max_length=20, blank=True, null=True)
+    requester_mentor = models.CharField(max_length=255, blank=True, null=True)
+
+    # if role == guest, then fill in institution and institution_address
+    institution = models.CharField(max_length=255, blank=True, null=True)
+    institution_address = models.CharField(max_length=555, blank=True, null=True)
+
     equipment = models.ForeignKey(
         Equipment,
         on_delete=models.CASCADE,

@@ -396,6 +396,19 @@ export default function BorrowEquipmentDetailPage() {
                   value={formatDateTimeWib(item.endTime)}
                 />
                 <DetailMetaItem label="Tujuan" value={item.purpose} />
+                <DetailMetaItem
+                  label="Nomor Telepon Pemohon"
+                  value={item.requesterPhone}
+                />
+                <DetailMetaItem
+                  label="Dosen Pembimbing"
+                  value={item.requesterMentor}
+                />
+                <DetailMetaItem label="Institusi" value={item.institution} />
+                <DetailMetaItem
+                  label="Alamat Institusi"
+                  value={item.institutionAddress}
+                />
                 <DetailMetaItem label="Catatan Pemohon" value={item.note || "-"} />
               </DetailCard>
 
@@ -477,6 +490,19 @@ export default function BorrowEquipmentDetailPage() {
                     value={formatDateTimeWib(item.endTime)}
                   />
                   <DetailMetaItem label="Tujuan" value={item.purpose} />
+                  <DetailMetaItem
+                    label="Nomor Telepon Pemohon"
+                    value={item.requesterPhone}
+                  />
+                  <DetailMetaItem
+                    label="Dosen Pembimbing"
+                    value={item.requesterMentor}
+                  />
+                  <DetailMetaItem label="Institusi" value={item.institution} />
+                  <DetailMetaItem
+                    label="Alamat Institusi"
+                    value={item.institutionAddress}
+                  />
                   <DetailMetaItem label="Catatan Pemohon" value={item.note || "-"} />
                 </DetailCard>
               </div>

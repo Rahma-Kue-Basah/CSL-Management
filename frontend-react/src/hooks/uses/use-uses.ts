@@ -47,6 +47,10 @@ export type UseRow = {
   expiredAt: string;
   completedAt: string;
   note: string;
+  requesterPhone: string;
+  requesterMentor: string;
+  institution: string;
+  institutionAddress: string;
 };
 
 type ApiUse = {
@@ -55,6 +59,10 @@ type ApiUse = {
   status?: string | null;
   purpose?: string | null;
   note?: string | null;
+  requester_phone?: string | null;
+  requester_mentor?: string | null;
+  institution?: string | null;
+  institution_address?: string | null;
   quantity?: number | string | null;
   start_time?: string | null;
   end_time?: string | null;
@@ -154,6 +162,10 @@ export function mapUse(item: ApiUse): UseRow {
     expiredAt: String(item.expired_at ?? "-"),
     completedAt: String(item.completed_at ?? "-"),
     note: String(item.note ?? ""),
+    requesterPhone: String(item.requester_phone ?? "-"),
+    requesterMentor: String(item.requester_mentor ?? "-"),
+    institution: String(item.institution ?? "-"),
+    institutionAddress: String(item.institution_address ?? "-"),
   };
 }
 

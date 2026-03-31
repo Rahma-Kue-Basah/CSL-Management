@@ -39,6 +39,13 @@ export type BookingRow = {
   endTime: string;
   attendeeCount: string;
   attendeeNames: string;
+  requesterPhone: string;
+  requesterMentor: string;
+  institution: string;
+  institutionAddress: string;
+  workshopTitle: string;
+  workshopPic: string;
+  workshopInstitution: string;
   createdAt: string;
   updatedAt: string;
   approvedAt: string;
@@ -70,6 +77,13 @@ type ApiBooking = {
   end_time?: string | null;
   attendee_count?: number | string | null;
   attendee_names?: string | null;
+  requester_phone?: string | null;
+  requester_mentor?: string | null;
+  institution?: string | null;
+  institution_address?: string | null;
+  workshop_title?: string | null;
+  workshop_pic?: string | null;
+  workshop_institution?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
   approved_at?: string | null;
@@ -182,6 +196,13 @@ export function mapBooking(item: ApiBooking): BookingRow {
     endTime: String(item.end_time ?? "-"),
     attendeeCount: String(item.attendee_count ?? "-"),
     attendeeNames: String(item.attendee_names ?? "-"),
+    requesterPhone: String(item.requester_phone ?? "-"),
+    requesterMentor: String(item.requester_mentor ?? "-"),
+    institution: String(item.institution ?? "-"),
+    institutionAddress: String(item.institution_address ?? "-"),
+    workshopTitle: String(item.workshop_title ?? "-"),
+    workshopPic: String(item.workshop_pic ?? "-"),
+    workshopInstitution: String(item.workshop_institution ?? "-"),
     createdAt: String(item.created_at ?? "-"),
     updatedAt: String(item.updated_at ?? "-"),
     approvedAt: String(item.approved_at ?? "-"),

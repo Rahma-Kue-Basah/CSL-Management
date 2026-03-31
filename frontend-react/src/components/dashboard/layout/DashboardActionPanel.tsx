@@ -470,18 +470,12 @@ export function DashboardActionPanel({
         />
       </FilterField>
       <FilterField label="Lantai">
-        <select
+        <Input
           value={roomFloor}
           onChange={(event) => updateRoomFilter("floor", event.target.value)}
+          placeholder="Semua lantai"
           className={FILTER_CONTROL_CLASS}
-        >
-          <option value="">Semua Lantai</option>
-          <option value="1">Lantai 1</option>
-          <option value="2">Lantai 2</option>
-          <option value="3">Lantai 3</option>
-          <option value="4">Lantai 4</option>
-          <option value="5">Lantai 5</option>
-        </select>
+        />
       </FilterField>
       <Button
         type="button"

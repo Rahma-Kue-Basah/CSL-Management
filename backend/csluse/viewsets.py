@@ -189,6 +189,13 @@ def _profile_role(profile):
     return getattr(profile, "role", None)
 
 
+def _event_title_with_requester(base_title, profile):
+    requester_name = _profile_display_name(profile)
+    if not requester_name:
+        return base_title
+    return f"{base_title} - {requester_name}"
+
+
 def _overview_title(value, fallback):
     if value is None:
         return fallback
@@ -2144,7 +2151,10 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
         if source in ['', 'booking']:
             for item in booking_qs:
-                title = item.room.name if item.room else 'Booking'
+                title = _event_title_with_requester(
+                    item.room.name if item.room else 'Booking',
+                    item.requested_by,
+                )
                 haystack = " ".join([
                     title or '',
                     item.note or '',
@@ -2258,10 +2268,14 @@ class CalendarViewSet(viewsets.ViewSet):
             })
 
         for item in booking_qs:
+            title = _event_title_with_requester(
+                item.room.name if item.room else 'Booking Ruangan',
+                item.requested_by,
+            )
             items.append({
                 'id': str(item.id),
                 'source': 'booking',
-                'title': item.room.name if item.room else 'Booking Ruangan',
+                'title': title,
                 'description': item.note,
                 'start_time': item.start_time,
                 'end_time': item.end_time,
@@ -2293,10 +2307,14 @@ class CalendarViewSet(viewsets.ViewSet):
 
             for item in use_qs:
                 room = item.equipment.room if item.equipment else None
+                title = _event_title_with_requester(
+                    f'Penggunaan Alat - {item.equipment.name}',
+                    item.requested_by,
+                )
                 items.append({
                     'id': str(item.id),
                     'source': 'use',
-                    'title': f'Penggunaan Alat - {item.equipment.name}',
+                    'title': title,
                     'description': item.note,
                     'start_time': item.start_time,
                     'end_time': item.end_time,

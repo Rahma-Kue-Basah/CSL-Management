@@ -16,6 +16,10 @@ type CreateBorrowPayload = {
   endTime: string;
   purpose: string;
   note?: string;
+  requesterPhone?: string;
+  requesterMentor?: string;
+  institution?: string;
+  institutionAddress?: string;
 };
 
 function parseBorrowError(
@@ -29,6 +33,10 @@ function parseBorrowError(
     "end_time",
     "purpose",
     "note",
+    "requester_phone",
+    "requester_mentor",
+    "institution",
+    "institution_address",
   ]);
 }
 
@@ -49,6 +57,12 @@ export function useCreateBorrow() {
         purpose: payload.purpose.trim(),
         note: payload.note?.trim() ?? "",
       };
+      if (payload.requesterPhone?.trim()) body.requester_phone = payload.requesterPhone.trim();
+      if (payload.requesterMentor?.trim()) body.requester_mentor = payload.requesterMentor.trim();
+      if (payload.institution?.trim()) body.institution = payload.institution.trim();
+      if (payload.institutionAddress?.trim()) {
+        body.institution_address = payload.institutionAddress.trim();
+      }
 
       const response = await authFetch(API_BORROWS, {
         method: "POST",

@@ -19,6 +19,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useCreateBorrow } from "@/hooks/borrows/use-create-borrow";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import { REQUEST_PURPOSE_OPTIONS } from "@/constants/request-purpose";
 import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import {
   combineDateTime,
@@ -35,28 +37,30 @@ type FormData = {
   endTime: string;
   purpose: string;
   note: string;
+  requesterPhone: string;
+  requesterMentor: string;
+  institution: string;
+  institutionAddress: string;
 };
-
-const PURPOSE_OPTIONS: SelectOption[] = [
-  { value: "Class", label: "Class" },
-  { value: "Lab Work", label: "Lab Work" },
-  { value: "Research", label: "Research" },
-  { value: "Other", label: "Other" },
-];
 
 const initialFormData: FormData = {
   equipmentId: "",
   quantity: "1",
   startTime: "",
   endTime: "",
-  purpose: "Other",
+  purpose: "Research",
   note: "",
+  requesterPhone: "",
+  requesterMentor: "",
+  institution: "",
+  institutionAddress: "",
 };
 
 export default function BorrowEquipmentFormPage() {
   const navigate = useNavigate();
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
+  const { profile } = useLoadProfile();
   const [startDate, setStartDate] = useState<Date | undefined>(undefined);
   const [startTime, setStartTime] = useState("");
   const [endDate, setEndDate] = useState<Date | undefined>(undefined);
@@ -70,6 +74,7 @@ export default function BorrowEquipmentFormPage() {
   } = useEquipmentOptions("available", "", true, true);
   const { createBorrow, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBorrow();
+  const isGuestUser = profile.role === "Guest";
 
   const equipmentOptions = useMemo<SelectOption[]>(
     () =>
@@ -87,7 +92,7 @@ export default function BorrowEquipmentFormPage() {
   );
   const selectedPurposeLabel = useMemo(
     () =>
-      PURPOSE_OPTIONS.find((option) => option.value === formData.purpose)
+      REQUEST_PURPOSE_OPTIONS.find((option) => option.value === formData.purpose)
         ?.label ?? "-",
     [formData.purpose],
   );
@@ -182,7 +187,7 @@ export default function BorrowEquipmentFormPage() {
       return "Waktu selesai harus setelah waktu mulai.";
     }
     if (!formData.purpose.trim()) return "Pilih tujuan peminjaman.";
-    if (!PURPOSE_OPTIONS.some((option) => option.value === formData.purpose)) {
+    if (!REQUEST_PURPOSE_OPTIONS.some((option) => option.value === formData.purpose)) {
       return "Tujuan peminjaman tidak valid.";
     }
 
@@ -211,6 +216,10 @@ export default function BorrowEquipmentFormPage() {
       endTime: toWibIsoString(formData.endTime),
       purpose: formData.purpose,
       note: formData.note,
+      requesterPhone: formData.requesterPhone,
+      requesterMentor: formData.requesterMentor,
+      institution: formData.institution,
+      institutionAddress: formData.institutionAddress,
     });
 
     if (!result.ok) return;
@@ -279,7 +288,7 @@ export default function BorrowEquipmentFormPage() {
             <DashboardComboboxField
               label="Tujuan Peminjaman"
               value={formData.purpose}
-              options={PURPOSE_OPTIONS}
+              options={REQUEST_PURPOSE_OPTIONS}
               placeholder="Pilih tujuan"
               emptyText="Pilihan tujuan tidak tersedia"
               disabled={isSubmitting}
@@ -287,6 +296,26 @@ export default function BorrowEquipmentFormPage() {
               onChange={handleSelectPurpose}
             />
           </div>
+
+          {!isGuestUser ? (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="requesterMentor"
+                className="text-xs font-medium text-slate-600"
+              >
+                Dosen Pembimbing
+              </label>
+              <Input
+                id="requesterMentor"
+                name="requesterMentor"
+                type="text"
+                value={formData.requesterMentor}
+                onChange={handleChange}
+                disabled={isSubmitting}
+                className="h-11 border-slate-300 bg-white"
+              />
+            </div>
+          ) : null}
 
           <DashboardDateTimePickerField
             id="start-time"
@@ -300,8 +329,6 @@ export default function BorrowEquipmentFormPage() {
             onTimeChange={handleStartTimeChange}
           />
 
-          <div className="hidden md:block" />
-
           <DashboardDateTimePickerField
             id="end-time"
             label="Waktu Selesai (WIB)"
@@ -313,6 +340,64 @@ export default function BorrowEquipmentFormPage() {
             onDateChange={handleEndDateChange}
             onTimeChange={handleEndTimeChange}
           />
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor="requesterPhone"
+              className="text-xs font-medium text-slate-600"
+            >
+              Nomor Telepon Pemohon
+            </label>
+            <Input
+              id="requesterPhone"
+              name="requesterPhone"
+              type="text"
+              value={formData.requesterPhone}
+              onChange={handleChange}
+              disabled={isSubmitting}
+              className="h-11 border-slate-300 bg-white"
+            />
+          </div>
+
+          {isGuestUser ? (
+            <>
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="institution"
+                  className="text-xs font-medium text-slate-600"
+                >
+                  Institusi
+                </label>
+                <Input
+                  id="institution"
+                  name="institution"
+                  type="text"
+                  value={formData.institution}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  className="h-11 border-slate-300 bg-white"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="institutionAddress"
+                  className="text-xs font-medium text-slate-600"
+                >
+                  Alamat Institusi
+                </label>
+                <Input
+                  id="institutionAddress"
+                  name="institutionAddress"
+                  type="text"
+                  value={formData.institutionAddress}
+                  onChange={handleChange}
+                  disabled={isSubmitting}
+                  className="h-11 border-slate-300 bg-white"
+                />
+              </div>
+            </>
+          ) : null}
 
           <div className="space-y-1.5 md:col-span-2">
             <label
@@ -384,6 +469,19 @@ export default function BorrowEquipmentFormPage() {
           value={formatLocalDateTimeAsWib(formData.endTime)}
         />
         <SubmissionSummaryItem label="Tujuan" value={selectedPurposeLabel} />
+        <SubmissionSummaryItem
+          label="Nomor Telepon Pemohon"
+          value={formData.requesterPhone}
+        />
+        <SubmissionSummaryItem
+          label="Dosen Pembimbing"
+          value={formData.requesterMentor}
+        />
+        <SubmissionSummaryItem label="Institusi" value={formData.institution} />
+        <SubmissionSummaryItem
+          label="Alamat Institusi"
+          value={formData.institutionAddress}
+        />
         <SubmissionSummaryItem label="Catatan" value={formData.note} />
       </SubmissionConfirmDialog>
     </section>
