@@ -17,6 +17,7 @@ export type StatusOption = {
 
 export const REQUEST_STATUS_OPTIONS: StatusOption[] = [
   { value: "", label: "Semua Status" },
+  { value: "active", label: "Active" },
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
@@ -26,6 +27,7 @@ export const REQUEST_STATUS_OPTIONS: StatusOption[] = [
 
 export const BORROW_STATUS_OPTIONS: StatusOption[] = [
   { value: "", label: "Semua Status" },
+  { value: "active", label: "Active" },
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },
@@ -39,6 +41,7 @@ export const BORROW_STATUS_OPTIONS: StatusOption[] = [
 
 export const SAMPLE_TESTING_STATUS_OPTIONS: StatusOption[] = [
   { value: "", label: "Semua Status" },
+  { value: "active", label: "Active" },
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
   { value: "rejected", label: "Rejected" },

@@ -130,6 +130,12 @@ export default function UseEquipmentListContent({
   const requestedBy = searchParams.get("requested_by") ?? "";
   const createdAfter = searchParams.get("created_after") ?? "";
   const createdBefore = searchParams.get("created_before") ?? "";
+  const isActiveFilter = scope === "all" && status === "active";
+  const resolvedEmptyMessage = isActiveFilter
+    ? "Tidak ada pengajuan aktif penggunaan alat yang menjadi tanggung jawab Anda."
+    : scope === "all"
+      ? "Belum ada pengajuan penggunaan alat yang perlu Anda proses."
+      : emptyMessage;
 
   useEffect(() => {
     setPage(1);
@@ -319,7 +325,7 @@ export default function UseEquipmentListContent({
             ) : (
               <tr>
                 <td colSpan={showRequesterColumn ? 8 : 7} className="px-3 py-10 text-center text-slate-500">
-                  {emptyMessage}
+                  {resolvedEmptyMessage}
                 </td>
               </tr>
             )}

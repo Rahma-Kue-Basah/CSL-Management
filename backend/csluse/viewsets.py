@@ -104,6 +104,12 @@ def normalize_status_value(value):
     return STATUS_VALUE_MAP.get(raw.lower(), raw)
 
 
+def is_active_status_filter(value):
+    if value is None:
+        return False
+    return str(value).strip().lower() == "active"
+
+
 def is_staff_or_above(user):
     return (
         user
@@ -763,7 +769,9 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 
 
         # Filter params: status, category, room, pic, is_moveable, created range
-        if status_param:
+        if is_active_status_filter(status_param):
+            qs = qs.filter(status__in=['Approved', 'Completed'])
+        elif status_param:
             qs = qs.filter(status=normalize_status_value(status_param))
         if category:
             qs = qs.filter(category=category)
@@ -1086,7 +1094,18 @@ class BookingViewSet(viewsets.ModelViewSet):
                 | Q(attendee_names__icontains=query)
                 | Q(equipment_items__equipment__name__icontains=query)
             ).distinct()
-        if status_param:
+        if is_active_status_filter(status_param):
+            qs = qs.filter(
+                status__in=[
+                    'Approved',
+                    'Borrowed',
+                    'Returned Pending Inspection',
+                    'Returned',
+                    'Overdue',
+                    'Lost/Damaged',
+                ]
+            )
+        elif status_param:
             qs = qs.filter(status=normalize_status_value(status_param))
         if room_id:
             qs = qs.filter(room_id=room_id)
@@ -1580,7 +1599,9 @@ class BorrowViewSet(viewsets.ModelViewSet):
                 | Q(requested_by__user__email__icontains=query)
                 | Q(purpose__icontains=query)
             ).distinct()
-        if status_param:
+        if is_active_status_filter(status_param):
+            qs = qs.filter(status__in=['Approved', 'Completed'])
+        elif status_param:
             qs = qs.filter(status=normalize_status_value(status_param))
         if equipment_id:
             qs = qs.filter(equipment_id=equipment_id)
@@ -2853,7 +2874,9 @@ class PengujianViewSet(viewsets.ModelViewSet):
                 | Q(email__icontains=query)
                 | Q(sample_type__icontains=query)
             ).distinct()
-        if status_param:
+        if is_active_status_filter(status_param):
+            qs = qs.filter(status__in=['Approved', 'Completed'])
+        elif status_param:
             qs = qs.filter(status=normalize_status_value(status_param))
         if requested_by and allow_requester_filter:
             qs = qs.filter(requested_by_id=requested_by)

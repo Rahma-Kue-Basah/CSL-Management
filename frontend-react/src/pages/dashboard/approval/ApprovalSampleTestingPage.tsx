@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { CalendarClock, Check, CheckCircle2, Eye, FlaskConical, Loader2, PackageSearch, RotateCcw, X } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
@@ -19,6 +20,7 @@ import { getStatusBadgeClass, getStatusDisplayLabel, getStatusSummaryTone } from
 import { formatDateTimeWib } from "@/lib/date-format";
 import { usePengujians, type PengujianRow } from "@/hooks/pengujians/use-pengujians";
 import { useUpdatePengujianStatus } from "@/hooks/pengujians/use-update-pengujian-status";
+import { toEndOfDay, toStartOfDay } from "@/lib/date";
 
 const PAGE_SIZE = 10;
 
@@ -96,6 +98,7 @@ function SummaryCard({
 }
 
 export default function ApprovalSampleTestingPage() {
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [detailTarget, setDetailTarget] = useState<PengujianRow | null>(null);
@@ -103,9 +106,34 @@ export default function ApprovalSampleTestingPage() {
     pengujianId: string | number;
     type: "approve" | "reject";
   } | null>(null);
+  const status = searchParams.get("status") ?? "";
+  const search = searchParams.get("q") ?? "";
+  const requestedBy = searchParams.get("requested_by") ?? "";
+  const createdAfter = searchParams.get("created_after") ?? "";
+  const createdBefore = searchParams.get("created_before") ?? "";
+  const isActiveFilter = status === "active";
+  const emptyMessage = isActiveFilter
+    ? "Tidak ada pengajuan aktif pengujian sampel yang menjadi tanggung jawab Anda."
+    : "Belum ada pengajuan pengujian sampel yang perlu Anda proses.";
+
+  useEffect(() => {
+    setPage(1);
+  }, [status, search, requestedBy, createdAfter, createdBefore]);
 
   const { pengujians, totalCount, aggregates, isLoading, hasLoadedOnce, error } =
-    usePengujians(page, PAGE_SIZE, {}, reloadKey, "all");
+    usePengujians(
+      page,
+      PAGE_SIZE,
+      {
+        q: search,
+        status,
+        requestedBy,
+        createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
+        createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
+      },
+      reloadKey,
+      "all",
+    );
 
   const { updatePengujianStatus, pendingAction } = useUpdatePengujianStatus();
 
@@ -281,7 +309,7 @@ export default function ApprovalSampleTestingPage() {
             ) : (
               <tr>
                 <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
-                  Belum ada pengajuan pengujian sampel yang tersedia.
+                  {emptyMessage}
                 </td>
               </tr>
             )}

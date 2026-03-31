@@ -127,6 +127,12 @@ export default function BorrowEquipmentListContent({
   const requestedBy = searchParams.get("requested_by") ?? "";
   const createdAfter = searchParams.get("created_after") ?? "";
   const createdBefore = searchParams.get("created_before") ?? "";
+  const isActiveFilter = scope === "all" && status === "active";
+  const resolvedEmptyMessage = isActiveFilter
+    ? "Tidak ada pengajuan aktif peminjaman alat yang menjadi tanggung jawab Anda."
+    : scope === "all"
+      ? "Belum ada pengajuan peminjaman alat yang perlu Anda proses."
+      : emptyMessage;
 
   useEffect(() => {
     setPage(1);
@@ -348,7 +354,7 @@ export default function BorrowEquipmentListContent({
                   colSpan={showRequesterColumn ? 9 : 8}
                   className="px-3 py-10 text-center text-slate-500"
                 >
-                  {emptyMessage}
+                  {resolvedEmptyMessage}
                 </td>
               </tr>
             )}
