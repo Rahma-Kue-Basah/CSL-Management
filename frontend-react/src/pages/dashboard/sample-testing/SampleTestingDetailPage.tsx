@@ -181,10 +181,7 @@ export default function SampleTestingDetailPage() {
               />
               <SampleTestingMetaItem label="Email" value={item.email} />
               <SampleTestingMetaItem label="Nomor Telepon" value={item.phoneNumber} />
-              <SampleTestingMetaItem
-                label="Prodi Pemohon"
-                value={item.requesterDepartment}
-              />
+
             </SampleTestingSectionCard>
           </div>
         </div>

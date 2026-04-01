@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import {
   API_PENGUJIAN_APPROVE,
+  API_PENGUJIAN_COMPLETE,
   API_PENGUJIAN_REJECT,
 } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
@@ -12,7 +13,7 @@ import {
   extractApiErrorMessageFromText,
 } from "@/lib/api-error";
 
-type ActionType = "approve" | "reject";
+type ActionType = "approve" | "reject" | "complete";
 
 export function useUpdatePengujianStatus() {
   const [pendingAction, setPendingAction] = useState<{
@@ -33,7 +34,9 @@ export function useUpdatePengujianStatus() {
       const response = await authFetch(
         type === "approve"
           ? API_PENGUJIAN_APPROVE(pengujianId)
-          : API_PENGUJIAN_REJECT(pengujianId),
+          : type === "reject"
+            ? API_PENGUJIAN_REJECT(pengujianId)
+            : API_PENGUJIAN_COMPLETE(pengujianId),
         {
           method: "POST",
         },
@@ -43,7 +46,9 @@ export function useUpdatePengujianStatus() {
         let message =
           type === "approve"
             ? "Gagal menyetujui pengajuan pengujian sampel."
-            : "Gagal menolak pengajuan pengujian sampel.";
+            : type === "reject"
+              ? "Gagal menolak pengajuan pengujian sampel."
+              : "Gagal menandai pengajuan pengujian sampel sebagai selesai.";
 
         try {
           const data = (await response.json()) as unknown;

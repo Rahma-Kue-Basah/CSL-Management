@@ -4,12 +4,13 @@ import { useState } from "react";
 
 import {
   API_BOOKING_APPROVE,
+  API_BOOKING_COMPLETE,
   API_BOOKING_REJECT,
 } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 import { extractApiErrorMessage } from "@/lib/api-error";
 
-export type BookingStatusActionType = "approve" | "reject";
+export type BookingStatusActionType = "approve" | "reject" | "complete";
 
 function parseBookingStatusError(
   data: unknown,
@@ -38,7 +39,9 @@ export function useUpdateBookingStatus() {
       const response = await authFetch(
         type === "approve"
           ? API_BOOKING_APPROVE(bookingId)
-          : API_BOOKING_REJECT(bookingId),
+          : type === "reject"
+            ? API_BOOKING_REJECT(bookingId)
+            : API_BOOKING_COMPLETE(bookingId),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

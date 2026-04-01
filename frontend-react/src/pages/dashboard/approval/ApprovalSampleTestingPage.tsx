@@ -20,6 +20,11 @@ function isPendingStatus(status: string) {
   return status.toLowerCase() === "pending";
 }
 
+function canReviewStatus(status: string) {
+  const normalized = status.toLowerCase();
+  return normalized === "pending" || normalized === "approved";
+}
+
 function SummaryCard({
   label,
   value,
@@ -230,7 +235,7 @@ export default function ApprovalSampleTestingPage() {
                   </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
-                      {isPendingStatus(item.status) ? (
+                      {canReviewStatus(item.status) ? (
                         <TableActionIconButton
                           type="button"
                           label="Review"

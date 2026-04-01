@@ -84,32 +84,32 @@ function VerticalNode({
     <div className="relative">
       <article
         className={cn(
-          "relative overflow-hidden rounded-2xl border p-4",
+          "rounded-xl border px-4 py-3",
           depth === 0
-            ? "border-blue-200 bg-gradient-to-br from-blue-50 via-white to-sky-50"
+            ? "border-sky-200 bg-sky-50"
             : "border-slate-200 bg-white",
         )}
       >
-        <div className="flex items-start gap-3">
+        <div className="flex items-center gap-3">
           <div
             className={cn(
-              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
               depth === 0
-                ? "bg-blue-600 text-white"
+                ? "bg-sky-600 text-white"
                 : "bg-slate-100 text-slate-700",
             )}
           >
             {depth === 0 ? (
-              <Building2 className="h-5 w-5" />
+              <UserRound className="h-5 w-5" />
             ) : (
               <UserRound className="h-5 w-5" />
             )}
           </div>
-          <div className="min-w-0">
-            <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-slate-600">
+          <div className="min-w-0 flex-1">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">
               {node.title}
-            </span>
-            <h3 className="mt-2 text-sm font-semibold text-slate-900">
+            </p>
+            <h3 className="mt-0.5 text-sm font-semibold text-slate-900 sm:text-base">
               {node.name}
             </h3>
           </div>
@@ -117,13 +117,13 @@ function VerticalNode({
       </article>
 
       {hasChildren ? (
-        <div className="relative ml-5 border-l-2 border-slate-200 pl-6">
-          <div className="absolute top-0 left-0 h-6 w-6 border-b-2 border-slate-200" />
+        <div className="relative ml-5 mt-3 border-l-2 border-slate-200 pl-5">
+          <div className="absolute left-0 top-0 h-5 w-5 border-b-2 border-slate-200" />
           <div className="mt-4 space-y-4">
             {node.children.map((child) => (
               <div
                 key={child.id}
-                className="relative before:absolute before:-left-6 before:top-6 before:h-px before:w-6 before:bg-slate-200"
+                className="relative before:absolute before:-left-5 before:top-5 before:h-px before:w-5 before:bg-slate-200"
               >
                 <VerticalNode node={child} depth={depth + 1} />
               </div>

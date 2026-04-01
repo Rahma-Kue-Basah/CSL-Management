@@ -142,6 +142,38 @@ function getBorrowStatusHint(
   return null;
 }
 
+function getCompleteStatusHint(
+  status: string,
+  reviewer: boolean,
+  labels: {
+    readyTitle: string;
+    reviewerMessage: string;
+    requesterMessage: string;
+    reviewerIndicator: string;
+    requesterIndicator: string;
+  },
+): {
+  title: string;
+  message: string;
+  indicators?: string[];
+  className?: string;
+  titleClassName?: string;
+  textClassName?: string;
+} | null {
+  if (!isApprovedStatus(status)) {
+    return null;
+  }
+
+  return {
+    title: labels.readyTitle,
+    message: reviewer ? labels.reviewerMessage : labels.requesterMessage,
+    indicators: [reviewer ? labels.reviewerIndicator : labels.requesterIndicator],
+    className: "border-sky-200 bg-sky-50/80",
+    titleClassName: "text-sky-800",
+    textClassName: "text-sky-900",
+  };
+}
+
 function getBorrowStatusActionClass(status: string) {
   if (isApprovedStatus(status)) {
     return "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700";
@@ -160,6 +192,35 @@ function getBorrowStatusActionClass(status: string) {
   }
 
   return "border-slate-600 bg-slate-600 text-white hover:bg-slate-700";
+}
+
+function getPengujianStatusHint(
+  status: string,
+  reviewer: boolean,
+): {
+  title: string;
+  message: string;
+  indicators?: string[];
+  className?: string;
+  titleClassName?: string;
+  textClassName?: string;
+} | null {
+  if (isApprovedStatus(status)) {
+    return {
+      title: "Pengujian siap diselesaikan",
+      message: reviewer
+        ? "Pengajuan sudah disetujui. Tandai sebagai selesai setelah proses pengujian sampel benar-benar selesai."
+        : "Pengajuan sudah disetujui dan sedang menunggu proses pengujian sampel selesai.",
+      indicators: reviewer
+        ? ["Gunakan aksi Tandai Selesai setelah hasil pengujian sampel selesai diproses."]
+        : ["Status akan diperbarui menjadi selesai oleh petugas setelah proses pengujian selesai."],
+      className: "border-sky-200 bg-sky-50/80",
+      titleClassName: "text-sky-800",
+      textClassName: "text-sky-900",
+    };
+  }
+
+  return null;
 }
 
 function isReviewerRole(role: string | null | undefined) {
@@ -232,9 +293,9 @@ function BookingReviewPanel({
   const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
   const [passedIndicators, setPassedIndicators] = useState<string[]>([]);
   const [issuesLoading, setIssuesLoading] = useState(true);
-  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
-    null,
-  );
+  const [confirmType, setConfirmType] = useState<
+    "approve" | "reject" | "complete" | null
+  >(null);
   const shouldShowBookingReviewCheck = isPendingStatus(booking?.status ?? "");
 
   useEffect(() => {
@@ -296,8 +357,20 @@ function BookingReviewPanel({
     return <PanelErrorState message={error || "Data booking tidak ditemukan."} />;
   }
 
-  const canReviewBooking =
-    isReviewerRole(profile?.role) && isPendingStatus(booking.status);
+  const reviewer = isReviewerRole(profile?.role);
+  const canReviewBooking = reviewer && isPendingStatus(booking.status);
+  const canCompleteBooking = reviewer && isApprovedStatus(booking.status);
+  const bookingStatusHint = getCompleteStatusHint(booking.status, reviewer, {
+    readyTitle: "Booking siap diselesaikan",
+    reviewerMessage:
+      "Pengajuan sudah disetujui. Tandai sebagai selesai setelah waktu booking benar-benar berakhir.",
+    requesterMessage:
+      "Pengajuan sudah disetujui dan akan ditandai selesai oleh petugas setelah waktu booking berakhir.",
+    reviewerIndicator:
+      "Gunakan aksi Tandai Selesai setelah sesi peminjaman lab selesai.",
+    requesterIndicator:
+      "Status akan diperbarui menjadi selesai oleh petugas setelah sesi peminjaman lab berakhir.",
+  });
 
   const handleBookingAction = async (rejectionNote?: string) => {
     if (!confirmType) return;
@@ -318,7 +391,12 @@ function BookingReviewPanel({
       current
         ? {
             ...current,
-            status: type === "approve" ? "Approved" : "Rejected",
+            status:
+              type === "approve"
+                ? "Approved"
+                : type === "reject"
+                  ? "Rejected"
+                  : "Completed",
             updatedAt: now,
             rejectionNote:
               type === "reject" ? String(rejectionNote ?? current.rejectionNote ?? "") : current.rejectionNote,
@@ -334,6 +412,9 @@ function BookingReviewPanel({
               type === "approve"
                 ? profile?.email || current.approvedByEmail
                 : current.approvedByEmail,
+            approvedAt: type === "approve" ? now : current.approvedAt,
+            rejectedAt: type === "reject" ? now : current.rejectedAt,
+            completedAt: type === "complete" ? now : current.completedAt,
           }
         : current,
     );
@@ -342,7 +423,9 @@ function BookingReviewPanel({
     toast.success(
       type === "approve"
         ? "Pengajuan booking berhasil disetujui."
-        : "Pengajuan booking berhasil ditolak.",
+        : type === "reject"
+          ? "Pengajuan booking berhasil ditolak."
+          : "Pengajuan booking berhasil ditandai selesai.",
     );
     onActionComplete?.();
   };
@@ -373,6 +456,12 @@ function BookingReviewPanel({
             : undefined
         }
         checklistPassedIndicators={shouldShowBookingReviewCheck ? passedIndicators : []}
+        statusHintTitle={bookingStatusHint?.title}
+        statusHintMessage={bookingStatusHint?.message}
+        statusHintIndicators={bookingStatusHint?.indicators}
+        statusHintClassName={bookingStatusHint?.className}
+        statusHintTitleClassName={bookingStatusHint?.titleClassName}
+        statusHintTextClassName={bookingStatusHint?.textClassName}
       >
         {canReviewBooking ? (
           <>
@@ -396,18 +485,33 @@ function BookingReviewPanel({
             </Button>
           </>
         ) : null}
+        {canCompleteBooking ? (
+          <Button
+            type="button"
+            className="h-10 rounded-md border border-sky-600 bg-sky-600 px-4 text-white shadow-sm hover:bg-sky-700"
+            onClick={() => setConfirmType("complete")}
+            disabled={pendingAction.bookingId === booking.id}
+          >
+            <Check className="h-4 w-4" />
+            Tandai Selesai
+          </Button>
+        ) : null}
       </RequestReviewCard>
 
       <StatusConfirmDialog
         open={Boolean(confirmType)}
-        actionType={confirmType}
+        actionType={confirmType === "reject" ? "reject" : confirmType ? "approve" : null}
         onOpenChange={(open) => {
           if (!open) setConfirmType(null);
         }}
         onConfirm={handleBookingAction}
         isSubmitting={pendingAction.bookingId === booking.id}
-        subjectLabel="pengajuan peminjaman lab ini"
-        requireReasonOnReject
+        subjectLabel={
+          confirmType === "complete"
+            ? "pengajuan peminjaman lab ini sebagai selesai"
+            : "pengajuan peminjaman lab ini"
+        }
+        requireReasonOnReject={confirmType === "reject"}
       />
     </>
   );
@@ -431,9 +535,9 @@ function UseReviewPanel({
   const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
   const [passedIndicators, setPassedIndicators] = useState<string[]>([]);
   const [issuesLoading, setIssuesLoading] = useState(true);
-  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
-    null,
-  );
+  const [confirmType, setConfirmType] = useState<
+    "approve" | "reject" | "complete" | null
+  >(null);
   const shouldShowUseReviewCheck = isPendingStatus(useItem?.status ?? "");
 
   useEffect(() => {
@@ -496,7 +600,20 @@ function UseReviewPanel({
     );
   }
 
-  const canReviewUse = isReviewerRole(profile?.role) && isPendingStatus(useItem.status);
+  const reviewer = isReviewerRole(profile?.role);
+  const canReviewUse = reviewer && isPendingStatus(useItem.status);
+  const canCompleteUse = reviewer && isApprovedStatus(useItem.status);
+  const useStatusHint = getCompleteStatusHint(useItem.status, reviewer, {
+    readyTitle: "Penggunaan alat siap diselesaikan",
+    reviewerMessage:
+      "Pengajuan sudah disetujui. Tandai sebagai selesai setelah periode penggunaan alat benar-benar berakhir.",
+    requesterMessage:
+      "Pengajuan sudah disetujui dan akan ditandai selesai oleh petugas setelah periode penggunaan alat berakhir.",
+    reviewerIndicator:
+      "Gunakan aksi Tandai Selesai setelah penggunaan alat selesai.",
+    requesterIndicator:
+      "Status akan diperbarui menjadi selesai oleh petugas setelah penggunaan alat berakhir.",
+  });
 
   const handleUseAction = async (rejectionNote?: string) => {
     if (!confirmType) return;
@@ -517,7 +634,12 @@ function UseReviewPanel({
       current
         ? {
             ...current,
-            status: type === "approve" ? "Approved" : "Rejected",
+            status:
+              type === "approve"
+                ? "Approved"
+                : type === "reject"
+                  ? "Rejected"
+                  : "Completed",
             updatedAt: now,
             rejectionNote:
               type === "reject" ? String(rejectionNote ?? current.rejectionNote ?? "") : current.rejectionNote,
@@ -529,6 +651,9 @@ function UseReviewPanel({
               type === "approve"
                 ? profile?.name || current.approvedByName
                 : current.approvedByName,
+            approvedAt: type === "approve" ? now : current.approvedAt,
+            rejectedAt: type === "reject" ? now : current.rejectedAt,
+            completedAt: type === "complete" ? now : current.completedAt,
           }
         : current,
     );
@@ -537,7 +662,9 @@ function UseReviewPanel({
     toast.success(
       type === "approve"
         ? "Pengajuan penggunaan alat berhasil disetujui."
-        : "Pengajuan penggunaan alat berhasil ditolak.",
+        : type === "reject"
+          ? "Pengajuan penggunaan alat berhasil ditolak."
+          : "Pengajuan penggunaan alat berhasil ditandai selesai.",
     );
     onActionComplete?.();
   };
@@ -566,6 +693,12 @@ function UseReviewPanel({
             : undefined
         }
         checklistPassedIndicators={shouldShowUseReviewCheck ? passedIndicators : []}
+        statusHintTitle={useStatusHint?.title}
+        statusHintMessage={useStatusHint?.message}
+        statusHintIndicators={useStatusHint?.indicators}
+        statusHintClassName={useStatusHint?.className}
+        statusHintTitleClassName={useStatusHint?.titleClassName}
+        statusHintTextClassName={useStatusHint?.textClassName}
       >
         {canReviewUse ? (
           <>
@@ -589,18 +722,33 @@ function UseReviewPanel({
             </Button>
           </>
         ) : null}
+        {canCompleteUse ? (
+          <Button
+            type="button"
+            className="h-10 rounded-md border border-sky-600 bg-sky-600 px-4 text-white shadow-sm hover:bg-sky-700"
+            onClick={() => setConfirmType("complete")}
+            disabled={pendingAction.useId === useItem.id}
+          >
+            <Check className="h-4 w-4" />
+            Tandai Selesai
+          </Button>
+        ) : null}
       </RequestReviewCard>
 
       <StatusConfirmDialog
         open={Boolean(confirmType)}
-        actionType={confirmType}
+        actionType={confirmType === "reject" ? "reject" : confirmType ? "approve" : null}
         onOpenChange={(open) => {
           if (!open) setConfirmType(null);
         }}
         onConfirm={handleUseAction}
         isSubmitting={pendingAction.useId === useItem.id}
-        subjectLabel="pengajuan penggunaan alat ini"
-        requireReasonOnReject
+        subjectLabel={
+          confirmType === "complete"
+            ? "pengajuan penggunaan alat ini sebagai selesai"
+            : "pengajuan penggunaan alat ini"
+        }
+        requireReasonOnReject={confirmType === "reject"}
       />
     </>
   );
@@ -1037,9 +1185,9 @@ function PengujianReviewPanel({
     initialPengujian,
   });
   const { updatePengujianStatus, pendingAction } = useUpdatePengujianStatus();
-  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
-    null,
-  );
+  const [confirmType, setConfirmType] = useState<
+    "approve" | "reject" | "complete" | null
+  >(null);
 
   if (isLoading) return <PanelLoadingState />;
   if (error || !pengujian) {
@@ -1052,6 +1200,12 @@ function PengujianReviewPanel({
 
   const canReviewPengujian =
     isReviewerRole(profile?.role) && isPendingStatus(pengujian.status);
+  const canCompletePengujian =
+    isReviewerRole(profile?.role) && isApprovedStatus(pengujian.status);
+  const pengujianStatusHint = getPengujianStatusHint(
+    pengujian.status,
+    isReviewerRole(profile?.role),
+  );
 
   const handlePengujianAction = async () => {
     if (!confirmType) return;
@@ -1068,7 +1222,12 @@ function PengujianReviewPanel({
       current
         ? {
             ...current,
-            status: type === "approve" ? "Approved" : "Rejected",
+            status:
+              type === "approve"
+                ? "Approved"
+                : type === "reject"
+                  ? "Rejected"
+                  : "Completed",
             updatedAt: now,
             approvedById:
               type === "approve"
@@ -1080,6 +1239,7 @@ function PengujianReviewPanel({
                 : current.approvedByName,
             approvedAt: type === "approve" ? now : current.approvedAt,
             rejectedAt: type === "reject" ? now : current.rejectedAt,
+            completedAt: type === "complete" ? now : current.completedAt,
           }
         : current,
     );
@@ -1088,7 +1248,9 @@ function PengujianReviewPanel({
     toast.success(
       type === "approve"
         ? "Pengajuan pengujian sampel berhasil disetujui."
-        : "Pengajuan pengujian sampel berhasil ditolak.",
+        : type === "reject"
+          ? "Pengajuan pengujian sampel berhasil ditolak."
+          : "Pengajuan pengujian sampel berhasil ditandai selesai.",
     );
     onActionComplete?.();
   };
@@ -1109,6 +1271,12 @@ function PengujianReviewPanel({
             value: formatDateTimeWib(pengujian.createdAt),
           },
         ]}
+        statusHintTitle={pengujianStatusHint?.title}
+        statusHintMessage={pengujianStatusHint?.message}
+        statusHintIndicators={pengujianStatusHint?.indicators}
+        statusHintClassName={pengujianStatusHint?.className}
+        statusHintTitleClassName={pengujianStatusHint?.titleClassName}
+        statusHintTextClassName={pengujianStatusHint?.textClassName}
       >
         {canReviewPengujian ? (
           <>
@@ -1132,17 +1300,32 @@ function PengujianReviewPanel({
             </Button>
           </>
         ) : null}
+        {canCompletePengujian ? (
+          <Button
+            type="button"
+            className="h-10 rounded-md border border-sky-600 bg-sky-600 px-4 text-white shadow-sm hover:bg-sky-700"
+            onClick={() => setConfirmType("complete")}
+            disabled={pendingAction.pengujianId === pengujian.id}
+          >
+            <Check className="h-4 w-4" />
+            Tandai Selesai
+          </Button>
+        ) : null}
       </RequestReviewCard>
 
       <StatusConfirmDialog
         open={Boolean(confirmType)}
-        actionType={confirmType}
+        actionType={confirmType === "reject" ? "reject" : confirmType ? "approve" : null}
         onOpenChange={(open) => {
           if (!open) setConfirmType(null);
         }}
         onConfirm={handlePengujianAction}
         isSubmitting={pendingAction.pengujianId === pengujian.id}
-        subjectLabel="pengajuan pengujian sampel ini"
+        subjectLabel={
+          confirmType === "complete"
+            ? "pengujian sampel ini sebagai selesai"
+            : "pengajuan pengujian sampel ini"
+        }
       />
     </>
   );

@@ -2,11 +2,15 @@
 
 import { useState } from "react";
 
-import { API_USE_APPROVE, API_USE_REJECT } from "@/constants/api";
+import {
+  API_USE_APPROVE,
+  API_USE_COMPLETE,
+  API_USE_REJECT,
+} from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 import { extractApiErrorMessage } from "@/lib/api-error";
 
-type ActionType = "approve" | "reject";
+type ActionType = "approve" | "reject" | "complete";
 
 function parseUseStatusError(
   data: unknown,
@@ -33,7 +37,11 @@ export function useUpdateUseStatus() {
 
     try {
       const response = await authFetch(
-        type === "approve" ? API_USE_APPROVE(useId) : API_USE_REJECT(useId),
+        type === "approve"
+          ? API_USE_APPROVE(useId)
+          : type === "reject"
+            ? API_USE_REJECT(useId)
+            : API_USE_COMPLETE(useId),
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
