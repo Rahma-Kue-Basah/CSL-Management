@@ -228,9 +228,9 @@ function DetailMetaItem({
   if (!hasDisplayValue(value)) return null;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
+    <div className="grid gap-1 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-4">
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-right text-xs leading-5 text-slate-800">{value}</p>
+      <p className="text-xs leading-5 text-slate-800 break-words">{value}</p>
     </div>
   );
 }

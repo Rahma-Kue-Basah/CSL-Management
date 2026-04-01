@@ -37,6 +37,11 @@ import {
 import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import {
+  usePengujianDetail,
+  type PengujianRow,
+} from "@/hooks/pengujians/use-pengujians";
+import { useUpdatePengujianStatus } from "@/hooks/pengujians/use-update-pengujian-status";
+import {
   useUseDetail,
   type UseRow,
 } from "@/hooks/uses/use-uses";
@@ -47,6 +52,7 @@ export type ReviewContext =
   | { kind: "booking"; id: string }
   | { kind: "use"; id: string }
   | { kind: "borrow"; id: string }
+  | { kind: "pengujian"; id: string }
   | null;
 
 function normalizeStatus(value: string) {
@@ -1016,6 +1022,132 @@ function BorrowReviewPanel({
   );
 }
 
+function PengujianReviewPanel({
+  id,
+  onActionComplete,
+  initialPengujian,
+}: {
+  id: string;
+  onActionComplete?: () => void;
+  initialPengujian?: PengujianRow | null;
+}) {
+  const { profile } = useLoadProfile();
+  const { pengujian, setPengujian, isLoading, error } = usePengujianDetail(id, {
+    enabled: !initialPengujian,
+    initialPengujian,
+  });
+  const { updatePengujianStatus, pendingAction } = useUpdatePengujianStatus();
+  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
+    null,
+  );
+
+  if (isLoading) return <PanelLoadingState />;
+  if (error || !pengujian) {
+    return (
+      <PanelErrorState
+        message={error || "Data pengujian sampel tidak ditemukan."}
+      />
+    );
+  }
+
+  const canReviewPengujian =
+    isReviewerRole(profile?.role) && isPendingStatus(pengujian.status);
+
+  const handlePengujianAction = async () => {
+    if (!confirmType) return;
+
+    const type = confirmType;
+    const result = await updatePengujianStatus(pengujian.id, type);
+    if (!result.ok) {
+      toast.error(result.message);
+      return;
+    }
+
+    const now = new Date().toISOString();
+    setPengujian((current) =>
+      current
+        ? {
+            ...current,
+            status: type === "approve" ? "Approved" : "Rejected",
+            updatedAt: now,
+            approvedById:
+              type === "approve"
+                ? String(profile?.id ?? current.approvedById)
+                : current.approvedById,
+            approvedByName:
+              type === "approve"
+                ? profile?.name || current.approvedByName
+                : current.approvedByName,
+            approvedAt: type === "approve" ? now : current.approvedAt,
+            rejectedAt: type === "reject" ? now : current.rejectedAt,
+          }
+        : current,
+    );
+    setConfirmType(null);
+
+    toast.success(
+      type === "approve"
+        ? "Pengajuan pengujian sampel berhasil disetujui."
+        : "Pengajuan pengujian sampel berhasil ditolak.",
+    );
+    onActionComplete?.();
+  };
+
+  return (
+    <>
+      <RequestReviewCard
+        status={pengujian.status}
+        code={pengujian.code}
+        meta={[
+          { label: "Sampel", value: pengujian.sampleName || "-" },
+          { label: "Jenis Sampel", value: pengujian.sampleType || "-" },
+          { label: "Jenis Pengujian", value: pengujian.sampleTestingType || "-" },
+          { label: "Pemohon", value: pengujian.name || "-" },
+          { label: "Institusi", value: pengujian.institution || "-" },
+          {
+            label: "Tanggal Dibuat",
+            value: formatDateTimeWib(pengujian.createdAt),
+          },
+        ]}
+      >
+        {canReviewPengujian ? (
+          <>
+            <Button
+              type="button"
+              className="h-10 rounded-md border border-emerald-600 bg-emerald-600 px-4 text-white shadow-sm hover:bg-emerald-700"
+              onClick={() => setConfirmType("approve")}
+              disabled={pendingAction.pengujianId === pengujian.id}
+            >
+              <Check className="h-4 w-4" />
+              Setujui
+            </Button>
+            <Button
+              type="button"
+              className="h-10 rounded-md border border-rose-600 bg-rose-600 px-4 text-white shadow-sm hover:bg-rose-700"
+              onClick={() => setConfirmType("reject")}
+              disabled={pendingAction.pengujianId === pengujian.id}
+            >
+              <X className="h-4 w-4" />
+              Tolak
+            </Button>
+          </>
+        ) : null}
+      </RequestReviewCard>
+
+      <StatusConfirmDialog
+        open={Boolean(confirmType)}
+        actionType={confirmType}
+        onOpenChange={(open) => {
+          if (!open) setConfirmType(null);
+        }}
+        onConfirm={handlePengujianAction}
+        isSubmitting={pendingAction.pengujianId === pengujian.id}
+        subjectLabel="pengajuan pengujian sampel ini"
+      />
+    </>
+  );
+}
+
 export function parseReviewContext(pathname: string): ReviewContext {
   const parts = pathname.split("/").filter(Boolean);
 
@@ -1028,6 +1160,9 @@ export function parseReviewContext(pathname: string): ReviewContext {
   if (parts[0] === "borrow-equipment" && parts[1] === "approval" && parts[2]) {
     return { kind: "borrow", id: parts[2] };
   }
+  if (parts[0] === "sample-testing" && parts[1] === "approval" && parts[2]) {
+    return { kind: "pengujian", id: parts[2] };
+  }
 
   return null;
 }
@@ -1038,12 +1173,14 @@ export function DashboardDetailReviewPanel({
   initialBooking,
   initialUseItem,
   initialBorrow,
+  initialPengujian,
 }: {
   context: Exclude<ReviewContext, null>;
   onActionComplete?: () => void;
   initialBooking?: BookingRow | null;
   initialUseItem?: UseRow | null;
   initialBorrow?: BorrowRow | null;
+  initialPengujian?: PengujianRow | null;
 }) {
   if (context.kind === "booking") {
     return (
@@ -1061,6 +1198,16 @@ export function DashboardDetailReviewPanel({
         id={context.id}
         onActionComplete={onActionComplete}
         initialUseItem={initialUseItem}
+      />
+    );
+  }
+
+  if (context.kind === "pengujian") {
+    return (
+      <PengujianReviewPanel
+        id={context.id}
+        onActionComplete={onActionComplete}
+        initialPengujian={initialPengujian}
       />
     );
   }

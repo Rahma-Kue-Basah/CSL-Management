@@ -12,19 +12,13 @@ import {
   X,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { useNavigate } from "react-router-dom";
 
 import { DataPagination } from "@/components/shared/data-pagination";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
 import type { ProgressStepItem } from "@/components/shared/progress-steps";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import SampleTestingDetailContent from "@/components/dashboard/sample-testing/SampleTestingDetailContent";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { getPengujianProgressFlow } from "@/lib/request-progress";
 import {
@@ -36,7 +30,6 @@ import { toEndOfDay, toStartOfDay } from "@/lib/date";
 import {
   usePengujians,
   type PengujianListScope,
-  type PengujianRow,
 } from "@/hooks/pengujians/use-pengujians";
 
 const PAGE_SIZE = 10;
@@ -118,8 +111,8 @@ export default function SampleTestingListContent({
   emptyMessage,
 }: SampleTestingListContentProps) {
   const searchParams = useSearchParams();
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
-  const [detailTarget, setDetailTarget] = useState<PengujianRow | null>(null);
   const [progressState, setProgressState] = useState<{
     code: string;
     steps: ProgressStepItem[];
@@ -279,7 +272,7 @@ export default function SampleTestingListContent({
                         label="Lihat detail"
                         icon={<Eye className="h-3.5 w-3.5" />}
                         className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
-                        onClick={() => setDetailTarget(item)}
+                        onClick={() => navigate(`/sample-testing/${item.id}`)}
                       />
                     </div>
                   </td>
@@ -306,23 +299,6 @@ export default function SampleTestingListContent({
         onPageChange={setPage}
       />
 
-      <Dialog
-        open={Boolean(detailTarget)}
-        onOpenChange={(open) => !open && setDetailTarget(null)}
-      >
-        <DialogContent
-          showCloseButton={false}
-          className="max-h-[85vh] overflow-y-auto border-none bg-transparent p-0 shadow-none sm:max-w-6xl"
-        >
-          <DialogHeader>
-            <DialogTitle className="sr-only">
-              Detail Pengajuan Pengujian Sampel
-            </DialogTitle>
-          </DialogHeader>
-
-          {detailTarget ? <SampleTestingDetailContent item={detailTarget} /> : null}
-        </DialogContent>
-      </Dialog>
       <RequestProgressDialog
         open={Boolean(progressState)}
         onOpenChange={(open) => {

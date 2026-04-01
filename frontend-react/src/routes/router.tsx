@@ -41,6 +41,7 @@ import EquipmentDetailPage from "@/pages/dashboard/use-equipment/EquipmentDetail
 import UseEquipmentDetailPage from "@/pages/dashboard/use-equipment/UseEquipmentDetailPage";
 import SampleTestingListPage from "@/pages/dashboard/sample-testing/SampleTestingListPage";
 import SampleTestingFormPage from "@/pages/dashboard/sample-testing/SampleTestingFormPage";
+import SampleTestingDetailPage from "@/pages/dashboard/sample-testing/SampleTestingDetailPage";
 import BorrowEquipmentListPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentListPage";
 import BorrowEquipmentAllListPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentAllListPage";
 import BorrowEquipmentFormPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentFormPage";
@@ -303,11 +304,29 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: ":id",
+            element: (
+              <RequireFeatureScope featurePath="/sample-testing" scope="requester">
+                <SampleTestingDetailPage />
+              </RequireFeatureScope>
+            ),
+          },
+          {
             path: "approval",
             element: (
               <RequireFeatureScope featurePath="/sample-testing" scope="approval">
                 <RequireStaffOrAbove>
                   <ApprovalSampleTestingPage />
+                </RequireStaffOrAbove>
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "approval/:id",
+            element: (
+              <RequireFeatureScope featurePath="/sample-testing" scope="approval">
+                <RequireStaffOrAbove>
+                  <SampleTestingDetailPage />
                 </RequireStaffOrAbove>
               </RequireFeatureScope>
             ),

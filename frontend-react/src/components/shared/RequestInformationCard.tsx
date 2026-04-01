@@ -20,9 +20,9 @@ function DetailMetaItem({
   if (!hasDisplayValue(value)) return null;
 
   return (
-    <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
+    <div className="grid gap-1 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-4">
       <p className="text-xs text-slate-500">{label}</p>
-      <p className="text-right text-xs leading-5 text-slate-800">{value}</p>
+      <p className="text-xs leading-5 text-slate-800 break-words">{value}</p>
     </div>
   );
 }
@@ -63,13 +63,15 @@ export function RequestInformationCard({
       <div className="mt-4 space-y-2">
         <DetailMetaItem label="Pemohon" value={requesterName} />
         <DetailMetaItem label="Prodi Pemohon" value={requesterDepartment || "-"} />
-        <div className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
+        <div className="grid gap-1 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-4">
           <p className="text-xs text-slate-500">Status Saat Ini</p>
-          <span
-            className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(status)}`}
-          >
-            {getStatusDisplayLabel(status)}
-          </span>
+          <div className="flex items-center">
+            <span
+              className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(status)}`}
+            >
+              {getStatusDisplayLabel(status)}
+            </span>
+          </div>
         </div>
         <DetailMetaItem label={approverLabel} value={approvedByName || "-"} />
         <DetailMetaItem label="Alasan Penolakan" value={rejectionNote || "-"} />

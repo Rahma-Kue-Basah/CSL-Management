@@ -152,12 +152,46 @@ export function mapPengujian(item: ApiPengujian): PengujianRow {
   };
 }
 
-export function usePengujianDetail(id?: string | number | null) {
-  const [pengujian, setPengujian] = useState<PengujianRow | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+export function usePengujianDetail(
+  id?: string | number | null,
+  reloadKeyOrOptions?:
+    | number
+    | {
+        enabled?: boolean;
+        initialPengujian?: PengujianRow | null;
+      },
+  maybeOptions?: {
+    enabled?: boolean;
+    initialPengujian?: PengujianRow | null;
+  },
+) {
+  const reloadKey =
+    typeof reloadKeyOrOptions === "number" ? reloadKeyOrOptions : 0;
+  const options =
+    typeof reloadKeyOrOptions === "number"
+      ? maybeOptions
+      : reloadKeyOrOptions;
+  const enabled = options?.enabled ?? true;
+  const [pengujian, setPengujian] = useState<PengujianRow | null>(
+    options?.initialPengujian ?? null,
+  );
+  const [isLoading, setIsLoading] = useState(
+    enabled && Boolean(id) && !options?.initialPengujian,
+  );
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (typeof options?.initialPengujian === "undefined") return;
+    setPengujian(options.initialPengujian ?? null);
+  }, [options?.initialPengujian]);
+
+  useEffect(() => {
+    if (!enabled) {
+      setError("");
+      setIsLoading(false);
+      return;
+    }
+
     if (!id) {
       setPengujian(null);
       setError("ID pengujian tidak ditemukan.");
@@ -197,7 +231,7 @@ export function usePengujianDetail(id?: string | number | null) {
       isAborted = true;
       controller.abort();
     };
-  }, [id]);
+  }, [enabled, id, reloadKey]);
 
   return {
     pengujian,

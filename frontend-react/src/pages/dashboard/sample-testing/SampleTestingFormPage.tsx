@@ -49,6 +49,26 @@ const initialFormData: FormData = {
   sampleTestingType: "",
 };
 
+const REQUIRED_FIELD_LABELS: Array<{
+  key: keyof FormData;
+  label: string;
+}> = [
+  { key: "name", label: "Nama pemohon" },
+  { key: "institution", label: "Institusi" },
+  { key: "institutionAddress", label: "Alamat institusi" },
+  { key: "email", label: "Email" },
+  { key: "phoneNumber", label: "Nomor telepon" },
+  { key: "sampleName", label: "Nama sampel" },
+  { key: "sampleType", label: "Jenis sampel" },
+  { key: "sampleBrand", label: "Merek sampel" },
+  { key: "samplePackaging", label: "Kemasan sampel" },
+  { key: "sampleWeight", label: "Berat netto / dimensi sampel" },
+  { key: "sampleQuantity", label: "Jumlah sampel" },
+  { key: "sampleTestingServing", label: "Cara penyajian / penanganan" },
+  { key: "sampleTestingMethod", label: "Metode pengujian" },
+  { key: "sampleTestingType", label: "Jenis pengujian" },
+];
+
 function FormField({
   label,
   required = false,
@@ -104,24 +124,16 @@ export default function SampleTestingFormPage() {
     setValidationMessage("");
     setErrorMessage("");
 
-    if (!formData.name.trim()) {
-      setValidationMessage("Nama pemohon wajib diisi.");
+    const emptyRequiredField = REQUIRED_FIELD_LABELS.find(
+      ({ key }) => !formData[key].trim(),
+    );
+    if (emptyRequiredField) {
+      setValidationMessage(`${emptyRequiredField.label} wajib diisi.`);
       return false;
     }
-    if (!formData.email.trim()) {
-      setValidationMessage("Email wajib diisi.");
-      return false;
-    }
+
     if (!/\S+@\S+\.\S+/.test(formData.email.trim())) {
       setValidationMessage("Format email tidak valid.");
-      return false;
-    }
-    if (!formData.sampleType.trim()) {
-      setValidationMessage("Jenis sampel wajib diisi.");
-      return false;
-    }
-    if (!formData.sampleTestingType.trim()) {
-      setValidationMessage("Jenis pengujian wajib diisi.");
       return false;
     }
 
@@ -190,6 +202,7 @@ export default function SampleTestingFormPage() {
               onChange={handleChange}
               placeholder="Nama pemohon"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
@@ -201,31 +214,34 @@ export default function SampleTestingFormPage() {
               onChange={handleChange}
               placeholder="email@contoh.com"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
-          <FormField label="Institusi">
+          <FormField label="Institusi" required>
             <Input
               name="institution"
               value={formData.institution}
               onChange={handleChange}
               placeholder="Nama institusi"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
-          <FormField label="Nomor Telepon">
+          <FormField label="Nomor Telepon" required>
             <Input
               name="phoneNumber"
               value={formData.phoneNumber}
               onChange={handleChange}
               placeholder="08xxxxxxxxxx"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
           <div className="md:col-span-2">
-            <FormField label="Alamat Institusi">
+            <FormField label="Alamat Institusi" required>
               <Textarea
                 name="institutionAddress"
                 value={formData.institutionAddress}
@@ -233,17 +249,19 @@ export default function SampleTestingFormPage() {
                 placeholder="Alamat institusi"
                 disabled={isSubmitting}
                 className="min-h-24"
+                required
               />
             </FormField>
           </div>
 
-          <FormField label="Nama Sampel">
+          <FormField label="Nama Sampel" required>
             <Input
               name="sampleName"
               value={formData.sampleName}
               onChange={handleChange}
               placeholder="Nama sampel"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
@@ -254,51 +272,56 @@ export default function SampleTestingFormPage() {
               onChange={handleChange}
               placeholder="Jenis sampel"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
-          <FormField label="Merek Sampel">
+          <FormField label="Merek Sampel" required>
             <Input
               name="sampleBrand"
               value={formData.sampleBrand}
               onChange={handleChange}
               placeholder="Merek sampel"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
-          <FormField label="Kemasan Sampel">
+          <FormField label="Kemasan Sampel" required>
             <Input
               name="samplePackaging"
               value={formData.samplePackaging}
               onChange={handleChange}
               placeholder="Kemasan sampel"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
-          <FormField label="Berat Netto / Dimensi Sampel">
+          <FormField label="Berat Netto / Dimensi Sampel" required>
             <Input
               name="sampleWeight"
               value={formData.sampleWeight}
               onChange={handleChange}
               placeholder="Contoh: 250 gr"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
-          <FormField label="Jumlah Sampel">
+          <FormField label="Jumlah Sampel" required>
             <Input
               name="sampleQuantity"
               value={formData.sampleQuantity}
               onChange={handleChange}
               placeholder="Contoh: 3 botol"
               disabled={isSubmitting}
+              required
             />
           </FormField>
 
           <div className="md:col-span-2">
-            <FormField label="Cara Penyajian / Penanganan">
+            <FormField label="Cara Penyajian / Penanganan" required>
               <Textarea
                 name="sampleTestingServing"
                 value={formData.sampleTestingServing}
@@ -306,12 +329,13 @@ export default function SampleTestingFormPage() {
                 placeholder="Cara penyajian atau penanganan sampel"
                 disabled={isSubmitting}
                 className="min-h-24"
+                required
               />
             </FormField>
           </div>
 
           <div className="md:col-span-2">
-            <FormField label="Metode Pengujian">
+            <FormField label="Metode Pengujian" required>
               <Textarea
                 name="sampleTestingMethod"
                 value={formData.sampleTestingMethod}
@@ -319,6 +343,7 @@ export default function SampleTestingFormPage() {
                 placeholder="Metode pengujian yang dibutuhkan"
                 disabled={isSubmitting}
                 className="min-h-24"
+                required
               />
             </FormField>
           </div>
@@ -332,6 +357,7 @@ export default function SampleTestingFormPage() {
                 placeholder="Jenis pengujian yang diajukan"
                 disabled={isSubmitting}
                 className="min-h-24"
+                required
               />
             </FormField>
           </div>
@@ -360,50 +386,76 @@ export default function SampleTestingFormPage() {
         errorMessage={errorMessage}
         onConfirm={handleConfirmSubmit}
       >
-        <div className="grid gap-3 md:grid-cols-2">
-          <SubmissionSummaryItem label="Nama Pemohon" value={formData.name} />
-          <SubmissionSummaryItem label="Email" value={formData.email} />
-          <SubmissionSummaryItem label="Institusi" value={formData.institution} />
+        <div className="space-y-3">
+          <SubmissionSummaryItem
+            label="Nama Pemohon"
+            value={formData.name}
+            orientation="horizontal"
+          />
+          <SubmissionSummaryItem
+            label="Email"
+            value={formData.email}
+            orientation="horizontal"
+          />
+          <SubmissionSummaryItem
+            label="Institusi"
+            value={formData.institution}
+            orientation="horizontal"
+          />
           <SubmissionSummaryItem
             label="Nomor Telepon"
             value={formData.phoneNumber}
+            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Alamat Institusi"
             value={formData.institutionAddress}
+            orientation="horizontal"
           />
-          <SubmissionSummaryItem label="Sampel" value={displaySampleLabel} />
+          <SubmissionSummaryItem
+            label="Sampel"
+            value={displaySampleLabel}
+            orientation="horizontal"
+          />
           <SubmissionSummaryItem
             label="Jenis Sampel"
             value={formData.sampleType}
+            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Merek Sampel"
             value={formData.sampleBrand}
+            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Kemasan Sampel"
             value={formData.samplePackaging}
+            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Berat Sampel"
             value={formData.sampleWeight}
+            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Jumlah Sampel"
             value={formData.sampleQuantity}
+            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Cara Penyajian / Penanganan"
             value={formData.sampleTestingServing}
+            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Metode Pengujian"
             value={formData.sampleTestingMethod}
+            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Jenis Pengujian"
             value={formData.sampleTestingType}
+            orientation="horizontal"
           />
         </div>
       </SubmissionConfirmDialog>

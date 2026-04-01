@@ -1,25 +1,17 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { CalendarClock, Check, CheckCircle2, Eye, FlaskConical, Loader2, PackageSearch, RotateCcw, X } from "lucide-react";
+import { CalendarClock, CheckCircle2, Eye, FlaskConical, Loader2, PackageSearch, RotateCcw, ShieldCheck, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
-import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
-import SampleTestingDetailContent from "@/components/dashboard/sample-testing/SampleTestingDetailContent";
+import { DashboardDetailReviewDialog } from "@/components/dashboard/layout/DashboardDetailReviewDialog";
 import { DataPagination } from "@/components/shared/data-pagination";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { getStatusBadgeClass, getStatusDisplayLabel, getStatusSummaryTone } from "@/lib/status";
 import { formatDateTimeWib } from "@/lib/date-format";
-import { usePengujians, type PengujianRow } from "@/hooks/pengujians/use-pengujians";
-import { useUpdatePengujianStatus } from "@/hooks/pengujians/use-update-pengujian-status";
+import { usePengujians } from "@/hooks/pengujians/use-pengujians";
 import { toEndOfDay, toStartOfDay } from "@/lib/date";
 
 const PAGE_SIZE = 10;
@@ -98,14 +90,11 @@ function SummaryCard({
 }
 
 export default function ApprovalSampleTestingPage() {
+  const navigate = useNavigate();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
+  const [reviewPengujianId, setReviewPengujianId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
-  const [detailTarget, setDetailTarget] = useState<PengujianRow | null>(null);
-  const [confirmState, setConfirmState] = useState<{
-    pengujianId: string | number;
-    type: "approve" | "reject";
-  } | null>(null);
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("q") ?? "";
   const requestedBy = searchParams.get("requested_by") ?? "";
@@ -135,34 +124,10 @@ export default function ApprovalSampleTestingPage() {
       "all",
     );
 
-  const { updatePengujianStatus, pendingAction } = useUpdatePengujianStatus();
-
   const totalPages = Math.max(
     1,
     Math.ceil((totalCount || pengujians.length) / PAGE_SIZE),
   );
-
-  const handleStatusAction = async () => {
-    if (!confirmState) return;
-
-    const result = await updatePengujianStatus(
-      confirmState.pengujianId,
-      confirmState.type,
-    );
-
-    if (!result.ok) {
-      toast.error(result.message);
-      return;
-    }
-
-    toast.success(
-      confirmState.type === "approve"
-        ? "Pengajuan pengujian sampel berhasil disetujui."
-        : "Pengajuan pengujian sampel berhasil ditolak.",
-    );
-    setConfirmState(null);
-    setReloadKey((prev) => prev + 1);
-  };
 
   return (
     <section className="space-y-4">
@@ -211,9 +176,6 @@ export default function ApprovalSampleTestingPage() {
         <table className="w-full min-w-[1120px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
-              <th className="sticky left-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[1px_0_0_0_rgba(51,65,85,1)]">
-                Aksi
-              </th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Pemohon</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Institusi</th>
@@ -221,6 +183,9 @@ export default function ApprovalSampleTestingPage() {
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Jenis Uji</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Status</th>
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Dibuat</th>
+              <th className="sticky right-0 z-20 bg-slate-900 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
+                Aksi
+              </th>
             </tr>
           </thead>
           <tbody className="text-sm">
@@ -236,47 +201,6 @@ export default function ApprovalSampleTestingPage() {
             ) : pengujians.length ? (
               pengujians.map((item) => (
                 <tr key={String(item.id)} className="border-b last:border-b-0">
-                  <td className="sticky left-0 z-10 bg-white px-3 py-2.5 text-center shadow-[1px_0_0_0_rgba(226,232,240,1)]">
-                    <div className="flex items-center justify-center gap-2">
-                      {isPendingStatus(item.status) ? (
-                        <>
-                          <TableActionIconButton
-                            type="button"
-                            label="Approve"
-                            icon={<Check className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-emerald-200 bg-emerald-50 p-0 text-emerald-700 shadow-none hover:bg-emerald-100"
-                            onClick={() =>
-                              setConfirmState({
-                                pengujianId: item.id,
-                                type: "approve",
-                              })
-                            }
-                            disabled={pendingAction.pengujianId === item.id}
-                          />
-                          <TableActionIconButton
-                            type="button"
-                            label="Reject"
-                            icon={<X className="h-3.5 w-3.5" />}
-                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
-                            onClick={() =>
-                              setConfirmState({
-                                pengujianId: item.id,
-                                type: "reject",
-                              })
-                            }
-                            disabled={pendingAction.pengujianId === item.id}
-                          />
-                        </>
-                      ) : null}
-                      <TableActionIconButton
-                        type="button"
-                        label="Lihat detail"
-                        icon={<Eye className="h-3.5 w-3.5" />}
-                        className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
-                        onClick={() => setDetailTarget(item)}
-                      />
-                    </div>
-                  </td>
                   <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
                     {item.code}
                   </td>
@@ -304,6 +228,26 @@ export default function ApprovalSampleTestingPage() {
                   <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
                     {formatDateTimeWib(item.createdAt)}
                   </td>
+                  <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
+                    <div className="flex items-center justify-center gap-2">
+                      {isPendingStatus(item.status) ? (
+                        <TableActionIconButton
+                          type="button"
+                          label="Review"
+                          icon={<ShieldCheck className="h-3.5 w-3.5" />}
+                          className="w-8 rounded-md border border-sky-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
+                          onClick={() => setReviewPengujianId(String(item.id))}
+                        />
+                      ) : null}
+                      <TableActionIconButton
+                        type="button"
+                        label="Lihat detail"
+                        icon={<Eye className="h-3.5 w-3.5" />}
+                        className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
+                        onClick={() => navigate(`/sample-testing/approval/${item.id}`)}
+                      />
+                    </div>
+                  </td>
                 </tr>
               ))
             ) : (
@@ -327,27 +271,19 @@ export default function ApprovalSampleTestingPage() {
         onPageChange={setPage}
       />
 
-      <Dialog open={Boolean(detailTarget)} onOpenChange={(open) => !open && setDetailTarget(null)}>
-        <DialogContent
-          showCloseButton={false}
-          className="max-h-[85vh] overflow-y-auto border-none bg-transparent p-0 shadow-none sm:max-w-6xl"
-        >
-          <DialogHeader>
-            <DialogTitle className="sr-only">Detail Pengajuan Pengujian Sampel</DialogTitle>
-          </DialogHeader>
-
-          {detailTarget ? <SampleTestingDetailContent item={detailTarget} /> : null}
-        </DialogContent>
-      </Dialog>
-
-      <StatusConfirmDialog
-        open={Boolean(confirmState)}
-        actionType={confirmState?.type ?? null}
-        onOpenChange={(open) => !open && setConfirmState(null)}
-        onConfirm={handleStatusAction}
-        isSubmitting={Boolean(confirmState) && pendingAction.pengujianId === confirmState?.pengujianId}
-        subjectLabel="pengajuan pengujian sampel ini"
+      <DashboardDetailReviewDialog
+        open={Boolean(reviewPengujianId)}
+        onOpenChange={(open) => {
+          if (!open) setReviewPengujianId(null);
+        }}
+        context={
+          reviewPengujianId
+            ? { kind: "pengujian", id: reviewPengujianId }
+            : null
+        }
+        onActionComplete={() => setReloadKey((prev) => prev + 1)}
       />
+
     </section>
   );
 }
