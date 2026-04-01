@@ -23,6 +23,12 @@ type RequestReviewCardProps = {
   checklistLoading?: boolean;
   checklistEmptyMessage?: string;
   checklistPassedIndicators?: string[];
+  statusHintTitle?: string;
+  statusHintMessage?: string;
+  statusHintIndicators?: string[];
+  statusHintClassName?: string;
+  statusHintTitleClassName?: string;
+  statusHintTextClassName?: string;
   children?: ReactNode;
 };
 
@@ -34,6 +40,12 @@ export function RequestReviewCard({
   checklistLoading = false,
   checklistEmptyMessage,
   checklistPassedIndicators = [],
+  statusHintTitle,
+  statusHintMessage,
+  statusHintIndicators = [],
+  statusHintClassName = "border-emerald-200 bg-emerald-50/80",
+  statusHintTitleClassName = "text-emerald-800",
+  statusHintTextClassName = "text-emerald-900",
   children,
 }: RequestReviewCardProps) {
   return (
@@ -109,6 +121,26 @@ export function RequestReviewCard({
               <div className="mt-2 space-y-1">
                 {checklistPassedIndicators.map((item) => (
                   <p key={item} className="text-xs text-emerald-900">
+                    - {item}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {statusHintMessage ? (
+          <div className={`mb-4 rounded-md border px-4 py-3 ${statusHintClassName}`}>
+            {statusHintTitle ? (
+              <p className={`text-xs font-medium ${statusHintTitleClassName}`}>{statusHintTitle}</p>
+            ) : null}
+            <p className={statusHintTitle ? `mt-1 text-xs ${statusHintTextClassName}` : `text-xs ${statusHintTitleClassName}`}>
+              {statusHintMessage}
+            </p>
+            {statusHintIndicators.length ? (
+              <div className="mt-2 space-y-1">
+                {statusHintIndicators.map((item) => (
+                  <p key={item} className={`text-xs ${statusHintTextClassName}`}>
                     - {item}
                   </p>
                 ))}

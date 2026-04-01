@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, ChevronDown } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,14 +13,17 @@ import { formatDateTimeWib } from "@/lib/date-format";
 import { stripHtmlTags } from "@/lib/text";
 
 function AnnouncementCard({ announcement }: { announcement: Announcement }) {
-  const content = useMemo(
-    () => stripHtmlTags(announcement.content || ""),
-    [announcement.content],
-  );
+  const plainContent = stripHtmlTags(announcement.content || "");
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
-      <div className="flex items-start justify-between gap-4">
+    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+      <button
+        type="button"
+        onClick={() => setIsOpen((current) => !current)}
+        className="flex w-full items-start justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-slate-50"
+        aria-expanded={isOpen}
+      >
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3 text-[12px] text-slate-500">
             <span className="inline-flex items-center gap-1.5">
@@ -32,31 +35,42 @@ function AnnouncementCard({ announcement }: { announcement: Announcement }) {
             {announcement.title || "Pengumuman"}
           </h3>
         </div>
-
-      </div>
-      <p className="mt-2 text-sm leading-relaxed text-slate-700">
-        {content || "-"}
-      </p>
+        <span className="mt-1 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500">
+          <ChevronDown
+            className={`h-4 w-4 transition-transform duration-200 ${
+              isOpen ? "rotate-180" : "rotate-0"
+            }`}
+          />
+        </span>
+      </button>
+      {isOpen ? (
+        <div className="border-t border-slate-200 px-5 py-4">
+          {plainContent ? (
+            <div
+              className="announcement-rich-text-content break-words text-sm text-slate-700"
+              dangerouslySetInnerHTML={{ __html: announcement.content || "" }}
+            />
+          ) : (
+            <p className="text-sm leading-relaxed text-slate-700">-</p>
+          )}
+        </div>
+      ) : null}
     </article>
   );
 }
 
 function AnnouncementSkeleton() {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
-      <div className="space-y-3">
-        <div className="flex flex-wrap items-center gap-3">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+      <div className="flex items-start justify-between gap-4 px-5 py-4">
+        <div className="min-w-0 flex-1 space-y-3">
           <Skeleton className="h-3 w-36" />
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-5 w-1/2" />
+          </div>
         </div>
-        <div className="space-y-2">
-          <Skeleton className="h-5 w-3/4" />
-          <Skeleton className="h-5 w-1/2" />
-        </div>
-      </div>
-      <div className="mt-4 space-y-2">
-        <Skeleton className="h-3 w-full" />
-        <Skeleton className="h-3 w-11/12" />
-        <Skeleton className="h-3 w-4/5" />
+        <Skeleton className="h-8 w-8 shrink-0 rounded-full" />
       </div>
     </div>
   );

@@ -74,6 +74,88 @@ function isInspectionPendingStatus(value: string) {
   );
 }
 
+function getBorrowStatusHint(
+  status: string,
+  reviewer: boolean,
+): {
+  title: string;
+  message: string;
+  indicators?: string[];
+  className?: string;
+  titleClassName?: string;
+  textClassName?: string;
+} | null {
+  if (isApprovedStatus(status)) {
+    return {
+      title: "Status sudah disetujui",
+      message: reviewer
+        ? "Pengajuan sudah lolos review dan siap masuk proses serah terima alat."
+        : "Pengajuan sudah lolos review dan sedang menunggu proses serah terima alat.",
+      indicators: reviewer
+        ? ["Gunakan aksi Serah Terima setelah alat benar-benar diserahkan ke peminjam."]
+        : ["PIC akan melanjutkan ke proses serah terima alat."],
+      className: "border-sky-200 bg-sky-50/80",
+      titleClassName: "text-sky-800",
+      textClassName: "text-sky-900",
+    };
+  }
+
+  if (canReturnStatus(status)) {
+    return {
+      title: "Alat sedang dipinjam",
+      message: reviewer
+        ? "Tahap review selesai. Langkah berikutnya adalah menerima alat kembali dari peminjam."
+        : "Alat sedang dipinjam dan menunggu proses pengembalian.",
+      indicators: reviewer
+        ? ["Gunakan aksi Konfirmasi Pengembalian saat alat sudah diterima kembali."]
+        : ["Setelah alat dikembalikan, PIC akan melakukan konfirmasi pengembalian."],
+      className: "border-sky-200 bg-sky-50/80",
+      titleClassName: "text-sky-800",
+      textClassName: "text-sky-900",
+    };
+  }
+
+  if (isInspectionPendingStatus(status)) {
+    return {
+      title: "Menunggu inspeksi akhir",
+      message: reviewer
+        ? "Pengembalian sudah diterima. Lanjutkan dengan pemeriksaan kondisi alat sebelum status diselesaikan."
+        : "Pengembalian sudah diterima dan sedang menunggu hasil inspeksi akhir.",
+      indicators: reviewer
+        ? [
+            "Gunakan Finalisasi Return jika alat kembali dengan baik.",
+            "Gunakan Tandai Rusak atau Tandai Hilang jika ada temuan pada inspeksi.",
+          ]
+        : ["PIC akan memfinalisasi return atau menandai hasil inspeksi bila ada kendala."],
+      className: "border-emerald-200 bg-emerald-50/80",
+      titleClassName: "text-emerald-800",
+      textClassName: "text-emerald-900",
+    };
+  }
+
+  return null;
+}
+
+function getBorrowStatusActionClass(status: string) {
+  if (isApprovedStatus(status)) {
+    return "border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700";
+  }
+
+  if (normalizeStatus(status) === "borrowed") {
+    return "border-indigo-600 bg-indigo-600 text-white hover:bg-indigo-700";
+  }
+
+  if (normalizeStatus(status) === "overdue") {
+    return "border-orange-600 bg-orange-600 text-white hover:bg-orange-700";
+  }
+
+  if (isInspectionPendingStatus(status)) {
+    return "border-cyan-600 bg-cyan-600 text-white hover:bg-cyan-700";
+  }
+
+  return "border-slate-600 bg-slate-600 text-white hover:bg-slate-700";
+}
+
 function isReviewerRole(role: string | null | undefined) {
   const normalizedRole = normalizeRoleValue(role);
   return (
@@ -273,7 +355,7 @@ function BookingReviewPanel({
           { label: "Tanggal Dibuat", value: formatDateTimeWib(booking.createdAt) },
           { label: "Ditujukan ke PIC", value: booking.roomPicName || "-" },
           {
-            label: "Batas waktu approval",
+            label: "Mulai booking",
             value: formatDateTimeWib(booking.startTime),
           },
         ]}
@@ -466,7 +548,7 @@ function UseReviewPanel({
           { label: "Tanggal Dibuat", value: formatDateTimeWib(useItem.createdAt) },
           { label: "Ditujukan ke PIC", value: useItem.roomPicName || "-" },
           {
-            label: "Batas waktu approval",
+            label: "Mulai penggunaan alat",
             value: formatDateTimeWib(useItem.startTime),
           },
         ]}
@@ -612,6 +694,8 @@ function BorrowReviewPanel({
   const canConfirmReturn = reviewer && canReturnStatus(borrow.status);
   const canFinalizeInspection =
     reviewer && isInspectionPendingStatus(borrow.status);
+  const borrowStatusHint = getBorrowStatusHint(borrow.status, reviewer);
+  const borrowStatusActionClass = getBorrowStatusActionClass(borrow.status);
 
   const handleBorrowAction = async (rejectionNote?: string) => {
     if (!confirmType) return;
@@ -737,7 +821,7 @@ function BorrowReviewPanel({
     { label: "Tanggal Dibuat", value: formatDateTimeWib(borrow.createdAt) },
     { label: "Ditujukan ke PIC", value: borrow.roomPicName || "-" },
     {
-      label: "Batas waktu approval",
+      label: "Mulai peminjaman",
       value: formatDateTimeWib(borrow.startTime),
     },
   ];
@@ -756,6 +840,12 @@ function BorrowReviewPanel({
             : undefined
         }
         checklistPassedIndicators={shouldShowBorrowReviewCheck ? passedIndicators : []}
+        statusHintTitle={borrowStatusHint?.title}
+        statusHintMessage={borrowStatusHint?.message}
+        statusHintIndicators={borrowStatusHint?.indicators}
+        statusHintClassName={borrowStatusHint?.className}
+        statusHintTitleClassName={borrowStatusHint?.titleClassName}
+        statusHintTextClassName={borrowStatusHint?.textClassName}
       >
         {canReviewBorrow ? (
           <>
@@ -782,7 +872,7 @@ function BorrowReviewPanel({
         {canHandoverBorrow ? (
           <Button
             type="button"
-            className="h-10 rounded-md border border-sky-600 bg-sky-600 px-4 text-white shadow-sm hover:bg-sky-700"
+            className={`h-10 rounded-md border px-4 shadow-sm ${borrowStatusActionClass}`}
             onClick={() => setConfirmType("handover")}
             disabled={pendingAction.borrowId === borrow.id}
           >
@@ -793,7 +883,7 @@ function BorrowReviewPanel({
         {canConfirmReturn ? (
           <Button
             type="button"
-            className="h-10 rounded-md border border-sky-600 bg-sky-600 px-4 text-white shadow-sm hover:bg-sky-700"
+            className={`h-10 rounded-md border px-4 shadow-sm ${borrowStatusActionClass}`}
             onClick={() => setIsReturnConfirmOpen(true)}
             disabled={pendingAction.borrowId === borrow.id}
           >
@@ -805,7 +895,7 @@ function BorrowReviewPanel({
           <>
             <Button
               type="button"
-              className="h-10 rounded-md border border-emerald-600 bg-emerald-600 px-4 text-white shadow-sm hover:bg-emerald-700"
+              className={`h-10 rounded-md border px-4 shadow-sm ${borrowStatusActionClass}`}
               onClick={() => setConfirmType("finalize_return")}
               disabled={pendingAction.borrowId === borrow.id}
             >

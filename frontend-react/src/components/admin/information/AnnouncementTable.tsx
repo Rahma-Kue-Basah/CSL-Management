@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import type { Announcement } from "@/hooks/announcements/use-announcements";
 import { formatDateTimeWib } from "@/lib/date-format";
-import { summarizeText } from "@/lib/text";
+import { stripHtmlTags, summarizeText } from "@/lib/text";
 
 type AnnouncementTableProps = {
   announcements: Announcement[];
@@ -93,7 +93,7 @@ export default function AnnouncementTable({
                 </td>
                 <td className="px-3 py-2 align-top">
                   <div className="whitespace-normal break-words text-muted-foreground">
-                    {summarizeText(announcement.content || "", 320)}
+                    {summarizeText(stripHtmlTags(announcement.content || ""), 320)}
                   </div>
                 </td>
                 <td className="px-3 py-2 align-top text-muted-foreground">

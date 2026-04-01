@@ -1,7 +1,9 @@
 from datetime import datetime, time, timedelta
+import io
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
+from django.core.management import call_command
 from django.test import TestCase
 from django.utils import timezone
 
@@ -207,6 +209,35 @@ class CSLUseStatusTestCase(TestCase):
         self.assertEqual(expired_borrow.status, "Expired")
         self.assertEqual(overdue_borrow.status, "Overdue")
         self.assertEqual(active_borrow.status, "Pending")
+
+    def test_sync_request_statuses_command_can_target_borrow_only(self):
+        now = timezone.now()
+        borrow = Borrow.objects.create(
+            requested_by=self.requester,
+            equipment=self.equipment,
+            quantity=1,
+            start_time=self.future_datetime(day_offset=1, hour=9),
+            end_time=self.future_datetime(day_offset=2, hour=9),
+            status="Borrowed",
+        )
+        Borrow.objects.filter(pk=borrow.pk).update(
+            start_time=now - timedelta(days=2),
+            end_time=now - timedelta(hours=1),
+            status="Borrowed",
+        )
+
+        stdout = io.StringIO()
+        call_command(
+            "sync_request_statuses",
+            "--target",
+            "borrow",
+            "--quiet",
+            stdout=stdout,
+        )
+
+        borrow.refresh_from_db()
+        self.assertEqual(borrow.status, "Overdue")
+        self.assertIn('"borrow"', stdout.getvalue())
 
     def test_booking_save_generates_incrementing_codes(self):
         frozen_now = timezone.make_aware(datetime(2026, 3, 15, 9, 30, 0))

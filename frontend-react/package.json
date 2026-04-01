@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
+    "@ckeditor/ckeditor5-react": "^11.1.0",
     "@fontsource-variable/geist": "^5.2.8",
     "@fullcalendar/daygrid": "^6.1.20",
     "@fullcalendar/interaction": "^6.1.20",
@@ -22,6 +23,7 @@
     "@tiptap/react": "^3.20.0",
     "@tiptap/starter-kit": "^3.20.0",
     "axios": "^1.8.1",
+    "ckeditor5": "^48.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^3.6.0",

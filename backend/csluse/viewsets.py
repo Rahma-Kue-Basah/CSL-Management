@@ -777,35 +777,43 @@ def build_borrow_status_aggregates(queryset):
 
 def sync_booking_statuses():
     now = timezone.now()
-    (
+    expired_pending = (
         Booking.objects
         .filter(status="Pending", end_time__lt=now, expired_at__isnull=True)
         .update(status="Expired", expired_at=now, updated_at=now)
     )
-    (
+    completed_approved = (
         Booking.objects
         .filter(status="Approved", end_time__lt=now, completed_at__isnull=True)
         .update(status="Completed", completed_at=now, updated_at=now)
     )
+    return {
+        "expired_pending": expired_pending,
+        "completed_approved": completed_approved,
+    }
 
 
 def sync_use_statuses():
     now = timezone.now()
-    (
+    expired_finished = (
         Use.objects
         .filter(status="Pending", end_time__lt=now, expired_at__isnull=True)
         .update(status="Expired", expired_at=now, updated_at=now)
     )
-    (
+    expired_started_without_end = (
         Use.objects
         .filter(status="Pending", end_time__isnull=True, start_time__lt=now, expired_at__isnull=True)
         .update(status="Expired", expired_at=now, updated_at=now)
     )
+    return {
+        "expired_finished": expired_finished,
+        "expired_started_without_end": expired_started_without_end,
+    }
 
 
 def sync_borrow_statuses():
     now = timezone.now()
-    (
+    expired_pending = (
         Borrow.objects
         .filter(status="Pending", start_time__lt=now, expired_at__isnull=True)
         .update(status="Expired", expired_at=now, updated_at=now)
@@ -824,6 +832,10 @@ def sync_borrow_statuses():
         for item in overdue_borrows:
             item.status = "Overdue"
             _notify_borrow_overdue(item)
+    return {
+        "expired_pending": expired_pending,
+        "marked_overdue": len(overdue_borrows),
+    }
 
 
 class ImageViewSet(viewsets.ModelViewSet):

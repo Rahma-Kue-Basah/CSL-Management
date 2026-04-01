@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 
 import { AdminDetailHeader } from "@/components/admin/AdminDetailHeader";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
@@ -15,6 +15,8 @@ type AdminDetailDialogShellProps = {
   children: ReactNode;
   trigger?: ReactNode;
   contentClassName?: string;
+  contentProps?: Omit<ComponentProps<typeof DialogContent>, "children" | "className">;
+  dialogProps?: Omit<ComponentProps<typeof Dialog>, "children" | "open" | "onOpenChange">;
   showCloseButton?: boolean;
   backLabel?: string;
 };
@@ -29,6 +31,8 @@ export default function AdminDetailDialogShell({
   children,
   trigger,
   contentClassName,
+  contentProps,
+  dialogProps,
   showCloseButton = false,
   backLabel = "Tutup",
 }: AdminDetailDialogShellProps) {
@@ -41,11 +45,13 @@ export default function AdminDetailDialogShell({
           onCloseReset?.();
         }
       }}
+      {...dialogProps}
     >
       {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent
         showCloseButton={showCloseButton}
         className={contentClassName}
+        {...contentProps}
       >
         <AdminDetailHeader
           title={title}

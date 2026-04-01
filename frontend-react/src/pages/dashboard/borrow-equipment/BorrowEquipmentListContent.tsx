@@ -44,7 +44,17 @@ function SummaryCard({
   label: string;
   value: number;
   icon: ReactNode;
-  tone: "slate" | "blue" | "amber" | "emerald" | "sky" | "rose";
+  tone:
+    | "slate"
+    | "blue"
+    | "amber"
+    | "emerald"
+    | "sky"
+    | "rose"
+    | "indigo"
+    | "cyan"
+    | "orange"
+    | "red";
 }) {
   const toneClass =
     tone === "blue"
@@ -77,6 +87,30 @@ function SummaryCard({
                   icon: "bg-white/80 text-rose-800",
                   value: "text-rose-900",
                 }
+              : tone === "indigo"
+                ? {
+                    card: "border-indigo-300 bg-indigo-100/90",
+                    icon: "bg-white/80 text-indigo-800",
+                    value: "text-indigo-900",
+                  }
+                : tone === "cyan"
+                  ? {
+                      card: "border-cyan-300 bg-cyan-100/90",
+                      icon: "bg-white/80 text-cyan-800",
+                      value: "text-cyan-900",
+                    }
+                  : tone === "orange"
+                    ? {
+                        card: "border-orange-300 bg-orange-100/90",
+                        icon: "bg-white/80 text-orange-800",
+                        value: "text-orange-900",
+                      }
+                    : tone === "red"
+                      ? {
+                          card: "border-red-300 bg-red-100/90",
+                          icon: "bg-white/80 text-red-800",
+                          value: "text-red-900",
+                        }
               : {
                   card: "border-slate-300 bg-slate-100/90",
                   icon: "bg-white/80 text-slate-800",
@@ -183,7 +217,7 @@ export default function BorrowEquipmentListContent({
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-5">
         <SummaryCard
           label="Total Pengajuan"
           value={aggregates.total}
@@ -206,7 +240,13 @@ export default function BorrowEquipmentListContent({
           label="Borrowed"
           value={aggregates.borrowed}
           icon={<Truck className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Borrowed")}
+          tone="indigo"
+        />
+        <SummaryCard
+          label="Returned Pending Inspection"
+          value={aggregates.returned_pending_inspection}
+          icon={<ShieldCheck className="h-4 w-4" />}
+          tone="cyan"
         />
         <SummaryCard
           label="Returned"
@@ -225,6 +265,18 @@ export default function BorrowEquipmentListContent({
           value={aggregates.expired}
           icon={<Hourglass className="h-4 w-4" />}
           tone={getStatusSummaryTone("Expired")}
+        />
+        <SummaryCard
+          label="Overdue"
+          value={aggregates.overdue}
+          icon={<CalendarClock className="h-4 w-4" />}
+          tone="orange"
+        />
+        <SummaryCard
+          label="Lost/Damaged"
+          value={aggregates.lost_damaged}
+          icon={<X className="h-4 w-4" />}
+          tone="red"
         />
       </div>
 
