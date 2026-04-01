@@ -23,12 +23,16 @@ type DashboardUserMenuProps = {
   user?: ProfileUserInput | null;
   triggerClassName?: string;
   nameClassName?: string;
+  contentSide?: "top" | "right" | "bottom" | "left";
+  contentAlign?: "start" | "center" | "end";
 };
 
 export function DashboardUserMenu({
   user,
   triggerClassName,
   nameClassName,
+  contentSide = "right",
+  contentAlign = "end",
 }: DashboardUserMenuProps) {
   const { profile, initials } = useLoadProfile(user);
   const { handleLogout } = useLogout();
@@ -58,8 +62,8 @@ export function DashboardUserMenu({
       </DropdownMenuTrigger>
       <DropdownMenuContent
         className="w-(--radix-dropdown-menu-trigger-width) min-w-68 rounded-lg border border-slate-200 bg-white text-slate-900 shadow-xl"
-        side="right"
-        align="end"
+        side={contentSide}
+        align={contentAlign}
         sideOffset={4}
       >
         <DropdownMenuLabel className="p-0 font-normal">

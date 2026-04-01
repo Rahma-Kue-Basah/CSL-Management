@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Bell, ChevronDown, CircleArrowOutUpRightIcon, LayoutGrid } from "lucide-react";
+import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -122,6 +123,14 @@ export function DashboardTopNavbar({
             >
               <Bell className="h-5 w-5" />
             </Link>
+            <div className="md:hidden">
+              <DashboardUserMenu
+                triggerClassName="h-10 w-10 justify-center rounded-lg border border-slate-200 bg-white px-0 hover:bg-slate-100"
+                nameClassName="hidden"
+                contentSide="bottom"
+                contentAlign="end"
+              />
+            </div>
           </div>
         </div>
       </div>
