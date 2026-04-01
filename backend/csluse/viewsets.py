@@ -867,7 +867,7 @@ class RoomViewSet(viewsets.ModelViewSet):
         return RoomSerializer
 
     def get_permissions(self):
-        if self.action == "create":
+        if self.action in {"create", "bulk_create"}:
             return [IsAuthenticated(), IsStaffOrAbove()]
         if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
             return [IsAuthenticated(), IsAdministratorOrAbove()]
@@ -931,6 +931,62 @@ class RoomViewSet(viewsets.ModelViewSet):
             instance,
             ADDITION,
             "Created room via CSL Admin (inventory).",
+        )
+
+    @action(detail=False, methods=['post'], url_path='bulk-create')
+    def bulk_create(self, request):
+        rows = request.data.get("rows")
+        if not isinstance(rows, list) or not rows:
+            return Response(
+                {"detail": "rows wajib berupa array dan tidak boleh kosong."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        results = []
+        success_count = 0
+
+        for index, row in enumerate(rows, start=1):
+            row_number = row.get("index", index) if isinstance(row, dict) else index
+            serializer = self.get_serializer(data=row)
+            if serializer.is_valid():
+                instance = serializer.save()
+                log_admin_action(
+                    self.request.user,
+                    instance,
+                    ADDITION,
+                    "Created room via CSL Admin bulk import.",
+                )
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "success",
+                        "message": "Sukses",
+                        "id": str(instance.id),
+                    }
+                )
+                success_count += 1
+            else:
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "error",
+                        "message": serializer.errors,
+                    }
+                )
+
+        failed_count = len(results) - success_count
+        response_status = (
+            status.HTTP_201_CREATED
+            if failed_count == 0
+            else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "results": results,
+                "success_count": success_count,
+                "failed_count": failed_count,
+            },
+            status=response_status,
         )
 
     def _delete_room_instance(self, instance):
@@ -1063,7 +1119,7 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         return EquipmentSerializer
 
     def get_permissions(self):
-        if self.action == "create":
+        if self.action in {"create", "bulk_create"}:
             return [IsAuthenticated(), IsStaffOrAbove()]
         if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
             return [IsAuthenticated(), IsAdministratorOrAbove()]
@@ -1144,6 +1200,62 @@ class EquipmentViewSet(viewsets.ModelViewSet):
             instance,
             ADDITION,
             "Created equipment via CSL Admin (inventory).",
+        )
+
+    @action(detail=False, methods=['post'], url_path='bulk-create')
+    def bulk_create(self, request):
+        rows = request.data.get("rows")
+        if not isinstance(rows, list) or not rows:
+            return Response(
+                {"detail": "rows wajib berupa array dan tidak boleh kosong."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        results = []
+        success_count = 0
+
+        for index, row in enumerate(rows, start=1):
+            row_number = row.get("index", index) if isinstance(row, dict) else index
+            serializer = self.get_serializer(data=row)
+            if serializer.is_valid():
+                instance = serializer.save()
+                log_admin_action(
+                    self.request.user,
+                    instance,
+                    ADDITION,
+                    "Created equipment via CSL Admin bulk import.",
+                )
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "success",
+                        "message": "Sukses",
+                        "id": str(instance.id),
+                    }
+                )
+                success_count += 1
+            else:
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "error",
+                        "message": serializer.errors,
+                    }
+                )
+
+        failed_count = len(results) - success_count
+        response_status = (
+            status.HTTP_201_CREATED
+            if failed_count == 0
+            else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "results": results,
+                "success_count": success_count,
+                "failed_count": failed_count,
+            },
+            status=response_status,
         )
 
     def _delete_equipment_instance(self, instance):
@@ -1686,7 +1798,7 @@ class SoftwareViewSet(viewsets.ModelViewSet):
         return SoftwareSerializer
 
     def get_permissions(self):
-        if self.action == "create":
+        if self.action in {"create", "bulk_create"}:
             return [IsAuthenticated(), IsStaffOrAbove()]
         if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
             return [IsAuthenticated(), IsAdministratorOrAbove()]
@@ -1744,6 +1856,62 @@ class SoftwareViewSet(viewsets.ModelViewSet):
             instance,
             ADDITION,
             "Created software via CSL Admin (inventory).",
+        )
+
+    @action(detail=False, methods=['post'], url_path='bulk-create')
+    def bulk_create(self, request):
+        rows = request.data.get("rows")
+        if not isinstance(rows, list) or not rows:
+            return Response(
+                {"detail": "rows wajib berupa array dan tidak boleh kosong."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        results = []
+        success_count = 0
+
+        for index, row in enumerate(rows, start=1):
+            row_number = row.get("index", index) if isinstance(row, dict) else index
+            serializer = self.get_serializer(data=row)
+            if serializer.is_valid():
+                instance = serializer.save()
+                log_admin_action(
+                    self.request.user,
+                    instance,
+                    ADDITION,
+                    "Created software via CSL Admin bulk import.",
+                )
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "success",
+                        "message": "Sukses",
+                        "id": str(instance.id),
+                    }
+                )
+                success_count += 1
+            else:
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "error",
+                        "message": serializer.errors,
+                    }
+                )
+
+        failed_count = len(results) - success_count
+        response_status = (
+            status.HTTP_201_CREATED
+            if failed_count == 0
+            else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "results": results,
+                "success_count": success_count,
+                "failed_count": failed_count,
+            },
+            status=response_status,
         )
 
     def _delete_software_instance(self, instance):
@@ -1832,9 +2000,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
     def _is_room_pic_for_borrow(self, borrow):
         profile = self._current_profile()
-        if not profile or not borrow.equipment_id:
+        room = getattr(getattr(borrow, "equipment", None), "room", None)
+        if not profile or room is None:
             return False
-        return borrow.equipment.room.pics.filter(id=profile.id).exists()
+        return room.pics.filter(id=profile.id).exists()
 
     def _can_review_borrow(self, borrow):
         return self._can_manage_all_borrows() or self._is_room_pic_for_borrow(borrow)

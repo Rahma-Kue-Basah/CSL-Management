@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { FileUp, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -13,6 +13,7 @@ import {
   ADMIN_FILTER_SELECT_CLASS,
 } from "@/components/admin/admin-filter-fields";
 import EquipmentCreateDialog from "@/components/admin/inventory/EquipmentCreateDialog";
+import EquipmentBulkImportDialog from "@/components/admin/inventory/EquipmentBulkImportDialog";
 import AdminEquipmentDetailDialog from "@/components/admin/inventory/AdminEquipmentDetailDialog";
 import EquipmentTable from "@/components/admin/inventory/EquipmentTable";
 import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
@@ -30,12 +31,19 @@ import {
 import { API_EQUIPMENTS_EXPORT } from "@/constants/api";
 import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 import { useDeleteEquipment } from "@/hooks/equipments/use-delete-equipment";
-import { mapEquipment, useEquipments, type EquipmentRow } from "@/hooks/equipments/use-equipments";
+import {
+  mapEquipment,
+  useEquipments,
+  type EquipmentRow,
+} from "@/hooks/equipments/use-equipments";
 import { useUpdateEquipment } from "@/hooks/equipments/use-update-equipment";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import { usePicUsers } from "@/hooks/users/use-pic-users";
 import { EQUIPMENT_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
-import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
+import {
+  exportAdminRecordExcel,
+  exportAdminRecordPdf,
+} from "@/lib/admin-record-pdf";
 
 const PAGE_SIZE = 20;
 
@@ -93,18 +101,29 @@ export default function AdminEquipmentsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
-  const [detailEquipment, setDetailEquipment] = useState<EquipmentRow | null>(null);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [detailEquipment, setDetailEquipment] = useState<EquipmentRow | null>(
+    null,
+  );
   const [detailMode, setDetailMode] = useState<"view" | "edit">("view");
-  const [deleteCandidate, setDeleteCandidate] = useState<EquipmentRow | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<EquipmentRow | null>(
+    null,
+  );
   const [selectedIds, setSelectedIds] = useState<Array<string | number>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
-  const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
-  const [togglingEquipmentId, setTogglingEquipmentId] = useState<string | number | null>(null);
+  const [isExportingSelectedExcel, setIsExportingSelectedExcel] =
+    useState(false);
+  const [togglingEquipmentId, setTogglingEquipmentId] = useState<
+    string | number | null
+  >(null);
 
-  const { rooms: filterRooms, isLoading: isLoadingFilterRooms } = useRoomOptions();
-  const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } = usePicUsers();
-  const { deleteEquipment, deleteEquipments, isDeleting } = useDeleteEquipment();
+  const { rooms: filterRooms, isLoading: isLoadingFilterRooms } =
+    useRoomOptions();
+  const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } =
+    usePicUsers();
+  const { deleteEquipment, deleteEquipments, isDeleting } =
+    useDeleteEquipment();
   const { updateEquipment } = useUpdateEquipment();
 
   useEffect(() => {
@@ -112,19 +131,20 @@ export default function AdminEquipmentsPage() {
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const { equipments, totalCount, isLoading, hasLoadedOnce, error } = useEquipments(
-    page,
-    PAGE_SIZE,
-    {
-      search: debouncedSearch,
-      status,
-      category,
-      room,
-      pic,
-      is_moveable: moveable,
-    },
-    reloadKey,
-  );
+  const { equipments, totalCount, isLoading, hasLoadedOnce, error } =
+    useEquipments(
+      page,
+      PAGE_SIZE,
+      {
+        search: debouncedSearch,
+        status,
+        category,
+        room,
+        pic,
+        is_moveable: moveable,
+      },
+      reloadKey,
+    );
 
   const totalEquipments = totalCount || equipments.length;
   const totalPages = useMemo(
@@ -134,24 +154,33 @@ export default function AdminEquipmentsPage() {
 
   const selectedCount = selectedIds.length;
   const selectedRows = useMemo(
-    () => equipments.filter((item) => selectedIds.some((id) => String(id) === String(item.id))),
+    () =>
+      equipments.filter((item) =>
+        selectedIds.some((id) => String(id) === String(item.id)),
+      ),
     [equipments, selectedIds],
   );
 
   const allVisibleSelected =
-    equipments.length > 0 && equipments.every((item) => selectedIds.includes(item.id));
+    equipments.length > 0 &&
+    equipments.every((item) => selectedIds.includes(item.id));
   const someVisibleSelected =
-    equipments.some((item) => selectedIds.includes(item.id)) && !allVisibleSelected;
+    equipments.some((item) => selectedIds.includes(item.id)) &&
+    !allVisibleSelected;
 
   useEffect(() => {
     setSelectedIds((prev) =>
-      prev.filter((id) => equipments.some((item) => String(item.id) === String(id))),
+      prev.filter((id) =>
+        equipments.some((item) => String(item.id) === String(id)),
+      ),
     );
   }, [equipments]);
 
   useEffect(() => {
     if (!detailEquipment) return;
-    const latestEquipment = equipments.find((item) => String(item.id) === String(detailEquipment.id));
+    const latestEquipment = equipments.find(
+      (item) => String(item.id) === String(detailEquipment.id),
+    );
     if (latestEquipment) {
       setDetailEquipment(latestEquipment);
     }
@@ -162,25 +191,26 @@ export default function AdminEquipmentsPage() {
     selectAllRef.current.indeterminate = someVisibleSelected;
   }, [someVisibleSelected]);
 
-  const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } = useAdminRecordExport({
-    endpoint: API_EQUIPMENTS_EXPORT,
-    filters: {
-      status,
-      category,
-      room,
-      pic,
-      is_moveable: moveable,
-      q: debouncedSearch,
-    },
-    mapItem: mapEquipment,
-    title: "Inventarisasi Peralatan",
-    pdfFilename: "inventarisasi-peralatan.pdf",
-    excelFilename: "inventarisasi-peralatan.xlsx",
-    columns: EQUIPMENT_EXPORT_COLUMNS,
-    emptyMessage: "Tidak ada data peralatan untuk diunduh.",
-    pdfSuccessMessage: "PDF peralatan berhasil diunduh.",
-    excelSuccessMessage: "Excel peralatan berhasil diunduh.",
-  });
+  const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } =
+    useAdminRecordExport({
+      endpoint: API_EQUIPMENTS_EXPORT,
+      filters: {
+        status,
+        category,
+        room,
+        pic,
+        is_moveable: moveable,
+        q: debouncedSearch,
+      },
+      mapItem: mapEquipment,
+      title: "Inventarisasi Peralatan",
+      pdfFilename: "inventarisasi-peralatan.pdf",
+      excelFilename: "inventarisasi-peralatan.xlsx",
+      columns: EQUIPMENT_EXPORT_COLUMNS,
+      emptyMessage: "Tidak ada data peralatan untuk diunduh.",
+      pdfSuccessMessage: "PDF peralatan berhasil diunduh.",
+      excelSuccessMessage: "Excel peralatan berhasil diunduh.",
+    });
 
   const resetFilters = () => {
     setSearch("");
@@ -203,12 +233,17 @@ export default function AdminEquipmentsPage() {
     if (!result.ok) return;
 
     setDeleteCandidate(null);
-    setSelectedIds((prev) => prev.filter((id) => String(id) !== String(item.id)));
+    setSelectedIds((prev) =>
+      prev.filter((id) => String(id) !== String(item.id)),
+    );
     setReloadKey((prev) => prev + 1);
     toast.success("Peralatan berhasil dihapus.");
   };
 
-  const handleToggleAvailability = async (item: EquipmentRow, nextChecked: boolean) => {
+  const handleToggleAvailability = async (
+    item: EquipmentRow,
+    nextChecked: boolean,
+  ) => {
     setTogglingEquipmentId(item.id);
     const result = await updateEquipment(item.id, {
       name: item.name,
@@ -228,7 +263,9 @@ export default function AdminEquipmentsPage() {
     }
 
     setReloadKey((prev) => prev + 1);
-    toast.success(`Status peralatan diubah menjadi ${nextChecked ? "Available" : "In Storage"}.`);
+    toast.success(
+      `Status peralatan diubah menjadi ${nextChecked ? "Available" : "In Storage"}.`,
+    );
   };
 
   const handleBulkDelete = async () => {
@@ -240,7 +277,9 @@ export default function AdminEquipmentsPage() {
       return;
     }
 
-    const removedIds = new Set((result.deletedIds ?? []).map((id) => String(id)));
+    const removedIds = new Set(
+      (result.deletedIds ?? []).map((id) => String(id)),
+    );
     setSelectedIds((prev) => prev.filter((id) => !removedIds.has(String(id))));
     setIsBulkDeleteOpen(false);
     setReloadKey((prev) => prev + 1);
@@ -290,7 +329,9 @@ export default function AdminEquipmentsPage() {
       });
       toast.success("Excel peralatan terpilih berhasil diunduh.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal mengunduh Excel.");
+      toast.error(
+        err instanceof Error ? err.message : "Gagal mengunduh Excel.",
+      );
     } finally {
       setIsExportingSelectedExcel(false);
     }
@@ -311,22 +352,24 @@ export default function AdminEquipmentsPage() {
             onToggle={() => setFilterOpen((prev) => !prev)}
             onReset={resetFilters}
           >
-            <form onSubmit={(event) => {
-              event.preventDefault();
-              setPage(1);
-            }}>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                setPage(1);
+              }}
+            >
               <AdminFilterGrid columns={6}>
                 <AdminFilterField label="Cari">
-                <Input
-                  type="search"
-                  value={search}
-                  placeholder="Nama atau kategori"
-                  className={ADMIN_FILTER_INPUT_CLASS}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                />
+                  <Input
+                    type="search"
+                    value={search}
+                    placeholder="Nama atau kategori"
+                    className={ADMIN_FILTER_INPUT_CLASS}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setPage(1);
+                    }}
+                  />
                 </AdminFilterField>
 
                 <FilterSelectField
@@ -357,40 +400,44 @@ export default function AdminEquipmentsPage() {
                   }}
                 />
                 <AdminFilterField label="Ruangan">
-                <select
-                  value={room}
-                  onChange={(event) => {
-                    setRoom(event.target.value);
-                    setPage(1);
-                  }}
-                  className={ADMIN_FILTER_SELECT_CLASS}
-                  disabled={isLoadingFilterRooms}
-                >
-                  <option value="">
-                    {isLoadingFilterRooms ? "Memuat ruangan..." : "Semua ruangan"}
-                  </option>
-                  {filterRooms.map((roomItem) => (
-                    <option key={roomItem.id} value={roomItem.id}>
-                      {roomItem.label}
+                  <select
+                    value={room}
+                    onChange={(event) => {
+                      setRoom(event.target.value);
+                      setPage(1);
+                    }}
+                    className={ADMIN_FILTER_SELECT_CLASS}
+                    disabled={isLoadingFilterRooms}
+                  >
+                    <option value="">
+                      {isLoadingFilterRooms
+                        ? "Memuat ruangan..."
+                        : "Semua ruangan"}
                     </option>
+                    {filterRooms.map((roomItem) => (
+                      <option key={roomItem.id} value={roomItem.id}>
+                        {roomItem.label}
+                      </option>
                     ))}
                   </select>
                 </AdminFilterField>
                 <AdminFilterField label="PIC">
-                <select
-                  value={pic}
-                  onChange={(event) => {
-                    setPic(event.target.value);
-                    setPage(1);
-                  }}
-                  className={ADMIN_FILTER_SELECT_CLASS}
-                  disabled={isLoadingFilterPics}
-                >
-                  <option value="">{isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}</option>
-                  {filterPicUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
+                  <select
+                    value={pic}
+                    onChange={(event) => {
+                      setPic(event.target.value);
+                      setPage(1);
+                    }}
+                    className={ADMIN_FILTER_SELECT_CLASS}
+                    disabled={isLoadingFilterPics}
+                  >
+                    <option value="">
+                      {isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}
                     </option>
+                    {filterPicUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
                     ))}
                   </select>
                 </AdminFilterField>
@@ -398,9 +445,7 @@ export default function AdminEquipmentsPage() {
             </form>
           </AdminFilterCard>
 
-          {error ? (
-            <InlineErrorAlert>{error}</InlineErrorAlert>
-          ) : null}
+          {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <InventoryBulkActions
@@ -431,10 +476,25 @@ export default function AdminEquipmentsPage() {
                 isExportingExcel={isExportingExcel}
                 isExportingPdf={isExportingPdf}
               />
-              <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Tambah Peralatan
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setBulkImportOpen(true)}
+                >
+                  <FileUp className="h-4 w-4" />
+                  Bulk Import
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Tambah Peralatan
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -453,7 +513,12 @@ export default function AdminEquipmentsPage() {
             onToggleSelectAllVisible={(checked) => {
               if (!checked) {
                 setSelectedIds((prev) =>
-                  prev.filter((id) => !equipments.some((item) => String(item.id) === String(id))),
+                  prev.filter(
+                    (id) =>
+                      !equipments.some(
+                        (item) => String(item.id) === String(id),
+                      ),
+                  ),
                 );
                 return;
               }
@@ -497,6 +562,12 @@ export default function AdminEquipmentsPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={handleCreatedOrUpdated}
+      />
+
+      <EquipmentBulkImportDialog
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
+        onCompleted={handleCreatedOrUpdated}
       />
 
       <ConfirmDeleteDialog

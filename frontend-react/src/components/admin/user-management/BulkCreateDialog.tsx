@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { FileDown } from "lucide-react";
 import * as XLSX from "xlsx";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import BulkImportDialogShell from "@/components/shared/BulkImportDialogShell";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { BATCH_VALUES } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
@@ -142,6 +142,7 @@ export default function BulkCreateDialog({
   const hasRoleScope = Boolean(normalizedRoleParam);
   const [previewRows, setPreviewRows] = useState<BulkRow[]>([]);
   const [skippedRows, setSkippedRows] = useState<SkippedPreviewRow[]>([]);
+  const [selectedRowIndexes, setSelectedRowIndexes] = useState<number[]>([]);
   const [fileName, setFileName] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [results, setResults] = useState<{ index: number; status: "success" | "error"; message: string }[]>([]);
@@ -150,6 +151,7 @@ export default function BulkCreateDialog({
   const resetState = () => {
     setPreviewRows([]);
     setSkippedRows([]);
+    setSelectedRowIndexes([]);
     setFileName("");
     setErrorMessage("");
     setResults([]);
@@ -271,6 +273,7 @@ export default function BulkCreateDialog({
       });
 
       setPreviewRows(nextPreviewRows);
+      setSelectedRowIndexes(nextPreviewRows.map((row) => row.index));
       setSkippedRows(nextSkippedRows);
       if (!nextPreviewRows.length) {
         setErrorMessage("Tidak ada data valid untuk diproses.");
@@ -290,11 +293,14 @@ export default function BulkCreateDialog({
   };
 
   const handleSubmitBulk = async () => {
-    if (!previewRows.length) {
-      setErrorMessage("Tidak ada baris valid untuk diproses.");
+    if (!previewRows.length || !selectedRowIndexes.length) {
+      setErrorMessage("Pilih minimal satu baris valid untuk diproses.");
       return;
     }
-    const bulkResults = await createUsers(previewRows, setResults);
+    const selectedRows = previewRows.filter((row) =>
+      selectedRowIndexes.includes(row.index),
+    );
+    const bulkResults = await createUsers(selectedRows, setResults);
     const successCount = bulkResults.filter((row) => row.status === "success").length;
     if (successCount > 0) {
       onCompleted();
@@ -304,130 +310,147 @@ export default function BulkCreateDialog({
     }
   };
 
+  const allRowsSelected =
+    previewRows.length > 0 && selectedRowIndexes.length === previewRows.length;
+
+  const toggleAllRows = (checked: boolean) => {
+    setSelectedRowIndexes(checked ? previewRows.map((row) => row.index) : []);
+  };
+
+  const toggleRowSelection = (rowIndex: number, checked: boolean) => {
+    setSelectedRowIndexes((prev) =>
+      checked ? [...prev, rowIndex] : prev.filter((item) => item !== rowIndex),
+    );
+  };
+
   return (
-    <Dialog
+    <BulkImportDialogShell
       open={open}
-      onOpenChange={(nextOpen) => {
-        onOpenChange(nextOpen);
-        if (!nextOpen) resetState();
-      }}
+      onOpenChange={onOpenChange}
+      onReset={resetState}
+      title="Bulk Tambah User"
+      description={
+        <>
+          Upload file Excel dengan kolom wajib: nama lengkap, email, password
+          {hasRoleScope ? "." : ", role."} Kolom opsional: initials,
+          department, batch, id number, institution.
+        </>
+      }
+      onDownloadTemplate={handleDownloadTemplate}
+      onFileChange={handleFile}
+      fileName={fileName}
+      error={
+        errorMessage ? (
+          <InlineErrorAlert>{errorMessage}</InlineErrorAlert>
+        ) : undefined
+      }
+      contentClassName={USER_MODAL_WIDTH_CLASS}
+      footer={
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
+            Batal
+          </Button>
+          <Button type="button" onClick={() => void handleSubmitBulk()} disabled={!previewRows.length || !selectedRowIndexes.length || isSubmitting}>
+            {isSubmitting ? "Memproses..." : "Buat User"}
+          </Button>
+        </div>
+      }
     >
-      <DialogContent
-        className={`${USER_MODAL_WIDTH_CLASS} min-w-0 overflow-hidden [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`}
-      >
-        <DialogHeader>
-          <DialogTitle>Bulk Tambah User</DialogTitle>
-        </DialogHeader>
-
-        <div className="min-w-0 space-y-4">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">
-              Upload file Excel dengan kolom wajib: nama lengkap, email, password
-              {hasRoleScope ? "." : ", role."} Kolom opsional: initials, department, batch, id number, institution.
-            </p>
-            <Button type="button" variant="outline" size="sm" className="gap-2" onClick={handleDownloadTemplate}>
-              <FileDown className="h-4 w-4" />
-              Template
-            </Button>
+      {previewRows.length ? (
+        <div className="min-w-0 space-y-2 rounded-md border p-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-medium text-emerald-700">
+              Valid: {previewRows.length}
+            </span>
+            <span className="rounded-full bg-sky-100 px-2.5 py-1 font-medium text-sky-700">
+              Dipilih: {selectedRowIndexes.length}
+            </span>
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 font-medium text-amber-700">
+              Dilewati: {skippedRows.length}
+            </span>
           </div>
-
-          <label className="group flex cursor-pointer flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border/70 bg-muted/30 px-4 py-6 text-center transition hover:border-primary/50 hover:bg-muted/50">
-            <input type="file" accept=".xlsx,.xls,.csv" onChange={handleFile} className="sr-only" />
-            <p className="text-sm font-medium">{fileName ? "Ganti file" : "Klik untuk memilih file"}</p>
-            <p className="text-xs text-muted-foreground">
-              {fileName ? `File terpilih: ${fileName}` : "Mendukung .xlsx, .xls, .csv"}
-            </p>
-          </label>
-
-          {errorMessage ? (
-            <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-              {errorMessage}
-            </div>
-          ) : null}
-
-          {previewRows.length ? (
-            <div className="min-w-0 space-y-2 rounded-md border p-3">
-              <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="rounded-full bg-emerald-100 px-2.5 py-1 font-medium text-emerald-700">
-                  Valid: {previewRows.length}
-                </span>
-                <span className="rounded-full bg-amber-100 px-2.5 py-1 font-medium text-amber-700">
-                  Dilewati: {skippedRows.length}
-                </span>
-              </div>
-              <div className="w-full min-w-0 max-w-full overflow-x-auto overflow-y-auto rounded-md border">
-                <table className="min-w-[960px] text-left text-xs">
-                  <thead className="bg-muted/40">
-                    <tr>
-                      <th className="w-[64px] px-2 py-2 font-medium">Baris</th>
-                      <th className="px-2 py-2 font-medium">Nama</th>
-                      <th className="px-2 py-2 font-medium">Email</th>
-                      <th className="w-[80px] px-2 py-2 font-medium">Inisial</th>
-                      <th className="px-2 py-2 font-medium">Password</th>
-                      <th className="w-[96px] px-2 py-2 font-medium">Role</th>
-                      <th className="px-2 py-2 font-medium">Department</th>
-                      <th className="w-[96px] px-2 py-2 font-medium">Batch</th>
-                      <th className="px-2 py-2 font-medium">ID Number</th>
-                      <th className="px-2 py-2 font-medium">Institusi</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {previewRows.map((row) => (
-                      <tr key={row.index} className="border-t">
-                        <td className="px-2 py-2 text-muted-foreground">{row.index}</td>
-                        <td className="px-2 py-2">{row.full_name}</td>
-                        <td className="px-2 py-2 text-muted-foreground">{row.email}</td>
-                        <td className="px-2 py-2">{row.initials || "-"}</td>
-                        <td className="px-2 py-2">{row.password || "-"}</td>
-                        <td className="px-2 py-2">{row.role || "-"}</td>
-                        <td className="px-2 py-2">{row.department || "-"}</td>
-                        <td className="px-2 py-2">{row.batch || "-"}</td>
-                        <td className="px-2 py-2">{row.id_number || "-"}</td>
-                        <td className="px-2 py-2">{row.institution || "-"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          ) : null}
-
-          {skippedRows.length ? (
-            <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50/60 p-3">
-              <p className="text-xs font-medium text-amber-800">Baris dilewati: {skippedRows.length}</p>
-              <div className="max-h-40 space-y-1 overflow-y-auto text-xs text-amber-900">
-                {skippedRows.map((row) => (
-                  <p key={`skipped-${row.index}`}>
-                    Baris {row.index}: {row.reason}
-                  </p>
+          <div className="w-full min-w-0 max-w-full overflow-x-auto overflow-y-auto rounded-md border">
+            <table className="w-full min-w-[1020px] text-left text-xs">
+              <thead className="bg-muted/40">
+                <tr>
+                  <th className="w-[56px] px-2 py-2 text-center font-medium">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-slate-300"
+                      checked={allRowsSelected}
+                      onChange={(event) => toggleAllRows(event.target.checked)}
+                      aria-label="Pilih semua baris valid"
+                    />
+                  </th>
+                  <th className="w-[64px] px-2 py-2 font-medium">Baris</th>
+                  <th className="px-2 py-2 font-medium">Nama</th>
+                  <th className="px-2 py-2 font-medium">Email</th>
+                  <th className="w-[80px] px-2 py-2 font-medium">Inisial</th>
+                  <th className="px-2 py-2 font-medium">Password</th>
+                  <th className="w-[96px] px-2 py-2 font-medium">Role</th>
+                  <th className="px-2 py-2 font-medium">Department</th>
+                  <th className="w-[96px] px-2 py-2 font-medium">Batch</th>
+                  <th className="px-2 py-2 font-medium">ID Number</th>
+                  <th className="px-2 py-2 font-medium">Institusi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {previewRows.map((row) => (
+                  <tr key={row.index} className="border-t">
+                    <td className="px-2 py-2 text-center">
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-slate-300"
+                        checked={selectedRowIndexes.includes(row.index)}
+                        onChange={(event) =>
+                          toggleRowSelection(row.index, event.target.checked)
+                        }
+                        aria-label={`Pilih baris ${row.index}`}
+                      />
+                    </td>
+                    <td className="px-2 py-2 text-muted-foreground">{row.index}</td>
+                    <td className="px-2 py-2">{row.full_name}</td>
+                    <td className="px-2 py-2 text-muted-foreground">{row.email}</td>
+                    <td className="px-2 py-2">{row.initials || "-"}</td>
+                    <td className="px-2 py-2">{row.password || "-"}</td>
+                    <td className="px-2 py-2">{row.role || "-"}</td>
+                    <td className="px-2 py-2">{row.department || "-"}</td>
+                    <td className="px-2 py-2">{row.batch || "-"}</td>
+                    <td className="px-2 py-2">{row.id_number || "-"}</td>
+                    <td className="px-2 py-2">{row.institution || "-"}</td>
+                  </tr>
                 ))}
-              </div>
-            </div>
-          ) : null}
-
-          {results.length ? (
-            <div className="space-y-2 rounded-md border p-3">
-              <p className="text-xs font-medium">Hasil proses</p>
-              <div className="max-h-40 space-y-1 overflow-y-auto text-xs">
-                {results.map((row) => (
-                  <p key={`${row.index}-${row.status}`} className={row.status === "success" ? "text-emerald-700" : "text-destructive"}>
-                    Baris {row.index}: {row.message}
-                  </p>
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>
-              Batal
-            </Button>
-            <Button type="button" onClick={() => void handleSubmitBulk()} disabled={!previewRows.length || isSubmitting}>
-              {isSubmitting ? "Memproses..." : "Buat User"}
-            </Button>
+              </tbody>
+            </table>
           </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      ) : null}
+
+      {skippedRows.length ? (
+        <div className="space-y-2 rounded-md border border-amber-200 bg-amber-50/60 p-3">
+          <p className="text-xs font-medium text-amber-800">Baris dilewati: {skippedRows.length}</p>
+          <div className="max-h-40 space-y-1 overflow-y-auto text-xs text-amber-900">
+            {skippedRows.map((row) => (
+              <p key={`skipped-${row.index}`}>
+                Baris {row.index}: {row.reason}
+              </p>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {results.length ? (
+        <div className="space-y-2 rounded-md border p-3">
+          <p className="text-xs font-medium">Hasil proses</p>
+          <div className="max-h-40 space-y-1 overflow-y-auto text-xs">
+            {results.map((row) => (
+              <p key={`${row.index}-${row.status}`} className={row.status === "success" ? "text-emerald-700" : "text-destructive"}>
+                Baris {row.index}: {row.message}
+              </p>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </BulkImportDialogShell>
   );
 }

@@ -35,7 +35,7 @@ export default function SoftwareCreateDialog({
     equipments,
     isLoading: isLoadingEquipments,
     error: equipmentError,
-  } = useEquipmentOptions("", "", true, undefined, "Computer Equipment");
+  } = useEquipmentOptions("", "", true, undefined, "Computer");
   const { createSoftware, isSubmitting, errorMessage, setErrorMessage } = useCreateSoftware();
 
   const resetForm = () => {

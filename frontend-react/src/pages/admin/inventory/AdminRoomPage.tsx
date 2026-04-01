@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus } from "lucide-react";
+import { FileUp, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -17,6 +17,7 @@ import { DataPagination } from "@/components/shared/data-pagination";
 import AdminRoomDetailDialog from "@/components/admin/inventory/AdminRoomDetailDialog";
 import RoomEquipmentsDialog from "@/components/admin/inventory/RoomEquipmentsDialog";
 import RoomCreateDialog from "@/components/admin/inventory/RoomCreateDialog";
+import RoomBulkImportDialog from "@/components/admin/inventory/RoomBulkImportDialog";
 import RoomTable from "@/components/admin/inventory/RoomTable";
 import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
@@ -29,7 +30,10 @@ import { useDeleteRoom } from "@/hooks/rooms/use-delete-room";
 import { mapRoom, useRooms, type RoomRow } from "@/hooks/rooms/use-rooms";
 import { usePicUsers } from "@/hooks/users/use-pic-users";
 import { ROOM_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
-import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
+import {
+  exportAdminRecordExcel,
+  exportAdminRecordPdf,
+} from "@/lib/admin-record-pdf";
 
 const PAGE_SIZE = 20;
 
@@ -43,6 +47,7 @@ export default function AdminRoomsPage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
   const [detailRoom, setDetailRoom] = useState<RoomRow | null>(null);
   const [equipmentRoom, setEquipmentRoom] = useState<RoomRow | null>(null);
   const [detailMode, setDetailMode] = useState<"view" | "edit">("view");
@@ -50,14 +55,12 @@ export default function AdminRoomsPage() {
   const [selectedIds, setSelectedIds] = useState<Array<string | number>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
-  const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
+  const [isExportingSelectedExcel, setIsExportingSelectedExcel] =
+    useState(false);
 
-  const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } = usePicUsers();
-  const {
-    deleteRoom,
-    deleteRooms,
-    isDeleting,
-  } = useDeleteRoom();
+  const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } =
+    usePicUsers();
+  const { deleteRoom, deleteRooms, isDeleting } = useDeleteRoom();
 
   useEffect(() => {
     const timeoutId = setTimeout(() => setDebouncedSearch(search.trim()), 500);
@@ -83,7 +86,10 @@ export default function AdminRoomsPage() {
 
   const selectedCount = selectedIds.length;
   const selectedRows = useMemo(
-    () => rooms.filter((room) => selectedIds.some((id) => String(id) === String(room.id))),
+    () =>
+      rooms.filter((room) =>
+        selectedIds.some((id) => String(id) === String(room.id)),
+      ),
     [rooms, selectedIds],
   );
 
@@ -100,7 +106,9 @@ export default function AdminRoomsPage() {
 
   useEffect(() => {
     if (!detailRoom) return;
-    const latestRoom = rooms.find((room) => String(room.id) === String(detailRoom.id));
+    const latestRoom = rooms.find(
+      (room) => String(room.id) === String(detailRoom.id),
+    );
     if (latestRoom) {
       setDetailRoom(latestRoom);
     }
@@ -108,7 +116,9 @@ export default function AdminRoomsPage() {
 
   useEffect(() => {
     if (!equipmentRoom) return;
-    const latestRoom = rooms.find((room) => String(room.id) === String(equipmentRoom.id));
+    const latestRoom = rooms.find(
+      (room) => String(room.id) === String(equipmentRoom.id),
+    );
     if (latestRoom) {
       setEquipmentRoom(latestRoom);
     }
@@ -119,22 +129,23 @@ export default function AdminRoomsPage() {
     selectAllRef.current.indeterminate = someVisibleSelected;
   }, [someVisibleSelected]);
 
-  const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } = useAdminRecordExport({
-    endpoint: API_ROOMS_EXPORT,
-    filters: {
-      floor,
-      pic,
-      q: debouncedSearch,
-    },
-    mapItem: mapRoom,
-    title: "Inventarisasi Ruangan",
-    pdfFilename: "inventarisasi-ruangan.pdf",
-    excelFilename: "inventarisasi-ruangan.xlsx",
-    columns: ROOM_EXPORT_COLUMNS,
-    emptyMessage: "Tidak ada data ruangan untuk diunduh.",
-    pdfSuccessMessage: "PDF ruangan berhasil diunduh.",
-    excelSuccessMessage: "Excel ruangan berhasil diunduh.",
-  });
+  const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } =
+    useAdminRecordExport({
+      endpoint: API_ROOMS_EXPORT,
+      filters: {
+        floor,
+        pic,
+        q: debouncedSearch,
+      },
+      mapItem: mapRoom,
+      title: "Inventarisasi Ruangan",
+      pdfFilename: "inventarisasi-ruangan.pdf",
+      excelFilename: "inventarisasi-ruangan.xlsx",
+      columns: ROOM_EXPORT_COLUMNS,
+      emptyMessage: "Tidak ada data ruangan untuk diunduh.",
+      pdfSuccessMessage: "PDF ruangan berhasil diunduh.",
+      excelSuccessMessage: "Excel ruangan berhasil diunduh.",
+    });
 
   const resetFilters = () => {
     setSearch("");
@@ -154,7 +165,9 @@ export default function AdminRoomsPage() {
     if (!result.ok) return;
 
     setDeleteCandidate(null);
-    setSelectedIds((prev) => prev.filter((id) => String(id) !== String(room.id)));
+    setSelectedIds((prev) =>
+      prev.filter((id) => String(id) !== String(room.id)),
+    );
     setReloadKey((prev) => prev + 1);
     toast.success("Ruangan berhasil dihapus.");
   };
@@ -168,7 +181,9 @@ export default function AdminRoomsPage() {
       return;
     }
 
-    const removedIds = new Set((result.deletedIds ?? []).map((id) => String(id)));
+    const removedIds = new Set(
+      (result.deletedIds ?? []).map((id) => String(id)),
+    );
     setSelectedIds((prev) => prev.filter((id) => !removedIds.has(String(id))));
     setIsBulkDeleteOpen(false);
     setReloadKey((prev) => prev + 1);
@@ -218,7 +233,9 @@ export default function AdminRoomsPage() {
       });
       toast.success("Excel ruangan terpilih berhasil diunduh.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal mengunduh Excel.");
+      toast.error(
+        err instanceof Error ? err.message : "Gagal mengunduh Excel.",
+      );
     } finally {
       setIsExportingSelectedExcel(false);
     }
@@ -239,59 +256,61 @@ export default function AdminRoomsPage() {
             onToggle={() => setFilterOpen((prev) => !prev)}
             onReset={resetFilters}
           >
-        <form onSubmit={(event) => {
-          event.preventDefault();
-          setPage(1);
-        }}>
-          <AdminFilterGrid columns={6}>
-          <AdminFilterField label="Cari">
-            <Input
-              type="search"
-              value={search}
-              placeholder="Nama ruangan atau nomor"
-              className={ADMIN_FILTER_INPUT_CLASS}
-              onChange={(event) => {
-                setSearch(event.target.value);
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
                 setPage(1);
               }}
-            />
-          </AdminFilterField>
-          <AdminFilterField label="Lantai">
-            <Input
-              value={floor}
-              placeholder="Semua"
-              className={ADMIN_FILTER_INPUT_CLASS}
-              onChange={(event) => {
-                setFloor(event.target.value);
-                setPage(1);
-              }}
-            />
-          </AdminFilterField>
-          <AdminFilterField label="PIC">
-            <select
-              value={pic}
-              onChange={(event) => {
-                setPic(event.target.value);
-                setPage(1);
-              }}
-              className={ADMIN_FILTER_SELECT_CLASS}
-              disabled={isLoadingFilterPics}
             >
-              <option value="">{isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}</option>
-                  {filterPicUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
+              <AdminFilterGrid columns={6}>
+                <AdminFilterField label="Cari">
+                  <Input
+                    type="search"
+                    value={search}
+                    placeholder="Nama ruangan atau nomor"
+                    className={ADMIN_FILTER_INPUT_CLASS}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setPage(1);
+                    }}
+                  />
+                </AdminFilterField>
+                <AdminFilterField label="Lantai">
+                  <Input
+                    value={floor}
+                    placeholder="Semua"
+                    className={ADMIN_FILTER_INPUT_CLASS}
+                    onChange={(event) => {
+                      setFloor(event.target.value);
+                      setPage(1);
+                    }}
+                  />
+                </AdminFilterField>
+                <AdminFilterField label="PIC">
+                  <select
+                    value={pic}
+                    onChange={(event) => {
+                      setPic(event.target.value);
+                      setPage(1);
+                    }}
+                    className={ADMIN_FILTER_SELECT_CLASS}
+                    disabled={isLoadingFilterPics}
+                  >
+                    <option value="">
+                      {isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}
                     </option>
-                ))}
-              </select>
-          </AdminFilterField>
-          </AdminFilterGrid>
-        </form>
-      </AdminFilterCard>
+                    {filterPicUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
+                    ))}
+                  </select>
+                </AdminFilterField>
+              </AdminFilterGrid>
+            </form>
+          </AdminFilterCard>
 
-          {error ? (
-            <InlineErrorAlert>{error}</InlineErrorAlert>
-          ) : null}
+          {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <InventoryBulkActions
@@ -322,10 +341,25 @@ export default function AdminRoomsPage() {
                 isExportingExcel={isExportingExcel}
                 isExportingPdf={isExportingPdf}
               />
-              <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Tambah Ruangan
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setBulkImportOpen(true)}
+                >
+                  <FileUp className="h-4 w-4" />
+                  Import Ruangan
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Tambah Ruangan
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -341,7 +375,10 @@ export default function AdminRoomsPage() {
             onToggleSelectAllVisible={(checked) => {
               if (!checked) {
                 setSelectedIds((prev) =>
-                  prev.filter((id) => !rooms.some((room) => String(room.id) === String(id))),
+                  prev.filter(
+                    (id) =>
+                      !rooms.some((room) => String(room.id) === String(id)),
+                  ),
                 );
                 return;
               }
@@ -385,6 +422,12 @@ export default function AdminRoomsPage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={handleCreated}
+      />
+
+      <RoomBulkImportDialog
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
+        onCompleted={handleCreated}
       />
 
       <ConfirmDeleteDialog

@@ -112,14 +112,17 @@ class Equipment(BaseModel):
 
     room = models.ForeignKey(
         Room,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='equipments',
     )
 
     is_moveable = models.BooleanField(default=True)
 
     def __str__(self):
-        return f"{self.name} - {self.room.name} - Qty: {self.quantity}"
+        room_name = self.room.name if self.room else "Tanpa Ruangan"
+        return f"{self.name} - {room_name} - Qty: {self.quantity}"
     
 class Software(BaseModel):
     name = models.CharField(max_length=255)
@@ -130,12 +133,15 @@ class Software(BaseModel):
 
     equipment = models.ForeignKey(
         Equipment,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name='softwares',
     )
 
     def __str__(self):
-        return f"{self.name} - {self.version} - {self.equipment.name}"
+        equipment_name = self.equipment.name if self.equipment else "Tanpa Peralatan"
+        return f"{self.name} - {self.version} - {equipment_name}"
 
 class Booking(BaseModel):
     code = models.CharField(max_length=12, unique=True, editable=False, null=True)

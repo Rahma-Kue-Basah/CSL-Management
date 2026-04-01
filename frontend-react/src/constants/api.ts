@@ -119,6 +119,7 @@ const API_PENGUJIAN_COMPLETE = (id: string | number) =>
 const API_EQUIPMENTS = `${API_BASE_URL}/equipments/`;
 const API_EQUIPMENTS_DROPDOWN = `${API_EQUIPMENTS}dropdown/`;
 const API_EQUIPMENTS_EXPORT = `${API_EQUIPMENTS}export/`;
+const API_EQUIPMENTS_BULK_CREATE = `${API_EQUIPMENTS}bulk-create/`;
 const API_EQUIPMENTS_BULK_DELETE = `${API_EQUIPMENTS}bulk-delete/`;
 const API_EQUIPMENT_DETAIL = (id: string | number) =>
   `${API_EQUIPMENTS}${id}/`;
@@ -127,6 +128,7 @@ const API_EQUIPMENT_AVAILABILITY = (id: string | number) =>
 
 const API_SOFTWARES = `${API_BASE_URL}/softwares/`;
 const API_SOFTWARES_EXPORT = `${API_SOFTWARES}export/`;
+const API_SOFTWARES_BULK_CREATE = `${API_SOFTWARES}bulk-create/`;
 const API_SOFTWARES_BULK_DELETE = `${API_SOFTWARES}bulk-delete/`;
 const API_SOFTWARE_DETAIL = (id: string | number) =>
   `${API_SOFTWARES}${id}/`;
@@ -139,6 +141,7 @@ const API_IMAGE_DETAIL = (id: string | number) => `${API_IMAGES}${id}/`;
 const API_ROOMS = `${API_BASE_URL}/rooms/`;
 const API_ROOMS_DROPDOWN = `${API_ROOMS}dropdown/`;
 const API_ROOMS_EXPORT = `${API_ROOMS}export/`;
+const API_ROOMS_BULK_CREATE = `${API_ROOMS}bulk-create/`;
 const API_ROOMS_BULK_DELETE = `${API_ROOMS}bulk-delete/`;
 const API_ROOM_DETAIL = (id: string | number) => `${API_ROOMS}${id}/`;
 const API_ROOM_AVAILABILITY = (id: string | number) =>
@@ -242,11 +245,13 @@ export {
   API_EQUIPMENTS,
   API_EQUIPMENTS_DROPDOWN,
   API_EQUIPMENTS_EXPORT,
+  API_EQUIPMENTS_BULK_CREATE,
   API_EQUIPMENTS_BULK_DELETE,
   API_EQUIPMENT_DETAIL,
   API_EQUIPMENT_AVAILABILITY,
   API_SOFTWARES,
   API_SOFTWARES_EXPORT,
+  API_SOFTWARES_BULK_CREATE,
   API_SOFTWARES_BULK_DELETE,
   API_SOFTWARE_DETAIL,
   API_IMAGES,
@@ -254,6 +259,7 @@ export {
   API_ROOMS,
   API_ROOMS_DROPDOWN,
   API_ROOMS_EXPORT,
+  API_ROOMS_BULK_CREATE,
   API_ROOMS_BULK_DELETE,
   API_ROOM_DETAIL,
   API_ROOM_AVAILABILITY,

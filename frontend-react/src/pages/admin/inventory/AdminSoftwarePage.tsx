@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Plus } from "lucide-react";
+import { Box, FileUp, Plus, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -14,6 +14,7 @@ import {
 } from "@/components/admin/admin-filter-fields";
 import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
 import AdminSoftwareDetailDialog from "@/components/admin/inventory/AdminSoftwareDetailDialog";
+import SoftwareBulkImportDialog from "@/components/admin/inventory/SoftwareBulkImportDialog";
 import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
 import SoftwareCreateDialog from "@/components/admin/inventory/SoftwareCreateDialog";
 import SoftwareTable from "@/components/admin/inventory/SoftwareTable";
@@ -26,10 +27,17 @@ import { API_SOFTWARES_EXPORT } from "@/constants/api";
 import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useDeleteSoftware } from "@/hooks/softwares/use-delete-software";
-import { mapSoftware, useSoftwares, type SoftwareRow } from "@/hooks/softwares/use-softwares";
+import {
+  mapSoftware,
+  useSoftwares,
+  type SoftwareRow,
+} from "@/hooks/softwares/use-softwares";
 import { usePicUsers } from "@/hooks/users/use-pic-users";
 import { SOFTWARE_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
-import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
+import {
+  exportAdminRecordExcel,
+  exportAdminRecordPdf,
+} from "@/lib/admin-record-pdf";
 
 const PAGE_SIZE = 20;
 
@@ -43,16 +51,24 @@ export default function AdminSoftwarePage() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
-  const [detailSoftware, setDetailSoftware] = useState<SoftwareRow | null>(null);
+  const [bulkImportOpen, setBulkImportOpen] = useState(false);
+  const [detailSoftware, setDetailSoftware] = useState<SoftwareRow | null>(
+    null,
+  );
   const [detailMode, setDetailMode] = useState<"view" | "edit">("view");
-  const [deleteCandidate, setDeleteCandidate] = useState<SoftwareRow | null>(null);
+  const [deleteCandidate, setDeleteCandidate] = useState<SoftwareRow | null>(
+    null,
+  );
   const [selectedIds, setSelectedIds] = useState<Array<string | number>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
-  const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
+  const [isExportingSelectedExcel, setIsExportingSelectedExcel] =
+    useState(false);
 
-  const { equipments: equipmentOptions, isLoading: isLoadingEquipments } = useEquipmentOptions();
-  const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } = usePicUsers();
+  const { equipments: equipmentOptions, isLoading: isLoadingEquipments } =
+    useEquipmentOptions();
+  const { picUsers: filterPicUsers, isLoading: isLoadingFilterPics } =
+    usePicUsers();
   const { deleteSoftware, deleteSoftwares, isDeleting } = useDeleteSoftware();
 
   useEffect(() => {
@@ -60,16 +76,17 @@ export default function AdminSoftwarePage() {
     return () => clearTimeout(timeoutId);
   }, [search]);
 
-  const { softwares, totalCount, isLoading, hasLoadedOnce, error } = useSoftwares(
-    page,
-    PAGE_SIZE,
-    {
-      equipment,
-      pic,
-      search: debouncedSearch,
-    },
-    reloadKey,
-  );
+  const { softwares, totalCount, isLoading, hasLoadedOnce, error } =
+    useSoftwares(
+      page,
+      PAGE_SIZE,
+      {
+        equipment,
+        pic,
+        search: debouncedSearch,
+      },
+      reloadKey,
+    );
 
   const totalSoftwares = totalCount || softwares.length;
   const totalPages = useMemo(
@@ -79,24 +96,33 @@ export default function AdminSoftwarePage() {
 
   const selectedCount = selectedIds.length;
   const selectedRows = useMemo(
-    () => softwares.filter((item) => selectedIds.some((id) => String(id) === String(item.id))),
+    () =>
+      softwares.filter((item) =>
+        selectedIds.some((id) => String(id) === String(item.id)),
+      ),
     [selectedIds, softwares],
   );
 
   const allVisibleSelected =
-    softwares.length > 0 && softwares.every((item) => selectedIds.includes(item.id));
+    softwares.length > 0 &&
+    softwares.every((item) => selectedIds.includes(item.id));
   const someVisibleSelected =
-    softwares.some((item) => selectedIds.includes(item.id)) && !allVisibleSelected;
+    softwares.some((item) => selectedIds.includes(item.id)) &&
+    !allVisibleSelected;
 
   useEffect(() => {
     setSelectedIds((prev) =>
-      prev.filter((id) => softwares.some((item) => String(item.id) === String(id))),
+      prev.filter((id) =>
+        softwares.some((item) => String(item.id) === String(id)),
+      ),
     );
   }, [softwares]);
 
   useEffect(() => {
     if (!detailSoftware) return;
-    const latestSoftware = softwares.find((item) => String(item.id) === String(detailSoftware.id));
+    const latestSoftware = softwares.find(
+      (item) => String(item.id) === String(detailSoftware.id),
+    );
     if (latestSoftware) {
       setDetailSoftware(latestSoftware);
     }
@@ -107,22 +133,23 @@ export default function AdminSoftwarePage() {
     selectAllRef.current.indeterminate = someVisibleSelected;
   }, [someVisibleSelected]);
 
-  const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } = useAdminRecordExport({
-    endpoint: API_SOFTWARES_EXPORT,
-    filters: {
-      equipment,
-      pic,
-      q: debouncedSearch,
-    },
-    mapItem: mapSoftware,
-    title: "Inventarisasi Software",
-    pdfFilename: "inventarisasi-software.pdf",
-    excelFilename: "inventarisasi-software.xlsx",
-    columns: SOFTWARE_EXPORT_COLUMNS,
-    emptyMessage: "Tidak ada data software untuk diunduh.",
-    pdfSuccessMessage: "PDF software berhasil diunduh.",
-    excelSuccessMessage: "Excel software berhasil diunduh.",
-  });
+  const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } =
+    useAdminRecordExport({
+      endpoint: API_SOFTWARES_EXPORT,
+      filters: {
+        equipment,
+        pic,
+        q: debouncedSearch,
+      },
+      mapItem: mapSoftware,
+      title: "Inventarisasi Software",
+      pdfFilename: "inventarisasi-software.pdf",
+      excelFilename: "inventarisasi-software.xlsx",
+      columns: SOFTWARE_EXPORT_COLUMNS,
+      emptyMessage: "Tidak ada data software untuk diunduh.",
+      pdfSuccessMessage: "PDF software berhasil diunduh.",
+      excelSuccessMessage: "Excel software berhasil diunduh.",
+    });
 
   const resetFilters = () => {
     setSearch("");
@@ -142,7 +169,9 @@ export default function AdminSoftwarePage() {
     if (!result.ok) return;
 
     setDeleteCandidate(null);
-    setSelectedIds((prev) => prev.filter((id) => String(id) !== String(item.id)));
+    setSelectedIds((prev) =>
+      prev.filter((id) => String(id) !== String(item.id)),
+    );
     setReloadKey((prev) => prev + 1);
     toast.success("Software berhasil dihapus.");
   };
@@ -156,7 +185,9 @@ export default function AdminSoftwarePage() {
       return;
     }
 
-    const removedIds = new Set((result.deletedIds ?? []).map((id) => String(id)));
+    const removedIds = new Set(
+      (result.deletedIds ?? []).map((id) => String(id)),
+    );
     setSelectedIds((prev) => prev.filter((id) => !removedIds.has(String(id))));
     setIsBulkDeleteOpen(false);
     setReloadKey((prev) => prev + 1);
@@ -174,7 +205,8 @@ export default function AdminSoftwarePage() {
   const handleExportSelectedPdf = async () => {
     try {
       setIsExportingSelectedPdf(true);
-      if (!selectedRows.length) throw new Error("Pilih minimal satu software untuk diunduh.");
+      if (!selectedRows.length)
+        throw new Error("Pilih minimal satu software untuk diunduh.");
       exportAdminRecordPdf({
         title: "Inventarisasi Software",
         subtitle: `Total data: ${selectedRows.length}`,
@@ -193,7 +225,8 @@ export default function AdminSoftwarePage() {
   const handleExportSelectedExcel = async () => {
     try {
       setIsExportingSelectedExcel(true);
-      if (!selectedRows.length) throw new Error("Pilih minimal satu software untuk diunduh.");
+      if (!selectedRows.length)
+        throw new Error("Pilih minimal satu software untuk diunduh.");
       exportAdminRecordExcel({
         title: "Inventarisasi Software",
         filename: "inventarisasi-software-selected.xlsx",
@@ -202,7 +235,9 @@ export default function AdminSoftwarePage() {
       });
       toast.success("Excel software terpilih berhasil diunduh.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal mengunduh Excel.");
+      toast.error(
+        err instanceof Error ? err.message : "Gagal mengunduh Excel.",
+      );
     } finally {
       setIsExportingSelectedExcel(false);
     }
@@ -223,61 +258,67 @@ export default function AdminSoftwarePage() {
             onToggle={() => setFilterOpen((prev) => !prev)}
             onReset={resetFilters}
           >
-            <form onSubmit={(event) => {
-              event.preventDefault();
-              setPage(1);
-            }}>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                setPage(1);
+              }}
+            >
               <AdminFilterGrid columns={6}>
-              <AdminFilterField label="Cari">
-                <Input
-                  type="search"
-                  value={search}
-                  placeholder="Nama software, versi, lisensi"
-                  className={ADMIN_FILTER_INPUT_CLASS}
-                  onChange={(event) => {
-                    setSearch(event.target.value);
-                    setPage(1);
-                  }}
-                />
-              </AdminFilterField>
-              <AdminFilterField label="Peralatan">
-                <select
-                  value={equipment}
-                  onChange={(event) => {
-                    setEquipment(event.target.value);
-                    setPage(1);
-                  }}
-                  className={ADMIN_FILTER_SELECT_CLASS}
-                  disabled={isLoadingEquipments}
-                >
-                  <option value="">
-                    {isLoadingEquipments ? "Memuat peralatan..." : "Semua peralatan"}
-                  </option>
-                  {equipmentOptions.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.label}
+                <AdminFilterField label="Cari">
+                  <Input
+                    type="search"
+                    value={search}
+                    placeholder="Nama software, versi, lisensi"
+                    className={ADMIN_FILTER_INPUT_CLASS}
+                    onChange={(event) => {
+                      setSearch(event.target.value);
+                      setPage(1);
+                    }}
+                  />
+                </AdminFilterField>
+                <AdminFilterField label="Peralatan">
+                  <select
+                    value={equipment}
+                    onChange={(event) => {
+                      setEquipment(event.target.value);
+                      setPage(1);
+                    }}
+                    className={ADMIN_FILTER_SELECT_CLASS}
+                    disabled={isLoadingEquipments}
+                  >
+                    <option value="">
+                      {isLoadingEquipments
+                        ? "Memuat peralatan..."
+                        : "Semua peralatan"}
                     </option>
+                    {equipmentOptions.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label}
+                      </option>
                     ))}
                   </select>
-              </AdminFilterField>
-              <AdminFilterField label="PIC">
-                <select
-                  value={pic}
-                  onChange={(event) => {
-                    setPic(event.target.value);
-                    setPage(1);
-                  }}
-                  className={ADMIN_FILTER_SELECT_CLASS}
-                  disabled={isLoadingFilterPics}
-                >
-                  <option value="">{isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}</option>
-                  {filterPicUsers.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.name}
+                </AdminFilterField>
+                <AdminFilterField label="PIC">
+                  <select
+                    value={pic}
+                    onChange={(event) => {
+                      setPic(event.target.value);
+                      setPage(1);
+                    }}
+                    className={ADMIN_FILTER_SELECT_CLASS}
+                    disabled={isLoadingFilterPics}
+                  >
+                    <option value="">
+                      {isLoadingFilterPics ? "Memuat PIC..." : "Semua PIC"}
                     </option>
+                    {filterPicUsers.map((user) => (
+                      <option key={user.id} value={user.id}>
+                        {user.name}
+                      </option>
                     ))}
                   </select>
-              </AdminFilterField>
+                </AdminFilterField>
               </AdminFilterGrid>
             </form>
           </AdminFilterCard>
@@ -313,10 +354,25 @@ export default function AdminSoftwarePage() {
                 isExportingExcel={isExportingExcel}
                 isExportingPdf={isExportingPdf}
               />
-              <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
-                <Plus className="h-4 w-4" />
-                Tambah Software
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setBulkImportOpen(true)}
+                >
+                  <FileUp className="h-4 w-4" />
+                  Bulk Import
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={() => setCreateOpen(true)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Tambah Software
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -332,7 +388,10 @@ export default function AdminSoftwarePage() {
             onToggleSelectAllVisible={(checked) => {
               if (!checked) {
                 setSelectedIds((prev) =>
-                  prev.filter((id) => !softwares.some((item) => String(item.id) === String(id))),
+                  prev.filter(
+                    (id) =>
+                      !softwares.some((item) => String(item.id) === String(id)),
+                  ),
                 );
                 return;
               }
@@ -373,6 +432,12 @@ export default function AdminSoftwarePage() {
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreated={handleCreatedOrUpdated}
+      />
+
+      <SoftwareBulkImportDialog
+        open={bulkImportOpen}
+        onOpenChange={setBulkImportOpen}
+        onCompleted={handleCreatedOrUpdated}
       />
 
       <ConfirmDeleteDialog

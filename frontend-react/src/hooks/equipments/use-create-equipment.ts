@@ -6,7 +6,7 @@ import { API_EQUIPMENTS, API_IMAGES } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 import { extractApiErrorMessage } from "@/lib/api-error";
 
-type CreateEquipmentPayload = {
+export type CreateEquipmentPayload = {
   name: string;
   quantity: string;
   category: string;
@@ -55,6 +55,44 @@ async function uploadImage(file: File) {
   return data.id;
 }
 
+export async function createEquipmentRequest(payload: CreateEquipmentPayload) {
+  let imageId: string | number | null = null;
+  if (payload.imageFile) {
+    imageId = await uploadImage(payload.imageFile);
+  }
+
+  const body: Record<string, string | number | boolean> = {
+    name: payload.name.trim(),
+    quantity: Number(payload.quantity),
+    category: payload.category,
+    room: payload.roomId,
+    is_moveable: payload.isMoveable,
+  };
+
+  if (payload.description?.trim()) body.description = payload.description.trim();
+  if (imageId) body.image = imageId;
+
+  const response = await authFetch(API_EQUIPMENTS, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  if (response.ok) {
+    return { ok: true as const };
+  }
+
+  let message = "Gagal membuat peralatan. Periksa data dan coba lagi.";
+  try {
+    const data = (await response.json()) as unknown;
+    message = parseEquipmentError(data, message);
+  } catch {
+    // ignore parse error
+  }
+
+  return { ok: false as const, message };
+}
+
 export function useCreateEquipment() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -64,41 +102,12 @@ export function useCreateEquipment() {
     setIsSubmitting(true);
 
     try {
-      let imageId: string | number | null = null;
-      if (payload.imageFile) {
-        imageId = await uploadImage(payload.imageFile);
-      }
-
-      const body: Record<string, string | number | boolean> = {
-        name: payload.name.trim(),
-        quantity: Number(payload.quantity),
-        category: payload.category,
-        room: payload.roomId,
-        is_moveable: payload.isMoveable,
-      };
-
-      if (payload.description?.trim()) body.description = payload.description.trim();
-      if (imageId) body.image = imageId;
-
-      const response = await authFetch(API_EQUIPMENTS, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-
-      if (response.ok) {
+      const result = await createEquipmentRequest(payload);
+      if (result.ok) {
         return { ok: true as const };
       }
-
-      let message = "Gagal membuat peralatan. Periksa data dan coba lagi.";
-      try {
-        const data = (await response.json()) as unknown;
-        message = parseEquipmentError(data, message);
-      } catch {
-        // ignore parse error
-      }
-      setErrorMessage(message);
-      return { ok: false as const, message };
+      setErrorMessage(result.message);
+      return result;
     } catch (error) {
       const message = error instanceof Error ? error.message : "Terjadi kesalahan jaringan. Coba lagi.";
       setErrorMessage(message);

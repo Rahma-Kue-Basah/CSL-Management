@@ -99,7 +99,7 @@ export default function AdminSoftwareDetailDialog({
     equipments,
     isLoading: isLoadingEquipments,
     error: equipmentError,
-  } = useEquipmentOptions("", "", true, undefined, "Computer Equipment");
+  } = useEquipmentOptions("", "", true, undefined, "Computer");
   const {
     updateSoftware,
     isSubmitting,
