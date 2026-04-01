@@ -21,7 +21,6 @@ from .models import (
     Software,
     Booking,
     Borrow,
-    Facility,
     Announcement,
     Schedule,
     FAQ,
@@ -46,7 +45,6 @@ from .serializers import (
     BorrowSerializer,
     RecordBulkDeleteSerializer,
     BorrowListSerializer,
-    FacilitySerializer,
     AnnouncementListSerializer,
     AnnouncementSerializer,
     ScheduleSerializer,
@@ -2517,20 +2515,6 @@ class BorrowViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='return')
     def return_item(self, request, pk=None):
         return self.receive_return(request, pk=pk)
-
-
-class FacilityViewSet(viewsets.ModelViewSet):
-    queryset = Facility.objects.select_related('image').order_by('-created_at')
-    serializer_class = FacilitySerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = DefaultPagination
-
-    def get_permissions(self):
-        if self.action == "create":
-            return [IsAuthenticated(), IsStaffOrAbove()]
-        if self.action in {"update", "partial_update", "destroy"}:
-            return [IsAuthenticated(), IsAdministratorOrAbove()]
-        return super().get_permissions()
 
 
 class AnnouncementViewSet(viewsets.ModelViewSet):

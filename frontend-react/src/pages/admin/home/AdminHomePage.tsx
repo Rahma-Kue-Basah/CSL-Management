@@ -245,9 +245,7 @@ export default function Page() {
         }
       />
 
-      {kpisError ? (
-        <InlineErrorAlert>{kpisError}</InlineErrorAlert>
-      ) : null}
+      {kpisError ? <InlineErrorAlert>{kpisError}</InlineErrorAlert> : null}
 
       <div className="grid gap-4 grid-cols-2 md:grid-cols-4 xl:grid-cols-7">
         <KpiCard
@@ -266,30 +264,28 @@ export default function Page() {
           tone="equipments"
         />
         <KpiCard
-          label="Booking Request"
+          label="Peminjaman Lab"
           value={isLoadingKpis ? "0" : String(kpis.totalBookings)}
           tone="bookings"
         />
         <KpiCard
-          label="Borrow Request"
-          value={isLoadingKpis ? "0" : String(kpis.totalBorrows)}
-          tone="borrows"
-        />
-        <KpiCard
-          label="Use Request"
+          label="Penggunaan Alat"
           value={isLoadingKpis ? "0" : String(kpis.totalUseRequest)}
           tone="useRequest"
         />
         <KpiCard
-          label="Pengujian Request"
+          label="Peminjaman Alat"
+          value={isLoadingKpis ? "0" : String(kpis.totalBorrows)}
+          tone="borrows"
+        />
+        <KpiCard
+          label="Pengujian Sampel"
           value={isLoadingKpis ? "0" : String(kpis.totalPengujian)}
           tone="pengujian"
         />
       </div>
 
-      {error ? (
-        <InlineErrorAlert>{error}</InlineErrorAlert>
-      ) : null}
+      {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <ActionList title="My Actions" actions={myActions} />

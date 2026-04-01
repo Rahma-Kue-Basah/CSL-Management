@@ -535,17 +535,3 @@ class StructureOrganization(BaseModel):
 
     def __str__(self):
         return f"{self.title} - {self.name}"
-    
-class Facility(BaseModel):
-    name = models.CharField(max_length=255)
-    description = models.CharField(max_length=2000, blank=True, null=True)
-
-    image = models.ForeignKey(
-        Image,
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-    )
-
-    def __str__(self):
-        return self.name

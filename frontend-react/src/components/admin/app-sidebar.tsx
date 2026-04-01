@@ -89,7 +89,6 @@ const adminMenuConfig: MenuConfig[] = [
       },
       { label: "Pengumuman", href: "/admin/information/announcements" },
       { label: "FAQ", href: "/admin/information/faq" },
-      { label: "Fasilitas", href: "/admin/information/facilities" },
     ],
   },
   {

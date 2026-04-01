@@ -67,7 +67,6 @@ export function getHeaderIcon(menuId: string, actionId: string | null) {
     if (actionId === "announcements") return Bell;
     if (actionId === "faq") return CircleHelp;
     if (actionId === "organization-structure") return GitBranch;
-    if (actionId === "facilities") return Building2;
     return LayoutDashboard;
   }
 
@@ -142,12 +141,6 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
         label: "Struktur Organisasi",
         description: "Lihat bagan struktur organisasi laboratorium.",
         href: "/dashboard/organization-structure",
-      },
-      {
-        id: "facilities",
-        label: "Fasilitas",
-        description: "Lihat daftar fasilitas laboratorium yang tersedia.",
-        href: "/dashboard/facilities",
       },
       {
         id: "faq",
@@ -438,9 +431,6 @@ export function parseDashboardPath(pathname: string) {
     }
     if (parts[1] === "organization-structure") {
       return { menu: "dashboard", action: "organization-structure" };
-    }
-    if (parts[1] === "facilities") {
-      return { menu: "dashboard", action: "facilities" };
     }
     return { menu: "dashboard", action: null };
   }

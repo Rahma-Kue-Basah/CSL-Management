@@ -24,7 +24,6 @@ import DashboardOverviewPage from "@/pages/dashboard/overview/DashboardOverviewP
 import DashboardAnnouncementsPage from "@/pages/dashboard/announcements/DashboardAnnouncementsPage";
 import DashboardFaqPage from "@/pages/dashboard/faq/DashboardFaqPage";
 import DashboardStructureOrganizationsPage from "@/pages/dashboard/organization/DashboardStructureOrganizationsPage";
-import DashboardFacilitiesPage from "@/pages/dashboard/facilities/DashboardFacilitiesPage";
 import SchedulePage from "@/pages/dashboard/schedule/SchedulePage";
 import BookingRoomsListPage from "@/pages/dashboard/booking-rooms/BookingRoomsListPage";
 import BookingRoomsAllListPage from "@/pages/dashboard/booking-rooms/BookingRoomsAllListPage";
@@ -63,7 +62,6 @@ import AdminEquipmentBorrowHistoryPage from "@/pages/admin/history/AdminEquipmen
 import AdminSampleTestingHistoryPage from "@/pages/admin/history/AdminSampleTestingHistoryPage";
 import AdminMyProfilePage from "@/pages/admin/profile/AdminMyProfilePage";
 import StructureOrgansPage from "@/pages/admin/lab-profile/StructureOrgansPage";
-import FacilityPage from "@/pages/admin/lab-profile/FacilityPage";
 import UserManagementAllPage from "@/pages/admin/user-management/UserManagementAllPage";
 import UserManagementStudentPage from "@/pages/admin/user-management/UserManagementStudentPage";
 import UserManagementLecturerPage from "@/pages/admin/user-management/UserManagementLecturerPage";
@@ -120,7 +118,6 @@ export const router = createBrowserRouter([
           { path: "announcements", element: <DashboardAnnouncementsPage /> },
           { path: "faq", element: <DashboardFaqPage /> },
           { path: "organization-structure", element: <DashboardStructureOrganizationsPage /> },
-          { path: "facilities", element: <DashboardFacilitiesPage /> },
         ],
       },
       {
@@ -433,7 +430,6 @@ export const router = createBrowserRouter([
           { path: "announcements", element: <AdminAnnouncementPage /> },
           { path: "faq", element: <AdminFaqPage /> },
           { path: "organization-structure", element: <StructureOrgansPage /> },
-          { path: "facilities", element: <FacilityPage /> },
         ],
       },
       {
@@ -460,10 +456,6 @@ export const router = createBrowserRouter([
           {
             path: "organization-structure",
             element: <Navigate to="/admin/information/organization-structure" replace />,
-          },
-          {
-            path: "facilities",
-            element: <Navigate to="/admin/information/facilities" replace />,
           },
         ],
       },

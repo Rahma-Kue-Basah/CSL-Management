@@ -13,7 +13,6 @@ from .models import (
     Booking,
     BookingEquipmentItem,
     Borrow,
-    Facility,
     Announcement,
     Schedule,
     FAQ,
@@ -760,20 +759,6 @@ class RecordBulkDeleteSerializer(serializers.Serializer):
         if len(unique_ids) != len(value):
             raise serializers.ValidationError("Terdapat ID record yang duplikat.")
         return unique_ids
-
-
-class FacilitySerializer(serializers.ModelSerializer):
-    image_detail = ImageSerializer(source="image", read_only=True)
-
-    class Meta:
-        model = Facility
-        fields = [
-            "id",
-            "name",
-            "description",
-            "image",
-            "image_detail",
-        ]
 
 
 class AnnouncementListSerializer(serializers.ModelSerializer):
