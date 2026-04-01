@@ -2635,7 +2635,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
     pagination_class = DefaultPagination
 
     def get_permissions(self):
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+        if self.action in ['create', 'bulk_create', 'update', 'partial_update', 'destroy']:
             return [IsAuthenticated(), IsStaffOrAbove()]
         return super().get_permissions()
 
@@ -2674,6 +2674,63 @@ class ScheduleViewSet(viewsets.ModelViewSet):
             instance,
             ADDITION,
             "Created schedule via CSL Admin.",
+        )
+
+    @action(detail=False, methods=['post'], url_path='bulk-create')
+    def bulk_create(self, request):
+        rows = request.data.get("rows")
+        if not isinstance(rows, list) or not rows:
+            return Response(
+                {"detail": "rows wajib berupa array dan tidak boleh kosong."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        results = []
+        success_count = 0
+        created_by = getattr(self.request.user, 'profile', None)
+
+        for index, row in enumerate(rows, start=1):
+            row_number = row.get("index", index) if isinstance(row, dict) else index
+            serializer = self.get_serializer(data=row)
+            if serializer.is_valid():
+                instance = serializer.save(created_by=created_by)
+                log_admin_action(
+                    self.request.user,
+                    instance,
+                    ADDITION,
+                    "Created schedule via CSL Admin bulk import.",
+                )
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "success",
+                        "message": "Sukses",
+                        "id": str(instance.id),
+                    }
+                )
+                success_count += 1
+            else:
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "error",
+                        "message": serializer.errors,
+                    }
+                )
+
+        failed_count = len(results) - success_count
+        response_status = (
+            status.HTTP_201_CREATED
+            if failed_count == 0
+            else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "results": results,
+                "success_count": success_count,
+                "failed_count": failed_count,
+            },
+            status=response_status,
         )
 
     def perform_update(self, serializer):

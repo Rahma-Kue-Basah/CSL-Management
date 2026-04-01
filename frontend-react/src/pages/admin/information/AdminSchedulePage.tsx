@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { CalendarDays, Plus } from "lucide-react";
+import { CalendarDays, FileUp, Plus, Upload } from "lucide-react";
 import type { DateRange } from "react-day-picker";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -17,6 +17,7 @@ import {
   type ScheduleFormState,
   validateScheduleForm,
 } from "@/components/admin/information/schedule-form-dialog";
+import ScheduleBulkCreateDialog from "@/components/admin/information/ScheduleBulkCreateDialog";
 import ScheduleTabContent from "@/components/admin/information/schedule-tab-content";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
@@ -109,6 +110,7 @@ export default function AdminSchedulePage() {
   const [calendarDateRange, setCalendarDateRange] = useState<DateRange | undefined>();
   const [calendarFilterOpen, setCalendarFilterOpen] = useState(false);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [isBulkCreateOpen, setIsBulkCreateOpen] = useState(false);
   const [createForm, setCreateForm] = useState<ScheduleFormState>(EMPTY_FORM);
   const [detailTarget, setDetailTarget] = useState<ScheduleItem | null>(null);
   const [detailMode, setDetailMode] = useState<ScheduleDetailMode>("view");
@@ -537,31 +539,51 @@ export default function AdminSchedulePage() {
           selectedCount={selectedCount}
           isDeleting={isDeleting}
           createAction={
-            <ScheduleFormDialog
-              open={isCreateOpen}
-              onOpenChange={handleCreateDialogChange}
-              form={createForm}
-              onChange={(field, value) =>
-                setCreateForm((prev) => ({ ...prev, [field]: value }))
-              }
-              onSubmit={handleCreateSubmit}
-              rooms={rooms}
-              title="Tambah Jadwal"
-              description="Masukkan jadwal seperti praktikum tetap, maintenance, atau agenda laboratorium."
-              error={createError}
-              isSubmitting={isCreating}
-              useDetailHeader
-              trigger={
-                <Button
-                  type="button"
-                  size="sm"
-                  className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
-                >
-                  <Plus className="h-4 w-4" />
-                  Tambah Jadwal
-                </Button>
-              }
-            />
+            <div className="flex flex-wrap items-center justify-end gap-2">
+              <ScheduleBulkCreateDialog
+                open={isBulkCreateOpen}
+                onOpenChange={setIsBulkCreateOpen}
+                rooms={rooms}
+                onCompleted={() => {
+                  setReloadKey((prev) => prev + 1);
+                }}
+              />
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onClick={() => setIsBulkCreateOpen(true)}
+              >
+                <FileUp className="h-4 w-4" />  
+                Import Jadwal
+              </Button>
+              <ScheduleFormDialog
+                open={isCreateOpen}
+                onOpenChange={handleCreateDialogChange}
+                form={createForm}
+                onChange={(field, value) =>
+                  setCreateForm((prev) => ({ ...prev, [field]: value }))
+                }
+                onSubmit={handleCreateSubmit}
+                rooms={rooms}
+                title="Tambah Jadwal"
+                description="Masukkan jadwal seperti praktikum tetap, maintenance, atau agenda laboratorium."
+                error={createError}
+                isSubmitting={isCreating}
+                useDetailHeader
+                trigger={
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="bg-[#0052C7] text-white hover:bg-[#0048B4]"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Tambah Jadwal
+                  </Button>
+                }
+              />
+            </div>
           }
           onToggleFilter={() => setScheduleFilterOpen((prev) => !prev)}
           onResetFilter={() => {
