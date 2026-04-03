@@ -2,13 +2,13 @@ import { normalizeRoleValue, ROLE_VALUES } from "@/constants/roles";
 
 const APPROVAL_ACCESS_ROLES = [
   ROLE_VALUES.LECTURER,
-  ROLE_VALUES.STAFF,
   ROLE_VALUES.ADMIN,
   ROLE_VALUES.SUPER_ADMINISTRATOR,
 ] as const;
 
 const REQUESTER_ACCESS_ROLES = [
   ROLE_VALUES.STUDENT,
+  ROLE_VALUES.STAFF,
   ROLE_VALUES.GUEST,
   ROLE_VALUES.LECTURER,
   ROLE_VALUES.ADMIN,
@@ -17,6 +17,7 @@ const REQUESTER_ACCESS_ROLES = [
 
 const SAMPLE_TESTING_REQUESTER_ACCESS_ROLES = [
   ROLE_VALUES.STUDENT,
+  ROLE_VALUES.STAFF,
   ROLE_VALUES.GUEST,
   ROLE_VALUES.LECTURER,
   ROLE_VALUES.ADMIN,
@@ -24,7 +25,6 @@ const SAMPLE_TESTING_REQUESTER_ACCESS_ROLES = [
 ] as const;
 
 const SAMPLE_TESTING_APPROVAL_ACCESS_ROLES = [
-  ROLE_VALUES.STAFF,
   ROLE_VALUES.ADMIN,
   ROLE_VALUES.SUPER_ADMINISTRATOR,
 ] as const;
@@ -40,10 +40,7 @@ const CATALOG_ACCESS_ROLES = [
 
 function isApprovalOnlyRole(role: string | null | undefined) {
   const normalizedRole = normalizeRoleValue(role);
-  return (
-    normalizedRole === ROLE_VALUES.LECTURER ||
-    normalizedRole === ROLE_VALUES.STAFF
-  );
+  return normalizedRole === ROLE_VALUES.LECTURER;
 }
 
 export {

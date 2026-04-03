@@ -65,7 +65,7 @@ class RoomSerializer(serializers.ModelSerializer):
     image_detail = ImageSerializer(source="image", read_only=True)
 
     def validate_pics(self, value):
-        allowed_roles = {"STAFF", "LECTURER", "ADMIN"}
+        allowed_roles = {"LECTURER", "ADMIN"}
         invalid_profiles = [
             profile.full_name or getattr(profile.user, "email", str(profile))
             for profile in value
@@ -73,7 +73,7 @@ class RoomSerializer(serializers.ModelSerializer):
         ]
         if invalid_profiles:
             raise serializers.ValidationError(
-                "PIC harus user dengan role Staff, Lecturer, atau Admin."
+                "PIC harus user dengan role Lecturer atau Admin."
             )
         return value
 

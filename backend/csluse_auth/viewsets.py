@@ -244,10 +244,9 @@ class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
             User.objects
             .select_related("profile")
             .filter(
-                models.Q(profile__role__iregex=r"^(staff|lecturer|admin)$")
+                models.Q(profile__role__iregex=r"^(lecturer|admin)$")
                 | models.Q(
                     groups__name__in=[
-                        "Staff",
                         "Lecturer",
                         "Administrator",
                     ]

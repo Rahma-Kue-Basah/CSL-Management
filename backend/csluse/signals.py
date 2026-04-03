@@ -226,12 +226,12 @@ def validate_borrow(sender, instance, **kwargs):
 
 
 def validate_room_pics(profiles):
-    allowed_roles = {"STAFF", "LECTURER", "ADMIN"}
+    allowed_roles = {"LECTURER", "ADMIN"}
     for profile in profiles:
         pic_role = str(profile.role or "").upper()
         if pic_role not in allowed_roles:
             raise ValidationError(
-                "PIC harus user dengan role Staff, Lecturer, atau Admin."
+                "PIC harus user dengan role Lecturer atau Admin."
             )
 
 
