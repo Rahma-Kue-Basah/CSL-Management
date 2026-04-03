@@ -9,7 +9,7 @@ import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shel
 import { Input } from "@/components/ui/input";
 import { BATCH_VALUES } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
-import { ROLE_OPTIONS } from "@/constants/roles";
+import { ROLE_OPTIONS, normalizeRoleValue } from "@/constants/roles";
 import { USER_TYPE_LABELS } from "@/constants/user-types";
 import { useUpdateUserProfile } from "@/hooks/users/use-update-user-profile";
 import { getUserInitials, type UserRow } from "@/hooks/users/use-users";
@@ -154,8 +154,24 @@ export default function UserDetailDialog({
                   value: opt.value,
                   label: opt.label,
                 }))}
-                onChange={(value) => setForm((prev) => ({ ...createEmptyUserForm(value), full_name: prev.full_name, initials: prev.initials }))}
+                onChange={(value) =>
+                  setForm((prev) => ({
+                    ...createEmptyUserForm(value),
+                    full_name: prev.full_name,
+                    initials: prev.initials,
+                  }))
+                }
               />
+              {normalizeRoleValue(form.role) === "Lecturer" ? (
+                <DetailCheckbox
+                  label="Dosen Pembimbing"
+                  checked={form.is_mentor}
+                  editable={isEditing && canManageUsers}
+                  onChange={(checked) =>
+                    setForm((prev) => ({ ...prev, is_mentor: checked }))
+                  }
+                />
+              ) : null}
               <DetailField
                 label="User Type"
                 value={USER_TYPE_LABELS[user.userType as keyof typeof USER_TYPE_LABELS] ?? user.userType}
@@ -293,6 +309,39 @@ function DetailSelect({
       ) : (
         <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
           {value || "-"}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function DetailCheckbox({
+  label,
+  checked,
+  editable,
+  onChange,
+}: {
+  label: string;
+  checked: boolean;
+  editable: boolean;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium text-slate-700">{label}</p>
+      {editable ? (
+        <label className="flex h-10 items-center gap-2 rounded-md border border-slate-300 bg-slate-50 px-3 text-sm">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(event) => onChange(event.target.checked)}
+            className="h-4 w-4 rounded border-slate-300"
+          />
+          <span>{checked ? "Aktif" : "Tidak aktif"}</span>
+        </label>
+      ) : (
+        <div className="rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          {checked ? "Aktif" : "Tidak aktif"}
         </div>
       )}
     </div>

@@ -1,0 +1,349 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Trash2, UserPlus, Users, X } from "lucide-react";
+import { toast } from "sonner";
+
+import { AdminPageHeader } from "@/components/admin/admin-page-header";
+import { AdminFilterCard } from "@/components/admin/admin-filter-card";
+import {
+  AdminFilterField,
+  AdminFilterGrid,
+  ADMIN_FILTER_INPUT_CLASS,
+} from "@/components/admin/admin-filter-fields";
+import AssignMentorDialog from "@/components/admin/user-management/AssignMentorDialog";
+import MentorTaskTable from "@/components/admin/user-management/MentorTaskTable";
+import UserDetailDialog from "@/components/admin/user-management/UserDetailDialog";
+import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import { DataPagination } from "@/components/shared/data-pagination";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { DEPARTMENT_VALUES } from "@/constants/departments";
+import { isPrivilegedRole } from "@/constants/roles";
+import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import { useUpdateUserProfile } from "@/hooks/users/use-update-user-profile";
+import { useUsers, type UserRow } from "@/hooks/users/use-users";
+
+const PAGE_SIZE = 20;
+
+export default function MentorTaskManagementPage() {
+  const selectAllRef = useRef<HTMLInputElement | null>(null);
+  const { profile } = useLoadProfile();
+  const canManageUsers = isPrivilegedRole(profile?.role);
+
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [department, setDepartment] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [detailUser, setDetailUser] = useState<UserRow | null>(null);
+  const [removeCandidate, setRemoveCandidate] = useState<UserRow | null>(null);
+  const [bulkRemoveOpen, setBulkRemoveOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
+  const [errorMessage, setErrorMessage] = useState("");
+  const { updateUserProfile, isSubmitting } = useUpdateUserProfile();
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => setDebouncedSearch(search.trim()), 400);
+    return () => window.clearTimeout(timeoutId);
+  }, [search]);
+
+  const {
+    users,
+    setUsers,
+    totalCount,
+    setTotalCount,
+    isLoading,
+    hasLoadedOnce,
+    error,
+  } = useUsers(
+    page,
+    PAGE_SIZE,
+    {
+      role: "Lecturer",
+      isMentor: true,
+      department,
+      search: debouncedSearch,
+    },
+    reloadKey,
+  );
+
+  const totalPages = useMemo(
+    () => Math.max(1, Math.ceil((totalCount || users.length) / PAGE_SIZE)),
+    [totalCount, users.length],
+  );
+  const selectedCount = selectedIds.length;
+  const allVisibleSelected =
+    users.length > 0 && users.every((user) => selectedIds.includes(user.id));
+  const someVisibleSelected =
+    users.some((user) => selectedIds.includes(user.id)) && !allVisibleSelected;
+
+  useEffect(() => {
+    setSelectedIds((prev) =>
+      prev.filter((id) => users.some((user) => String(user.id) === String(id))),
+    );
+  }, [users]);
+
+  useEffect(() => {
+    if (!selectAllRef.current) return;
+    selectAllRef.current.indeterminate = someVisibleSelected;
+  }, [someVisibleSelected]);
+
+  const toggleItemSelection = (id: number | string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((itemId) => itemId !== id) : [...prev, id],
+    );
+  };
+
+  const toggleSelectAllVisible = (checked: boolean) => {
+    if (!checked) {
+      setSelectedIds((prev) =>
+        prev.filter((id) => !users.some((user) => String(user.id) === String(id))),
+      );
+      return;
+    }
+
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      users.forEach((user) => next.add(user.id));
+      return Array.from(next);
+    });
+  };
+
+  const handleRemoveMentor = async () => {
+    if (!removeCandidate?.profileId) return;
+
+    try {
+      await updateUserProfile(removeCandidate.profileId, { is_mentor: false });
+      setUsers((prev) =>
+        prev.filter((item) => String(item.profileId) !== String(removeCandidate.profileId)),
+      );
+      setTotalCount((prev) => Math.max(0, prev - 1));
+      if (detailUser && String(detailUser.profileId) === String(removeCandidate.profileId)) {
+        setDetailUser(null);
+      }
+      setRemoveCandidate(null);
+      toast.success("Dosen pembimbing berhasil dilepas.");
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Gagal melepas dosen pembimbing.",
+      );
+    }
+  };
+
+  const handleBulkRemoveMentor = async () => {
+    if (!selectedIds.length) return;
+
+    try {
+      const selectedUsers = users.filter((user) => selectedIds.includes(user.id));
+      for (const user of selectedUsers) {
+        if (!user.profileId) continue;
+        await updateUserProfile(user.profileId, { is_mentor: false });
+      }
+
+      const removedIds = new Set(selectedIds.map((id) => String(id)));
+      setUsers((prev) => prev.filter((item) => !removedIds.has(String(item.id))));
+      setTotalCount((prev) => Math.max(0, prev - removedIds.size));
+      if (detailUser && removedIds.has(String(detailUser.id))) {
+        setDetailUser(null);
+      }
+      setSelectedIds([]);
+      setBulkRemoveOpen(false);
+      toast.success(`${removedIds.size} dosen pembimbing berhasil dilepas.`);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Gagal melepas dosen pembimbing terpilih.",
+      );
+    }
+  };
+
+  return (
+    <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
+      <AdminPageHeader
+        title="Dosen Pembimbing"
+        description={`Total ${totalCount || users.length} dosen pembimbing terdaftar.`}
+        icon={<Users className="h-5 w-5 text-sky-200" />}
+      />
+
+      {error || errorMessage ? (
+        <InlineErrorAlert>{error || errorMessage}</InlineErrorAlert>
+      ) : null}
+
+      <AdminFilterCard
+        open={filterOpen}
+        onToggle={() => setFilterOpen((prev) => !prev)}
+        onReset={() => {
+          setSearch("");
+          setDepartment("");
+          setDebouncedSearch("");
+          setPage(1);
+        }}
+      >
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            setPage(1);
+          }}
+        >
+          <AdminFilterGrid columns={4}>
+            <AdminFilterField label="Cari">
+              <Input
+                type="search"
+                value={search}
+                placeholder="Nama, email, atau ID"
+                className={ADMIN_FILTER_INPUT_CLASS}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+              />
+            </AdminFilterField>
+            <AdminFilterField label="Department">
+              <select
+                value={department}
+                className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                onChange={(event) => {
+                  setDepartment(event.target.value);
+                  setPage(1);
+                }}
+              >
+                <option value="">Semua</option>
+                {DEPARTMENT_VALUES.map((option) => (
+                  <option key={option} value={option}>
+                    {option}
+                  </option>
+                ))}
+              </select>
+            </AdminFilterField>
+          </AdminFilterGrid>
+        </form>
+      </AdminFilterCard>
+
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-3">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                disabled={selectedCount === 0 || isSubmitting}
+              >
+                Aksi Terpilih
+                {selectedCount ? ` (${selectedCount})` : ""}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="bottom" align="start" className="w-56">
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={selectedCount === 0 || isSubmitting}
+                onClick={() => setBulkRemoveOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Lepaskan Dosen Pembimbing
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={selectedCount === 0}
+                onClick={() => setSelectedIds([])}
+                className="text-xs text-slate-500"
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear selection
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+        {canManageUsers ? (
+          <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+            <UserPlus className="h-4 w-4" />
+            Tambahkan Dosen Pembimbing
+          </Button>
+        ) : null}
+      </div>
+
+      <MentorTaskTable
+        users={users}
+        isLoading={isLoading}
+        hasLoadedOnce={hasLoadedOnce}
+        selectedIds={selectedIds}
+        allVisibleSelected={allVisibleSelected}
+        onToggleItemSelection={toggleItemSelection}
+        onToggleSelectAllVisible={toggleSelectAllVisible}
+        selectAllRef={selectAllRef}
+        onOpenDetail={(user) => setDetailUser(user)}
+        onDelete={setRemoveCandidate}
+        isDeleting={isSubmitting}
+      />
+
+      <DataPagination
+        page={page}
+        totalPages={totalPages}
+        totalCount={totalCount}
+        pageSize={PAGE_SIZE}
+        itemLabel="dosen pembimbing"
+        isLoading={isLoading}
+        onPageChange={setPage}
+      />
+
+      <AssignMentorDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        onAssigned={() => setReloadKey((prev) => prev + 1)}
+      />
+
+      <UserDetailDialog
+        open={Boolean(detailUser)}
+        user={detailUser}
+        mode="view"
+        canManageUsers={false}
+        onOpenChange={(open) => {
+          if (!open) setDetailUser(null);
+        }}
+        onDeleteRequest={() => {}}
+        onUserUpdated={() => {}}
+      />
+
+      <ConfirmDeleteDialog
+        open={Boolean(removeCandidate)}
+        title="Hapus dosen pembimbing?"
+        description={
+          removeCandidate
+            ? `${removeCandidate.name || removeCandidate.email} akan dilepas dari daftar dosen pembimbing.`
+            : "Data akan diperbarui."
+        }
+        isDeleting={isSubmitting}
+        onOpenChange={(open) => {
+          if (!open) setRemoveCandidate(null);
+        }}
+        onConfirm={() => {
+          void handleRemoveMentor();
+        }}
+      />
+      <ConfirmDeleteDialog
+        open={bulkRemoveOpen}
+        title="Lepaskan dosen pembimbing terpilih?"
+        description={`${selectedCount} dosen yang dipilih akan dilepas dari status dosen pembimbing.`}
+        isDeleting={isSubmitting}
+        onOpenChange={setBulkRemoveOpen}
+        onConfirm={() => {
+          void handleBulkRemoveMentor();
+        }}
+      />
+    </section>
+  );
+}

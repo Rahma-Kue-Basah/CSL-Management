@@ -29,17 +29,20 @@ import {
   LayoutDashboard,
   type LucideIcon,
   Package,
+  BriefcaseBusiness,
   Search,
   Users,
 } from "lucide-react";
 import { NavUser } from "./nav-user";
 
 type MenuItem = {
+  key?: string;
   label: string;
-  href: string;
+  href?: string;
+  items?: MenuItem[];
 };
 
-type GroupMenuKey = "information" | "inventory" | "record" | "user";
+type GroupMenuKey = "information" | "inventory" | "record" | "user" | "task";
 
 type LinkMenuConfig = {
   type: "link";
@@ -130,12 +133,36 @@ const adminMenuConfig: MenuConfig[] = [
     tooltip: "User",
     searchTerms: ["user management", "user"],
     items: [
-      { label: "All", href: "/admin/user-management/all" },
-      { label: "Student", href: "/admin/user-management/student" },
-      { label: "Lecturer", href: "/admin/user-management/lecturer" },
-      { label: "Admin", href: "/admin/user-management/admin" },
-      { label: "Staff", href: "/admin/user-management/staff" },
-      { label: "Guest", href: "/admin/user-management/guest" },
+      { label: "Semua User", href: "/admin/user-management/list-users" },
+      {
+        key: "role",
+        label: "Role",
+        items: [
+          { label: "Student", href: "/admin/user-management/role/student" },
+          { label: "Lecturer", href: "/admin/user-management/role/lecturer" },
+          { label: "Admin", href: "/admin/user-management/role/admin" },
+          { label: "Staff", href: "/admin/user-management/role/staff" },
+          { label: "Guest", href: "/admin/user-management/role/guest" },
+        ],
+      },
+    ],
+  },
+  {
+    type: "group",
+    key: "task",
+    label: "Task Management",
+    icon: BriefcaseBusiness,
+    tooltip: "Task Management",
+    searchTerms: ["task management", "task"],
+    items: [
+      {
+        label: "Dosen Pembimbing",
+        href: "/admin/task-management/dosen-pembimbing",
+      },
+      {
+        label: "PIC Ruangan",
+        href: "/admin/task-management/pic-ruangan",
+      },
     ],
   },
 ];
@@ -148,14 +175,16 @@ export function AppSidebar() {
     inventory: false,
     record: false,
     user: false,
+    task: false,
   });
+  const [openNestedMenus, setOpenNestedMenus] = useState<Record<string, boolean>>({});
   const menuButtonClass = (isSelected = false) =>
     isSelected
       ? "text-sidebar-foreground group-data-[collapsible=icon]:mx-auto"
       : "text-sidebar-foreground/65 hover:text-sidebar-foreground group-data-[collapsible=icon]:mx-auto";
 
   const toggleMenu = (
-    menu: "information" | "inventory" | "record" | "user",
+    menu: GroupMenuKey,
   ) => {
     setOpenMenus((prev) => ({
       ...prev,
@@ -170,21 +199,42 @@ export function AppSidebar() {
   const matchesSearch = (text: string) =>
     normalizedQuery.length === 0 ||
     text.toLowerCase().includes(normalizedQuery);
+  const filterMenuItems = (items: MenuItem[]): MenuItem[] =>
+    items.reduce<MenuItem[]>((acc, item) => {
+      const filteredChildren = item.items ? filterMenuItems(item.items) : undefined;
+      const selfMatches = matchesSearch(item.label);
+
+      if (!selfMatches && !filteredChildren?.length) {
+        return acc;
+      }
+
+      acc.push({
+        ...item,
+        items: filteredChildren,
+      });
+      return acc;
+    }, []);
+
+  const hasActiveItem = (items: MenuItem[]): boolean =>
+    items.some((item) => {
+      if (item.href && isPathActive(item.href)) return true;
+      if (item.items?.length) return hasActiveItem(item.items);
+      return false;
+    });
+
   const groupMenuStates = useMemo(
     () =>
       adminMenuConfig.reduce(
         (acc, menu) => {
           if (menu.type !== "group") return acc;
 
-          const filteredItems = menu.items.filter((item) =>
-            matchesSearch(item.label),
-          );
+          const filteredItems = filterMenuItems(menu.items);
           const searchMatches =
             menu.searchTerms?.some((term) => matchesSearch(term)) ?? false;
 
           acc[menu.key] = {
             filteredItems,
-            isActive: menu.items.some((item) => isPathActive(item.href)),
+            isActive: hasActiveItem(menu.items),
             isVisible: searchMatches || filteredItems.length > 0,
           };
 
@@ -203,23 +253,63 @@ export function AppSidebar() {
     inventory: openMenus.inventory || groupMenuStates.inventory.isActive,
     user: openMenus.user || groupMenuStates.user.isActive,
     information: openMenus.information || groupMenuStates.information.isActive,
+    task: openMenus.task || groupMenuStates.task.isActive,
   };
 
-  const renderSubmenuItems = (items: MenuItem[]) => (
+  const toggleNestedMenu = (key: string) => {
+    setOpenNestedMenus((prev) => ({
+      ...prev,
+      [key]: !prev[key],
+    }));
+  };
+
+  const renderSubmenuItems = (items: MenuItem[], depth = 0) => (
     <SidebarMenuSub>
       {items.map((item) => (
-        <SidebarMenuSubItem key={item.href}>
-          <SidebarMenuSubButton
-            href={item.href}
-            isActive={isPathActive(item.href)}
-            className={
-              isPathActive(item.href)
-                ? "text-sidebar-foreground"
-                : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
-            }
-          >
-            <span className="text-sm">{item.label}</span>
-          </SidebarMenuSubButton>
+        <SidebarMenuSubItem key={item.key ?? item.href ?? item.label}>
+          {item.items?.length ? (
+            <>
+              <SidebarMenuSubButton
+                asChild
+                isActive={hasActiveItem(item.items)}
+                className={
+                  hasActiveItem(item.items)
+                    ? "text-sidebar-foreground"
+                    : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
+                }
+              >
+                <button
+                  type="button"
+                  onClick={() => toggleNestedMenu(item.key ?? item.label)}
+                  className="flex w-full items-center gap-2 text-left"
+                >
+                  <span className={`text-sm ${depth > 0 ? "pl-2" : ""}`}>{item.label}</span>
+                  <ChevronDown
+                    className={`ml-auto h-4 w-4 transition-transform ${
+                      openNestedMenus[item.key ?? item.label] || hasActiveItem(item.items)
+                        ? "rotate-180"
+                        : ""
+                    }`}
+                  />
+                </button>
+              </SidebarMenuSubButton>
+              {(openNestedMenus[item.key ?? item.label] || hasActiveItem(item.items))
+                ? renderSubmenuItems(item.items, depth + 1)
+                : null}
+            </>
+          ) : item.href ? (
+            <SidebarMenuSubButton
+              href={item.href}
+              isActive={isPathActive(item.href)}
+              className={
+                isPathActive(item.href)
+                  ? "text-sidebar-foreground"
+                  : "text-sidebar-foreground/65 hover:text-sidebar-foreground"
+              }
+            >
+              <span className={`text-sm ${depth > 0 ? "pl-3" : ""}`}>{item.label}</span>
+            </SidebarMenuSubButton>
+          ) : null}
         </SidebarMenuSubItem>
       ))}
     </SidebarMenuSub>

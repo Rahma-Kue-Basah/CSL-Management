@@ -67,6 +67,8 @@ import UserManagementLecturerPage from "@/pages/admin/user-management/UserManage
 import UserManagementAdminPage from "@/pages/admin/user-management/UserManagementAdminPage";
 import UserManagementStaffPage from "@/pages/admin/user-management/UserManagementStaffPage";
 import UserManagementGuestPage from "@/pages/admin/user-management/UserManagementGuestPage";
+import TaskManagementAdvisorPage from "@/pages/admin/task-management/TaskManagementAdvisorPage";
+import TaskManagementRoomPicPage from "@/pages/admin/task-management/TaskManagementRoomPicPage";
 import NotFoundPage from "@/pages/errors/NotFoundPage";
 
 function AuthLayoutOutlet() {
@@ -451,13 +453,35 @@ export const router = createBrowserRouter([
       {
         path: "user-management",
         children: [
-          { index: true, element: <Navigate to="all" replace /> },
-          { path: "all", element: <UserManagementAllPage /> },
-          { path: "student", element: <UserManagementStudentPage /> },
-          { path: "lecturer", element: <UserManagementLecturerPage /> },
-          { path: "admin", element: <UserManagementAdminPage /> },
-          { path: "staff", element: <UserManagementStaffPage /> },
-          { path: "guest", element: <UserManagementGuestPage /> },
+          { index: true, element: <Navigate to="list-users" replace /> },
+          { path: "all", element: <Navigate to="/admin/user-management/list-users" replace /> },
+          { path: "list-users", element: <UserManagementAllPage /> },
+          { path: "student", element: <Navigate to="/admin/user-management/role/student" replace /> },
+          { path: "lecturer", element: <Navigate to="/admin/user-management/role/lecturer" replace /> },
+          { path: "admin", element: <Navigate to="/admin/user-management/role/admin" replace /> },
+          { path: "staff", element: <Navigate to="/admin/user-management/role/staff" replace /> },
+          { path: "guest", element: <Navigate to="/admin/user-management/role/guest" replace /> },
+          { path: "role/student", element: <UserManagementStudentPage /> },
+          { path: "role/lecturer", element: <UserManagementLecturerPage /> },
+          { path: "role/admin", element: <UserManagementAdminPage /> },
+          { path: "role/staff", element: <UserManagementStaffPage /> },
+          { path: "role/guest", element: <UserManagementGuestPage /> },
+          {
+            path: "task/dosen-pembimbing",
+            element: <Navigate to="/admin/task-management/dosen-pembimbing" replace />,
+          },
+          {
+            path: "task/pic-ruangan",
+            element: <Navigate to="/admin/task-management/pic-ruangan" replace />,
+          },
+        ],
+      },
+      {
+        path: "task-management",
+        children: [
+          { index: true, element: <Navigate to="dosen-pembimbing" replace /> },
+          { path: "dosen-pembimbing", element: <TaskManagementAdvisorPage /> },
+          { path: "pic-ruangan", element: <TaskManagementRoomPicPage /> },
         ],
       },
     ],

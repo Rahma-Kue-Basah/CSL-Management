@@ -12,6 +12,7 @@ export type UserFilters = {
   batch?: string;
   search?: string;
   q?: string;
+  isMentor?: boolean;
 };
 
 type ApiUserProfile = {
@@ -20,6 +21,7 @@ type ApiUserProfile = {
   initials?: string | null;
   email?: string | null;
   role?: string | null;
+  is_mentor?: boolean | null;
   user_type?: string | null;
   batch?: string | number | null;
   department?: string | null;
@@ -56,6 +58,7 @@ export type UserRow = {
   initials: string;
   email: string;
   role: string;
+  isMentor: boolean;
   userType: string;
   batch: string;
   department: string;
@@ -88,6 +91,7 @@ export function mapUser(item: ApiUser): UserRow {
     initials: String(profile.initials ?? ""),
     email: String(email),
     role: normalizeRoleValue(profile.role) || "-",
+    isMentor: Boolean(profile.is_mentor),
     userType: String(profile.user_type ?? "-"),
     batch: String(profile.batch ?? "-"),
     department: String(profile.department ?? "-"),
@@ -207,6 +211,9 @@ export function useUsers(
         if (filters.batch) url.searchParams.set("batch", filters.batch);
         if (filters.search) url.searchParams.set("search", filters.search);
         if (filters.q) url.searchParams.set("q", filters.q);
+        if (typeof filters.isMentor === "boolean") {
+          url.searchParams.set("is_mentor", String(filters.isMentor));
+        }
 
         const response = await authFetch(url.toString(), {
           method: "GET",
@@ -262,6 +269,7 @@ export function useUsers(
     filters.batch,
     filters.search,
     filters.q,
+    filters.isMentor,
     reloadKey,
   ]);
 

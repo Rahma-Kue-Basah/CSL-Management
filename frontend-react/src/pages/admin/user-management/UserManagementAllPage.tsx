@@ -4,7 +4,10 @@ import UserManagementPage from "@/components/admin/user-management/user-manageme
 export default function UserManagementAllPage() {
   return (
     <Suspense fallback={null}>
-      <UserManagementPage />
+      <UserManagementPage
+        title="Semua User"
+        description="Daftar seluruh user yang terdaftar di sistem."
+      />
     </Suspense>
   );
 }

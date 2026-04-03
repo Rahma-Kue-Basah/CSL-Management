@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { FileUp, Plus, UserPlus } from "lucide-react";
 import { useSearchParams } from "react-router-dom";
-import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
 import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
@@ -34,7 +33,6 @@ import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useUserManagementActions } from "@/hooks/users/use-user-management-actions";
 import { mapUser, useUsers } from "@/hooks/users/use-users";
 import { USER_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
-import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
 
 type FiltersState = {
   department: string;
@@ -46,9 +44,23 @@ const PAGE_SIZE = 20;
 
 type UserManagementPageProps = {
   forcedRole?: string;
+  title?: string;
+  description?: string;
+  showExportActions?: boolean;
+  showImportButton?: boolean;
+  showCreateButton?: boolean;
+  createButtonLabel?: string;
 };
 
-export default function UserManagementPage({ forcedRole }: UserManagementPageProps) {
+export default function UserManagementPage({
+  forcedRole,
+  title = "User Management",
+  description,
+  showExportActions = true,
+  showImportButton = true,
+  showCreateButton = true,
+  createButtonLabel = "Buat User",
+}: UserManagementPageProps) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const [searchParams] = useSearchParams();
   const roleParam = forcedRole ?? searchParams.get("role");
@@ -69,8 +81,6 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
   const [filterOpen, setFilterOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
-  const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
-  const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
 
   const effectiveFilters = useMemo(
     () => ({
@@ -95,9 +105,9 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
     PAGE_SIZE,
     {
       ...effectiveFilters,
-      search: debouncedSearch,
-    },
-    reloadKey,
+        search: debouncedSearch,
+      },
+      reloadKey,
   );
 
   const { exportPdf, exportExcel, isExportingPdf, isExportingExcel } =
@@ -164,54 +174,13 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
     setPage(1);
   };
 
-  const handleExportSelectedPdf = async () => {
-    try {
-      setIsExportingSelectedPdf(true);
-      if (!actions.selectedRows.length) {
-        throw new Error("Pilih minimal satu user untuk diunduh.");
-      }
-      exportAdminRecordPdf({
-        title: "User Management",
-        subtitle: `Total data: ${actions.selectedRows.length}`,
-        filename: "user-management-selected.pdf",
-        columns: USER_EXPORT_COLUMNS,
-        rows: actions.selectedRows,
-      });
-      toast.success("PDF user terpilih berhasil diunduh.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal mengunduh PDF.");
-    } finally {
-      setIsExportingSelectedPdf(false);
-    }
-  };
-
-  const handleExportSelectedExcel = async () => {
-    try {
-      setIsExportingSelectedExcel(true);
-      if (!actions.selectedRows.length) {
-        throw new Error("Pilih minimal satu user untuk diunduh.");
-      }
-      exportAdminRecordExcel({
-        title: "User Management",
-        filename: "user-management-selected.xlsx",
-        columns: USER_EXPORT_COLUMNS,
-        rows: actions.selectedRows,
-      });
-      toast.success("Excel user terpilih berhasil diunduh.");
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Gagal mengunduh Excel.");
-    } finally {
-      setIsExportingSelectedExcel(false);
-    }
-  };
-
   return (
     <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
       <div className="flex min-w-0 items-start gap-4">
         <div className="min-w-0 flex-1 space-y-4">
           <AdminPageHeader
-            title="User Management"
-            description={`Total ${totalUsers} user terdaftar.`}
+            title={title}
+            description={description ?? `Total ${totalUsers} user terdaftar.`}
             icon={<UserPlus className="h-5 w-5 text-sky-200" />}
           />
 
@@ -293,49 +262,49 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
               <UserBulkActions
                 selectedCount={actions.selectedCount}
                 isDeleting={actions.isDeleting}
-                isExportingSelectedPdf={isExportingSelectedPdf}
-                isExportingSelectedExcel={isExportingSelectedExcel}
                 onClearSelection={() => actions.setSelectedIds([])}
                 onDeleteSelected={() => actions.setIsBulkDeleteOpen(true)}
-                onExportSelectedPdf={() => {
-                  void handleExportSelectedPdf();
-                }}
-                onExportSelectedExcel={() => {
-                  void handleExportSelectedExcel();
-                }}
               />
             ) : (
               <div />
             )}
             <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:justify-end">
-              <p className="text-xs text-muted-foreground sm:text-right">
-                Export mengikuti filter dan pencarian yang sedang aktif.
-              </p>
-              <AdminRecordExportActions
-                onExportExcel={() => {
-                  void exportExcel();
-                }}
-                onExportPdf={() => {
-                  void exportPdf();
-                }}
-                isExportingExcel={isExportingExcel}
-                isExportingPdf={isExportingPdf}
-              />
+              {showExportActions ? (
+                <p className="text-xs text-muted-foreground sm:text-right">
+                  Export mengikuti filter dan pencarian yang sedang aktif.
+                </p>
+              ) : null}
+              {showExportActions ? (
+                <AdminRecordExportActions
+                  onExportExcel={() => {
+                    void exportExcel();
+                  }}
+                  onExportPdf={() => {
+                    void exportPdf();
+                  }}
+                  isExportingExcel={isExportingExcel}
+                  isExportingPdf={isExportingPdf}
+                />
+              ) : null}
               {canManageUsers ? (
                 <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setBulkOpen(true)}
-                  >
-                    <FileUp className="h-4 w-4" />
-                    Import User
-                  </Button>
-                  <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
-                    <Plus className="h-4 w-4" />
-                    Buat User
-                  </Button>
+                  {showImportButton ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setBulkOpen(true)}
+                    >
+                      <FileUp className="h-4 w-4" />
+                      Import User
+                    </Button>
+                  ) : null}
+                  {showCreateButton ? (
+                    <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+                      <Plus className="h-4 w-4" />
+                      {createButtonLabel}
+                    </Button>
+                  ) : null}
                 </>
               ) : null}
             </div>
@@ -376,12 +345,14 @@ export default function UserManagementPage({ forcedRole }: UserManagementPagePro
         roleParam={roleParam}
         onCreated={() => setReloadKey((prev) => prev + 1)}
       />
-      <BulkCreateDialog
-        open={bulkOpen}
-        onOpenChange={setBulkOpen}
-        roleParam={roleParam}
-        onCompleted={() => setReloadKey((prev) => prev + 1)}
-      />
+      {showImportButton ? (
+        <BulkCreateDialog
+          open={bulkOpen}
+          onOpenChange={setBulkOpen}
+          roleParam={roleParam}
+          onCompleted={() => setReloadKey((prev) => prev + 1)}
+        />
+      ) : null}
       <UserDetailDialog
         open={Boolean(actions.detailState.user)}
         user={actions.detailState.user}

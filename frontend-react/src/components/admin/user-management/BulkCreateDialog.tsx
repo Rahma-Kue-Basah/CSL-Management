@@ -264,6 +264,7 @@ export default function BulkCreateDialog({
           email,
           password,
           role: normalizedRole,
+          is_mentor: false,
           initials,
           department,
           batch,

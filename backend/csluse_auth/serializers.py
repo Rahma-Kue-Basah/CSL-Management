@@ -35,6 +35,7 @@ def _normalize_nullable_value(value):
 
 def _apply_role_field_rules(attrs, instance=None):
     role = attrs.get("role", getattr(instance, "role", None)) or "Guest"
+    is_mentor = attrs.get("is_mentor", getattr(instance, "is_mentor", False))
 
     department = _normalize_nullable_value(attrs.get("department", serializers.empty))
     batch = _normalize_nullable_value(attrs.get("batch", serializers.empty))
@@ -61,6 +62,11 @@ def _apply_role_field_rules(attrs, instance=None):
             "institution": "Institusi hanya boleh diisi untuk Guest."
         })
 
+    if role != "Lecturer" and is_mentor:
+        raise serializers.ValidationError({
+            "is_mentor": "is_mentor hanya boleh aktif untuk role Lecturer."
+        })
+
     if role not in ROLE_WITH_DEPARTMENT:
         attrs["department"] = None
     elif department is not serializers.empty:
@@ -80,6 +86,8 @@ def _apply_role_field_rules(attrs, instance=None):
         attrs["institution"] = None
     elif institution is not serializers.empty:
         attrs["institution"] = institution
+
+    attrs["is_mentor"] = bool(is_mentor) if role == "Lecturer" else False
 
     return attrs
 
@@ -210,6 +218,7 @@ class CustomRegisterSerializer(RegisterSerializer):
         required=False,
         allow_null=True,
     )
+    is_mentor = serializers.BooleanField(required=False, default=False)
 
     def validate_username(self, username):
         # Allow duplicates here; we will auto-generate a unique username later.
@@ -284,6 +293,7 @@ class CustomRegisterSerializer(RegisterSerializer):
             batch = self.validated_data.get("batch")
             id_number = self.validated_data.get("id_number")
             user_type = self.validated_data.get("user_type")
+            is_mentor = self.validated_data.get("is_mentor")
 
             if role:
                 defaults["role"] = role
@@ -295,6 +305,8 @@ class CustomRegisterSerializer(RegisterSerializer):
                 defaults["id_number"] = id_number
             if user_type:
                 defaults["user_type"] = user_type
+            if is_mentor is not None:
+                defaults["is_mentor"] = is_mentor
 
         Profile.objects.update_or_create(
             user=user,
@@ -328,6 +340,7 @@ class ProfileSerializer(serializers.ModelSerializer):
     last_login = serializers.DateTimeField(source="user.last_login", read_only=True)
     initials = serializers.CharField(required=False, allow_blank=True, max_length=3)
     role = serializers.CharField(required=False, allow_null=True, allow_blank=True)
+    is_mentor = serializers.BooleanField(required=False)
     institution = serializers.CharField(required=False, allow_null=True, allow_blank=True)
 
     class Meta:
@@ -339,6 +352,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "full_name",
             "initials",
             "role",
+            "is_mentor",
             "institution",
             "batch",
             "department",
@@ -431,6 +445,10 @@ class PicUserSerializer(serializers.ModelSerializer):
     profile_id = serializers.UUIDField(source="profile.id", read_only=True)
     full_name = serializers.CharField(source="profile.full_name", read_only=True)
     role = serializers.CharField(source="profile.role", read_only=True)
+    department = serializers.CharField(source="profile.department", read_only=True)
+    id_number = serializers.CharField(source="profile.id_number", read_only=True)
+    room_names = serializers.SerializerMethodField()
+    is_mentor = serializers.BooleanField(source="profile.is_mentor", read_only=True)
 
     class Meta:
         model = User
@@ -440,6 +458,18 @@ class PicUserSerializer(serializers.ModelSerializer):
             "profile_id",
             "full_name",
             "role",
+            "department",
+            "id_number",
+            "room_names",
+            "is_mentor",
+        )
+
+    def get_room_names(self, obj):
+        profile = getattr(obj, "profile", None)
+        if profile is None:
+            return []
+        return list(
+            profile.rooms_as_pic.order_by("name", "number").values_list("name", flat=True)
         )
 
 
@@ -447,6 +477,8 @@ class PicUserDropdownSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(source="profile.id", read_only=True)
     name = serializers.SerializerMethodField()
     role = serializers.SerializerMethodField()
+    department = serializers.CharField(source="profile.department", read_only=True)
+    is_mentor = serializers.BooleanField(source="profile.is_mentor", read_only=True)
 
     class Meta:
         model = User
@@ -454,6 +486,8 @@ class PicUserDropdownSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "role",
+            "department",
+            "is_mentor",
         )
 
     def get_name(self, obj):

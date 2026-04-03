@@ -9,6 +9,7 @@ import { extractApiErrorMessage } from "@/lib/api-error";
 type UpdatePayload = {
   full_name?: string;
   initials?: string;
+  is_mentor?: boolean;
   department?: string | null;
   batch?: string | null;
   id_number?: string | null;
@@ -36,7 +37,7 @@ export function useUpdateUserProfile() {
         let message = `Update gagal (${response.status})`;
         try {
           const data = (await response.json()) as unknown;
-          message = extractApiErrorMessage(data, message, ["department", "batch", "role"]);
+          message = extractApiErrorMessage(data, message, ["department", "batch", "role", "is_mentor"]);
         } catch {
           // ignore parse error
         }

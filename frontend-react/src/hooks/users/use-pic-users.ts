@@ -9,12 +9,14 @@ type ApiPicUser = {
   id?: string | number | null;
   name?: string | null;
   role?: string | null;
+  department?: string | null;
 };
 
 export type PicUser = {
   id: string;
   name: string;
   role: string | null;
+  department: string | null;
 };
 
 function mapPicUser(user: ApiPicUser): PicUser | null {
@@ -27,6 +29,7 @@ function mapPicUser(user: ApiPicUser): PicUser | null {
     id: String(user.id),
     name: role ? `${baseName} (${role})` : baseName,
     role,
+    department: user.department ? String(user.department) : null,
   };
 }
 

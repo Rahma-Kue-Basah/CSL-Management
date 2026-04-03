@@ -15,6 +15,7 @@ type CreateUserPayload = {
   password1: string;
   password2: string;
   role?: string;
+  is_mentor?: boolean;
   department?: string;
   batch?: string;
   id_number?: string;
@@ -32,6 +33,7 @@ function parseCreateUserError(data: unknown, fallback = "Gagal membuat user.") {
     "id_number",
     "institution",
     "role",
+    "is_mentor",
   ]);
 }
 

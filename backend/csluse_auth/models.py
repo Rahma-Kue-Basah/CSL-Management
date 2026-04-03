@@ -74,6 +74,7 @@ class Profile(BaseModel):
     ]
 
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, blank=True, null=True)
+    is_mentor = models.BooleanField(default=False)
     department = models.CharField(max_length=40, choices=DEPARTMENT_CHOICE, blank=True, null=True)
     id_number = models.CharField(max_length=40, blank=True, null=True)
     batch = models.CharField(max_length=4, choices=BATCH_CHOICES, blank=True, null=True)
@@ -112,6 +113,9 @@ class Profile(BaseModel):
             self.institution = None
         elif self.institution == "":
             self.institution = None
+
+        if self.role != "Lecturer":
+            self.is_mentor = False
 
         super().save(*args, **kwargs)
 

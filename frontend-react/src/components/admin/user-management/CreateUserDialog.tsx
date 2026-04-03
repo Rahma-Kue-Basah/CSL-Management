@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
 import { BATCH_VALUES } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
-import { ROLE_FILTER_OPTIONS, ROLE_OPTIONS, normalizeRoleValue } from "@/constants/roles";
+import { ROLE_FILTER_OPTIONS, ROLE_OPTIONS, ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import { useCreateUser } from "@/hooks/users/use-create-user";
 import {
   createEmptyUserForm,
@@ -155,6 +155,20 @@ export default function CreateUserDialog({
                 ))}
               </select>
             </div>
+
+            {form.role === ROLE_VALUES.LECTURER ? (
+              <label className="flex items-center gap-2 rounded-md border border-sky-300 bg-sky-50/60 px-3 py-2 text-sm shadow-sm">
+                <input
+                  type="checkbox"
+                  checked={form.is_mentor}
+                  onChange={(event) =>
+                    setForm((prev) => ({ ...prev, is_mentor: event.target.checked }))
+                  }
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                <span>Jadikan sebagai dosen pembimbing</span>
+              </label>
+            ) : null}
 
             {visibleFields.idNumber ? (
               <div className="space-y-1">
