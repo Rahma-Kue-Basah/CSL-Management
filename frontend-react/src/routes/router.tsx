@@ -61,7 +61,6 @@ import AdminEquipmentUsageHistoryPage from "@/pages/admin/history/AdminEquipment
 import AdminEquipmentBorrowHistoryPage from "@/pages/admin/history/AdminEquipmentBorrowHistoryPage";
 import AdminSampleTestingHistoryPage from "@/pages/admin/history/AdminSampleTestingHistoryPage";
 import AdminMyProfilePage from "@/pages/admin/profile/AdminMyProfilePage";
-import StructureOrgansPage from "@/pages/admin/lab-profile/StructureOrgansPage";
 import UserManagementAllPage from "@/pages/admin/user-management/UserManagementAllPage";
 import UserManagementStudentPage from "@/pages/admin/user-management/UserManagementStudentPage";
 import UserManagementLecturerPage from "@/pages/admin/user-management/UserManagementLecturerPage";
@@ -429,7 +428,6 @@ export const router = createBrowserRouter([
           { path: "schedules", element: <Navigate to="/admin/schedules" replace /> },
           { path: "announcements", element: <AdminAnnouncementPage /> },
           { path: "faq", element: <AdminFaqPage /> },
-          { path: "organization-structure", element: <StructureOrgansPage /> },
         ],
       },
       {
@@ -448,15 +446,6 @@ export const router = createBrowserRouter([
           { path: "equipment-usage", element: <AdminEquipmentUsageHistoryPage /> },
           { path: "equipment-borrows", element: <AdminEquipmentBorrowHistoryPage /> },
           { path: "sample-testing", element: <AdminSampleTestingHistoryPage /> },
-        ],
-      },
-      {
-        path: "profile",
-        children: [
-          {
-            path: "organization-structure",
-            element: <Navigate to="/admin/information/organization-structure" replace />,
-          },
         ],
       },
       {

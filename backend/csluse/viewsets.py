@@ -24,7 +24,6 @@ from .models import (
     Announcement,
     Schedule,
     FAQ,
-    StructureOrganization,
     Pengujian,
     Use,
     Notification,
@@ -51,7 +50,6 @@ from .serializers import (
     FAQSerializer,
     CalendarEventSerializer,
     ScheduleFeedItemSerializer,
-    StructureOrganizationSerializer,
     PengujianSerializer,
     PengujianListSerializer,
     UseSerializer,
@@ -3330,20 +3328,6 @@ class FAQViewSet(viewsets.ModelViewSet):
             },
             status=response_status,
         )
-
-
-class StructureOrganizationViewSet(viewsets.ModelViewSet):
-    queryset = StructureOrganization.objects.select_related('parent').order_by('-created_at')
-    serializer_class = StructureOrganizationSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = DefaultPagination
-
-    def get_permissions(self):
-        if self.action == "create":
-            return [IsAuthenticated(), IsStaffOrAbove()]
-        if self.action in {"update", "partial_update", "destroy"}:
-            return [IsAuthenticated(), IsAdministratorOrAbove()]
-        return super().get_permissions()
 
 
 class PengujianViewSet(viewsets.ModelViewSet):

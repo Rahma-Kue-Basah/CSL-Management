@@ -83,10 +83,6 @@ const adminMenuConfig: MenuConfig[] = [
     tooltip: "Informasi",
     searchTerms: ["informasi"],
     items: [
-      {
-        label: "Struktur Organisasi",
-        href: "/admin/information/organization-structure",
-      },
       { label: "Pengumuman", href: "/admin/information/announcements" },
       { label: "FAQ", href: "/admin/information/faq" },
     ],

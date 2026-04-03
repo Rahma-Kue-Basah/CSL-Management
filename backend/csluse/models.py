@@ -520,18 +520,3 @@ class FAQ(BaseModel):
 
     def __str__(self):
         return self.question
-    
-class StructureOrganization(BaseModel):
-    title = models.CharField(max_length=255)
-    name = models.CharField(max_length=455)
-
-    parent = models.ForeignKey(
-        'self',
-        on_delete=models.CASCADE,
-        related_name='children',
-        null=True,
-        blank=True,
-    )
-
-    def __str__(self):
-        return f"{self.title} - {self.name}"

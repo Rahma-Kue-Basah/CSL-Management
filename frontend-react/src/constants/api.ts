@@ -158,7 +158,6 @@ const API_DASHBOARD_OVERVIEW = `${API_BASE_URL}/dashboard-overview/`;
 const API_NOTIFICATIONS = `${API_BASE_URL}/notifications/`;
 const API_FAQS = `${API_BASE_URL}/faqs/`;
 const API_FAQS_BULK_DELETE = `${API_FAQS}bulk-delete/`;
-const API_STRUCTURE_ORGANIZATIONS = `${API_BASE_URL}/structure-organizations/`;
 
 export {
   API_BASE_URL,
@@ -274,5 +273,4 @@ export {
   API_NOTIFICATIONS,
   API_FAQS,
   API_FAQS_BULK_DELETE,
-  API_STRUCTURE_ORGANIZATIONS,
 };

@@ -16,7 +16,6 @@ from .models import (
     Announcement,
     Schedule,
     FAQ,
-    StructureOrganization,
     Pengujian,
     Use,
     Notification,
@@ -861,30 +860,6 @@ class ScheduleFeedItemSerializer(serializers.Serializer):
     end_time = serializers.DateTimeField(allow_null=True)
     category_label = serializers.CharField()
     schedule_item = serializers.DictField(allow_null=True, required=False)
-
-
-class StructureOrganizationSimpleSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = StructureOrganization
-        fields = [
-            "id",
-            "title",
-            "name",
-        ]
-
-
-class StructureOrganizationSerializer(serializers.ModelSerializer):
-    parent_detail = StructureOrganizationSimpleSerializer(source="parent", read_only=True)
-
-    class Meta:
-        model = StructureOrganization
-        fields = [
-            "id",
-            "title",
-            "name",
-            "parent",
-            "parent_detail",
-        ]
 
 
 class PengujianSerializer(serializers.ModelSerializer):
