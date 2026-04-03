@@ -1,6 +1,7 @@
 "use client";
 
 import type { RefObject } from "react";
+import { Image as AntdImage } from "antd";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,9 @@ export default function FaqTable({
             <th className="w-[280px] px-3 py-3 font-medium text-slate-50">
               Pertanyaan
             </th>
+            <th className="w-[124px] px-3 py-3 font-medium text-slate-50">
+              Gambar
+            </th>
             <th className="w-[500px] px-3 py-3 font-medium text-slate-50">
               Jawaban
             </th>
@@ -68,7 +72,7 @@ export default function FaqTable({
         <tbody className="text-sm">
           {isLoading ? (
             <tr>
-              <td colSpan={5} className="px-3 py-8 text-center">
+              <td colSpan={6} className="px-3 py-8 text-center">
                 <div className="flex items-center justify-center gap-2 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
@@ -90,6 +94,19 @@ export default function FaqTable({
                   <div className="whitespace-normal break-words font-medium text-slate-900">
                     {summarizeText(item.question, 180)}
                   </div>
+                </td>
+                <td className="px-3 py-2 align-top">
+                  {item.imageUrl ? (
+                    <AntdImage
+                      src={item.imageUrl}
+                      alt={item.question}
+                      width={96}
+                      height={64}
+                      className="rounded-md border border-slate-200 object-cover"
+                    />
+                  ) : (
+                    <span className="text-xs text-slate-400">-</span>
+                  )}
                 </td>
                 <td className="px-3 py-2 align-top">
                   <div className="whitespace-normal break-words text-muted-foreground">
@@ -132,7 +149,7 @@ export default function FaqTable({
             ))
           ) : (
             <tr>
-              <td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">
+              <td colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
                 {emptyMessage}
               </td>
             </tr>

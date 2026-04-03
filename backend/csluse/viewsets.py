@@ -3268,7 +3268,10 @@ class FAQViewSet(viewsets.ModelViewSet):
         )
 
     def perform_update(self, serializer):
+        previous_image = getattr(serializer.instance, "image", None)
         instance = serializer.save()
+        if previous_image and previous_image != instance.image:
+            previous_image.delete(save=False)
         log_admin_action(
             self.request.user,
             instance,
@@ -3277,6 +3280,7 @@ class FAQViewSet(viewsets.ModelViewSet):
         )
 
     def _delete_faq_instance(self, instance):
+        image = instance.image
         log_admin_action(
             self.request.user,
             instance,
@@ -3284,6 +3288,8 @@ class FAQViewSet(viewsets.ModelViewSet):
             "Deleted FAQ via CSL Admin.",
         )
         super().perform_destroy(instance)
+        if image:
+            image.delete(save=False)
 
     def perform_destroy(self, instance):
         self._delete_faq_instance(instance)

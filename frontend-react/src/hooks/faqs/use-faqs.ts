@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from "react";
 
-import { API_FAQS } from "@/constants/api";
+import { API_BASE_URL, API_FAQS } from "@/constants/api";
 import { authFetch } from "@/lib/auth";
 
 export type Faq = {
   id: string | number;
   question: string;
   answer: string;
+  image?: string | number | null;
+  image_detail?: {
+    id?: string | number;
+    url?: string | null;
+    name?: string | null;
+  } | null;
+  imageUrl?: string;
   created_by?: string | number | null;
   created_by_detail?: {
     full_name?: string | null;
@@ -23,6 +30,20 @@ type FaqListResponse = {
   count?: number;
   results?: Faq[];
 };
+
+function resolveAssetUrl(value?: string | null) {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  if (value.startsWith("/")) return `${API_BASE_URL}${value}`;
+  return `${API_BASE_URL}/${value}`;
+}
+
+function mapFaq(item: Faq): Faq {
+  return {
+    ...item,
+    imageUrl: resolveAssetUrl(item.image_detail?.url ?? ""),
+  };
+}
 
 export type FaqFilters = {
   search?: string;
@@ -74,9 +95,9 @@ export function useFaqs(
           | Faq[]
           | null;
         const items = Array.isArray(payload)
-          ? payload
+          ? payload.map(mapFaq)
           : Array.isArray(payload?.results)
-            ? payload.results
+            ? payload.results.map(mapFaq)
             : [];
 
         if (isMounted) {

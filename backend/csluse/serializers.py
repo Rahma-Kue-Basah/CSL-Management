@@ -813,6 +813,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
 
 class FAQSerializer(serializers.ModelSerializer):
     created_by_detail = ProfileSerializer(source="created_by", read_only=True)
+    image_detail = ImageSerializer(source="image", read_only=True)
 
     class Meta:
         model = FAQ
@@ -820,6 +821,8 @@ class FAQSerializer(serializers.ModelSerializer):
             "id",
             "question",
             "answer",
+            "image",
+            "image_detail",
             "created_by",
             "created_by_detail",
             "created_at",

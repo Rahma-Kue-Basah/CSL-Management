@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Image as AntdImage } from "antd";
 import { ChevronDown } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,7 +22,7 @@ function FaqCard({
       <button
         type="button"
         onClick={onToggle}
-        className="flex w-full cursor-help items-center justify-between gap-4 px-5 py-4 text-left transition hover:bg-slate-50"
+        className="flex w-full cursor-help items-center justify-between gap-4 px-5 py-4 text-left transition-colors duration-200 hover:bg-slate-50"
       >
         <div className="min-w-0">
           <h3 className="text-base font-semibold text-slate-900">
@@ -34,11 +35,32 @@ function FaqCard({
           <ChevronDown className="h-4 w-4" />
         </span>
       </button>
-      {open ? (
-        <div className="border-t border-slate-200 bg-slate-50 px-5 py-4 text-sm leading-relaxed text-slate-700">
-          {item.answer}
+      <div
+        className={`grid transition-[grid-template-rows] duration-300 ease-out ${
+          open ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+        }`}
+      >
+        <div className="overflow-hidden">
+          <div
+            className={`border-t border-slate-200 bg-slate-50 px-5 text-sm leading-relaxed text-slate-700 transition-[padding,opacity,transform] duration-300 ease-out ${
+              open
+                ? "translate-y-0 py-4 opacity-100"
+                : "-translate-y-1 py-0 opacity-0"
+            }`}
+          >
+            {item.imageUrl ? (
+              <div className="mb-4 overflow-hidden rounded-xl border border-slate-200 bg-white p-2">
+                <AntdImage
+                  src={item.imageUrl}
+                  alt={item.question}
+                  className="max-h-[420px] w-full object-contain"
+                />
+              </div>
+            ) : null}
+            {item.answer}
+          </div>
         </div>
-      ) : null}
+      </div>
     </article>
   );
 }
@@ -85,21 +107,22 @@ export default function DashboardFaqPage() {
 
   return (
     <section className="space-y-5">
-      <div className="space-y-3">
+      <div className="space-y-3 xl:columns-2 xl:gap-3 xl:space-y-0">
         {faqs.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
             Belum ada FAQ yang tersedia.
           </div>
         ) : faqs.length ? (
           faqs.map((item) => (
-            <FaqCard
-              key={item.id}
-              item={item}
-              open={openId === item.id}
-              onToggle={() =>
-                setOpenId((current) => (current === item.id ? null : item.id))
-              }
-            />
+            <div key={item.id} className="mb-3 break-inside-avoid xl:inline-block xl:w-full">
+              <FaqCard
+                item={item}
+                open={openId === item.id}
+                onToggle={() =>
+                  setOpenId((current) => (current === item.id ? null : item.id))
+                }
+              />
+            </div>
           ))
         ) : null}
       </div>

@@ -42,6 +42,10 @@ import { toast } from "sonner";
 const EMPTY_FORM: FaqFormState = {
   question: "",
   answer: "",
+  imageId: null,
+  imageUrl: "",
+  imageFile: null,
+  removeImage: false,
 };
 const PAGE_SIZE = 10;
 
@@ -162,6 +166,10 @@ export default function AdminFaqPage() {
     setDetailForm({
       question: item.question || "",
       answer: item.answer || "",
+      imageId: item.image ?? null,
+      imageUrl: item.imageUrl || "",
+      imageFile: null,
+      removeImage: false,
     });
     setUpdateError("");
   };
@@ -183,7 +191,13 @@ export default function AdminFaqPage() {
       return null;
     }
 
-    return { question, answer };
+    return {
+      question,
+      answer,
+      imageId: form.imageId ?? null,
+      imageFile: form.imageFile ?? null,
+      removeImage: form.removeImage ?? false,
+    };
   };
 
   const handleCreateSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -317,6 +331,10 @@ export default function AdminFaqPage() {
           setDetailForm({
             question: detailTarget.question || "",
             answer: detailTarget.answer || "",
+            imageId: detailTarget.image ?? null,
+            imageUrl: detailTarget.imageUrl || "",
+            imageFile: null,
+            removeImage: false,
           });
           setUpdateError("");
         }}

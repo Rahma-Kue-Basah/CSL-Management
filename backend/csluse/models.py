@@ -506,6 +506,13 @@ class Schedule(BaseModel):
 class FAQ(BaseModel):
     question = models.CharField(max_length=500)
     answer = models.CharField(max_length=5000)
+    image = models.ForeignKey(
+        'Image',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='faqs',
+    )
 
     created_by = models.ForeignKey(
         Profile,
