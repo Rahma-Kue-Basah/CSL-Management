@@ -10,6 +10,7 @@ import SampleTestingDetailContent, {
   SampleTestingSectionCard,
 } from "@/components/dashboard/sample-testing/SampleTestingDetailContent";
 import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
+import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
 import { ProgressSteps } from "@/components/shared/progress-steps";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -43,6 +44,7 @@ export default function SampleTestingDetailPage() {
   const location = useLocation();
   const { id } = useParams();
   const [reloadKey, setReloadKey] = useState(0);
+  const [progressOpen, setProgressOpen] = useState(false);
   const { pengujian: item, isLoading, error } = usePengujianDetail(
     id ?? null,
     reloadKey,
@@ -90,11 +92,13 @@ export default function SampleTestingDetailPage() {
           <p className="text-xs text-slate-300">Detail Request</p>
           <h2 className="mt-1 text-xl font-bold text-slate-50">{item.code}</h2>
           <div className="mt-3">
-            <span
-              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+            <button
+              type="button"
+              onClick={() => setProgressOpen(true)}
+              className={`inline-flex cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
             >
               {getStatusDisplayLabel(item.status)}
-            </span>
+            </button>
           </div>
         </div>
         <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
@@ -147,6 +151,7 @@ export default function SampleTestingDetailPage() {
               requesterName={item.name}
               requesterDepartment={item.requesterDepartment}
               status={item.status}
+              onStatusClick={() => setProgressOpen(true)}
               approvedByName={item.approvedByName}
             >
               <SampleTestingMetaItem
@@ -187,9 +192,20 @@ export default function SampleTestingDetailPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          <SampleTestingDetailContent item={item} showHeader={false} />
+          <SampleTestingDetailContent
+            item={item}
+            showHeader={false}
+            onStatusClick={() => setProgressOpen(true)}
+          />
         </div>
       )}
+      <RequestProgressDialog
+        open={progressOpen}
+        onOpenChange={setProgressOpen}
+        title="Progress Pengujian Sampel"
+        code={item.code}
+        steps={getPengujianProgressFlow(item)}
+      />
     </section>
   );
 }

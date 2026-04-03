@@ -15,9 +15,11 @@ import { Button } from "@/components/ui/button";
 import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { ProgressSteps } from "@/components/shared/progress-steps";
 import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
+import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUseDetail } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-format";
+import { getUseProgressFlow } from "@/lib/request-progress";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type UseDetailParams = {
@@ -294,6 +296,7 @@ export default function UseEquipmentDetailPage() {
     : "Kembali ke Pengajuan Saya";
   const isApprovalPage = pathname.startsWith("/use-equipment/approval/");
   const [reloadKey, setReloadKey] = useState(0);
+  const [progressOpen, setProgressOpen] = useState(false);
 
   const { useItem: item, isLoading, error } = useUseDetail(id, reloadKey);
 
@@ -410,6 +413,7 @@ export default function UseEquipmentDetailPage() {
                 requesterName={item.requesterName}
                 requesterDepartment={item.requesterDepartment}
                 status={item.status}
+                onStatusClick={() => setProgressOpen(true)}
                 approvedByName={item.approvedByName}
                 rejectionNote={item.rejectionNote}
               />
@@ -468,6 +472,7 @@ export default function UseEquipmentDetailPage() {
                 requesterName={item.requesterName}
                 requesterDepartment={item.requesterDepartment}
                 status={item.status}
+                onStatusClick={() => setProgressOpen(true)}
                 approvedByName={item.approvedByName}
                 rejectionNote={item.rejectionNote}
               />
@@ -475,7 +480,13 @@ export default function UseEquipmentDetailPage() {
           </>
         )}
       </div>
-
+      <RequestProgressDialog
+        open={progressOpen}
+        onOpenChange={setProgressOpen}
+        title="Progress Penggunaan Alat"
+        code={item.code}
+        steps={getUseProgressFlow(item)}
+      />
     </section>
   );
 }

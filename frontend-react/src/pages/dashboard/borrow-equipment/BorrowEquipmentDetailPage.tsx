@@ -17,9 +17,11 @@ import { Button } from "@/components/ui/button";
 import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { ProgressSteps } from "@/components/shared/progress-steps";
 import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
+import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBorrowDetail } from "@/hooks/borrows/use-borrows";
 import { formatDateTimeWib } from "@/lib/date-format";
+import { getBorrowProgressFlow } from "@/lib/request-progress";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type BorrowFlowStep = {
@@ -306,6 +308,7 @@ export default function BorrowEquipmentDetailPage() {
   const location = useLocation();
   const { id } = useParams();
   const [reloadKey, setReloadKey] = useState(0);
+  const [progressOpen, setProgressOpen] = useState(false);
   const { borrow: item, isLoading, error } = useBorrowDetail(id, reloadKey);
 
   const isAllPage = location.pathname.startsWith("/borrow-equipment/approval/");
@@ -366,11 +369,13 @@ export default function BorrowEquipmentDetailPage() {
           <p className="text-xs text-slate-300">Detail Request</p>
           <h2 className="mt-1 text-xl font-bold text-slate-50">{item.code}</h2>
           <div className="mt-3">
-            <span
-              className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+            <button
+              type="button"
+              onClick={() => setProgressOpen(true)}
+              className={`inline-flex cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
             >
               {getStatusDisplayLabel(item.status)}
-            </span>
+            </button>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -440,6 +445,7 @@ export default function BorrowEquipmentDetailPage() {
                 requesterName={item.requesterName}
                 requesterDepartment={item.requesterDepartment}
                 status={item.status}
+                onStatusClick={() => setProgressOpen(true)}
                 approvedByName={item.approvedByName}
                 rejectionNote={item.rejectionNote}
               >
@@ -531,6 +537,7 @@ export default function BorrowEquipmentDetailPage() {
                   requesterName={item.requesterName}
                   requesterDepartment={item.requesterDepartment}
                   status={item.status}
+                  onStatusClick={() => setProgressOpen(true)}
                   approvedByName={item.approvedByName}
                   rejectionNote={item.rejectionNote}
                 >
@@ -570,6 +577,13 @@ export default function BorrowEquipmentDetailPage() {
           </>
         )}
       </div>
+      <RequestProgressDialog
+        open={progressOpen}
+        onOpenChange={setProgressOpen}
+        title="Progress Peminjaman Alat"
+        code={item.code}
+        steps={getBorrowProgressFlow(item)}
+      />
     </section>
   );
 }

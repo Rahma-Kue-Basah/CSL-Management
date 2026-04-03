@@ -32,6 +32,7 @@ export function RequestInformationCard({
   requesterName,
   requesterDepartment,
   status,
+  onStatusClick,
   approvedByName,
   rejectionNote,
   children,
@@ -40,6 +41,7 @@ export function RequestInformationCard({
   requesterName: string;
   requesterDepartment?: string;
   status: string;
+  onStatusClick?: () => void;
   approvedByName?: string;
   rejectionNote?: string;
   children?: ReactNode;
@@ -66,11 +68,21 @@ export function RequestInformationCard({
         <div className="grid gap-1 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-4">
           <p className="text-xs text-slate-500">Status Saat Ini</p>
           <div className="flex items-center">
-            <span
-              className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(status)}`}
-            >
-              {getStatusDisplayLabel(status)}
-            </span>
+            {onStatusClick ? (
+              <button
+                type="button"
+                onClick={onStatusClick}
+                className={`inline-flex w-fit cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(status)}`}
+              >
+                {getStatusDisplayLabel(status)}
+              </button>
+            ) : (
+              <span
+                className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(status)}`}
+              >
+                {getStatusDisplayLabel(status)}
+              </span>
+            )}
           </div>
         </div>
         <DetailMetaItem label={approverLabel} value={approvedByName || "-"} />

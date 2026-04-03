@@ -14,9 +14,11 @@ import { Button } from "@/components/ui/button";
 import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { ProgressSteps } from "@/components/shared/progress-steps";
 import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
+import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBookingDetail } from "@/hooks/bookings/use-bookings";
 import { formatDateTimeWib } from "@/lib/date-format";
+import { getBookingProgressFlow } from "@/lib/request-progress";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type BookingDetailParams = {
@@ -324,6 +326,7 @@ export default function BookingRoomsDetailPage() {
     : "Kembali ke Pengajuan Saya";
   const isApprovalPage = pathname.startsWith("/booking-rooms/approval/");
   const [reloadKey, setReloadKey] = useState(0);
+  const [progressOpen, setProgressOpen] = useState(false);
 
   const { booking, isLoading, error } = useBookingDetail(id, reloadKey);
 
@@ -487,6 +490,7 @@ export default function BookingRoomsDetailPage() {
                 requesterName={booking.requesterName}
                 requesterDepartment={booking.requesterDepartment}
                 status={booking.status}
+                onStatusClick={() => setProgressOpen(true)}
                 approvedByName={booking.approvedByName}
                 rejectionNote={booking.rejectionNote}
               />
@@ -578,6 +582,7 @@ export default function BookingRoomsDetailPage() {
                 requesterName={booking.requesterName}
                 requesterDepartment={booking.requesterDepartment}
                 status={booking.status}
+                onStatusClick={() => setProgressOpen(true)}
                 approvedByName={booking.approvedByName}
                 rejectionNote={booking.rejectionNote}
               />
@@ -585,7 +590,13 @@ export default function BookingRoomsDetailPage() {
           </>
         )}
       </div>
-
+      <RequestProgressDialog
+        open={progressOpen}
+        onOpenChange={setProgressOpen}
+        title="Progress Peminjaman Lab"
+        code={booking.code}
+        steps={getBookingProgressFlow(booking)}
+      />
     </section>
   );
 }
