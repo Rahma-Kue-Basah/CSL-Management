@@ -149,7 +149,7 @@ function HourlyScheduleTable({
           </colgroup>
           <thead>
             <tr className="bg-slate-50 text-left text-slate-600">
-              <th className="sticky left-0 z-20 w-28 border-b border-r border-slate-300 bg-slate-50 px-4 py-3 font-semibold shadow-[1px_0_0_0_rgb(203,213,225)]">
+              <th className="sticky left-0 z-30 w-28 border-b border-r border-slate-300 bg-slate-50 px-4 py-3 font-semibold after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-slate-400 after:content-[''] shadow-[6px_0_12px_-8px_rgba(15,23,42,0.28)]">
                 Jam
               </th>
               {Array.from({ length: laneCount }, (_, laneIndex) => (
@@ -168,7 +168,7 @@ function HourlyScheduleTable({
             {hourRows.map((hour) => {
               return (
                 <tr key={hour} className="align-top">
-                  <td className="sticky left-0 z-10 border-b border-r border-slate-300 bg-white px-4 py-3 font-medium text-slate-700 shadow-[1px_0_0_0_rgb(203,213,225)]">
+                  <td className="sticky left-0 z-20 border-b border-r border-slate-300 bg-white px-4 py-3 font-medium text-slate-700 after:absolute after:inset-y-0 after:right-0 after:w-px after:bg-slate-400 after:content-[''] shadow-[6px_0_12px_-8px_rgba(15,23,42,0.22)]">
                     {formatHourLabel(hour)}
                   </td>
                   {Array.from({ length: laneCount }, (_, laneIndex) => {
