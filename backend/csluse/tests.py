@@ -37,6 +37,8 @@ class CsluseWorkflowRegressionTests(APITestCase):
             "Lecturer",
             "Lecturer User",
         )
+        self.lecturer_profile.is_mentor = True
+        self.lecturer_profile.save(update_fields=["is_mentor"])
         self.admin_user, self.admin_profile = self.create_user_with_profile(
             "admin@example.com",
             "Admin",
@@ -138,7 +140,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         end = start + timedelta(hours=duration_hours)
         return start, end
 
-    def create_booking(self, requested_by):
+    def create_booking(self, requested_by, *, purpose="Penelitian", requester_mentor_profile=None):
         start, end = self.future_window()
         return Booking.objects.create(
             requested_by=requested_by,
@@ -146,7 +148,9 @@ class CsluseWorkflowRegressionTests(APITestCase):
             start_time=start,
             end_time=end,
             attendee_count=1,
-            purpose="Penelitian",
+            purpose=purpose,
+            requester_mentor="Lecturer User" if requester_mentor_profile else None,
+            requester_mentor_profile=requester_mentor_profile,
         )
 
     def create_booking_for_room(self, requested_by, room):
@@ -160,7 +164,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             purpose="Penelitian",
         )
 
-    def create_use(self, requested_by, *, status="Pending", approved_by=None):
+    def create_use(self, requested_by, *, status="Pending", approved_by=None, purpose="Penelitian", requester_mentor_profile=None):
         start, end = self.future_window(days=2, start_hour=10)
         return Use.objects.create(
             requested_by=requested_by,
@@ -168,9 +172,11 @@ class CsluseWorkflowRegressionTests(APITestCase):
             quantity=1,
             start_time=start,
             end_time=end,
-            purpose="Penelitian",
+            purpose=purpose,
             status=status,
             approved_by=approved_by,
+            requester_mentor="Lecturer User" if requester_mentor_profile else None,
+            requester_mentor_profile=requester_mentor_profile,
         )
 
     def create_use_for_equipment(self, requested_by, equipment, *, status="Pending", approved_by=None):
@@ -186,7 +192,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             approved_by=approved_by,
         )
 
-    def create_borrow(self, requested_by, *, status="Pending", approved_by=None):
+    def create_borrow(self, requested_by, *, status="Pending", approved_by=None, purpose="Penelitian", requester_mentor_profile=None):
         start, end = self.future_window(days=2, start_hour=11)
         return Borrow.objects.create(
             requested_by=requested_by,
@@ -194,9 +200,11 @@ class CsluseWorkflowRegressionTests(APITestCase):
             quantity=1,
             start_time=start,
             end_time=end,
-            purpose="Penelitian",
+            purpose=purpose,
             status=status,
             approved_by=approved_by,
+            requester_mentor="Lecturer User" if requester_mentor_profile else None,
+            requester_mentor_profile=requester_mentor_profile,
         )
 
     def create_borrow_for_equipment(self, requested_by, equipment, *, status="Pending", approved_by=None):
@@ -445,6 +453,104 @@ class CsluseWorkflowRegressionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertTrue(Notification.objects.filter(recipient=self.student_profile, category="Approved").exists())
         self.assertEqual(len(mail.outbox), 0)
+
+    def test_mentor_must_approve_booking_before_pic(self):
+        booking = self.create_booking(
+            self.student_profile,
+            purpose="Skripsi/TA",
+            requester_mentor_profile=self.lecturer_profile,
+        )
+
+        self.client.force_authenticate(self.staff_user)
+        early_response = self.client.post(f"/api/bookings/{booking.id}/approve/", {}, format="json")
+        self.assertEqual(early_response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.client.force_authenticate(self.lecturer_user)
+        mentor_list_response = self.client.get("/api/bookings/all/")
+        self.assertEqual(mentor_list_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(mentor_list_response.data["count"], 1)
+
+        mentor_response = self.client.post(f"/api/bookings/{booking.id}/approve/", {}, format="json")
+        self.assertEqual(mentor_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(mentor_response.data["status"], "Pending")
+        self.assertTrue(mentor_response.data["is_approved_by_mentor"])
+
+        self.client.force_authenticate(self.staff_user)
+        final_response = self.client.post(f"/api/bookings/{booking.id}/approve/", {}, format="json")
+        self.assertEqual(final_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(final_response.data["status"], "Approved")
+
+    def test_mentor_must_approve_use_before_pic(self):
+        use_item = self.create_use(
+            self.student_profile,
+            purpose="Skripsi/TA",
+            requester_mentor_profile=self.lecturer_profile,
+        )
+
+        self.client.force_authenticate(self.staff_user)
+        early_response = self.client.post(f"/api/uses/{use_item.id}/approve/", {}, format="json")
+        self.assertEqual(early_response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.client.force_authenticate(self.lecturer_user)
+        mentor_response = self.client.post(f"/api/uses/{use_item.id}/approve/", {}, format="json")
+        self.assertEqual(mentor_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(mentor_response.data["status"], "Pending")
+        self.assertTrue(mentor_response.data["is_approved_by_mentor"])
+
+        self.client.force_authenticate(self.staff_user)
+        final_response = self.client.post(f"/api/uses/{use_item.id}/approve/", {}, format="json")
+        self.assertEqual(final_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(final_response.data["status"], "Approved")
+
+    def test_mentor_can_access_use_approval_scope_for_their_guidance_request(self):
+        use_item = self.create_use(
+            self.student_profile,
+            purpose="Skripsi/TA",
+            requester_mentor_profile=self.lecturer_profile,
+        )
+
+        self.client.force_authenticate(self.lecturer_user)
+        response = self.client.get("/api/uses/all/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["id"], str(use_item.id))
+
+    def test_mentor_must_approve_borrow_before_pic(self):
+        borrow = self.create_borrow(
+            self.student_profile,
+            purpose="Skripsi/TA",
+            requester_mentor_profile=self.lecturer_profile,
+        )
+
+        self.client.force_authenticate(self.staff_user)
+        early_response = self.client.post(f"/api/borrows/{borrow.id}/approve/", {}, format="json")
+        self.assertEqual(early_response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.client.force_authenticate(self.lecturer_user)
+        mentor_response = self.client.post(f"/api/borrows/{borrow.id}/approve/", {}, format="json")
+        self.assertEqual(mentor_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(mentor_response.data["status"], "Pending")
+        self.assertTrue(mentor_response.data["is_approved_by_mentor"])
+
+        self.client.force_authenticate(self.staff_user)
+        final_response = self.client.post(f"/api/borrows/{borrow.id}/approve/", {}, format="json")
+        self.assertEqual(final_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(final_response.data["status"], "Approved")
+
+    def test_mentor_can_access_borrow_approval_scope_for_their_guidance_request(self):
+        borrow = self.create_borrow(
+            self.student_profile,
+            purpose="Skripsi/TA",
+            requester_mentor_profile=self.lecturer_profile,
+        )
+
+        self.client.force_authenticate(self.lecturer_user)
+        response = self.client.get("/api/borrows/all/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["count"], 1)
+        self.assertEqual(response.data["results"][0]["id"], str(borrow.id))
 
     def test_notifications_endpoint_returns_current_user_notifications(self):
         booking = self.create_booking(self.student_profile)

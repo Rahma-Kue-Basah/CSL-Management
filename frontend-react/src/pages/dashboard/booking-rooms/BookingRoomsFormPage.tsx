@@ -19,9 +19,11 @@ import { useCreateBookingRoom } from "@/hooks/bookings/use-create-booking-room";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { useMentorOptions } from "@/hooks/users/use-mentor-options";
 import {
   REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
   REQUEST_PURPOSE_OPTIONS,
+  THESIS_PURPOSE,
   WORKSHOP_PURPOSE,
 } from "@/constants/request-purpose";
 import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
@@ -42,6 +44,7 @@ type FormData = {
   note: string;
   requesterPhone: string;
   requesterMentor: string;
+  requesterMentorProfileId: string;
   institution: string;
   institutionAddress: string;
   workshopInstitution: string;
@@ -63,6 +66,7 @@ const initialFormData: FormData = {
   note: "",
   requesterPhone: "",
   requesterMentor: "",
+  requesterMentorProfileId: "",
   institution: "",
   institutionAddress: "",
   workshopInstitution: "",
@@ -83,6 +87,9 @@ export default function BookingRoomsFormPage() {
   const [endTime, setEndTime] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
+  const isGuestUser = profile.role === "Guest";
+  const isWorkshopPurpose = formData.purpose === WORKSHOP_PURPOSE;
+  const isThesisPurpose = formData.purpose === THESIS_PURPOSE;
   const {
     rooms,
     isLoading: isLoadingRooms,
@@ -93,11 +100,14 @@ export default function BookingRoomsFormPage() {
     isLoading: isLoadingEquipments,
     error: equipmentError,
   } = useEquipmentOptions("", formData.roomId, Boolean(formData.roomId));
+  const {
+    mentors,
+    isLoading: isLoadingMentors,
+    error: mentorError,
+  } = useMentorOptions(!isGuestUser && isThesisPurpose);
   const { createBookingRoom, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBookingRoom();
   const preselectedRoomId = searchParams.get("room") ?? "";
-  const isGuestUser = profile.role === "Guest";
-  const isWorkshopPurpose = formData.purpose === WORKSHOP_PURPOSE;
   const availablePurposeOptions = isGuestUser
     ? REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP
     : REQUEST_PURPOSE_OPTIONS;
@@ -148,6 +158,10 @@ export default function BookingRoomsFormPage() {
         label: `${equipment.label} (stok: ${equipment.quantity})`,
       })),
     [equipmentOptions],
+  );
+  const mentorOptions = useMemo<SelectOption[]>(
+    () => mentors.map((mentor) => ({ value: mentor.id, label: mentor.label })),
+    [mentors],
   );
 
   useEffect(() => {
@@ -234,6 +248,12 @@ export default function BookingRoomsFormPage() {
             workshopTitle: "",
           }
         : {}),
+      ...(name === "purpose" && value !== THESIS_PURPOSE
+        ? {
+            requesterMentor: "",
+            requesterMentorProfileId: "",
+          }
+        : {}),
       ...(name === "purpose" && value === WORKSHOP_PURPOSE
         ? { attendeeNames: "" }
         : {}),
@@ -294,6 +314,10 @@ export default function BookingRoomsFormPage() {
     }
     if (!availablePurposeOptions.some((option) => option.value === formData.purpose)) {
       setValidationMessage("Pilihan tujuan tidak valid.");
+      return false;
+    }
+    if (!isGuestUser && isThesisPurpose && !formData.requesterMentorProfileId) {
+      setValidationMessage("Dosen pembimbing wajib dipilih untuk tujuan Skripsi/TA.");
       return false;
     }
     if (!formData.startTime || !formData.endTime) {
@@ -388,6 +412,7 @@ export default function BookingRoomsFormPage() {
       note: formData.note,
       requesterPhone: formData.requesterPhone,
       requesterMentor: isGuestUser ? "" : formData.requesterMentor,
+      requesterMentorProfileId: isGuestUser ? "" : formData.requesterMentorProfileId,
       institution: formData.institution,
       institutionAddress: formData.institutionAddress,
       workshopTitle: formData.workshopTitle,
@@ -506,20 +531,30 @@ export default function BookingRoomsFormPage() {
             />
           </div>
 
-          {!isGuestUser ? (
+          {!isGuestUser && isThesisPurpose ? (
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600">
-                Dosen Pembimbing
-              </label>
-              <Input
-                type="text"
-                name="requesterMentor"
-                value={formData.requesterMentor}
-                onChange={handleChange}
-                placeholder="Nama dosen pembimbing"
-                className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
-                disabled={isSubmitting}
+              <DashboardComboboxField
+                label="Dosen Pembimbing"
+                value={formData.requesterMentorProfileId}
+                options={mentorOptions}
+                placeholder="Pilih dosen pembimbing"
+                emptyText="Dosen pembimbing tidak ditemukan."
+                disabled={isSubmitting || isLoadingMentors}
+                required
+                onChange={(value) => {
+                  const selectedMentor = mentors.find((mentor) => mentor.id === value);
+                  setFormData((prev) => ({
+                    ...prev,
+                    requesterMentorProfileId: value,
+                    requesterMentor: selectedMentor?.label ?? "",
+                  }));
+                  setValidationMessage("");
+                  setErrorMessage("");
+                }}
               />
+              {mentorError ? (
+                <p className="text-xs text-rose-600">{mentorError}</p>
+              ) : null}
             </div>
           ) : null}
 
@@ -814,7 +849,7 @@ export default function BookingRoomsFormPage() {
           label="Nomor Telepon Pemohon"
           value={formData.requesterPhone}
         />
-        {!isGuestUser ? (
+        {!isGuestUser && isThesisPurpose ? (
           <SubmissionSummaryItem
             label="Dosen Pembimbing"
             value={formData.requesterMentor}

@@ -50,6 +50,11 @@ import { useUpdatePengujianStatus } from "@/hooks/pengujians/use-update-pengujia
 import { useUseDetail, type UseRow } from "@/hooks/uses/use-uses";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { formatDateTimeWib } from "@/lib/date-format";
+import {
+  canCurrentUserReviewPendingRequest,
+  canCurrentUserFinalizeRequest,
+  isWaitingForMentorApproval,
+} from "@/lib/mentor-approval";
 
 export type ReviewContext =
   | { kind: "booking"; id: string }
@@ -85,6 +90,10 @@ function isInspectionPendingStatus(value: string) {
 
 function hasValue(value?: string | null) {
   return Boolean(value && value.trim() && value !== "-");
+}
+
+function isGuestRole(role?: string | null) {
+  return String(role ?? "").trim().toLowerCase() === "guest";
 }
 
 function getBorrowStatusHint(
@@ -253,6 +262,36 @@ function isReviewerRole(role: string | null | undefined) {
   );
 }
 
+function getMentorApprovalHint(
+  waitingForMentorApproval: boolean,
+  isAssignedMentor: boolean,
+) {
+  if (!waitingForMentorApproval) return null;
+
+  if (isAssignedMentor) {
+    return {
+      title: "Menunggu review dosen pembimbing",
+      message:
+        "Pengajuan ini membutuhkan persetujuan Anda sebagai dosen pembimbing sebelum dapat diproses PIC ruangan.",
+      indicators: [
+        "Gunakan Setujui atau Tolak untuk menentukan apakah pengajuan boleh lanjut ke PIC.",
+      ],
+      className: "border-amber-200 bg-amber-50/80",
+      titleClassName: "text-amber-800",
+      textClassName: "text-amber-900",
+    };
+  }
+
+  return {
+    title: "Menunggu persetujuan dosen pembimbing",
+    message:
+      "PIC ruangan atau admin belum dapat memproses pengajuan ini sampai dosen pembimbing yang dipilih memberikan persetujuan.",
+    className: "border-amber-200 bg-amber-50/80",
+    titleClassName: "text-amber-800",
+    textClassName: "text-amber-900",
+  };
+}
+
 type ReviewIssue = {
   label: string;
   value: string;
@@ -380,10 +419,23 @@ function BookingReviewPanel({
     );
   }
 
+  const waitingForMentorApproval = isWaitingForMentorApproval(booking);
+  const showBookingReviewCheck =
+    shouldShowBookingReviewCheck && !waitingForMentorApproval;
   const reviewer = isReviewerRole(profile?.role);
-  const canReviewBooking = reviewer && isPendingStatus(booking.status);
-  const canCompleteBooking = reviewer && isApprovedStatus(booking.status);
-  const isGuestRequester = !hasValue(booking.requesterDepartment);
+  const canReviewBooking = canCurrentUserReviewPendingRequest(
+    booking,
+    profile?.id,
+    profile?.role,
+  );
+  const canCompleteBooking =
+    isApprovedStatus(booking.status) &&
+    canCurrentUserFinalizeRequest(booking, profile?.id, profile?.role);
+  const mentorHint = getMentorApprovalHint(
+    waitingForMentorApproval,
+    String(profile?.id ?? "") === booking.requesterMentorProfileId,
+  );
+  const isGuestRequester = isGuestRole(booking.requesterRole);
   const isWorkshopPurpose = booking.purpose === WORKSHOP_PURPOSE;
   const bookingStatusHint = getCompleteStatusHint(booking.status, reviewer, {
     readyTitle: "Booking siap diselesaikan",
@@ -526,22 +578,23 @@ function BookingReviewPanel({
               ]
             : []),
         ]}
-        checklist={shouldShowBookingReviewCheck ? reviewIssues : []}
-        checklistLoading={shouldShowBookingReviewCheck ? issuesLoading : false}
+        checklist={showBookingReviewCheck ? reviewIssues : []}
+        checklistLoading={showBookingReviewCheck ? issuesLoading : false}
+        showChecklistSection={showBookingReviewCheck}
         checklistEmptyMessage={
-          shouldShowBookingReviewCheck
+          showBookingReviewCheck
             ? "Tidak ada catatan review. Pengajuan ini siap diproses."
             : undefined
         }
         checklistPassedIndicators={
-          shouldShowBookingReviewCheck ? passedIndicators : []
+          showBookingReviewCheck ? passedIndicators : []
         }
-        statusHintTitle={bookingStatusHint?.title}
-        statusHintMessage={bookingStatusHint?.message}
-        statusHintIndicators={bookingStatusHint?.indicators}
-        statusHintClassName={bookingStatusHint?.className}
-        statusHintTitleClassName={bookingStatusHint?.titleClassName}
-        statusHintTextClassName={bookingStatusHint?.textClassName}
+        statusHintTitle={mentorHint?.title ?? bookingStatusHint?.title}
+        statusHintMessage={mentorHint?.message ?? bookingStatusHint?.message}
+        statusHintIndicators={mentorHint?.indicators ?? bookingStatusHint?.indicators}
+        statusHintClassName={mentorHint?.className ?? bookingStatusHint?.className}
+        statusHintTitleClassName={mentorHint?.titleClassName ?? bookingStatusHint?.titleClassName}
+        statusHintTextClassName={mentorHint?.textClassName ?? bookingStatusHint?.textClassName}
       >
         {canReviewBooking ? (
           <>
@@ -682,10 +735,23 @@ function UseReviewPanel({
     );
   }
 
+  const waitingForMentorApproval = isWaitingForMentorApproval(useItem);
+  const showUseReviewCheck =
+    shouldShowUseReviewCheck && !waitingForMentorApproval;
   const reviewer = isReviewerRole(profile?.role);
-  const canReviewUse = reviewer && isPendingStatus(useItem.status);
-  const canCompleteUse = reviewer && isApprovedStatus(useItem.status);
-  const isGuestRequester = !hasValue(useItem.requesterDepartment);
+  const canReviewUse = canCurrentUserReviewPendingRequest(
+    useItem,
+    profile?.id,
+    profile?.role,
+  );
+  const canCompleteUse =
+    isApprovedStatus(useItem.status) &&
+    canCurrentUserFinalizeRequest(useItem, profile?.id, profile?.role);
+  const mentorHint = getMentorApprovalHint(
+    waitingForMentorApproval,
+    String(profile?.id ?? "") === useItem.requesterMentorProfileId,
+  );
+  const isGuestRequester = isGuestRole(useItem.requesterRole);
   const useStatusHint = getCompleteStatusHint(useItem.status, reviewer, {
     readyTitle: "Penggunaan alat siap diselesaikan",
     reviewerMessage:
@@ -818,22 +884,23 @@ function UseReviewPanel({
               ]
             : []),
         ]}
-        checklist={shouldShowUseReviewCheck ? reviewIssues : []}
-        checklistLoading={shouldShowUseReviewCheck ? issuesLoading : false}
+        checklist={showUseReviewCheck ? reviewIssues : []}
+        checklistLoading={showUseReviewCheck ? issuesLoading : false}
+        showChecklistSection={showUseReviewCheck}
         checklistEmptyMessage={
-          shouldShowUseReviewCheck
+          showUseReviewCheck
             ? "Tidak ada catatan review. Pengajuan ini siap diproses."
             : undefined
         }
         checklistPassedIndicators={
-          shouldShowUseReviewCheck ? passedIndicators : []
+          showUseReviewCheck ? passedIndicators : []
         }
-        statusHintTitle={useStatusHint?.title}
-        statusHintMessage={useStatusHint?.message}
-        statusHintIndicators={useStatusHint?.indicators}
-        statusHintClassName={useStatusHint?.className}
-        statusHintTitleClassName={useStatusHint?.titleClassName}
-        statusHintTextClassName={useStatusHint?.textClassName}
+        statusHintTitle={mentorHint?.title ?? useStatusHint?.title}
+        statusHintMessage={mentorHint?.message ?? useStatusHint?.message}
+        statusHintIndicators={mentorHint?.indicators ?? useStatusHint?.indicators}
+        statusHintClassName={mentorHint?.className ?? useStatusHint?.className}
+        statusHintTitleClassName={mentorHint?.titleClassName ?? useStatusHint?.titleClassName}
+        statusHintTextClassName={mentorHint?.textClassName ?? useStatusHint?.textClassName}
       >
         {canReviewUse ? (
           <>
@@ -981,13 +1048,29 @@ function BorrowReviewPanel({
     );
   }
 
+  const waitingForMentorApproval = isWaitingForMentorApproval(borrow);
+  const showBorrowReviewCheck =
+    shouldShowBorrowReviewCheck && !waitingForMentorApproval;
   const reviewer = isReviewerRole(profile?.role);
-  const canReviewBorrow = reviewer && isPendingStatus(borrow.status);
-  const canHandoverBorrow = reviewer && isApprovedStatus(borrow.status);
-  const canConfirmReturn = reviewer && canReturnStatus(borrow.status);
+  const canReviewBorrow = canCurrentUserReviewPendingRequest(
+    borrow,
+    profile?.id,
+    profile?.role,
+  );
+  const canFinalizeBorrow = canCurrentUserFinalizeRequest(
+    borrow,
+    profile?.id,
+    profile?.role,
+  );
+  const canHandoverBorrow = canFinalizeBorrow && isApprovedStatus(borrow.status);
+  const canConfirmReturn = canFinalizeBorrow && canReturnStatus(borrow.status);
   const canFinalizeInspection =
-    reviewer && isInspectionPendingStatus(borrow.status);
-  const isGuestRequester = !hasValue(borrow.requesterDepartment);
+    canFinalizeBorrow && isInspectionPendingStatus(borrow.status);
+  const mentorHint = getMentorApprovalHint(
+    waitingForMentorApproval,
+    String(profile?.id ?? "") === borrow.requesterMentorProfileId,
+  );
+  const isGuestRequester = isGuestRole(borrow.requesterRole);
   const borrowStatusHint = getBorrowStatusHint(borrow.status, reviewer);
   const borrowStatusActionClass = getBorrowStatusActionClass(borrow.status);
 
@@ -1158,22 +1241,23 @@ function BorrowReviewPanel({
         status={borrow.status}
         code={borrow.code}
         meta={reviewMeta}
-        checklist={shouldShowBorrowReviewCheck ? reviewIssues : []}
-        checklistLoading={shouldShowBorrowReviewCheck ? issuesLoading : false}
+        checklist={showBorrowReviewCheck ? reviewIssues : []}
+        checklistLoading={showBorrowReviewCheck ? issuesLoading : false}
+        showChecklistSection={showBorrowReviewCheck}
         checklistEmptyMessage={
-          shouldShowBorrowReviewCheck
+          showBorrowReviewCheck
             ? "Tidak ada catatan review. Pengajuan ini siap diproses."
             : undefined
         }
         checklistPassedIndicators={
-          shouldShowBorrowReviewCheck ? passedIndicators : []
+          showBorrowReviewCheck ? passedIndicators : []
         }
-        statusHintTitle={borrowStatusHint?.title}
-        statusHintMessage={borrowStatusHint?.message}
-        statusHintIndicators={borrowStatusHint?.indicators}
-        statusHintClassName={borrowStatusHint?.className}
-        statusHintTitleClassName={borrowStatusHint?.titleClassName}
-        statusHintTextClassName={borrowStatusHint?.textClassName}
+        statusHintTitle={mentorHint?.title ?? borrowStatusHint?.title}
+        statusHintMessage={mentorHint?.message ?? borrowStatusHint?.message}
+        statusHintIndicators={mentorHint?.indicators ?? borrowStatusHint?.indicators}
+        statusHintClassName={mentorHint?.className ?? borrowStatusHint?.className}
+        statusHintTitleClassName={mentorHint?.titleClassName ?? borrowStatusHint?.titleClassName}
+        statusHintTextClassName={mentorHint?.textClassName ?? borrowStatusHint?.textClassName}
       >
         {canReviewBorrow ? (
           <>
@@ -1378,7 +1462,7 @@ function PengujianReviewPanel({
     isReviewerRole(profile?.role) && isPendingStatus(pengujian.status);
   const canCompletePengujian =
     isReviewerRole(profile?.role) && isApprovedStatus(pengujian.status);
-  const isGuestRequester = !hasValue(pengujian.requesterDepartment);
+  const isGuestRequester = isGuestRole(pengujian.requesterRole);
   const pengujianStatusHint = getPengujianStatusHint(
     pengujian.status,
     isReviewerRole(profile?.role),

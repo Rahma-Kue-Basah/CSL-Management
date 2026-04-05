@@ -1,8 +1,16 @@
 import type { ProgressStepItem } from "@/components/shared/progress-steps";
 import { formatDateTimeWib } from "@/lib/date-format";
+import {
+  getMentorApprovalStageLabel,
+  hasMentorApprovalTrace,
+} from "@/lib/mentor-approval";
 
 type BasicProgressInput = {
   status: string;
+  purpose?: string;
+  requesterMentorProfileId?: string;
+  isApprovedByMentor?: boolean;
+  mentorApprovedAt?: string;
   createdAt: string;
   updatedAt: string;
   approvedAt?: string;
@@ -30,12 +38,38 @@ function pickTime(...values: Array<string | undefined>) {
   return found ? formatDateTimeWib(found) : undefined;
 }
 
+function withMentorStep(
+  item: BasicProgressInput,
+  steps: ProgressStepItem[],
+): ProgressStepItem[] {
+  if (!hasMentorApprovalTrace(item)) {
+    return steps;
+  }
+
+  const mentorLabel = getMentorApprovalStageLabel(item);
+  const mentorStep: ProgressStepItem = {
+    key: "mentor-approval",
+    label: mentorLabel || "Tahap Dosen Pembimbing",
+    state: item.isApprovedByMentor
+      ? "finish"
+      : normalizeStatus(item.status) === "rejected"
+        ? "error"
+        : "process",
+    time: item.isApprovedByMentor
+      ? pickTime(item.mentorApprovedAt, item.updatedAt)
+      : undefined,
+  };
+
+  const nextSteps = [...steps];
+  nextSteps.splice(1, 0, mentorStep);
+  return nextSteps;
+}
+
 export function getBookingProgressFlow(
   booking: BasicProgressInput,
 ): ProgressStepItem[] {
   const status = normalizeStatus(booking.status);
-
-  const baseSteps: ProgressStepItem[] = [
+  const baseSteps = withMentorStep(booking, [
     {
       key: "submitted",
       label: "Diajukan",
@@ -52,39 +86,45 @@ export function getBookingProgressFlow(
       label: "Selesai",
       state: "wait",
     },
-  ];
+  ]);
 
   if (status === "pending") return baseSteps;
   if (status === "approved") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = pickTime(booking.approvedAt, booking.updatedAt);
-    baseSteps[2].state = "process";
+    const approvedIndex = hasMentorApprovalTrace(booking) ? 2 : 1;
+    const completedIndex = hasMentorApprovalTrace(booking) ? 3 : 2;
+    baseSteps[approvedIndex].state = "finish";
+    baseSteps[approvedIndex].time = pickTime(booking.approvedAt, booking.updatedAt);
+    baseSteps[completedIndex].state = "process";
     return baseSteps;
   }
   if (status === "completed") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = pickTime(booking.approvedAt, booking.updatedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = pickTime(booking.completedAt, booking.updatedAt);
+    const approvedIndex = hasMentorApprovalTrace(booking) ? 2 : 1;
+    const completedIndex = hasMentorApprovalTrace(booking) ? 3 : 2;
+    baseSteps[approvedIndex].state = "finish";
+    baseSteps[approvedIndex].time = pickTime(booking.approvedAt, booking.updatedAt);
+    baseSteps[completedIndex].state = "finish";
+    baseSteps[completedIndex].time = pickTime(booking.completedAt, booking.updatedAt);
     return baseSteps;
   }
   if (status === "rejected") {
-    baseSteps[1] = {
+    const rejectedIndex = hasMentorApprovalTrace(booking) && booking.isApprovedByMentor ? 2 : 1;
+    baseSteps[rejectedIndex] = {
       key: "rejected",
       label: "Ditolak",
       time: pickTime(booking.rejectedAt, booking.updatedAt),
       state: "error",
     };
-    return baseSteps.slice(0, 2);
+    return baseSteps.slice(0, rejectedIndex + 1);
   }
   if (status === "expired") {
-    baseSteps[1] = {
+    const expiredIndex = hasMentorApprovalTrace(booking) ? 2 : 1;
+    baseSteps[expiredIndex] = {
       key: "expired",
       label: "Kedaluwarsa",
       time: pickTime(booking.expiredAt, booking.updatedAt),
       state: "error",
     };
-    return baseSteps.slice(0, 2);
+    return baseSteps.slice(0, expiredIndex + 1);
   }
   return baseSteps;
 }
@@ -103,8 +143,7 @@ export function getBorrowProgressFlow(
   item: BorrowProgressInput,
 ): ProgressStepItem[] {
   const status = normalizeStatus(item.status);
-
-  const baseSteps: ProgressStepItem[] = [
+  const baseSteps = withMentorStep(item, [
     {
       key: "submitted",
       label: "Diajukan",
@@ -136,106 +175,129 @@ export function getBorrowProgressFlow(
       label: "Selesai",
       state: "wait",
     },
-  ];
+  ]);
 
   if (status === "pending") return baseSteps;
   if (status === "approved") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = pickTime(item.approvedAt, item.updatedAt);
-    baseSteps[2].state = "process";
+    const approvedIndex = hasMentorApprovalTrace(item) ? 2 : 1;
+    const borrowedIndex = hasMentorApprovalTrace(item) ? 3 : 2;
+    baseSteps[approvedIndex].state = "finish";
+    baseSteps[approvedIndex].time = pickTime(item.approvedAt, item.updatedAt);
+    baseSteps[borrowedIndex].state = "process";
     return baseSteps;
   }
   if (status === "borrowed") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = pickTime(item.approvedAt, item.updatedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = pickTime(item.borrowedAt, item.updatedAt);
-    baseSteps[3].state = "process";
+    const approvedIndex = hasMentorApprovalTrace(item) ? 2 : 1;
+    const borrowedIndex = hasMentorApprovalTrace(item) ? 3 : 2;
+    const returnedIndex = hasMentorApprovalTrace(item) ? 4 : 3;
+    baseSteps[approvedIndex].state = "finish";
+    baseSteps[approvedIndex].time = pickTime(item.approvedAt, item.updatedAt);
+    baseSteps[borrowedIndex].state = "finish";
+    baseSteps[borrowedIndex].time = pickTime(item.borrowedAt, item.updatedAt);
+    baseSteps[returnedIndex].state = "process";
     return baseSteps;
   }
   if (
     status === "returned pending inspection" ||
     status === "returned_pending_inspection"
   ) {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = pickTime(item.approvedAt, item.updatedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = pickTime(item.borrowedAt, item.updatedAt);
-    baseSteps[3].state = "finish";
-    baseSteps[3].time = pickTime(
+    const approvedIndex = hasMentorApprovalTrace(item) ? 2 : 1;
+    const borrowedIndex = hasMentorApprovalTrace(item) ? 3 : 2;
+    const returnedIndex = hasMentorApprovalTrace(item) ? 4 : 3;
+    const inspectionIndex = hasMentorApprovalTrace(item) ? 5 : 4;
+    baseSteps[approvedIndex].state = "finish";
+    baseSteps[approvedIndex].time = pickTime(item.approvedAt, item.updatedAt);
+    baseSteps[borrowedIndex].state = "finish";
+    baseSteps[borrowedIndex].time = pickTime(item.borrowedAt, item.updatedAt);
+    baseSteps[returnedIndex].state = "finish";
+    baseSteps[returnedIndex].time = pickTime(
       item.returnedPendingInspectionAt,
       item.endTimeActual,
       item.updatedAt,
     );
-    baseSteps[4].state = "process";
+    baseSteps[inspectionIndex].state = "process";
     return baseSteps;
   }
   if (status === "returned") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = pickTime(item.approvedAt, item.updatedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = pickTime(item.borrowedAt, item.updatedAt);
-    baseSteps[3].state = "finish";
-    baseSteps[3].time = pickTime(
+    const approvedIndex = hasMentorApprovalTrace(item) ? 2 : 1;
+    const borrowedIndex = hasMentorApprovalTrace(item) ? 3 : 2;
+    const returnedIndex = hasMentorApprovalTrace(item) ? 4 : 3;
+    const inspectionIndex = hasMentorApprovalTrace(item) ? 5 : 4;
+    const completedIndex = hasMentorApprovalTrace(item) ? 6 : 5;
+    baseSteps[approvedIndex].state = "finish";
+    baseSteps[approvedIndex].time = pickTime(item.approvedAt, item.updatedAt);
+    baseSteps[borrowedIndex].state = "finish";
+    baseSteps[borrowedIndex].time = pickTime(item.borrowedAt, item.updatedAt);
+    baseSteps[returnedIndex].state = "finish";
+    baseSteps[returnedIndex].time = pickTime(
       item.returnedPendingInspectionAt,
       item.endTimeActual,
       item.updatedAt,
     );
-    baseSteps[4].state = "finish";
-    baseSteps[4].time = pickTime(item.inspectedAt, item.updatedAt);
-    baseSteps[5].state = "finish";
-    baseSteps[5].time = pickTime(item.returnedAt, item.inspectedAt, item.updatedAt);
+    baseSteps[inspectionIndex].state = "finish";
+    baseSteps[inspectionIndex].time = pickTime(item.inspectedAt, item.updatedAt);
+    baseSteps[completedIndex].state = "finish";
+    baseSteps[completedIndex].time = pickTime(item.returnedAt, item.inspectedAt, item.updatedAt);
     return baseSteps;
   }
   if (status === "rejected") {
-    baseSteps[1] = {
+    const rejectedIndex = hasMentorApprovalTrace(item) && item.isApprovedByMentor ? 2 : 1;
+    baseSteps[rejectedIndex] = {
       key: "rejected",
       label: "Ditolak",
       time: pickTime(item.rejectedAt, item.updatedAt),
       state: "error",
     };
-    return baseSteps.slice(0, 2);
+    return baseSteps.slice(0, rejectedIndex + 1);
   }
   if (status === "expired") {
-    baseSteps[1] = {
+    const expiredIndex = hasMentorApprovalTrace(item) ? 2 : 1;
+    baseSteps[expiredIndex] = {
       key: "expired",
       label: "Expired",
       time: pickTime(item.expiredAt, item.updatedAt),
       state: "error",
     };
-    return baseSteps.slice(0, 2);
+    return baseSteps.slice(0, expiredIndex + 1);
   }
   if (status === "overdue") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = pickTime(item.approvedAt, item.updatedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = pickTime(item.borrowedAt, item.updatedAt);
-    baseSteps[3] = {
+    const approvedIndex = hasMentorApprovalTrace(item) ? 2 : 1;
+    const borrowedIndex = hasMentorApprovalTrace(item) ? 3 : 2;
+    const overdueIndex = hasMentorApprovalTrace(item) ? 4 : 3;
+    baseSteps[approvedIndex].state = "finish";
+    baseSteps[approvedIndex].time = pickTime(item.approvedAt, item.updatedAt);
+    baseSteps[borrowedIndex].state = "finish";
+    baseSteps[borrowedIndex].time = pickTime(item.borrowedAt, item.updatedAt);
+    baseSteps[overdueIndex] = {
       key: "overdue",
       label: "Terlambat",
       time: pickTime(item.overdueAt, item.updatedAt),
       state: "error",
     };
-    return baseSteps.slice(0, 4);
+    return baseSteps.slice(0, overdueIndex + 1);
   }
   if (status === "lost/damaged") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = pickTime(item.approvedAt, item.updatedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = pickTime(item.borrowedAt, item.updatedAt);
-    baseSteps[3].state = "finish";
-    baseSteps[3].time = pickTime(
+    const approvedIndex = hasMentorApprovalTrace(item) ? 2 : 1;
+    const borrowedIndex = hasMentorApprovalTrace(item) ? 3 : 2;
+    const returnedIndex = hasMentorApprovalTrace(item) ? 4 : 3;
+    const lostDamagedIndex = hasMentorApprovalTrace(item) ? 5 : 4;
+    baseSteps[approvedIndex].state = "finish";
+    baseSteps[approvedIndex].time = pickTime(item.approvedAt, item.updatedAt);
+    baseSteps[borrowedIndex].state = "finish";
+    baseSteps[borrowedIndex].time = pickTime(item.borrowedAt, item.updatedAt);
+    baseSteps[returnedIndex].state = "finish";
+    baseSteps[returnedIndex].time = pickTime(
       item.returnedPendingInspectionAt,
       item.endTimeActual,
       item.updatedAt,
     );
-    baseSteps[4] = {
+    baseSteps[lostDamagedIndex] = {
       key: "lost-damaged",
       label: "Hilang/Rusak",
       time: pickTime(item.lostDamagedAt, item.inspectedAt, item.updatedAt),
       state: "error",
     };
-    return baseSteps.slice(0, 5);
+    return baseSteps.slice(0, lostDamagedIndex + 1);
   }
 
   return baseSteps;

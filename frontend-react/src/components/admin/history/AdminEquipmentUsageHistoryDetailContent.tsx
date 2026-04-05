@@ -18,6 +18,10 @@ import {
 } from "@/components/admin/history/AdminHistoryDetailLayout";
 import type { UseRow } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-format";
+import {
+  getMentorApprovalStageLabel,
+  hasMentorApprovalTrace,
+} from "@/lib/mentor-approval";
 
 type Props = {
   item: UseRow | null;
@@ -188,6 +192,18 @@ export default function AdminEquipmentUsageRecordDetailContent({
             icon={<NotebookPen className="h-5 w-5" />}
           >
             <AdminRecordDetailGrid>
+              {hasMentorApprovalTrace(item) ? (
+                <>
+                  <AdminRecordDetailItem
+                    label="Tahap Dosen Pembimbing"
+                    value={getMentorApprovalStageLabel(item)}
+                  />
+                  <AdminRecordDetailItem
+                    label="Waktu Persetujuan Dosen Pembimbing"
+                    value={formatDateTimeWib(item.mentorApprovedAt)}
+                  />
+                </>
+              ) : null}
               <AdminRecordDetailItem
                 label="Disetujui Oleh"
                 value={item.approvedByName}

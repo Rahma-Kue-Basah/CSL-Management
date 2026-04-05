@@ -29,10 +29,12 @@ export type BookingRow = {
   roomName: string;
   roomNumber: string;
   roomPicName: string;
+  roomPicIds: string[];
   requesterId: string;
   requesterName: string;
   requesterEmail: string;
   requesterDepartment: string;
+  requesterRole: string;
   status: string;
   purpose: string;
   startTime: string;
@@ -41,6 +43,10 @@ export type BookingRow = {
   attendeeNames: string;
   requesterPhone: string;
   requesterMentor: string;
+  requesterMentorProfileId: string;
+  requesterMentorProfileName: string;
+  isApprovedByMentor: boolean;
+  mentorApprovedAt: string;
   institution: string;
   institutionAddress: string;
   workshopTitle: string;
@@ -80,6 +86,13 @@ type ApiBooking = {
   attendee_names?: string | null;
   requester_phone?: string | null;
   requester_mentor?: string | null;
+  requester_mentor_profile_detail?: {
+    id?: string | number | null;
+    full_name?: string | null;
+    email?: string | null;
+  } | null;
+  is_approved_by_mentor?: boolean | null;
+  mentor_approved_at?: string | null;
   institution?: string | null;
   institution_address?: string | null;
   workshop_title?: string | null;
@@ -97,16 +110,18 @@ type ApiBooking = {
     id?: string | number | null;
     name?: string | null;
     number?: string | null;
-    pics_detail?: Array<{
-      full_name?: string | null;
-      email?: string | null;
-    }> | null;
+      pics_detail?: Array<{
+        id?: string | number | null;
+        full_name?: string | null;
+        email?: string | null;
+      }> | null;
   } | null;
   requested_by?: string | number | null;
   requested_by_detail?: {
     id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
+    role?: string | null;
     department?: string | null;
   } | null;
   approved_by?: string | number | null;
@@ -163,6 +178,11 @@ export function mapBooking(item: ApiBooking): BookingRow {
         .filter(Boolean)
         .join(", ") || "-"
     : "-";
+  const roomPicIds = Array.isArray(item.room_detail?.pics_detail)
+    ? item.room_detail.pics_detail
+        .map((pic) => String(pic?.id ?? "").trim())
+        .filter(Boolean)
+    : [];
 
   const equipmentItems = Array.isArray(item.equipment_items_detail)
     ? item.equipment_items_detail.map((equipmentItem) => ({
@@ -188,10 +208,12 @@ export function mapBooking(item: ApiBooking): BookingRow {
     roomName: String(item.room_detail?.name ?? "-"),
     roomNumber: String(item.room_detail?.number ?? "-"),
     roomPicName,
+    roomPicIds,
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
     requesterEmail: String(item.requested_by_detail?.email ?? "-"),
     requesterDepartment: String(item.requested_by_detail?.department ?? "-"),
+    requesterRole: String(item.requested_by_detail?.role ?? "-"),
     status: String(item.status ?? "-"),
     purpose: String(item.purpose ?? "-"),
     startTime: String(item.start_time ?? "-"),
@@ -200,6 +222,14 @@ export function mapBooking(item: ApiBooking): BookingRow {
     attendeeNames: String(item.attendee_names ?? "-"),
     requesterPhone: String(item.requester_phone ?? "-"),
     requesterMentor: String(item.requester_mentor ?? "-"),
+    requesterMentorProfileId: String(item.requester_mentor_profile_detail?.id ?? ""),
+    requesterMentorProfileName: String(
+      item.requester_mentor_profile_detail?.full_name ??
+        item.requester_mentor_profile_detail?.email ??
+        "-",
+    ),
+    isApprovedByMentor: Boolean(item.is_approved_by_mentor ?? false),
+    mentorApprovedAt: String(item.mentor_approved_at ?? "-"),
     institution: String(item.institution ?? "-"),
     institutionAddress: String(item.institution_address ?? "-"),
     workshopTitle: String(item.workshop_title ?? "-"),

@@ -51,6 +51,7 @@ import {
   toStartOfDay,
 } from "@/lib/date";
 import { formatDateTimeWib } from "@/lib/date-format";
+import { isWaitingForMentorApproval } from "@/lib/mentor-approval";
 import { BORROW_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
 import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
 import {
@@ -585,7 +586,8 @@ export default function AdminEquipmentBorrowHistoryPage() {
                 </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
-                    {shouldShowReviewAction("borrow", item.status) ? (
+                    {shouldShowReviewAction("borrow", item.status) &&
+                    !isWaitingForMentorApproval(item) ? (
                       <ActionTooltip label="Review pengajuan">
                         <Button
                           variant="outline"

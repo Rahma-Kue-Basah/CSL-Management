@@ -23,6 +23,7 @@ type RequestReviewCardProps = {
   checklistLoading?: boolean;
   checklistEmptyMessage?: string;
   checklistPassedIndicators?: string[];
+  showChecklistSection?: boolean;
   statusHintTitle?: string;
   statusHintMessage?: string;
   statusHintIndicators?: string[];
@@ -40,6 +41,7 @@ export function RequestReviewCard({
   checklistLoading = false,
   checklistEmptyMessage,
   checklistPassedIndicators = [],
+  showChecklistSection = true,
   statusHintTitle,
   statusHintMessage,
   statusHintIndicators = [],
@@ -84,6 +86,8 @@ export function RequestReviewCard({
       ) : null}
 
       <div className="mt-4 border-t border-slate-200 pt-4">
+        {showChecklistSection ? (
+          <>
         {checklistLoading ? (
           <div className="mb-4 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
             <p className="text-xs text-slate-500">Memeriksa catatan review...</p>
@@ -128,6 +132,8 @@ export function RequestReviewCard({
             ) : null}
           </div>
         ) : null}
+          </>
+        ) : null}
 
         {statusHintMessage ? (
           <div className={`mb-4 rounded-md border px-4 py-3 ${statusHintClassName}`}>
@@ -152,14 +158,16 @@ export function RequestReviewCard({
         {children ? (
           <div
             className={
-              checklistLoading || checklist.length || checklistEmptyMessage
+              showChecklistSection &&
+              (checklistLoading || checklist.length || checklistEmptyMessage)
                 ? "mt-4 flex flex-wrap items-center gap-2"
                 : "flex flex-wrap items-center gap-2"
             }
           >
             {children}
           </div>
-        ) : checklistLoading || checklist.length || checklistEmptyMessage ? null : (
+        ) : showChecklistSection &&
+          (checklistLoading || checklist.length || checklistEmptyMessage) ? null : (
           <p className="text-sm text-slate-500">
             Tidak ada aksi review yang tersedia untuk pengajuan ini.
           </p>

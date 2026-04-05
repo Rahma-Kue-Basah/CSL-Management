@@ -20,17 +20,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUseDetail } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { getUseProgressFlow } from "@/lib/request-progress";
+import {
+  getMentorApprovalStageLabel,
+  hasMentorApprovalTrace,
+} from "@/lib/mentor-approval";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type UseDetailParams = {
   id?: string | string[];
-};
-
-type UseFlowStep = {
-  key: string;
-  label: string;
-  time?: string;
-  state: "finish" | "process" | "wait" | "error";
 };
 
 function hasDisplayValue(value?: string | null) {
@@ -39,77 +36,7 @@ function hasDisplayValue(value?: string | null) {
   return normalized !== "" && normalized !== "-";
 }
 
-function normalizeStatus(value: string) {
-  return value.toLowerCase();
-}
-
-function getUseFlow(item: {
-  status: string;
-  createdAt: string;
-  approvedAt: string;
-  rejectedAt: string;
-  expiredAt: string;
-  completedAt: string;
-}) {
-  const status = normalizeStatus(item.status);
-
-  const baseSteps: UseFlowStep[] = [
-    {
-      key: "submitted",
-      label: "Diajukan",
-      time: formatDateTimeWib(item.createdAt),
-      state: "finish",
-    },
-    {
-      key: "approved",
-      label: "Disetujui",
-      state: "wait",
-    },
-    {
-      key: "completed",
-      label: "Selesai",
-      state: "wait",
-    },
-  ];
-
-  if (status === "pending") {
-    return baseSteps;
-  }
-  if (status === "approved") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
-    baseSteps[2].state = "process";
-    return baseSteps;
-  }
-  if (status === "completed") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.completedAt);
-    return baseSteps;
-  }
-  if (status === "rejected") {
-    baseSteps[1] = {
-      key: "rejected",
-      label: "Ditolak",
-      time: formatDateTimeWib(item.rejectedAt),
-      state: "error",
-    };
-    return baseSteps.slice(0, 2);
-  }
-  if (status === "expired") {
-    baseSteps[1] = {
-      key: "expired",
-      label: "Kedaluwarsa",
-      time: formatDateTimeWib(item.expiredAt),
-      state: "error",
-    };
-    return baseSteps.slice(0, 2);
-  }
-  return baseSteps;
-}
-
-function UseFlow({ steps }: { steps: UseFlowStep[] }) {
+function UseFlow({ steps }: { steps: ReturnType<typeof getUseProgressFlow> }) {
   return (
     <ProgressSteps steps={steps} minWidthClassName="min-w-[720px]" />
   );
@@ -330,14 +257,7 @@ export default function UseEquipmentDetailPage() {
     );
   }
 
-  const flowSteps = getUseFlow({
-    status: item.status,
-    createdAt: item.createdAt,
-    approvedAt: item.approvedAt,
-    rejectedAt: item.rejectedAt,
-    expiredAt: item.expiredAt,
-    completedAt: item.completedAt,
-  });
+  const flowSteps = getUseProgressFlow(item);
 
   return (
     <section className="space-y-4">
@@ -416,7 +336,20 @@ export default function UseEquipmentDetailPage() {
                 onStatusClick={() => setProgressOpen(true)}
                 approvedByName={item.approvedByName}
                 rejectionNote={item.rejectionNote}
-              />
+              >
+                {hasMentorApprovalTrace(item) ? (
+                  <>
+                    <DetailMetaItem
+                      label="Tahap Dosen Pembimbing"
+                      value={getMentorApprovalStageLabel(item)}
+                    />
+                    <DetailMetaItem
+                      label="Waktu Persetujuan Dosen Pembimbing"
+                      value={formatDateTimeWib(item.mentorApprovedAt)}
+                    />
+                  </>
+                ) : null}
+              </RequestInformationCard>
             </div>
 
             <div className="space-y-4">
@@ -475,7 +408,20 @@ export default function UseEquipmentDetailPage() {
                 onStatusClick={() => setProgressOpen(true)}
                 approvedByName={item.approvedByName}
                 rejectionNote={item.rejectionNote}
-              />
+              >
+                {hasMentorApprovalTrace(item) ? (
+                  <>
+                    <DetailMetaItem
+                      label="Tahap Dosen Pembimbing"
+                      value={getMentorApprovalStageLabel(item)}
+                    />
+                    <DetailMetaItem
+                      label="Waktu Persetujuan Dosen Pembimbing"
+                      value={formatDateTimeWib(item.mentorApprovedAt)}
+                    />
+                  </>
+                ) : null}
+              </RequestInformationCard>
             </div>
           </>
         )}

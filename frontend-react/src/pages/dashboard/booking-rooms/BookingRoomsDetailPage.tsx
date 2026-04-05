@@ -19,17 +19,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useBookingDetail } from "@/hooks/bookings/use-bookings";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { getBookingProgressFlow } from "@/lib/request-progress";
+import {
+  getMentorApprovalStageLabel,
+  hasMentorApprovalTrace,
+} from "@/lib/mentor-approval";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
 
 type BookingDetailParams = {
   id?: string | string[];
-};
-
-type BookingFlowStep = {
-  key: string;
-  label: string;
-  time?: string;
-  state: "finish" | "process" | "wait" | "error";
 };
 
 function hasDisplayValue(value?: string | null) {
@@ -38,77 +35,7 @@ function hasDisplayValue(value?: string | null) {
   return normalized !== "" && normalized !== "-";
 }
 
-function normalizeStatus(value: string) {
-  return value.toLowerCase();
-}
-
-function getBookingFlow(booking: {
-  status: string;
-  createdAt: string;
-  approvedAt: string;
-  rejectedAt: string;
-  expiredAt: string;
-  completedAt: string;
-}) {
-  const status = normalizeStatus(booking.status);
-
-  const baseSteps: BookingFlowStep[] = [
-    {
-      key: "submitted",
-      label: "Diajukan",
-      time: formatDateTimeWib(booking.createdAt),
-      state: "finish",
-    },
-    {
-      key: "approved",
-      label: "Disetujui",
-      state: "wait",
-    },
-    {
-      key: "completed",
-      label: "Selesai",
-      state: "wait",
-    },
-  ];
-
-  if (status === "pending") {
-    return baseSteps;
-  }
-  if (status === "approved") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(booking.approvedAt);
-    baseSteps[2].state = "process";
-    return baseSteps;
-  }
-  if (status === "completed") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(booking.approvedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(booking.completedAt);
-    return baseSteps;
-  }
-  if (status === "rejected") {
-    baseSteps[1] = {
-      key: "rejected",
-      label: "Ditolak",
-      time: formatDateTimeWib(booking.rejectedAt),
-      state: "error",
-    };
-    return baseSteps.slice(0, 2);
-  }
-  if (status === "expired") {
-    baseSteps[1] = {
-      key: "expired",
-      label: "Kedaluwarsa",
-      time: formatDateTimeWib(booking.expiredAt),
-      state: "error",
-    };
-    return baseSteps.slice(0, 2);
-  }
-  return baseSteps;
-}
-
-function BookingFlow({ steps }: { steps: BookingFlowStep[] }) {
+function BookingFlow({ steps }: { steps: ReturnType<typeof getBookingProgressFlow> }) {
   return (
     <ProgressSteps steps={steps} minWidthClassName="min-w-[720px]" />
   );
@@ -368,14 +295,7 @@ export default function BookingRoomsDetailPage() {
     );
   }
 
-  const flowSteps = getBookingFlow({
-    status: booking.status,
-    createdAt: booking.createdAt,
-    approvedAt: booking.approvedAt,
-    rejectedAt: booking.rejectedAt,
-    expiredAt: booking.expiredAt,
-    completedAt: booking.completedAt,
-  });
+  const flowSteps = getBookingProgressFlow(booking);
 
   return (
     <section className="space-y-4">
@@ -474,11 +394,11 @@ export default function BookingRoomsDetailPage() {
                   {booking.equipmentItems.map((item) => (
                     <div
                       key={item.id || `${item.equipmentName}-${item.quantity}`}
-                      className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3"
+                      className="grid gap-1 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-4"
                     >
-                      <p className="text-xs text-slate-800">{item.equipmentName}</p>
-                      <p className="text-right text-xs font-medium leading-5 text-slate-800">
-                        {item.quantity}
+                      <p className="text-xs text-slate-500">Peralatan</p>
+                      <p className="text-xs leading-5 text-slate-800 break-words">
+                        {item.equipmentName} ({item.quantity})
                       </p>
                     </div>
                   ))}
@@ -493,7 +413,20 @@ export default function BookingRoomsDetailPage() {
                 onStatusClick={() => setProgressOpen(true)}
                 approvedByName={booking.approvedByName}
                 rejectionNote={booking.rejectionNote}
-              />
+              >
+                {hasMentorApprovalTrace(booking) ? (
+                  <>
+                    <DetailMetaItem
+                      label="Tahap Dosen Pembimbing"
+                      value={getMentorApprovalStageLabel(booking)}
+                    />
+                    <DetailMetaItem
+                      label="Waktu Persetujuan Dosen Pembimbing"
+                      value={formatDateTimeWib(booking.mentorApprovedAt)}
+                    />
+                  </>
+                ) : null}
+              </RequestInformationCard>
             </div>
 
             <div className="space-y-4">
@@ -564,11 +497,11 @@ export default function BookingRoomsDetailPage() {
                   {booking.equipmentItems.map((item) => (
                     <div
                       key={item.id || `${item.equipmentName}-${item.quantity}`}
-                      className="flex items-center justify-between gap-3 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3"
+                      className="grid gap-1 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-4"
                     >
-                      <p className="text-xs text-slate-800">{item.equipmentName}</p>
-                      <p className="text-right text-xs font-medium leading-5 text-slate-800">
-                        {item.quantity}
+                      <p className="text-xs text-slate-500">Peralatan</p>
+                      <p className="text-xs leading-5 text-slate-800 break-words">
+                        {item.equipmentName} ({item.quantity})
                       </p>
                     </div>
                   ))}
@@ -585,7 +518,20 @@ export default function BookingRoomsDetailPage() {
                 onStatusClick={() => setProgressOpen(true)}
                 approvedByName={booking.approvedByName}
                 rejectionNote={booking.rejectionNote}
-              />
+              >
+                {hasMentorApprovalTrace(booking) ? (
+                  <>
+                    <DetailMetaItem
+                      label="Tahap Dosen Pembimbing"
+                      value={getMentorApprovalStageLabel(booking)}
+                    />
+                    <DetailMetaItem
+                      label="Waktu Persetujuan Dosen Pembimbing"
+                      value={formatDateTimeWib(booking.mentorApprovedAt)}
+                    />
+                  </>
+                ) : null}
+              </RequestInformationCard>
             </div>
           </>
         )}

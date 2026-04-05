@@ -1,9 +1,10 @@
 import type { SelectOption } from "@/components/shared/dashboard-form-fields";
 
+export const THESIS_PURPOSE = "Skripsi/TA";
 export const WORKSHOP_PURPOSE = "Workshop";
 
 export const REQUEST_PURPOSE_OPTIONS: SelectOption[] = [
-  { value: "Skripsi/TA", label: "Skripsi/TA" },
+  { value: THESIS_PURPOSE, label: THESIS_PURPOSE },
   { value: "Praktikum", label: "Praktikum" },
   { value: "Penelitian", label: "Penelitian" },
   { value: WORKSHOP_PURPOSE, label: "Workshop" },

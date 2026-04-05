@@ -48,6 +48,16 @@ class ProfileViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(self.get_object())
         return Response(serializer.data)
 
+    @action(detail=False, methods=["get"], url_path="mentor-dropdown")
+    def mentor_dropdown(self, request):
+        queryset = (
+            User.objects.select_related("profile")
+            .filter(profile__role__iexact="Lecturer", profile__is_mentor=True)
+            .order_by("profile__full_name", "email")
+        )
+        serializer = PicUserDropdownSerializer(queryset, many=True)
+        return Response(serializer.data)
+
     def perform_update(self, serializer):
         instance = serializer.save()
         log_admin_action(

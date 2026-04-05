@@ -16,6 +16,10 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BorrowRow } from "@/hooks/borrows/use-borrows";
 import { formatDateTimeWib } from "@/lib/date-format";
+import {
+  getMentorApprovalStageLabel,
+  hasMentorApprovalTrace,
+} from "@/lib/mentor-approval";
 
 type AdminEquipmentBorrowRecordDetailContentProps = {
   item: BorrowRow | null;
@@ -226,6 +230,22 @@ export default function AdminEquipmentBorrowRecordDetailContent({
             compact
           >
             <AdminRecordDetailGrid compact>
+              {hasMentorApprovalTrace(item) ? (
+                <>
+                  <AdminRecordDetailItem
+                    label="Tahap Dosen Pembimbing"
+                    value={getMentorApprovalStageLabel(item)}
+                    compact
+                    borderless
+                  />
+                  <AdminRecordDetailItem
+                    label="Waktu Persetujuan Dosen Pembimbing"
+                    value={formatDateTimeWib(item.mentorApprovedAt)}
+                    compact
+                    borderless
+                  />
+                </>
+              ) : null}
               <AdminRecordDetailItem
                 label="Waktu Mulai"
                 value={formatDateTimeWib(item.startTime)}

@@ -20,7 +20,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreateBorrow } from "@/hooks/borrows/use-create-borrow";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
-import { REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP } from "@/constants/request-purpose";
+import { useMentorOptions } from "@/hooks/users/use-mentor-options";
+import {
+  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
+  THESIS_PURPOSE,
+} from "@/constants/request-purpose";
 import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import {
   combineDateTime,
@@ -39,6 +43,7 @@ type FormData = {
   note: string;
   requesterPhone: string;
   requesterMentor: string;
+  requesterMentorProfileId: string;
   institution: string;
   institutionAddress: string;
 };
@@ -52,6 +57,7 @@ const initialFormData: FormData = {
   note: "",
   requesterPhone: "",
   requesterMentor: "",
+  requesterMentorProfileId: "",
   institution: "",
   institutionAddress: "",
 };
@@ -68,14 +74,20 @@ export default function BorrowEquipmentFormPage() {
   const [endTime, setEndTime] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
+  const isGuestUser = profile.role === "Guest";
+  const isThesisPurpose = formData.purpose === THESIS_PURPOSE;
   const {
     equipments,
     isLoading: isLoadingEquipments,
     error: equipmentError,
   } = useEquipmentOptions("Available", "", true, true);
+  const {
+    mentors,
+    isLoading: isLoadingMentors,
+    error: mentorError,
+  } = useMentorOptions(!isGuestUser && isThesisPurpose);
   const { createBorrow, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBorrow();
-  const isGuestUser = profile.role === "Guest";
   const preselectedEquipmentId = searchParams.get("equipment") ?? "";
 
   const equipmentOptions = useMemo<SelectOption[]>(
@@ -97,6 +109,10 @@ export default function BorrowEquipmentFormPage() {
       REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.find((option) => option.value === formData.purpose)
         ?.label ?? "-",
     [formData.purpose],
+  );
+  const mentorOptions = useMemo<SelectOption[]>(
+    () => mentors.map((mentor) => ({ value: mentor.id, label: mentor.label })),
+    [mentors],
   );
 
   useEffect(() => {
@@ -132,7 +148,16 @@ export default function BorrowEquipmentFormPage() {
   };
 
   const handleSelectPurpose = (value: string) => {
-    setFormData((prev) => ({ ...prev, purpose: value }));
+    setFormData((prev) => ({
+      ...prev,
+      purpose: value,
+      ...(value !== THESIS_PURPOSE
+        ? {
+            requesterMentor: "",
+            requesterMentorProfileId: "",
+          }
+        : {}),
+    }));
     setValidationMessage("");
     setErrorMessage("");
   };
@@ -198,6 +223,9 @@ export default function BorrowEquipmentFormPage() {
     if (!REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.some((option) => option.value === formData.purpose)) {
       return "Tujuan peminjaman tidak valid.";
     }
+    if (!isGuestUser && isThesisPurpose && !formData.requesterMentorProfileId) {
+      return "Dosen pembimbing wajib dipilih untuk tujuan Skripsi/TA.";
+    }
 
     return "";
   };
@@ -226,6 +254,7 @@ export default function BorrowEquipmentFormPage() {
       note: formData.note,
       requesterPhone: formData.requesterPhone,
       requesterMentor: formData.requesterMentor,
+      requesterMentorProfileId: formData.requesterMentorProfileId,
       institution: formData.institution,
       institutionAddress: formData.institutionAddress,
     });
@@ -305,23 +334,30 @@ export default function BorrowEquipmentFormPage() {
             />
           </div>
 
-          {!isGuestUser ? (
+          {!isGuestUser && isThesisPurpose ? (
             <div className="space-y-1.5">
-              <label
-                htmlFor="requesterMentor"
-                className="text-xs font-medium text-slate-600"
-              >
-                Dosen Pembimbing
-              </label>
-              <Input
-                id="requesterMentor"
-                name="requesterMentor"
-                type="text"
-                value={formData.requesterMentor}
-                onChange={handleChange}
-                disabled={isSubmitting}
-                className="h-11 border-slate-300 bg-white"
+              <DashboardComboboxField
+                label="Dosen Pembimbing"
+                value={formData.requesterMentorProfileId}
+                options={mentorOptions}
+                placeholder="Pilih dosen pembimbing"
+                emptyText="Dosen pembimbing tidak ditemukan."
+                disabled={isSubmitting || isLoadingMentors}
+                required
+                onChange={(value) => {
+                  const selectedMentor = mentors.find((mentor) => mentor.id === value);
+                  setFormData((prev) => ({
+                    ...prev,
+                    requesterMentorProfileId: value,
+                    requesterMentor: selectedMentor?.label ?? "",
+                  }));
+                  setValidationMessage("");
+                  setErrorMessage("");
+                }}
               />
+              {mentorError ? (
+                <p className="text-xs text-rose-600">{mentorError}</p>
+              ) : null}
             </div>
           ) : null}
 
@@ -481,7 +517,7 @@ export default function BorrowEquipmentFormPage() {
           label="Nomor Telepon Pemohon"
           value={formData.requesterPhone}
         />
-        {!isGuestUser ? (
+        {!isGuestUser && isThesisPurpose ? (
           <SubmissionSummaryItem
             label="Dosen Pembimbing"
             value={formData.requesterMentor}

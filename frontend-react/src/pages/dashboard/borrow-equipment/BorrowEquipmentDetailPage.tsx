@@ -22,14 +22,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useBorrowDetail } from "@/hooks/borrows/use-borrows";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { getBorrowProgressFlow } from "@/lib/request-progress";
+import {
+  getMentorApprovalStageLabel,
+  hasMentorApprovalTrace,
+} from "@/lib/mentor-approval";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/status";
-
-type BorrowFlowStep = {
-  key: string;
-  label: string;
-  time?: string;
-  state: "finish" | "process" | "wait" | "error";
-};
 
 function hasDisplayValue(value?: string | null) {
   if (!value) return false;
@@ -41,151 +38,7 @@ function normalizeStatus(value: string) {
   return value.toLowerCase();
 }
 
-function getBorrowFlow(item: {
-  status: string;
-  createdAt: string;
-  approvedAt: string;
-  rejectedAt: string;
-  expiredAt: string;
-  borrowedAt: string;
-  returnedPendingInspectionAt: string;
-  inspectedAt: string;
-  returnedAt: string;
-  overdueAt: string;
-  lostDamagedAt: string;
-  endTimeActual: string;
-}) {
-  const status = normalizeStatus(item.status);
-
-  const baseSteps: BorrowFlowStep[] = [
-    {
-      key: "submitted",
-      label: "Diajukan",
-      time: formatDateTimeWib(item.createdAt),
-      state: "finish",
-    },
-    {
-      key: "approved",
-      label: "Disetujui",
-      state: "wait",
-    },
-    {
-      key: "borrowed",
-      label: "Dipinjam",
-      state: "wait",
-    },
-    {
-      key: "returned",
-      label: "Diterima Kembali",
-      state: "wait",
-    },
-    {
-      key: "inspection",
-      label: "Inspeksi",
-      state: "wait",
-    },
-    {
-      key: "completed",
-      label: "Selesai",
-      state: "wait",
-    },
-  ];
-
-  if (status === "pending") {
-    return baseSteps;
-  }
-  if (status === "approved") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
-    baseSteps[2].state = "process";
-    return baseSteps;
-  }
-  if (status === "borrowed") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.borrowedAt);
-    baseSteps[3].state = "process";
-    return baseSteps;
-  }
-  if (status === "returned") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.borrowedAt);
-    baseSteps[3].state = "finish";
-    baseSteps[3].time = formatDateTimeWib(
-      item.returnedPendingInspectionAt || item.endTimeActual,
-    );
-    baseSteps[4].state = "finish";
-    baseSteps[4].time = formatDateTimeWib(item.inspectedAt);
-    baseSteps[5].state = "finish";
-    baseSteps[5].time = formatDateTimeWib(item.returnedAt || item.inspectedAt);
-    return baseSteps;
-  }
-  if (
-    status === "returned pending inspection" ||
-    status === "returned_pending_inspection"
-  ) {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.borrowedAt);
-    baseSteps[3].state = "finish";
-    baseSteps[3].time = formatDateTimeWib(
-      item.returnedPendingInspectionAt || item.endTimeActual,
-    );
-    baseSteps[4].state = "process";
-    return baseSteps;
-  }
-  if (status === "rejected") {
-    baseSteps[1] = {
-      key: "rejected",
-      label: "Ditolak",
-      time: formatDateTimeWib(item.rejectedAt),
-      state: "error",
-    };
-    return baseSteps.slice(0, 2);
-  }
-  if (status === "expired") {
-    baseSteps[1] = {
-      key: "expired",
-      label: "Expired",
-      time: formatDateTimeWib(item.expiredAt),
-      state: "error",
-    };
-    return baseSteps.slice(0, 2);
-  }
-  if (status === "overdue") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
-    baseSteps[2].state = "error";
-    baseSteps[2].label = "Terlambat";
-    baseSteps[2].time = formatDateTimeWib(item.overdueAt);
-    return baseSteps.slice(0, 3);
-  }
-  if (status === "lost/damaged") {
-    baseSteps[1].state = "finish";
-    baseSteps[1].time = formatDateTimeWib(item.approvedAt);
-    baseSteps[2].state = "finish";
-    baseSteps[2].time = formatDateTimeWib(item.borrowedAt);
-    baseSteps[3].state = "finish";
-    baseSteps[3].time = formatDateTimeWib(
-      item.returnedPendingInspectionAt || item.endTimeActual,
-    );
-    baseSteps[4] = {
-      key: "lost-damaged",
-      label: "Hilang/Rusak",
-      time: formatDateTimeWib(item.lostDamagedAt || item.inspectedAt),
-      state: "error",
-    };
-    return baseSteps.slice(0, 5);
-  }
-
-  return baseSteps;
-}
-
-function BorrowFlow({ steps }: { steps: BorrowFlowStep[] }) {
+function BorrowFlow({ steps }: { steps: ReturnType<typeof getBorrowProgressFlow> }) {
   return (
     <ProgressSteps steps={steps} minWidthClassName="min-w-[760px]" />
   );
@@ -347,20 +200,7 @@ export default function BorrowEquipmentDetailPage() {
     );
   }
 
-  const flowSteps = getBorrowFlow({
-    status: item.status,
-    createdAt: item.createdAt,
-    approvedAt: item.approvedAt,
-    rejectedAt: item.rejectedAt,
-    expiredAt: item.expiredAt,
-    borrowedAt: item.borrowedAt,
-    returnedPendingInspectionAt: item.returnedPendingInspectionAt,
-    inspectedAt: item.inspectedAt,
-    returnedAt: item.returnedAt,
-    overdueAt: item.overdueAt,
-    lostDamagedAt: item.lostDamagedAt,
-    endTimeActual: item.endTimeActual,
-  });
+  const flowSteps = getBorrowProgressFlow(item);
 
   return (
     <section className="space-y-4">
@@ -449,6 +289,18 @@ export default function BorrowEquipmentDetailPage() {
                 approvedByName={item.approvedByName}
                 rejectionNote={item.rejectionNote}
               >
+                {hasMentorApprovalTrace(item) ? (
+                  <>
+                    <DetailMetaItem
+                      label="Tahap Dosen Pembimbing"
+                      value={getMentorApprovalStageLabel(item)}
+                    />
+                    <DetailMetaItem
+                      label="Waktu Persetujuan Dosen Pembimbing"
+                      value={formatDateTimeWib(item.mentorApprovedAt)}
+                    />
+                  </>
+                ) : null}
                 <DetailMetaItem
                   label="Pengembalian Aktual"
                   value={formatDateTimeWib(item.endTimeActual)}
@@ -541,6 +393,18 @@ export default function BorrowEquipmentDetailPage() {
                   approvedByName={item.approvedByName}
                   rejectionNote={item.rejectionNote}
                 >
+                  {hasMentorApprovalTrace(item) ? (
+                    <>
+                      <DetailMetaItem
+                        label="Tahap Dosen Pembimbing"
+                        value={getMentorApprovalStageLabel(item)}
+                      />
+                      <DetailMetaItem
+                        label="Waktu Persetujuan Dosen Pembimbing"
+                        value={formatDateTimeWib(item.mentorApprovedAt)}
+                      />
+                    </>
+                  ) : null}
                   <DetailMetaItem
                     label="Pengembalian Aktual"
                     value={formatDateTimeWib(item.endTimeActual)}

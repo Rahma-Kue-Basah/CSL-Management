@@ -29,9 +29,11 @@ export type BorrowRow = {
   equipmentName: string;
   roomName: string;
   roomPicName: string;
+  roomPicIds: string[];
   requesterId: string;
   requesterName: string;
   requesterDepartment: string;
+  requesterRole: string;
   approvedById: string;
   approvedByName: string;
   status: string;
@@ -56,6 +58,10 @@ export type BorrowRow = {
   inspectionNote: string;
   requesterPhone: string;
   requesterMentor: string;
+  requesterMentorProfileId: string;
+  requesterMentorProfileName: string;
+  isApprovedByMentor: boolean;
+  mentorApprovedAt: string;
   institution: string;
   institutionAddress: string;
 };
@@ -69,6 +75,13 @@ type ApiBorrow = {
   inspection_note?: string | null;
   requester_phone?: string | null;
   requester_mentor?: string | null;
+  requester_mentor_profile_detail?: {
+    id?: string | number | null;
+    full_name?: string | null;
+    email?: string | null;
+  } | null;
+  is_approved_by_mentor?: boolean | null;
+  mentor_approved_at?: string | null;
   institution?: string | null;
   institution_address?: string | null;
   quantity?: number | string | null;
@@ -95,6 +108,7 @@ type ApiBorrow = {
       id?: string | number | null;
       name?: string | null;
       pics_detail?: Array<{
+        id?: string | number | null;
         full_name?: string | null;
         email?: string | null;
       }> | null;
@@ -105,6 +119,7 @@ type ApiBorrow = {
     id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
+    role?: string | null;
     department?: string | null;
   } | null;
   approved_by?: string | number | null;
@@ -160,6 +175,11 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
         .filter(Boolean)
         .join(", ") || "-"
     : "-";
+  const roomPicIds = Array.isArray(item.equipment_detail?.room_detail?.pics_detail)
+    ? item.equipment_detail.room_detail.pics_detail
+        .map((pic) => String(pic?.id ?? "").trim())
+        .filter(Boolean)
+    : [];
 
   return {
     id: item.id ?? `borrow-${Math.random().toString(36).slice(2, 8)}`,
@@ -168,9 +188,11 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
     equipmentName: String(item.equipment_detail?.name ?? "-"),
     roomName: String(item.equipment_detail?.room_detail?.name ?? "-"),
     roomPicName,
+    roomPicIds,
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
     requesterDepartment: String(item.requested_by_detail?.department ?? "-"),
+    requesterRole: String(item.requested_by_detail?.role ?? "-"),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     status: String(item.status ?? "-"),
@@ -195,6 +217,14 @@ export function mapBorrow(item: ApiBorrow): BorrowRow {
     inspectionNote: String(item.inspection_note ?? ""),
     requesterPhone: String(item.requester_phone ?? "-"),
     requesterMentor: String(item.requester_mentor ?? "-"),
+    requesterMentorProfileId: String(item.requester_mentor_profile_detail?.id ?? ""),
+    requesterMentorProfileName: String(
+      item.requester_mentor_profile_detail?.full_name ??
+        item.requester_mentor_profile_detail?.email ??
+        "-",
+    ),
+    isApprovedByMentor: Boolean(item.is_approved_by_mentor ?? false),
+    mentorApprovedAt: String(item.mentor_approved_at ?? "-"),
     institution: String(item.institution ?? "-"),
     institutionAddress: String(item.institution_address ?? "-"),
   };

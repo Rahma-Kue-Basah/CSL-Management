@@ -242,8 +242,66 @@ class RecordProfileListSerializer(serializers.ModelSerializer):
             "id",
             "full_name",
             "email",
+            "role",
             "department",
         ]
+
+
+def _resolve_requester_profile(serializer_instance):
+    request = serializer_instance.context.get("request")
+    request_user = getattr(request, "user", None)
+    request_profile = getattr(request_user, "profile", None)
+    if request_profile is not None:
+        return request_profile
+    instance = getattr(serializer_instance, "instance", None)
+    return getattr(instance, "requested_by", None)
+
+
+def _apply_requester_mentor_rules(serializer_instance, attrs):
+    purpose = attrs.get("purpose", getattr(serializer_instance.instance, "purpose", "Other"))
+    requester_profile = _resolve_requester_profile(serializer_instance)
+    mentor_profile = attrs.get(
+        "requester_mentor_profile",
+        getattr(serializer_instance.instance, "requester_mentor_profile", None),
+    )
+    is_internal_requester = (
+        requester_profile is not None
+        and str(getattr(requester_profile, "role", "") or "").strip().lower() != "guest"
+    )
+
+    if purpose != "Skripsi/TA":
+        attrs["requester_mentor"] = None
+        attrs["requester_mentor_profile"] = None
+        attrs["is_approved_by_mentor"] = False
+        attrs["mentor_approved_at"] = None
+        return attrs
+
+    if not is_internal_requester:
+        attrs["requester_mentor"] = None
+        attrs["requester_mentor_profile"] = None
+        attrs["is_approved_by_mentor"] = False
+        attrs["mentor_approved_at"] = None
+        return attrs
+
+    if mentor_profile is None:
+        raise serializers.ValidationError(
+            {"requester_mentor_profile": "Dosen pembimbing wajib dipilih untuk tujuan Skripsi/TA."}
+        )
+
+    if (
+        str(getattr(mentor_profile, "role", "") or "").strip().lower() != "lecturer"
+        or not bool(getattr(mentor_profile, "is_mentor", False))
+    ):
+        raise serializers.ValidationError(
+            {"requester_mentor_profile": "User yang dipilih harus lecturer yang terdaftar sebagai dosen pembimbing."}
+        )
+
+    attrs["requester_mentor"] = (
+        str(getattr(mentor_profile, "full_name", "") or "").strip()
+        or getattr(getattr(mentor_profile, "user", None), "email", None)
+        or None
+    )
+    return attrs
 
 
 class RecordRoomListSerializer(serializers.ModelSerializer):
@@ -340,6 +398,15 @@ class BookingEquipmentItemDetailSerializer(serializers.ModelSerializer):
 class BookingSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
+    requester_mentor_profile = serializers.PrimaryKeyRelatedField(
+        queryset=Profile.objects.filter(role__iexact="Lecturer", is_mentor=True),
+        required=False,
+        allow_null=True,
+    )
+    requester_mentor_profile_detail = ProfileSerializer(
+        source="requester_mentor_profile",
+        read_only=True,
+    )
     room_detail = RoomSerializer(source="room", read_only=True)
     equipment_items = BookingEquipmentItemWriteSerializer(many=True, required=False)
     equipment_items_detail = BookingEquipmentItemDetailSerializer(
@@ -357,6 +424,8 @@ class BookingSerializer(serializers.ModelSerializer):
         end_time = attrs.get("end_time", getattr(instance, "end_time", None))
         next_status = attrs.get("status", getattr(instance, "status", "Pending"))
         rejection_note = attrs.get("rejection_note", getattr(instance, "rejection_note", None))
+
+        attrs = _apply_requester_mentor_rules(self, attrs)
 
         if instance is None:
             if attrs.get("status") not in (None, "Pending"):
@@ -382,6 +451,14 @@ class BookingSerializer(serializers.ModelSerializer):
             if "approved_by" in attrs:
                 raise serializers.ValidationError(
                     {"approved_by": "approved_by tidak boleh diubah langsung."}
+                )
+            if "is_approved_by_mentor" in attrs and not self.context.get("allow_mentor_transition"):
+                raise serializers.ValidationError(
+                    {"is_approved_by_mentor": "Status approval dosen pembimbing tidak boleh diubah langsung."}
+                )
+            if "mentor_approved_at" in attrs and not self.context.get("allow_mentor_transition"):
+                raise serializers.ValidationError(
+                    {"mentor_approved_at": "mentor_approved_at tidak boleh diubah langsung."}
                 )
 
             if instance.status != "Pending" and not self.context.get("allow_status_transition"):
@@ -514,6 +591,10 @@ class BookingSerializer(serializers.ModelSerializer):
             "attendee_names",
             "requester_phone",
             "requester_mentor",
+            "requester_mentor_profile",
+            "requester_mentor_profile_detail",
+            "is_approved_by_mentor",
+            "mentor_approved_at",
             "institution",
             "institution_address",
             "workshop_title",
@@ -542,12 +623,15 @@ class BookingSerializer(serializers.ModelSerializer):
             'rejected_at',
             'expired_at',
             'completed_at',
+            'is_approved_by_mentor',
+            'mentor_approved_at',
         ]
 
 
 class BookingListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
     approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
+    requester_mentor_profile_detail = RecordProfileListSerializer(source="requester_mentor_profile", read_only=True)
     room_detail = RecordRoomListSerializer(source="room", read_only=True)
     equipment_items_detail = BookingEquipmentItemDetailSerializer(
         source="equipment_items",
@@ -566,6 +650,9 @@ class BookingListSerializer(serializers.ModelSerializer):
             "attendee_names",
             "requester_phone",
             "requester_mentor",
+            "requester_mentor_profile_detail",
+            "is_approved_by_mentor",
+            "mentor_approved_at",
             "institution",
             "institution_address",
             "workshop_title",
@@ -590,6 +677,7 @@ class BookingListSerializer(serializers.ModelSerializer):
 
 class BookingUserListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
+    requester_mentor_profile_detail = RecordProfileListSerializer(source="requester_mentor_profile", read_only=True)
     room_detail = RecordRoomListSerializer(source="room", read_only=True)
     equipment_items_detail = BookingEquipmentItemDetailSerializer(
         source="equipment_items",
@@ -608,6 +696,9 @@ class BookingUserListSerializer(serializers.ModelSerializer):
             "attendee_names",
             "requester_phone",
             "requester_mentor",
+            "requester_mentor_profile_detail",
+            "is_approved_by_mentor",
+            "mentor_approved_at",
             "institution",
             "institution_address",
             "workshop_title",
@@ -631,6 +722,15 @@ class BookingUserListSerializer(serializers.ModelSerializer):
 class BorrowSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
+    requester_mentor_profile = serializers.PrimaryKeyRelatedField(
+        queryset=Profile.objects.filter(role__iexact="Lecturer", is_mentor=True),
+        required=False,
+        allow_null=True,
+    )
+    requester_mentor_profile_detail = ProfileSerializer(
+        source="requester_mentor_profile",
+        read_only=True,
+    )
     equipment_detail = EquipmentSerializer(source="equipment", read_only=True)
 
     def validate(self, attrs):
@@ -638,6 +738,7 @@ class BorrowSerializer(serializers.ModelSerializer):
         start_time = attrs.get("start_time", getattr(instance, "start_time", None))
         end_time = attrs.get("end_time", getattr(instance, "end_time", None))
         rejection_note = attrs.get("rejection_note", getattr(instance, "rejection_note", None))
+        attrs = _apply_requester_mentor_rules(self, attrs)
 
         if end_time is None:
             raise serializers.ValidationError({"end_time": "Waktu selesai peminjaman wajib diisi."})
@@ -686,6 +787,10 @@ class BorrowSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"approved_by": "approved_by tidak boleh diubah langsung."}
             )
+        if "mentor_approved_at" in attrs and not self.context.get("allow_mentor_transition"):
+            raise serializers.ValidationError(
+                {"mentor_approved_at": "mentor_approved_at tidak boleh diubah langsung."}
+            )
 
         if "inspection_note" in attrs:
             raise serializers.ValidationError(
@@ -705,12 +810,19 @@ class BorrowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Borrow
         fields = '__all__'
-        read_only_fields = ['requested_by', 'code', 'approved_by']
+        read_only_fields = [
+            'requested_by',
+            'code',
+            'approved_by',
+            'is_approved_by_mentor',
+            'mentor_approved_at',
+        ]
 
 
 class BorrowListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
     approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
+    requester_mentor_profile_detail = RecordProfileListSerializer(source="requester_mentor_profile", read_only=True)
     equipment_detail = RecordEquipmentListSerializer(source="equipment", read_only=True)
 
     class Meta:
@@ -738,6 +850,10 @@ class BorrowListSerializer(serializers.ModelSerializer):
             "returned_at",
             "overdue_at",
             "lost_damaged_at",
+            "requester_mentor",
+            "requester_mentor_profile_detail",
+            "is_approved_by_mentor",
+            "mentor_approved_at",
             "equipment_detail",
             "created_at",
             "updated_at",
@@ -953,6 +1069,15 @@ class PengujianListSerializer(serializers.ModelSerializer):
 class UseSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
+    requester_mentor_profile = serializers.PrimaryKeyRelatedField(
+        queryset=Profile.objects.filter(role__iexact="Lecturer", is_mentor=True),
+        required=False,
+        allow_null=True,
+    )
+    requester_mentor_profile_detail = ProfileSerializer(
+        source="requester_mentor_profile",
+        read_only=True,
+    )
     equipment_detail = EquipmentSerializer(source="equipment", read_only=True)
 
     def validate(self, attrs):
@@ -961,6 +1086,7 @@ class UseSerializer(serializers.ModelSerializer):
         end_time = attrs.get("end_time", getattr(instance, "end_time", None))
         next_status = attrs.get("status", getattr(instance, "status", "Pending"))
         rejection_note = attrs.get("rejection_note", getattr(instance, "rejection_note", None))
+        attrs = _apply_requester_mentor_rules(self, attrs)
 
         if instance is None:
             if attrs.get("status") not in (None, "Pending"):
@@ -986,6 +1112,10 @@ class UseSerializer(serializers.ModelSerializer):
             if "approved_by" in attrs:
                 raise serializers.ValidationError(
                     {"approved_by": "approved_by tidak boleh diubah langsung."}
+                )
+            if "mentor_approved_at" in attrs and not self.context.get("allow_mentor_transition"):
+                raise serializers.ValidationError(
+                    {"mentor_approved_at": "mentor_approved_at tidak boleh diubah langsung."}
                 )
 
             if instance.status != "Pending" and not self.context.get("allow_status_transition"):
@@ -1018,12 +1148,19 @@ class UseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Use
         fields = '__all__'
-        read_only_fields = ['requested_by', 'code', 'approved_by']
+        read_only_fields = [
+            'requested_by',
+            'code',
+            'approved_by',
+            'is_approved_by_mentor',
+            'mentor_approved_at',
+        ]
 
 
 class UseListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
     approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
+    requester_mentor_profile_detail = RecordProfileListSerializer(source="requester_mentor_profile", read_only=True)
     equipment_detail = RecordEquipmentListSerializer(source="equipment", read_only=True)
 
     class Meta:
@@ -1036,9 +1173,16 @@ class UseListSerializer(serializers.ModelSerializer):
             "end_time",
             "purpose",
             "note",
+            "requester_phone",
+            "requester_mentor",
+            "requester_mentor_profile_detail",
+            "institution",
+            "institution_address",
             "status",
+            "is_approved_by_mentor",
             "requested_by_detail",
             "approved_by_detail",
+            "mentor_approved_at",
             "approved_at",
             "rejected_at",
             "rejection_note",

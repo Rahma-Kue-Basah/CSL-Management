@@ -17,8 +17,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import { useMentorOptions } from "@/hooks/users/use-mentor-options";
 import { useCreateUse } from "@/hooks/uses/use-create-use";
-import { REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP } from "@/constants/request-purpose";
+import {
+  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
+  THESIS_PURPOSE,
+} from "@/constants/request-purpose";
 import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date-format";
 import {
   combineDateTime,
@@ -37,6 +41,7 @@ type FormData = {
   note: string;
   requesterPhone: string;
   requesterMentor: string;
+  requesterMentorProfileId: string;
   institution: string;
   institutionAddress: string;
 };
@@ -50,6 +55,7 @@ const initialFormData: FormData = {
   note: "",
   requesterPhone: "",
   requesterMentor: "",
+  requesterMentorProfileId: "",
   institution: "",
   institutionAddress: "",
 };
@@ -66,13 +72,19 @@ export default function UseEquipmentFormPage() {
   const [endTime, setEndTime] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
+  const isGuestUser = profile.role === "Guest";
+  const isThesisPurpose = formData.purpose === THESIS_PURPOSE;
   const {
     equipments,
     isLoading: isLoadingEquipments,
     error: equipmentError,
   } = useEquipmentOptions("Available");
+  const {
+    mentors,
+    isLoading: isLoadingMentors,
+    error: mentorError,
+  } = useMentorOptions(!isGuestUser && isThesisPurpose);
   const { createUse, isSubmitting, errorMessage, setErrorMessage } = useCreateUse();
-  const isGuestUser = profile.role === "Guest";
   const preselectedEquipmentId = searchParams.get("equipment") ?? "";
 
   const minEndDate = startDate ? new Date(startDate) : new Date(today);
@@ -96,6 +108,10 @@ export default function UseEquipmentFormPage() {
         label: equipment.label,
       })),
     [equipments],
+  );
+  const mentorOptions = useMemo<SelectOption[]>(
+    () => mentors.map((mentor) => ({ value: mentor.id, label: mentor.label })),
+    [mentors],
   );
 
   useEffect(() => {
@@ -154,7 +170,16 @@ export default function UseEquipmentFormPage() {
   };
 
   const handleSelectChange = (name: "equipmentId" | "purpose", value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === "purpose" && value !== THESIS_PURPOSE
+        ? {
+            requesterMentor: "",
+            requesterMentorProfileId: "",
+          }
+        : {}),
+    }));
     setValidationMessage("");
     setErrorMessage("");
   };
@@ -173,6 +198,10 @@ export default function UseEquipmentFormPage() {
     }
     if (!REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.some((option) => option.value === formData.purpose)) {
       setValidationMessage("Pilihan tujuan tidak valid.");
+      return false;
+    }
+    if (!isGuestUser && isThesisPurpose && !formData.requesterMentorProfileId) {
+      setValidationMessage("Dosen pembimbing wajib dipilih untuk tujuan Skripsi/TA.");
       return false;
     }
     if (!formData.startTime) {
@@ -221,6 +250,7 @@ export default function UseEquipmentFormPage() {
       note: formData.note,
       requesterPhone: formData.requesterPhone,
       requesterMentor: formData.requesterMentor,
+      requesterMentorProfileId: formData.requesterMentorProfileId,
       institution: formData.institution,
       institutionAddress: formData.institutionAddress,
     });
@@ -289,20 +319,30 @@ export default function UseEquipmentFormPage() {
             onChange={(value) => handleSelectChange("purpose", value)}
           />
 
-          {!isGuestUser ? (
+          {!isGuestUser && isThesisPurpose ? (
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-600">
-                Dosen Pembimbing
-              </label>
-              <Input
-                type="text"
-                name="requesterMentor"
-                value={formData.requesterMentor}
-                onChange={handleChange}
-                placeholder="Nama dosen pembimbing"
-                className="h-11 border-slate-300 bg-white px-3 focus-visible:border-slate-500 focus-visible:ring-slate-200"
-                disabled={isSubmitting}
+              <DashboardComboboxField
+                label="Dosen Pembimbing"
+                value={formData.requesterMentorProfileId}
+                options={mentorOptions}
+                placeholder="Pilih dosen pembimbing"
+                emptyText="Dosen pembimbing tidak ditemukan."
+                disabled={isSubmitting || isLoadingMentors}
+                required
+                onChange={(value) => {
+                  const selectedMentor = mentors.find((mentor) => mentor.id === value);
+                  setFormData((prev) => ({
+                    ...prev,
+                    requesterMentorProfileId: value,
+                    requesterMentor: selectedMentor?.label ?? "",
+                  }));
+                  setValidationMessage("");
+                  setErrorMessage("");
+                }}
               />
+              {mentorError ? (
+                <p className="text-xs text-rose-600">{mentorError}</p>
+              ) : null}
             </div>
           ) : null}
 
@@ -466,7 +506,7 @@ export default function UseEquipmentFormPage() {
           label="Nomor Telepon Pemohon"
           value={formData.requesterPhone}
         />
-        {!isGuestUser ? (
+        {!isGuestUser && isThesisPurpose ? (
           <SubmissionSummaryItem
             label="Dosen Pembimbing"
             value={formData.requesterMentor}

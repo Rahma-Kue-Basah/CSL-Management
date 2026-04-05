@@ -152,6 +152,15 @@ class Booking(BaseModel):
     )
     requester_phone = models.CharField(max_length=20, blank=True, null=True)
     requester_mentor = models.CharField(max_length=255, blank=True, null=True)
+    requester_mentor_profile = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requested_bookings_as_mentor',
+    )
+    is_approved_by_mentor = models.BooleanField(default=False)
+    mentor_approved_at = models.DateTimeField(blank=True, null=True)
 
     # if role == guest, then fill in institution and institution_address
     institution = models.CharField(max_length=255, blank=True, null=True)
@@ -239,6 +248,15 @@ class Use(BaseModel):
     )   
     requester_phone = models.CharField(max_length=20, blank=True, null=True)
     requester_mentor = models.CharField(max_length=255, blank=True, null=True)
+    requester_mentor_profile = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requested_uses_as_mentor',
+    )
+    is_approved_by_mentor = models.BooleanField(default=False)
+    mentor_approved_at = models.DateTimeField(blank=True, null=True)
 
     # if role == guest, then fill in institution and institution_address
     institution = models.CharField(max_length=255, blank=True, null=True)
@@ -300,6 +318,15 @@ class Borrow(BaseModel):
     )
     requester_phone = models.CharField(max_length=20, blank=True, null=True)
     requester_mentor = models.CharField(max_length=255, blank=True, null=True)
+    requester_mentor_profile = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='requested_borrows_as_mentor',
+    )
+    is_approved_by_mentor = models.BooleanField(default=False)
+    mentor_approved_at = models.DateTimeField(blank=True, null=True)
 
     # if role == guest, then fill in institution and institution_address
     institution = models.CharField(max_length=255, blank=True, null=True)

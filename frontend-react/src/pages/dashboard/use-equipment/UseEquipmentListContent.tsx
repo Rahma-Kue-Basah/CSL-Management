@@ -22,6 +22,10 @@ import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { useUses } from "@/hooks/uses/use-uses";
 import { formatDateTimeWib } from "@/lib/date-format";
+import {
+  canCurrentUserReviewPendingRequest,
+  isWaitingForMentorApproval,
+} from "@/lib/mentor-approval";
 import { getUseProgressFlow } from "@/lib/request-progress";
 import {
   getStatusBadgeClass,
@@ -174,6 +178,18 @@ export default function UseEquipmentListContent({
       normalizedRole === ROLE_VALUES.LECTURER ||
       normalizedRole === ROLE_VALUES.STAFF);
   const showRequesterColumn = scope === "all";
+  const currentProfileId = String(profile?.id ?? "");
+  const mentorUses = useMemo(
+    () =>
+      filteredUses.filter(
+        (item) =>
+          isWaitingForMentorApproval(item) &&
+          item.requesterMentorProfileId === currentProfileId,
+      ),
+    [currentProfileId, filteredUses],
+  );
+  const showMentorApprovalSection =
+    scope === "all" && normalizedRole === ROLE_VALUES.LECTURER;
 
   const totalPages = Math.max(
     1,
@@ -184,6 +200,21 @@ export default function UseEquipmentListContent({
   const completedCount = aggregates.completed;
   const rejectedCount = aggregates.rejected;
   const expiredCount = aggregates.expired;
+
+  const canShowReviewButton = (item: (typeof filteredUses)[number]) => {
+    if (!canReviewUses || !shouldShowReviewAction("use", item.status)) {
+      return false;
+    }
+
+    if (
+      isWaitingForMentorApproval(item) &&
+      item.requesterMentorProfileId === currentProfileId
+    ) {
+      return false;
+    }
+
+    return true;
+  };
 
   return (
     <section className="space-y-4">
@@ -229,6 +260,103 @@ export default function UseEquipmentListContent({
       {error ? (
         <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
+        </div>
+      ) : null}
+
+      {showMentorApprovalSection ? (
+        <div className="space-y-3">
+          <div>
+            <h2 className="text-sm font-semibold text-slate-900">
+              Approval Dosen Pembimbing
+            </h2>
+            <p className="text-xs text-slate-600">
+              Pengajuan Skripsi/TA penggunaan alat yang menunggu persetujuan Anda.
+            </p>
+          </div>
+          <div className="w-full max-w-full overflow-x-auto rounded-xl border border-amber-200 bg-white">
+            <table className="w-full min-w-[1120px]">
+              <thead className="border-b border-amber-300 bg-amber-100">
+                <tr className="text-left text-sm">
+                  <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-900">Kode</th>
+                  <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-900">Alat</th>
+                  <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-900">Pemohon</th>
+                  <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-900">Waktu Mulai</th>
+                  <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-900">Waktu Selesai</th>
+                  <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-900">Tujuan</th>
+                  <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-900">Status</th>
+                  <th className="sticky right-0 z-20 bg-amber-100 px-3 py-3 text-center font-medium whitespace-nowrap text-slate-900 shadow-[-1px_0_0_0_rgba(251,191,36,0.5)]">
+                    Aksi
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="text-sm">
+                {isLoading || !hasLoadedOnce ? (
+                  <tr>
+                    <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Memuat data...
+                      </div>
+                    </td>
+                  </tr>
+                ) : mentorUses.length ? (
+                  mentorUses.map((item) => (
+                    <tr key={`mentor-${String(item.id)}`} className="border-b last:border-b-0">
+                      <td className="px-3 py-2.5 font-medium whitespace-nowrap text-slate-800">
+                        {item.code}
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">{item.equipmentName}</td>
+                      <td className="px-3 py-2.5 whitespace-nowrap">{item.requesterName}</td>
+                      <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                        {formatDateTimeWib(item.startTime)}
+                      </td>
+                      <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
+                        {formatDateTimeWib(item.endTime)}
+                      </td>
+                      <td className="px-3 py-2.5 text-slate-700">{item.purpose}</td>
+                      <td className="px-3 py-2.5">
+                        <span
+                          className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                        >
+                          {getStatusDisplayLabel(item.status)}
+                        </span>
+                      </td>
+                      <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(254,243,199,1)]">
+                        <div className="flex items-center justify-center gap-2">
+                          {canCurrentUserReviewPendingRequest(
+                            item,
+                            profile?.id,
+                            profile?.role,
+                          ) ? (
+                            <TableActionIconButton
+                              type="button"
+                              label="Review"
+                              icon={<ShieldCheck className="h-3.5 w-3.5" />}
+                              className="w-8 rounded-md border border-sky-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
+                              onClick={() => setReviewUseId(String(item.id))}
+                            />
+                          ) : null}
+                          <TableActionIconButton
+                            type="button"
+                            label="Lihat detail"
+                            icon={<Eye className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
+                            onClick={() => router.push(`/use-equipment/approval/${item.id}`)}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="px-3 py-10 text-center text-slate-500">
+                      Belum ada pengajuan yang menunggu persetujuan dosen pembimbing Anda.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       ) : null}
 
@@ -293,8 +421,7 @@ export default function UseEquipmentListContent({
                   </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
-                      {canReviewUses &&
-                      shouldShowReviewAction("use", item.status) ? (
+                      {canShowReviewButton(item) ? (
                         <TableActionIconButton
                           type="button"
                           label="Review"

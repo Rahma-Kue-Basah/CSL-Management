@@ -13,7 +13,11 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
+        migrations.RemoveField(
+            model_name='image',
+            name='created_by',
+        ),
+        migrations.AddField(
             model_name='image',
             name='created_by',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='images_created_by', to='csluse_auth.profile'),

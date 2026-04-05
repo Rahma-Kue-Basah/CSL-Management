@@ -124,6 +124,35 @@ def _review_result(*, issues=None, passed_indicators=None):
     }
 
 
+def _requires_mentor_approval(instance):
+    return (
+        str(getattr(instance, "purpose", "") or "").strip() == "Skripsi/TA"
+        and getattr(instance, "requester_mentor_profile_id", None) is not None
+    )
+
+
+def _is_assigned_mentor(user, instance):
+    profile = getattr(user, "profile", None)
+    return (
+        profile is not None
+        and getattr(instance, "requester_mentor_profile_id", None) == profile.id
+    )
+
+
+def _mentor_review_pending(instance):
+    return (
+        getattr(instance, "status", None) == "Pending"
+        and _requires_mentor_approval(instance)
+        and not bool(getattr(instance, "is_approved_by_mentor", False))
+    )
+
+
+def _can_run_final_pic_review(instance):
+    return not _requires_mentor_approval(instance) or bool(
+        getattr(instance, "is_approved_by_mentor", False)
+    )
+
+
 def _booking_review_result(booking):
     issues = []
     passed_indicators = []
@@ -1399,7 +1428,12 @@ class EquipmentViewSet(viewsets.ModelViewSet):
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = (
         Booking.objects
-        .select_related('room', 'requested_by', 'approved_by')
+        .select_related(
+            'room',
+            'requested_by',
+            'approved_by',
+            'requester_mentor_profile',
+        )
         .prefetch_related('equipment_items__equipment')
         .order_by('-created_at')
     )
@@ -1422,7 +1456,17 @@ class BookingViewSet(viewsets.ModelViewSet):
             return False
         return booking.room.pics.filter(id=profile.id).exists()
 
+    def _is_booking_mentor(self, booking):
+        return _is_assigned_mentor(self.request.user, booking)
+
     def _can_review_booking(self, booking):
+        return (
+            self._can_manage_all_bookings()
+            or self._is_room_pic_for_booking(booking)
+            or self._is_booking_mentor(booking)
+        )
+
+    def _can_finalize_booking_review(self, booking):
         return self._can_manage_all_bookings() or self._is_room_pic_for_booking(booking)
 
     def _ensure_booking_access(self, booking):
@@ -1448,6 +1492,34 @@ class BookingViewSet(viewsets.ModelViewSet):
             raise PermissionDenied(
                 "Anda tidak dapat memproses pengajuan milik sendiri kecuali sebagai Admin atau SuperAdministrator."
             )
+
+    def _handle_mentor_approval(self, booking, actor_profile):
+        booking.is_approved_by_mentor = True
+        booking.mentor_approved_at = timezone.now()
+        booking.save(update_fields=[
+            "is_approved_by_mentor",
+            "mentor_approved_at",
+            "updated_at",
+        ])
+        serializer = self.get_serializer(booking)
+        return Response(serializer.data)
+
+    def _handle_mentor_rejection(self, booking, actor_profile, request):
+        serializer = self._transition_serializer(
+            booking,
+            data={"status": "Rejected", **request.data},
+        )
+        serializer.is_valid(raise_exception=True)
+        now = timezone.now()
+        serializer.save(rejected_at=now)
+        _notify_request_status(
+            booking,
+            kind="booking",
+            status_value="Rejected",
+            actor_profile=actor_profile,
+            request=request,
+        )
+        return Response(serializer.data)
 
     def _ensure_transition(self, booking, allowed_sources, target_status):
         if booking.status not in allowed_sources:
@@ -1601,7 +1673,9 @@ class BookingViewSet(viewsets.ModelViewSet):
             return qs.none()
 
         qs = qs.filter(
-            Q(requested_by_id=profile.id) | Q(room__pics__id=profile.id)
+            Q(requested_by_id=profile.id)
+            | Q(room__pics__id=profile.id)
+            | Q(requester_mentor_profile_id=profile.id)
         ).distinct()
         return self._apply_list_filters(qs, allow_requester_filter=False)
 
@@ -1748,8 +1822,23 @@ class BookingViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
-        self._ensure_transition(instance, ["Pending"], "Approved")
         actor_profile = getattr(request.user, 'profile', None)
+        if _mentor_review_pending(instance):
+            if not self._is_booking_mentor(instance):
+                raise ValidationError(
+                    {"detail": "Pengajuan ini masih menunggu persetujuan dosen pembimbing."}
+                )
+            return self._handle_mentor_approval(instance, actor_profile)
+
+        if not _can_run_final_pic_review(instance):
+            raise ValidationError(
+                {"detail": "Pengajuan ini masih menunggu persetujuan dosen pembimbing."}
+            )
+        if not self._can_finalize_booking_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau Admin yang dapat memberikan persetujuan akhir."
+            )
+        self._ensure_transition(instance, ["Pending"], "Approved")
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
@@ -1764,8 +1853,19 @@ class BookingViewSet(viewsets.ModelViewSet):
     def reject(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
-        self._ensure_transition(instance, ["Pending"], "Rejected")
         actor_profile = getattr(request.user, 'profile', None)
+        if _mentor_review_pending(instance):
+            if not self._is_booking_mentor(instance):
+                raise ValidationError(
+                    {"detail": "Pengajuan ini masih menunggu persetujuan dosen pembimbing."}
+                )
+            return self._handle_mentor_rejection(instance, actor_profile, request)
+
+        if not self._can_finalize_booking_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau Admin yang dapat memberikan keputusan akhir."
+            )
+        self._ensure_transition(instance, ["Pending"], "Rejected")
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},
@@ -1780,6 +1880,10 @@ class BookingViewSet(viewsets.ModelViewSet):
     def complete(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
+        if not self._can_finalize_booking_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau Admin yang dapat menandai booking sebagai selesai."
+            )
         self._ensure_transition(instance, ["Approved"], "Completed")
         serializer = self._transition_serializer(
             instance,
@@ -1985,7 +2089,12 @@ class SoftwareViewSet(viewsets.ModelViewSet):
 class BorrowViewSet(viewsets.ModelViewSet):
     queryset = (
         Borrow.objects
-        .select_related('equipment', 'requested_by', 'approved_by')
+        .select_related(
+            'equipment',
+            'requested_by',
+            'approved_by',
+            'requester_mentor_profile',
+        )
         .order_by('-created_at')
     )
     serializer_class = BorrowSerializer
@@ -2013,7 +2122,17 @@ class BorrowViewSet(viewsets.ModelViewSet):
             return False
         return room.pics.filter(id=profile.id).exists()
 
+    def _is_borrow_mentor(self, borrow):
+        return _is_assigned_mentor(self.request.user, borrow)
+
     def _can_review_borrow(self, borrow):
+        return (
+            self._can_manage_all_borrows()
+            or self._is_room_pic_for_borrow(borrow)
+            or self._is_borrow_mentor(borrow)
+        )
+
+    def _can_finalize_borrow_review(self, borrow):
         return self._can_manage_all_borrows() or self._is_room_pic_for_borrow(borrow)
 
     def _ensure_borrow_access(self, borrow):
@@ -2039,6 +2158,34 @@ class BorrowViewSet(viewsets.ModelViewSet):
         raise PermissionDenied(
             "Hanya PIC ruangan terkait atau laboran/admin yang dapat memproses borrow ini."
         )
+
+    def _handle_mentor_approval(self, borrow, actor_profile):
+        borrow.is_approved_by_mentor = True
+        borrow.mentor_approved_at = timezone.now()
+        borrow.save(update_fields=[
+            "is_approved_by_mentor",
+            "mentor_approved_at",
+            "updated_at",
+        ])
+        serializer = self.get_serializer(borrow)
+        return Response(serializer.data)
+
+    def _handle_mentor_rejection(self, borrow, actor_profile, request):
+        serializer = self._transition_serializer(
+            borrow,
+            data={"status": "Rejected", **request.data},
+        )
+        serializer.is_valid(raise_exception=True)
+        now = timezone.now()
+        serializer.save(rejected_at=now)
+        _notify_request_status(
+            borrow,
+            kind="borrow",
+            status_value="Rejected",
+            actor_profile=actor_profile,
+            request=request,
+        )
+        return Response(serializer.data)
 
     def _ensure_transition(self, borrow, allowed_sources, target_status):
         if borrow.status not in allowed_sources:
@@ -2170,7 +2317,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
             if not self._can_manage_all_borrows():
                 if profile is None:
                     return qs.none()
-                qs = qs.filter(equipment__room__pics__id=profile.id).distinct()
+                qs = qs.filter(
+                    Q(equipment__room__pics__id=profile.id)
+                    | Q(requester_mentor_profile_id=profile.id)
+                ).distinct()
             return self._apply_list_filters(
                 qs,
                 allow_requester_filter=self._can_manage_all_borrows(),
@@ -2192,7 +2342,9 @@ class BorrowViewSet(viewsets.ModelViewSet):
             if profile is None:
                 return qs.none()
             qs = qs.filter(
-                Q(requested_by_id=profile.id) | Q(equipment__room__pics__id=profile.id)
+                Q(requested_by_id=profile.id)
+                | Q(equipment__room__pics__id=profile.id)
+                | Q(requester_mentor_profile_id=profile.id)
             ).distinct()
         return self._apply_list_filters(
             qs,
@@ -2362,8 +2514,23 @@ class BorrowViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
-        self._ensure_transition(instance, ["Pending"], "Approved")
         actor_profile = getattr(request.user, 'profile', None)
+        if _mentor_review_pending(instance):
+            if not self._is_borrow_mentor(instance):
+                raise ValidationError(
+                    {"detail": "Pengajuan ini masih menunggu persetujuan dosen pembimbing."}
+                )
+            return self._handle_mentor_approval(instance, actor_profile)
+
+        if not _can_run_final_pic_review(instance):
+            raise ValidationError(
+                {"detail": "Pengajuan ini masih menunggu persetujuan dosen pembimbing."}
+            )
+        if not self._can_finalize_borrow_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau laboran/admin yang dapat memberikan persetujuan akhir."
+            )
+        self._ensure_transition(instance, ["Pending"], "Approved")
 
         serializer = self._transition_serializer(
             instance,
@@ -2379,8 +2546,19 @@ class BorrowViewSet(viewsets.ModelViewSet):
     def reject(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
-        self._ensure_transition(instance, ["Pending"], "Rejected")
         actor_profile = getattr(request.user, 'profile', None)
+        if _mentor_review_pending(instance):
+            if not self._is_borrow_mentor(instance):
+                raise ValidationError(
+                    {"detail": "Pengajuan ini masih menunggu persetujuan dosen pembimbing."}
+                )
+            return self._handle_mentor_rejection(instance, actor_profile, request)
+
+        if not self._can_finalize_borrow_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau laboran/admin yang dapat memberikan keputusan akhir."
+            )
+        self._ensure_transition(instance, ["Pending"], "Rejected")
 
         serializer = self._transition_serializer(
             instance,
@@ -2396,6 +2574,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
     def handover(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
+        if not self._can_finalize_borrow_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau laboran/admin yang dapat melakukan serah terima alat."
+            )
         self._ensure_transition(instance, ["Approved"], "Borrowed")
 
         serializer = self._transition_serializer(
@@ -2411,6 +2593,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
     def receive_return(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
+        if not self._can_finalize_borrow_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau laboran/admin yang dapat menerima pengembalian alat."
+            )
         self._ensure_transition(
             instance,
             ["Borrowed", "Overdue"],
@@ -2436,6 +2622,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
     def finalize_return(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
+        if not self._can_finalize_borrow_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau laboran/admin yang dapat memfinalisasi return."
+            )
         self._ensure_transition(
             instance,
             ["Returned Pending Inspection"],
@@ -2460,6 +2650,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
     def mark_damaged(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
+        if not self._can_finalize_borrow_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau laboran/admin yang dapat menandai alat sebagai rusak."
+            )
         self._ensure_transition(
             instance,
             ["Returned Pending Inspection"],
@@ -2487,6 +2681,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
     def mark_lost(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
+        if not self._can_finalize_borrow_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan terkait atau laboran/admin yang dapat menandai alat sebagai hilang."
+            )
         self._ensure_transition(
             instance,
             ["Returned Pending Inspection"],
@@ -3616,6 +3814,10 @@ class PengujianViewSet(viewsets.ModelViewSet):
     def complete(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
+        if not self._can_finalize_use_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan alat terkait atau Admin yang dapat menandai penggunaan sebagai selesai."
+            )
         self._ensure_transition(instance, ["Approved"], "Completed")
         serializer = self._transition_serializer(
             instance,
@@ -3637,6 +3839,7 @@ class UseViewSet(viewsets.ModelViewSet):
             'equipment__image',
             'requested_by',
             'approved_by',
+            'requester_mentor_profile',
         )
         .prefetch_related('equipment__room__pics')
         .order_by('-created_at')
@@ -3682,7 +3885,17 @@ class UseViewSet(viewsets.ModelViewSet):
             return False
         return room.pics.filter(id=profile.id).exists()
 
+    def _is_use_mentor(self, use_item):
+        return _is_assigned_mentor(self.request.user, use_item)
+
     def _can_review_use(self, use_item):
+        return (
+            self._can_manage_all_uses()
+            or self._is_room_pic_for_use(use_item)
+            or self._is_use_mentor(use_item)
+        )
+
+    def _can_finalize_use_review(self, use_item):
         return self._can_manage_all_uses() or self._is_room_pic_for_use(use_item)
 
     def _ensure_use_access(self, use_item):
@@ -3708,6 +3921,34 @@ class UseViewSet(viewsets.ModelViewSet):
             raise PermissionDenied(
                 "Anda tidak dapat memproses pengajuan milik sendiri kecuali sebagai Admin atau SuperAdministrator."
             )
+
+    def _handle_mentor_approval(self, use_item, actor_profile):
+        use_item.is_approved_by_mentor = True
+        use_item.mentor_approved_at = timezone.now()
+        use_item.save(update_fields=[
+            "is_approved_by_mentor",
+            "mentor_approved_at",
+            "updated_at",
+        ])
+        serializer = self.get_serializer(use_item)
+        return Response(serializer.data)
+
+    def _handle_mentor_rejection(self, use_item, actor_profile, request):
+        serializer = self._transition_serializer(
+            use_item,
+            data={"status": "Rejected", **request.data},
+        )
+        serializer.is_valid(raise_exception=True)
+        now = timezone.now()
+        serializer.save(rejected_at=now)
+        _notify_request_status(
+            use_item,
+            kind="use",
+            status_value="Rejected",
+            actor_profile=actor_profile,
+            request=request,
+        )
+        return Response(serializer.data)
 
     def _ensure_transition(self, use_item, allowed_sources, target_status):
         if use_item.status not in allowed_sources:
@@ -3820,7 +4061,9 @@ class UseViewSet(viewsets.ModelViewSet):
         if profile is None:
             return qs.none()
         qs = qs.filter(
-            Q(requested_by_id=profile.id) | Q(equipment__room__pics__id=profile.id)
+            Q(requested_by_id=profile.id)
+            | Q(equipment__room__pics__id=profile.id)
+            | Q(requester_mentor_profile_id=profile.id)
         ).distinct()
         return self._apply_list_filters(qs, allow_requester_filter=False)
 
@@ -3950,8 +4193,23 @@ class UseViewSet(viewsets.ModelViewSet):
     def approve(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
-        self._ensure_transition(instance, ["Pending"], "Approved")
         actor_profile = getattr(request.user, 'profile', None)
+        if _mentor_review_pending(instance):
+            if not self._is_use_mentor(instance):
+                raise ValidationError(
+                    {"detail": "Pengajuan ini masih menunggu persetujuan dosen pembimbing."}
+                )
+            return self._handle_mentor_approval(instance, actor_profile)
+
+        if not _can_run_final_pic_review(instance):
+            raise ValidationError(
+                {"detail": "Pengajuan ini masih menunggu persetujuan dosen pembimbing."}
+            )
+        if not self._can_finalize_use_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan alat terkait atau Admin yang dapat memberikan persetujuan akhir."
+            )
+        self._ensure_transition(instance, ["Pending"], "Approved")
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Approved', **request.data},
@@ -3966,8 +4224,19 @@ class UseViewSet(viewsets.ModelViewSet):
     def reject(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
-        self._ensure_transition(instance, ["Pending"], "Rejected")
         actor_profile = getattr(request.user, 'profile', None)
+        if _mentor_review_pending(instance):
+            if not self._is_use_mentor(instance):
+                raise ValidationError(
+                    {"detail": "Pengajuan ini masih menunggu persetujuan dosen pembimbing."}
+                )
+            return self._handle_mentor_rejection(instance, actor_profile, request)
+
+        if not self._can_finalize_use_review(instance):
+            raise PermissionDenied(
+                "Hanya PIC ruangan alat terkait atau Admin yang dapat memberikan keputusan akhir."
+            )
+        self._ensure_transition(instance, ["Pending"], "Rejected")
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Rejected', **request.data},

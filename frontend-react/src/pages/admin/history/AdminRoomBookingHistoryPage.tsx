@@ -52,6 +52,7 @@ import { useDeleteRecord } from "@/hooks/use-delete-record";
 import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
 import { formatDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 import { formatDateTimeWib } from "@/lib/date-format";
+import { isWaitingForMentorApproval } from "@/lib/mentor-approval";
 import { BOOKING_EXPORT_COLUMNS } from "@/lib/admin-record-export-config";
 import {
   getStatusBadgeClass,
@@ -579,7 +580,8 @@ export default function AdminRoomBookingHistoryPage() {
                 </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
-                    {shouldShowReviewAction("booking", booking.status) ? (
+                    {shouldShowReviewAction("booking", booking.status) &&
+                    !isWaitingForMentorApproval(booking) ? (
                       <ActionTooltip label="Review pengajuan">
                         <Button
                           variant="outline"

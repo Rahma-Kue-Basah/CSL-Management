@@ -18,6 +18,7 @@ type CreateUsePayload = {
   note?: string;
   requesterPhone?: string;
   requesterMentor?: string;
+  requesterMentorProfileId?: string;
   institution?: string;
   institutionAddress?: string;
 };
@@ -35,6 +36,7 @@ function parseUseError(
     "note",
     "requester_phone",
     "requester_mentor",
+    "requester_mentor_profile",
     "institution",
     "institution_address",
   ]);
@@ -60,6 +62,9 @@ export function useCreateUse() {
       if (payload.note?.trim()) body.note = payload.note.trim();
       if (payload.requesterPhone?.trim()) body.requester_phone = payload.requesterPhone.trim();
       if (payload.requesterMentor?.trim()) body.requester_mentor = payload.requesterMentor.trim();
+      if (payload.requesterMentorProfileId?.trim()) {
+        body.requester_mentor_profile = payload.requesterMentorProfileId.trim();
+      }
       if (payload.institution?.trim()) body.institution = payload.institution.trim();
       if (payload.institutionAddress?.trim()) {
         body.institution_address = payload.institutionAddress.trim();

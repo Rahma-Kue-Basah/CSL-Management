@@ -42,6 +42,7 @@ export type PengujianRow = {
   requesterId: string;
   requesterName: string;
   requesterDepartment: string;
+  requesterRole: string;
   approvedById: string;
   approvedByName: string;
   createdAt: string;
@@ -79,6 +80,7 @@ type ApiPengujian = {
     id?: string | number | null;
     full_name?: string | null;
     email?: string | null;
+    role?: string | null;
     department?: string | null;
   } | null;
   approved_by?: string | number | null;
@@ -142,6 +144,7 @@ export function mapPengujian(item: ApiPengujian): PengujianRow {
     requesterId: String(item.requested_by_detail?.id ?? item.requested_by ?? ""),
     requesterName: String(requesterName),
     requesterDepartment: String(item.requested_by_detail?.department ?? "-"),
+    requesterRole: String(item.requested_by_detail?.role ?? "-"),
     approvedById: String(item.approved_by_detail?.id ?? item.approved_by ?? ""),
     approvedByName: String(approvedByName),
     createdAt: String(item.created_at ?? "-"),

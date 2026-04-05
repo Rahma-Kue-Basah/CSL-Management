@@ -19,6 +19,10 @@ import {
 import { WORKSHOP_PURPOSE } from "@/constants/request-purpose";
 import type { BookingRow } from "@/hooks/bookings/use-bookings";
 import { formatDateTimeWib } from "@/lib/date-format";
+import {
+  getMentorApprovalStageLabel,
+  hasMentorApprovalTrace,
+} from "@/lib/mentor-approval";
 
 type Props = {
   booking: BookingRow | null;
@@ -274,6 +278,18 @@ export default function AdminRoomBookingRecordDetailContent({
             icon={<NotebookPen className="h-5 w-5" />}
           >
             <AdminRecordDetailGrid>
+              {hasMentorApprovalTrace(booking) ? (
+                <>
+                  <AdminRecordDetailItem
+                    label="Tahap Dosen Pembimbing"
+                    value={getMentorApprovalStageLabel(booking)}
+                  />
+                  <AdminRecordDetailItem
+                    label="Waktu Persetujuan Dosen Pembimbing"
+                    value={formatDateTimeWib(booking.mentorApprovedAt)}
+                  />
+                </>
+              ) : null}
               <AdminRecordDetailItem
                 label="Disetujui Oleh"
                 value={booking.approvedByName}
