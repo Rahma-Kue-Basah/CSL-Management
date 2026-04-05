@@ -3,15 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import {
-  Check,
-  ChevronDown,
-  Download,
+  ClipboardCheck,
   Eye,
-  FileSpreadsheet,
-  Loader2,
-  OctagonX,
   Trash2,
-  X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,6 +17,8 @@ import AdminHistoryExportActions from "@/components/admin/history/AdminHistoryEx
 import AdminHistorySummaryCards from "@/components/admin/history/AdminHistorySummaryCards";
 import AdminHistoryTable from "@/components/admin/history/AdminHistoryTable";
 import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
+import { ActionTooltip } from "@/components/shared/ActionTooltip";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { DataPagination } from "@/components/shared/data-pagination";
@@ -47,13 +43,12 @@ import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { useHistoryRequesterOptions } from "@/hooks/history/use-history-requester-options";
 import {
   mapBooking,
+  useBookingDetail,
   useBookings,
   type BookingRow,
 } from "@/hooks/bookings/use-bookings";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
-import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
 import { useDeleteRecord } from "@/hooks/use-delete-record";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin-record-pdf";
 import { formatDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 import { formatDateTimeWib } from "@/lib/date-format";
@@ -62,8 +57,8 @@ import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
   REQUEST_STATUS_OPTIONS,
+  shouldShowReviewAction,
 } from "@/lib/status";
-import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
 import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 
 const PAGE_SIZE = 20;
@@ -88,7 +83,6 @@ function matchesSearch(booking: BookingRow, query: string) {
 
 export default function AdminRoomBookingHistoryPage() {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
-  const { profile } = useLoadProfile();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -102,16 +96,13 @@ export default function AdminRoomBookingHistoryPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<BookingRow | null>(null);
   const [detailTarget, setDetailTarget] = useState<BookingRow | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<BookingRow | null>(null);
   const [relatedRoomId, setRelatedRoomId] = useState<string | number | null>(null);
   const [relatedUserId, setRelatedUserId] = useState<string | number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
   const [isExportingSelectedExcel, setIsExportingSelectedExcel] = useState(false);
-  const [statusTarget, setStatusTarget] = useState<{
-    booking: BookingRow;
-    type: "approve" | "reject";
-  } | null>(null);
   const createdAfter = createdRange?.from ? formatDateKey(createdRange.from) : "";
   const createdBefore = createdRange?.to
     ? formatDateKey(createdRange.to)
@@ -121,7 +112,6 @@ export default function AdminRoomBookingHistoryPage() {
   const { deleteRecord, deleteRecords, isDeleting } = useDeleteRecord();
   const { requesters } = useHistoryRequesterOptions(API_BOOKINGS_ALL_REQUESTERS);
   const { rooms } = useRoomOptions();
-  const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
   const {
     exportPdf,
     exportExcel,
@@ -167,6 +157,13 @@ export default function AdminRoomBookingHistoryPage() {
     reloadKey,
     "all",
   );
+  const {
+    booking: detailBooking,
+    isLoading: isDetailLoading,
+    error: detailError,
+  } = useBookingDetail(detailTarget?.id ?? null, reloadKey, {
+    enabled: Boolean(detailTarget),
+  });
 
   const filteredBookings = useMemo(
     () => bookings.filter((booking) => matchesSearch(booking, debouncedSearch)),
@@ -284,48 +281,6 @@ export default function AdminRoomBookingHistoryPage() {
     setIsBulkDeleteOpen(false);
     setSelectedIds([]);
     setReloadKey((prev) => prev + 1);
-  };
-
-  const handleUpdateStatus = async () => {
-    if (!statusTarget) return;
-    const currentTarget = statusTarget;
-    const result = await updateBookingStatus(statusTarget.booking.id, statusTarget.type);
-    if (result.ok) {
-      const now = new Date().toISOString();
-      if (detailTarget?.id === currentTarget.booking.id) {
-        setDetailTarget((current) =>
-          current
-            ? {
-                ...current,
-                status: currentTarget.type === "approve" ? "Approved" : "Rejected",
-                updatedAt: now,
-                approvedById:
-                  currentTarget.type === "approve"
-                    ? String(profile?.id ?? current.approvedById)
-                    : current.approvedById,
-                approvedByName:
-                  currentTarget.type === "approve"
-                    ? profile?.name || current.approvedByName
-                    : current.approvedByName,
-                approvedByEmail:
-                  currentTarget.type === "approve"
-                    ? profile?.email || current.approvedByEmail
-                    : current.approvedByEmail,
-              }
-            : current,
-        );
-      }
-      toast.success(
-        statusTarget.type === "approve"
-          ? "Booking ruangan berhasil disetujui."
-          : "Booking ruangan berhasil ditolak.",
-      );
-      setStatusTarget(null);
-      setReloadKey((prev) => prev + 1);
-      return;
-    }
-
-    toast.error(result.message);
   };
 
   const handleExportSelectedPdf = async () => {
@@ -624,63 +579,36 @@ export default function AdminRoomBookingHistoryPage() {
                 </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
-                    {booking.status === "Pending" ? (
-                      <>
+                    {shouldShowReviewAction("booking", booking.status) ? (
+                      <ActionTooltip label="Review pengajuan">
                         <Button
                           variant="outline"
                           size="icon-sm"
-                          className="border-emerald-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
-                          disabled={pendingAction.bookingId === booking.id}
-                          onClick={() =>
-                            setStatusTarget({
-                              booking,
-                              type: "approve",
-                            })
-                          }
+                          onClick={() => setReviewTarget(booking)}
                         >
-                          {pendingAction.bookingId === booking.id &&
-                          pendingAction.type === "approve" ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Check className="h-4 w-4" />
-                          )}
+                          <ClipboardCheck className="h-4 w-4" />
                         </Button>
-                        <Button
-                          variant="outline"
-                          size="icon-sm"
-                          className="border-amber-200 text-amber-600 hover:bg-amber-50 hover:text-amber-700"
-                          disabled={pendingAction.bookingId === booking.id}
-                          onClick={() =>
-                            setStatusTarget({
-                              booking,
-                              type: "reject",
-                            })
-                          }
-                        >
-                          {pendingAction.bookingId === booking.id &&
-                          pendingAction.type === "reject" ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <OctagonX className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </>
+                      </ActionTooltip>
                     ) : null}
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={() => setDetailTarget(booking)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                      onClick={() => setDeleteTarget(booking)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <ActionTooltip label="Lihat detail">
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => setDetailTarget(booking)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </ActionTooltip>
+                    <ActionTooltip label="Hapus riwayat">
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        onClick={() => setDeleteTarget(booking)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </ActionTooltip>
                   </div>
                 </td>
               </tr>
@@ -717,20 +645,35 @@ export default function AdminRoomBookingHistoryPage() {
             onConfirm={handleBulkDelete}
           />
 
-          <StatusConfirmDialog
-            open={Boolean(statusTarget)}
-            actionType={statusTarget?.type ?? null}
+          <Dialog
+            open={Boolean(reviewTarget)}
             onOpenChange={(open) => {
-              if (!open) setStatusTarget(null);
+              if (!open) setReviewTarget(null);
             }}
-            onConfirm={handleUpdateStatus}
-            isSubmitting={
-              statusTarget
-                ? pendingAction.bookingId === statusTarget.booking.id
-                : false
-            }
-            subjectLabel="pengajuan peminjaman lab ini"
-          />
+          >
+            <DialogContent
+              showCloseButton={false}
+              className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden border-0 bg-transparent p-0 shadow-none sm:w-[50vw] sm:max-w-[760px] sm:min-w-[640px] sm:max-w-none"
+            >
+              <DialogHeader className="sr-only">
+                <DialogTitle>Review Pengajuan Peminjaman Lab</DialogTitle>
+                <DialogDescription>
+                  Review pengajuan peminjaman lab ditampilkan dalam modal.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
+                {reviewTarget ? (
+                  <DashboardDetailReviewPanel
+                    context={{ kind: "booking", id: String(reviewTarget.id) }}
+                    onActionComplete={() => {
+                      setReviewTarget(null);
+                      setReloadKey((prev) => prev + 1);
+                    }}
+                  />
+                ) : null}
+              </div>
+            </DialogContent>
+          </Dialog>
 
           <Dialog
             open={Boolean(detailTarget)}
@@ -749,66 +692,28 @@ export default function AdminRoomBookingHistoryPage() {
                 </DialogDescription>
               </DialogHeader>
               <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
+                <div className="space-y-4">
                 <AdminRoomBookingHistoryDetailContent
-                  booking={detailTarget}
-                  isLoading={false}
-                  error=""
+                  booking={detailBooking}
+                  isLoading={isDetailLoading}
+                  error={detailError}
                   showAside={false}
                   backLabel="Tutup"
                   onBack={() => setDetailTarget(null)}
                   onOpenRoomDetail={setRelatedRoomId}
                   onOpenUserDetail={setRelatedUserId}
-                  actions={
-                    detailTarget?.status === "Pending" ? (
-                      <>
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="border border-emerald-600 bg-emerald-600 text-white hover:bg-emerald-700"
-                          onClick={() =>
-                            detailTarget &&
-                            setStatusTarget({
-                              booking: detailTarget,
-                              type: "approve",
-                            })
-                          }
-                          disabled={detailTarget ? pendingAction.bookingId === detailTarget.id : false}
-                        >
-                          {detailTarget &&
-                          pendingAction.bookingId === detailTarget.id &&
-                          pendingAction.type === "approve" ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <Check className="h-4 w-4" />
-                          )}
-                          Setujui
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          className="border border-rose-600 bg-rose-600 text-white hover:bg-rose-700"
-                          onClick={() =>
-                            detailTarget &&
-                            setStatusTarget({
-                              booking: detailTarget,
-                              type: "reject",
-                            })
-                          }
-                          disabled={detailTarget ? pendingAction.bookingId === detailTarget.id : false}
-                        >
-                          {detailTarget &&
-                          pendingAction.bookingId === detailTarget.id &&
-                          pendingAction.type === "reject" ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <OctagonX className="h-4 w-4" />
-                          )}
-                          Tolak
-                        </Button>
-                      </>
-                    ) : null
-                  }
                 />
+                {detailTarget ? (
+                  <DashboardDetailReviewPanel
+                    context={{ kind: "booking", id: String(detailTarget.id) }}
+                    initialBooking={detailBooking}
+                    onActionComplete={() => {
+                      setDetailTarget(null);
+                      setReloadKey((prev) => prev + 1);
+                    }}
+                  />
+                ) : null}
+                </div>
               </div>
             </DialogContent>
           </Dialog>

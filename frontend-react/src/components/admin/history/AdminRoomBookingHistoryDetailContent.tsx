@@ -16,6 +16,7 @@ import {
   AdminRecordDetailSection,
   AdminRecordDetailShell,
 } from "@/components/admin/history/AdminHistoryDetailLayout";
+import { WORKSHOP_PURPOSE } from "@/constants/request-purpose";
 import type { BookingRow } from "@/hooks/bookings/use-bookings";
 import { formatDateTimeWib } from "@/lib/date-format";
 
@@ -31,6 +32,10 @@ type Props = {
   onOpenUserDetail?: (userId: string | number) => void;
 };
 
+function hasValue(value?: string | null) {
+  return Boolean(value && value.trim() && value !== "-");
+}
+
 export default function AdminRoomBookingRecordDetailContent({
   booking,
   isLoading,
@@ -42,6 +47,11 @@ export default function AdminRoomBookingRecordDetailContent({
   onOpenRoomDetail,
   onOpenUserDetail,
 }: Props) {
+  const isGuestRequester = booking
+    ? !hasValue(booking.requesterDepartment)
+    : false;
+  const isWorkshopPurpose = booking?.purpose === WORKSHOP_PURPOSE;
+
   return (
     <>
       {error ? (
@@ -181,10 +191,53 @@ export default function AdminRoomBookingRecordDetailContent({
                     : undefined
                 }
               />
+              <AdminRecordDetailItem label="Nomor Ruangan" value={booking.roomNumber} />
               <AdminRecordDetailItem label="Status" value={booking.status} status />
               <AdminRecordDetailItem label="Tujuan" value={booking.purpose} />
               <AdminRecordDetailItem label="Jumlah Peserta" value={booking.attendeeCount} />
               <AdminRecordDetailItem label="Nama Peserta" value={booking.attendeeNames} />
+            </AdminRecordDetailGrid>
+          </AdminRecordDetailSection>
+
+          <AdminRecordDetailSection
+            title="Informasi Pemohon"
+            icon={<ClipboardList className="h-5 w-5" />}
+          >
+            <AdminRecordDetailGrid>
+              <AdminRecordDetailItem label="Email Pemohon" value={booking.requesterEmail} />
+              {!isGuestRequester ? (
+                <AdminRecordDetailItem
+                  label="Prodi Pemohon"
+                  value={booking.requesterDepartment}
+                />
+              ) : null}
+              <AdminRecordDetailItem label="No. Telepon" value={booking.requesterPhone} />
+              {!isGuestRequester ? (
+                <AdminRecordDetailItem
+                  label="Dosen/Pembimbing"
+                  value={booking.requesterMentor}
+                />
+              ) : null}
+              {isGuestRequester ? (
+                <>
+                  <AdminRecordDetailItem label="Institusi" value={booking.institution} />
+                  <AdminRecordDetailItem
+                    label="Alamat Institusi"
+                    value={booking.institutionAddress}
+                  />
+                </>
+              ) : null}
+              {isWorkshopPurpose ? (
+                <>
+                  <AdminRecordDetailItem label="Judul Workshop" value={booking.workshopTitle} />
+                  <AdminRecordDetailItem label="PIC Workshop" value={booking.workshopPic} />
+                  <AdminRecordDetailItem
+                    label="Institusi Workshop"
+                    value={booking.workshopInstitution}
+                  />
+                </>
+              ) : null}
+              <AdminRecordDetailItem label="PIC Lab" value={booking.roomPicName} />
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
 
@@ -235,12 +288,42 @@ export default function AdminRoomBookingRecordDetailContent({
                 label="Email Approver"
                 value={booking.approvedByEmail || "-"}
               />
+              <AdminRecordDetailItem
+                label="Waktu Disetujui"
+                value={formatDateTimeWib(booking.approvedAt)}
+              />
+              {booking.status === "Rejected" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Ditolak"
+                  value={formatDateTimeWib(booking.rejectedAt)}
+                />
+              ) : null}
+              {booking.status === "Completed" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Selesai"
+                  value={formatDateTimeWib(booking.completedAt)}
+                />
+              ) : null}
+              {booking.status === "Expired" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Kedaluwarsa"
+                  value={formatDateTimeWib(booking.expiredAt)}
+                />
+              ) : null}
             </AdminRecordDetailGrid>
             <div className="mt-3">
               <AdminRecordDetailItem
                 label="Catatan Pemohon"
                 value={booking.note || "-"}
               />
+              {booking.status === "Rejected" ? (
+                <div className="mt-3">
+                  <AdminRecordDetailItem
+                    label="Alasan Penolakan"
+                    value={booking.rejectionNote || "-"}
+                  />
+                </div>
+              ) : null}
             </div>
           </AdminRecordDetailSection>
         </AdminRecordDetailShell>

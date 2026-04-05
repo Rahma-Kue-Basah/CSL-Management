@@ -12,7 +12,7 @@ import { authFetch } from "@/lib/auth";
 import type { UserRow } from "@/hooks/users/use-users";
 
 export type RoomPicTaskUserRow = UserRow & {
-  roomNames: string[];
+  roomNames?: string[];
 };
 
 type ApiRoomPicUser = {
@@ -29,6 +29,7 @@ type ApiRoomPicUser = {
 
 type UseRoomPicTaskUsersFilters = {
   department?: string;
+  role?: string;
   room?: string;
   search?: string;
 };
@@ -78,6 +79,7 @@ export function useRoomPicTaskUsers(
         const url = new URL(API_AUTH_PIC_USERS, window.location.origin);
         url.searchParams.set("assigned_only", "true");
         if (filters.department) url.searchParams.set("department", filters.department);
+        if (filters.role) url.searchParams.set("role", filters.role);
         if (filters.room) url.searchParams.set("room", filters.room);
         if (filters.search) url.searchParams.set("search", filters.search);
 
@@ -111,7 +113,7 @@ export function useRoomPicTaskUsers(
       isAborted = true;
       controller.abort();
     };
-  }, [filters.department, filters.room, filters.search, reloadKey]);
+  }, [filters.department, filters.role, filters.room, filters.search, reloadKey]);
 
   return {
     users,

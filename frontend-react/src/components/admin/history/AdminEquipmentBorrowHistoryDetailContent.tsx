@@ -27,6 +27,10 @@ type AdminEquipmentBorrowRecordDetailContentProps = {
   onOpenUserDetail?: (userId: string | number) => void;
 };
 
+function hasValue(value?: string | null) {
+  return Boolean(value && value.trim() && value !== "-");
+}
+
 export default function AdminEquipmentBorrowRecordDetailContent({
   item,
   isLoading,
@@ -36,6 +40,8 @@ export default function AdminEquipmentBorrowRecordDetailContent({
   onOpenEquipmentDetail,
   onOpenUserDetail,
 }: AdminEquipmentBorrowRecordDetailContentProps) {
+  const isGuestRequester = item ? !hasValue(item.requesterDepartment) : false;
+
   return (
     <>
       {error ? (
@@ -137,6 +143,7 @@ export default function AdminEquipmentBorrowRecordDetailContent({
                     : undefined
                 }
               />
+              <AdminRecordDetailItem label="Ruangan" value={item.roomName} compact borderless />
               <AdminRecordDetailItem label="Jumlah" value={item.quantity} compact borderless />
               <AdminRecordDetailItem
                 label="Peminjam"
@@ -157,6 +164,59 @@ export default function AdminEquipmentBorrowRecordDetailContent({
                 compact
                 borderless
               />
+              <AdminRecordDetailItem
+                label="PIC Lab"
+                value={item.roomPicName}
+                compact
+                borderless
+              />
+            </AdminRecordDetailGrid>
+          </AdminRecordDetailSection>
+
+          <AdminRecordDetailSection
+            title="Informasi Pemohon"
+            icon={<ClipboardList className="h-5 w-5" />}
+            compact
+          >
+            <AdminRecordDetailGrid compact>
+              {!isGuestRequester ? (
+                <AdminRecordDetailItem
+                  label="Prodi Pemohon"
+                  value={item.requesterDepartment}
+                  compact
+                  borderless
+                />
+              ) : null}
+              <AdminRecordDetailItem
+                label="No. Telepon"
+                value={item.requesterPhone}
+                compact
+                borderless
+              />
+              {!isGuestRequester ? (
+                <AdminRecordDetailItem
+                  label="Dosen/Pembimbing"
+                  value={item.requesterMentor}
+                  compact
+                  borderless
+                />
+              ) : null}
+              {isGuestRequester ? (
+                <>
+                  <AdminRecordDetailItem
+                    label="Institusi"
+                    value={item.institution}
+                    compact
+                    borderless
+                  />
+                  <AdminRecordDetailItem
+                    label="Alamat Institusi"
+                    value={item.institutionAddress}
+                    compact
+                    borderless
+                  />
+                </>
+              ) : null}
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
 
@@ -196,6 +256,64 @@ export default function AdminEquipmentBorrowRecordDetailContent({
                     : undefined
                 }
               />
+              <AdminRecordDetailItem
+                label="Waktu Disetujui"
+                value={formatDateTimeWib(item.approvedAt)}
+                compact
+                borderless
+              />
+              {item.status === "Rejected" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Ditolak"
+                  value={formatDateTimeWib(item.rejectedAt)}
+                  compact
+                  borderless
+                />
+              ) : null}
+              {item.status === "Expired" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Kedaluwarsa"
+                  value={formatDateTimeWib(item.expiredAt)}
+                  compact
+                  borderless
+                />
+              ) : null}
+              <AdminRecordDetailItem
+                label="Waktu Serah Terima"
+                value={formatDateTimeWib(item.borrowedAt)}
+                compact
+                borderless
+              />
+              <AdminRecordDetailItem
+                label="Waktu Menunggu Inspeksi"
+                value={formatDateTimeWib(item.returnedPendingInspectionAt)}
+                compact
+                borderless
+              />
+              <AdminRecordDetailItem
+                label="Waktu Inspeksi"
+                value={formatDateTimeWib(item.inspectedAt)}
+                compact
+                borderless
+              />
+              <AdminRecordDetailItem
+                label="Waktu Return"
+                value={formatDateTimeWib(item.returnedAt)}
+                compact
+                borderless
+              />
+              <AdminRecordDetailItem
+                label="Waktu Overdue"
+                value={formatDateTimeWib(item.overdueAt)}
+                compact
+                borderless
+              />
+              <AdminRecordDetailItem
+                label="Waktu Lost/Damaged"
+                value={formatDateTimeWib(item.lostDamagedAt)}
+                compact
+                borderless
+              />
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
 
@@ -218,6 +336,14 @@ export default function AdminEquipmentBorrowRecordDetailContent({
                 compact
                 borderless
               />
+              {item.status === "Rejected" ? (
+                <AdminRecordDetailItem
+                  label="Alasan Penolakan"
+                  value={item.rejectionNote || "-"}
+                  compact
+                  borderless
+                />
+              ) : null}
             </div>
           </AdminRecordDetailSection>
         </AdminRecordDetailShell>

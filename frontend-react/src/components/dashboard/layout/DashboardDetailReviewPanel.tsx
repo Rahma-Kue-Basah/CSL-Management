@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Check, Handshake, Loader2, RotateCcw, ShieldCheck, TriangleAlert, X } from "lucide-react";
+import {
+  Check,
+  Handshake,
+  Loader2,
+  RotateCcw,
+  ShieldCheck,
+  TriangleAlert,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
@@ -23,6 +31,7 @@ import {
   API_BORROW_REVIEW_CHECK,
   API_USE_REVIEW_CHECK,
 } from "@/constants/api";
+import { WORKSHOP_PURPOSE } from "@/constants/request-purpose";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import { authFetch } from "@/lib/auth";
 import {
@@ -30,10 +39,7 @@ import {
   type BookingRow,
 } from "@/hooks/bookings/use-bookings";
 import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
-import {
-  useBorrowDetail,
-  type BorrowRow,
-} from "@/hooks/borrows/use-borrows";
+import { useBorrowDetail, type BorrowRow } from "@/hooks/borrows/use-borrows";
 import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
 import { useLoadProfile } from "@/hooks/profile/use-load-profile";
 import {
@@ -41,10 +47,7 @@ import {
   type PengujianRow,
 } from "@/hooks/pengujians/use-pengujians";
 import { useUpdatePengujianStatus } from "@/hooks/pengujians/use-update-pengujian-status";
-import {
-  useUseDetail,
-  type UseRow,
-} from "@/hooks/uses/use-uses";
+import { useUseDetail, type UseRow } from "@/hooks/uses/use-uses";
 import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
 import { formatDateTimeWib } from "@/lib/date-format";
 
@@ -80,6 +83,10 @@ function isInspectionPendingStatus(value: string) {
   );
 }
 
+function hasValue(value?: string | null) {
+  return Boolean(value && value.trim() && value !== "-");
+}
+
 function getBorrowStatusHint(
   status: string,
   reviewer: boolean,
@@ -98,7 +105,9 @@ function getBorrowStatusHint(
         ? "Pengajuan sudah lolos review dan siap masuk proses serah terima alat."
         : "Pengajuan sudah lolos review dan sedang menunggu proses serah terima alat.",
       indicators: reviewer
-        ? ["Gunakan aksi Serah Terima setelah alat benar-benar diserahkan ke peminjam."]
+        ? [
+            "Gunakan aksi Serah Terima setelah alat benar-benar diserahkan ke peminjam.",
+          ]
         : ["PIC akan melanjutkan ke proses serah terima alat."],
       className: "border-sky-200 bg-sky-50/80",
       titleClassName: "text-sky-800",
@@ -113,8 +122,12 @@ function getBorrowStatusHint(
         ? "Tahap review selesai. Langkah berikutnya adalah menerima alat kembali dari peminjam."
         : "Alat sedang dipinjam dan menunggu proses pengembalian.",
       indicators: reviewer
-        ? ["Gunakan aksi Konfirmasi Pengembalian saat alat sudah diterima kembali."]
-        : ["Setelah alat dikembalikan, PIC akan melakukan konfirmasi pengembalian."],
+        ? [
+            "Gunakan aksi Konfirmasi Pengembalian saat alat sudah diterima kembali.",
+          ]
+        : [
+            "Setelah alat dikembalikan, PIC akan melakukan konfirmasi pengembalian.",
+          ],
       className: "border-sky-200 bg-sky-50/80",
       titleClassName: "text-sky-800",
       textClassName: "text-sky-900",
@@ -132,7 +145,9 @@ function getBorrowStatusHint(
             "Gunakan Finalisasi Return jika alat kembali dengan baik.",
             "Gunakan Tandai Rusak atau Tandai Hilang jika ada temuan pada inspeksi.",
           ]
-        : ["PIC akan memfinalisasi return atau menandai hasil inspeksi bila ada kendala."],
+        : [
+            "PIC akan memfinalisasi return atau menandai hasil inspeksi bila ada kendala.",
+          ],
       className: "border-emerald-200 bg-emerald-50/80",
       titleClassName: "text-emerald-800",
       textClassName: "text-emerald-900",
@@ -167,7 +182,9 @@ function getCompleteStatusHint(
   return {
     title: labels.readyTitle,
     message: reviewer ? labels.reviewerMessage : labels.requesterMessage,
-    indicators: [reviewer ? labels.reviewerIndicator : labels.requesterIndicator],
+    indicators: [
+      reviewer ? labels.reviewerIndicator : labels.requesterIndicator,
+    ],
     className: "border-sky-200 bg-sky-50/80",
     titleClassName: "text-sky-800",
     textClassName: "text-sky-900",
@@ -212,8 +229,12 @@ function getPengujianStatusHint(
         ? "Pengajuan sudah disetujui. Tandai sebagai selesai setelah proses pengujian sampel benar-benar selesai."
         : "Pengajuan sudah disetujui dan sedang menunggu proses pengujian sampel selesai.",
       indicators: reviewer
-        ? ["Gunakan aksi Tandai Selesai setelah hasil pengujian sampel selesai diproses."]
-        : ["Status akan diperbarui menjadi selesai oleh petugas setelah proses pengujian selesai."],
+        ? [
+            "Gunakan aksi Tandai Selesai setelah hasil pengujian sampel selesai diproses.",
+          ]
+        : [
+            "Status akan diperbarui menjadi selesai oleh petugas setelah proses pengujian selesai.",
+          ],
       className: "border-sky-200 bg-sky-50/80",
       titleClassName: "text-sky-800",
       textClassName: "text-sky-900",
@@ -323,7 +344,9 @@ function BookingReviewPanel({
       setIssuesLoading(true);
 
       try {
-        const result = await loadReviewIssues(API_BOOKING_REVIEW_CHECK(booking.id));
+        const result = await loadReviewIssues(
+          API_BOOKING_REVIEW_CHECK(booking.id),
+        );
         if (isMounted) {
           setReviewIssues(result.issues);
           setPassedIndicators(result.passedIndicators);
@@ -334,7 +357,8 @@ function BookingReviewPanel({
           setReviewIssues([
             {
               label: "Review check belum tersedia",
-              value: "Sistem tidak berhasil memeriksa catatan review saat ini. Cek ulang data sebelum approve.",
+              value:
+                "Sistem tidak berhasil memeriksa catatan review saat ini. Cek ulang data sebelum approve.",
             },
           ]);
           setPassedIndicators([]);
@@ -347,19 +371,20 @@ function BookingReviewPanel({
     return () => {
       isMounted = false;
     };
-  }, [
-    booking?.id,
-    shouldShowBookingReviewCheck,
-  ]);
+  }, [booking?.id, shouldShowBookingReviewCheck]);
 
   if (isLoading) return <PanelLoadingState />;
   if (error || !booking) {
-    return <PanelErrorState message={error || "Data booking tidak ditemukan."} />;
+    return (
+      <PanelErrorState message={error || "Data booking tidak ditemukan."} />
+    );
   }
 
   const reviewer = isReviewerRole(profile?.role);
   const canReviewBooking = reviewer && isPendingStatus(booking.status);
   const canCompleteBooking = reviewer && isApprovedStatus(booking.status);
+  const isGuestRequester = !hasValue(booking.requesterDepartment);
+  const isWorkshopPurpose = booking.purpose === WORKSHOP_PURPOSE;
   const bookingStatusHint = getCompleteStatusHint(booking.status, reviewer, {
     readyTitle: "Booking siap diselesaikan",
     reviewerMessage:
@@ -399,7 +424,9 @@ function BookingReviewPanel({
                   : "Completed",
             updatedAt: now,
             rejectionNote:
-              type === "reject" ? String(rejectionNote ?? current.rejectionNote ?? "") : current.rejectionNote,
+              type === "reject"
+                ? String(rejectionNote ?? current.rejectionNote ?? "")
+                : current.rejectionNote,
             approvedById:
               type === "approve"
                 ? String(profile?.id ?? current.approvedById)
@@ -441,12 +468,63 @@ function BookingReviewPanel({
             ? [{ label: "Peralatan", value: booking.equipmentName }]
             : []),
           { label: "Pemohon", value: booking.requesterName },
-          { label: "Tanggal Dibuat", value: formatDateTimeWib(booking.createdAt) },
           { label: "Ditujukan ke PIC", value: booking.roomPicName || "-" },
           {
             label: "Mulai booking",
             value: formatDateTimeWib(booking.startTime),
           },
+          { label: "Tujuan", value: booking.purpose || "-" },
+          { label: "Jumlah Peserta", value: booking.attendeeCount || "-" },
+          ...(isGuestRequester
+            ? [
+                { label: "Institusi", value: booking.institution || "-" },
+                {
+                  label: "Alamat Institusi",
+                  value: booking.institutionAddress || "-",
+                },
+              ]
+            : []),
+          ...(isWorkshopPurpose
+            ? [
+                {
+                  label: "Judul Workshop",
+                  value: booking.workshopTitle || "-",
+                },
+                { label: "PIC Workshop", value: booking.workshopPic || "-" },
+                {
+                  label: "Institusi Workshop",
+                  value: booking.workshopInstitution || "-",
+                },
+              ]
+            : []),
+          ...(booking.status === "Rejected"
+            ? [
+                {
+                  label: "Waktu Ditolak",
+                  value: formatDateTimeWib(booking.rejectedAt),
+                },
+                {
+                  label: "Alasan Penolakan",
+                  value: booking.rejectionNote || "-",
+                },
+              ]
+            : []),
+          ...(booking.status === "Expired"
+            ? [
+                {
+                  label: "Waktu Kedaluwarsa",
+                  value: formatDateTimeWib(booking.expiredAt),
+                },
+              ]
+            : []),
+          ...(booking.status === "Completed"
+            ? [
+                {
+                  label: "Waktu Selesai",
+                  value: formatDateTimeWib(booking.completedAt),
+                },
+              ]
+            : []),
         ]}
         checklist={shouldShowBookingReviewCheck ? reviewIssues : []}
         checklistLoading={shouldShowBookingReviewCheck ? issuesLoading : false}
@@ -455,7 +533,9 @@ function BookingReviewPanel({
             ? "Tidak ada catatan review. Pengajuan ini siap diproses."
             : undefined
         }
-        checklistPassedIndicators={shouldShowBookingReviewCheck ? passedIndicators : []}
+        checklistPassedIndicators={
+          shouldShowBookingReviewCheck ? passedIndicators : []
+        }
         statusHintTitle={bookingStatusHint?.title}
         statusHintMessage={bookingStatusHint?.message}
         statusHintIndicators={bookingStatusHint?.indicators}
@@ -500,7 +580,9 @@ function BookingReviewPanel({
 
       <StatusConfirmDialog
         open={Boolean(confirmType)}
-        actionType={confirmType === "reject" ? "reject" : confirmType ? "approve" : null}
+        actionType={
+          confirmType === "reject" ? "reject" : confirmType ? "approve" : null
+        }
         onOpenChange={(open) => {
           if (!open) setConfirmType(null);
         }}
@@ -575,7 +657,8 @@ function UseReviewPanel({
           setReviewIssues([
             {
               label: "Review check belum tersedia",
-              value: "Sistem tidak berhasil memeriksa catatan review saat ini. Cek ulang data sebelum approve.",
+              value:
+                "Sistem tidak berhasil memeriksa catatan review saat ini. Cek ulang data sebelum approve.",
             },
           ]);
           setPassedIndicators([]);
@@ -588,21 +671,21 @@ function UseReviewPanel({
     return () => {
       isMounted = false;
     };
-  }, [
-    useItem?.id,
-    shouldShowUseReviewCheck,
-  ]);
+  }, [useItem?.id, shouldShowUseReviewCheck]);
 
   if (isLoading) return <PanelLoadingState />;
   if (error || !useItem) {
     return (
-      <PanelErrorState message={error || "Data penggunaan alat tidak ditemukan."} />
+      <PanelErrorState
+        message={error || "Data penggunaan alat tidak ditemukan."}
+      />
     );
   }
 
   const reviewer = isReviewerRole(profile?.role);
   const canReviewUse = reviewer && isPendingStatus(useItem.status);
   const canCompleteUse = reviewer && isApprovedStatus(useItem.status);
+  const isGuestRequester = !hasValue(useItem.requesterDepartment);
   const useStatusHint = getCompleteStatusHint(useItem.status, reviewer, {
     readyTitle: "Penggunaan alat siap diselesaikan",
     reviewerMessage:
@@ -642,7 +725,9 @@ function UseReviewPanel({
                   : "Completed",
             updatedAt: now,
             rejectionNote:
-              type === "reject" ? String(rejectionNote ?? current.rejectionNote ?? "") : current.rejectionNote,
+              type === "reject"
+                ? String(rejectionNote ?? current.rejectionNote ?? "")
+                : current.rejectionNote,
             approvedById:
               type === "approve"
                 ? String(profile?.id ?? current.approvedById)
@@ -678,12 +763,60 @@ function UseReviewPanel({
           { label: "Alat", value: useItem.equipmentName || "-" },
           { label: "Ruangan", value: useItem.roomName || "-" },
           { label: "Pemohon", value: useItem.requesterName },
-          { label: "Tanggal Dibuat", value: formatDateTimeWib(useItem.createdAt) },
           { label: "Ditujukan ke PIC", value: useItem.roomPicName || "-" },
-          {
-            label: "Mulai penggunaan alat",
-            value: formatDateTimeWib(useItem.startTime),
-          },
+
+          { label: "Jumlah", value: useItem.quantity || "-" },
+          { label: "Tujuan", value: useItem.purpose || "-" },
+
+          ...(!isGuestRequester
+            ? [
+                {
+                  label: "Prodi Pemohon",
+                  value: useItem.requesterDepartment || "-",
+                },
+                {
+                  label: "Dosen/Pembimbing",
+                  value: useItem.requesterMentor || "-",
+                },
+              ]
+            : []),
+          ...(isGuestRequester
+            ? [
+                { label: "Institusi", value: useItem.institution || "-" },
+                {
+                  label: "Alamat Institusi",
+                  value: useItem.institutionAddress || "-",
+                },
+              ]
+            : []),
+          ...(useItem.status === "Rejected"
+            ? [
+                {
+                  label: "Waktu Ditolak",
+                  value: formatDateTimeWib(useItem.rejectedAt),
+                },
+                {
+                  label: "Alasan Penolakan",
+                  value: useItem.rejectionNote || "-",
+                },
+              ]
+            : []),
+          ...(useItem.status === "Expired"
+            ? [
+                {
+                  label: "Waktu Kedaluwarsa",
+                  value: formatDateTimeWib(useItem.expiredAt),
+                },
+              ]
+            : []),
+          ...(useItem.status === "Completed"
+            ? [
+                {
+                  label: "Waktu Selesai",
+                  value: formatDateTimeWib(useItem.completedAt),
+                },
+              ]
+            : []),
         ]}
         checklist={shouldShowUseReviewCheck ? reviewIssues : []}
         checklistLoading={shouldShowUseReviewCheck ? issuesLoading : false}
@@ -692,7 +825,9 @@ function UseReviewPanel({
             ? "Tidak ada catatan review. Pengajuan ini siap diproses."
             : undefined
         }
-        checklistPassedIndicators={shouldShowUseReviewCheck ? passedIndicators : []}
+        checklistPassedIndicators={
+          shouldShowUseReviewCheck ? passedIndicators : []
+        }
         statusHintTitle={useStatusHint?.title}
         statusHintMessage={useStatusHint?.message}
         statusHintIndicators={useStatusHint?.indicators}
@@ -737,7 +872,9 @@ function UseReviewPanel({
 
       <StatusConfirmDialog
         open={Boolean(confirmType)}
-        actionType={confirmType === "reject" ? "reject" : confirmType ? "approve" : null}
+        actionType={
+          confirmType === "reject" ? "reject" : confirmType ? "approve" : null
+        }
         onOpenChange={(open) => {
           if (!open) setConfirmType(null);
         }}
@@ -806,7 +943,9 @@ function BorrowReviewPanel({
 
       setIssuesLoading(true);
       try {
-        const result = await loadReviewIssues(API_BORROW_REVIEW_CHECK(borrow.id));
+        const result = await loadReviewIssues(
+          API_BORROW_REVIEW_CHECK(borrow.id),
+        );
         if (isMounted) {
           setReviewIssues(result.issues);
           setPassedIndicators(result.passedIndicators);
@@ -817,7 +956,8 @@ function BorrowReviewPanel({
           setReviewIssues([
             {
               label: "Review check belum tersedia",
-              value: "Sistem tidak berhasil memeriksa catatan review saat ini. Cek ulang data sebelum approve.",
+              value:
+                "Sistem tidak berhasil memeriksa catatan review saat ini. Cek ulang data sebelum approve.",
             },
           ]);
           setPassedIndicators([]);
@@ -830,15 +970,14 @@ function BorrowReviewPanel({
     return () => {
       isMounted = false;
     };
-  }, [
-    borrow?.id,
-    shouldShowBorrowReviewCheck,
-  ]);
+  }, [borrow?.id, shouldShowBorrowReviewCheck]);
 
   if (isLoading) return <PanelLoadingState />;
   if (error || !borrow) {
     return (
-      <PanelErrorState message={error || "Data peminjaman alat tidak ditemukan."} />
+      <PanelErrorState
+        message={error || "Data peminjaman alat tidak ditemukan."}
+      />
     );
   }
 
@@ -848,6 +987,7 @@ function BorrowReviewPanel({
   const canConfirmReturn = reviewer && canReturnStatus(borrow.status);
   const canFinalizeInspection =
     reviewer && isInspectionPendingStatus(borrow.status);
+  const isGuestRequester = !hasValue(borrow.requesterDepartment);
   const borrowStatusHint = getBorrowStatusHint(borrow.status, reviewer);
   const borrowStatusActionClass = getBorrowStatusActionClass(borrow.status);
 
@@ -880,7 +1020,9 @@ function BorrowReviewPanel({
                     : "Returned",
             updatedAt: now,
             rejectionNote:
-              type === "reject" ? String(rejectionNote ?? current.rejectionNote ?? "") : current.rejectionNote,
+              type === "reject"
+                ? String(rejectionNote ?? current.rejectionNote ?? "")
+                : current.rejectionNote,
             approvedById:
               type === "approve"
                 ? String(profile?.id ?? current.approvedById)
@@ -972,12 +1114,42 @@ function BorrowReviewPanel({
     { label: "Alat", value: borrow.equipmentName || "-" },
     { label: "Ruangan", value: borrow.roomName || "-" },
     { label: "Pemohon", value: borrow.requesterName },
-    { label: "Tanggal Dibuat", value: formatDateTimeWib(borrow.createdAt) },
     { label: "Ditujukan ke PIC", value: borrow.roomPicName || "-" },
     {
       label: "Mulai peminjaman",
       value: formatDateTimeWib(borrow.startTime),
     },
+    { label: "Jumlah", value: borrow.quantity || "-" },
+    { label: "Tujuan", value: borrow.purpose || "-" },
+    ...(isGuestRequester
+      ? [
+          { label: "Institusi", value: borrow.institution || "-" },
+          {
+            label: "Alamat Institusi",
+            value: borrow.institutionAddress || "-",
+          },
+        ]
+      : []),
+    ...(borrow.status === "Rejected"
+      ? [
+          {
+            label: "Waktu Ditolak",
+            value: formatDateTimeWib(borrow.rejectedAt),
+          },
+          {
+            label: "Alasan Penolakan",
+            value: borrow.rejectionNote || "-",
+          },
+        ]
+      : []),
+    ...(borrow.status === "Expired"
+      ? [
+          {
+            label: "Waktu Kedaluwarsa",
+            value: formatDateTimeWib(borrow.expiredAt),
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -993,7 +1165,9 @@ function BorrowReviewPanel({
             ? "Tidak ada catatan review. Pengajuan ini siap diproses."
             : undefined
         }
-        checklistPassedIndicators={shouldShowBorrowReviewCheck ? passedIndicators : []}
+        checklistPassedIndicators={
+          shouldShowBorrowReviewCheck ? passedIndicators : []
+        }
         statusHintTitle={borrowStatusHint?.title}
         statusHintMessage={borrowStatusHint?.message}
         statusHintIndicators={borrowStatusHint?.indicators}
@@ -1131,7 +1305,9 @@ function BorrowReviewPanel({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-2">
-            <p className="text-sm font-medium text-slate-700">Catatan inspeksi</p>
+            <p className="text-sm font-medium text-slate-700">
+              Catatan inspeksi
+            </p>
             <Textarea
               value={inspectionNote}
               onChange={(event) => setInspectionNote(event.target.value)}
@@ -1202,6 +1378,7 @@ function PengujianReviewPanel({
     isReviewerRole(profile?.role) && isPendingStatus(pengujian.status);
   const canCompletePengujian =
     isReviewerRole(profile?.role) && isApprovedStatus(pengujian.status);
+  const isGuestRequester = !hasValue(pengujian.requesterDepartment);
   const pengujianStatusHint = getPengujianStatusHint(
     pengujian.status,
     isReviewerRole(profile?.role),
@@ -1263,13 +1440,47 @@ function PengujianReviewPanel({
         meta={[
           { label: "Sampel", value: pengujian.sampleName || "-" },
           { label: "Jenis Sampel", value: pengujian.sampleType || "-" },
-          { label: "Jenis Pengujian", value: pengujian.sampleTestingType || "-" },
-          { label: "Pemohon", value: pengujian.name || "-" },
-          { label: "Institusi", value: pengujian.institution || "-" },
           {
-            label: "Tanggal Dibuat",
-            value: formatDateTimeWib(pengujian.createdAt),
+            label: "Jenis Pengujian",
+            value: pengujian.sampleTestingType || "-",
           },
+          { label: "Pemohon", value: pengujian.name || "-" },
+          ...(isGuestRequester
+            ? [{ label: "Institusi", value: pengujian.institution || "-" }]
+            : []),
+
+          ...(!isGuestRequester
+            ? [
+                {
+                  label: "Prodi Pemohon",
+                  value: pengujian.requesterDepartment || "-",
+                },
+              ]
+            : []),
+          ...(isGuestRequester
+            ? [
+                {
+                  label: "Alamat Institusi",
+                  value: pengujian.institutionAddress || "-",
+                },
+              ]
+            : []),
+          ...(pengujian.status === "Rejected"
+            ? [
+                {
+                  label: "Waktu Ditolak",
+                  value: formatDateTimeWib(pengujian.rejectedAt),
+                },
+              ]
+            : []),
+          ...(pengujian.status === "Completed"
+            ? [
+                {
+                  label: "Waktu Selesai",
+                  value: formatDateTimeWib(pengujian.completedAt),
+                },
+              ]
+            : []),
         ]}
         statusHintTitle={pengujianStatusHint?.title}
         statusHintMessage={pengujianStatusHint?.message}
@@ -1315,7 +1526,9 @@ function PengujianReviewPanel({
 
       <StatusConfirmDialog
         open={Boolean(confirmType)}
-        actionType={confirmType === "reject" ? "reject" : confirmType ? "approve" : null}
+        actionType={
+          confirmType === "reject" ? "reject" : confirmType ? "approve" : null
+        }
         onOpenChange={(open) => {
           if (!open) setConfirmType(null);
         }}

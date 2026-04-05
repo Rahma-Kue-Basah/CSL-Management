@@ -26,6 +26,7 @@ export default function AssignRoomPicDialog({
   onOpenChange,
   onAssigned,
 }: AssignRoomPicDialogProps) {
+  const [assignmentMode, setAssignmentMode] = useState<"append" | "replace">("append");
   const [selectedRoomId, setSelectedRoomId] = useState("");
   const [search, setSearch] = useState("");
   const [selectedPicIds, setSelectedPicIds] = useState<string[]>([]);
@@ -41,9 +42,18 @@ export default function AssignRoomPicDialog({
   const { updateRoom, isSubmitting, errorMessage, setErrorMessage } = useUpdateRoom();
 
   useEffect(() => {
-    if (!room) return;
-    setSelectedPicIds(room.picIds);
-  }, [room]);
+    if (!room) {
+      setSelectedPicIds([]);
+      return;
+    }
+
+    if (assignmentMode === "replace") {
+      setSelectedPicIds(room.picIds);
+      return;
+    }
+
+    setSelectedPicIds([]);
+  }, [assignmentMode, room]);
 
   const filteredPicUsers = useMemo(() => {
     const normalized = search.trim().toLowerCase();
@@ -56,12 +66,15 @@ export default function AssignRoomPicDialog({
   }, [picUsers, search]);
 
   const selectedPicSet = useMemo(() => new Set(selectedPicIds), [selectedPicIds]);
+  const existingPicSet = useMemo(() => new Set(room?.picIds ?? []), [room?.picIds]);
+  const existingPicNames = room?.picNames ?? [];
   const selectedPicChips = useMemo(
     () => picUsers.filter((user) => selectedPicSet.has(user.id)),
     [picUsers, selectedPicSet],
   );
 
   const resetState = () => {
+    setAssignmentMode("append");
     setSelectedRoomId("");
     setSearch("");
     setSelectedPicIds([]);
@@ -82,6 +95,19 @@ export default function AssignRoomPicDialog({
       setMessage("Detail ruangan belum siap.");
       return;
     }
+    if (selectedPicIds.length === 0) {
+      setMessage(
+        assignmentMode === "append"
+          ? "Pilih minimal satu PIC baru untuk ditambahkan."
+          : "Pilih minimal satu PIC untuk menggantikan daftar saat ini.",
+      );
+      return;
+    }
+
+    const nextPicIds =
+      assignmentMode === "append"
+        ? Array.from(new Set([...(room.picIds ?? []), ...selectedPicIds]))
+        : selectedPicIds;
 
     const result = await updateRoom(selectedRoomId, {
       name: room.name,
@@ -89,12 +115,16 @@ export default function AssignRoomPicDialog({
       floor: room.floor,
       capacity: room.capacity,
       description: room.description,
-      picIds: selectedPicIds,
+      picIds: nextPicIds,
       imageId: room.imageId,
     });
     if (!result.ok) return;
 
-    toast.success("PIC ruangan berhasil diperbarui.");
+    toast.success(
+      assignmentMode === "append"
+        ? "PIC ruangan berhasil ditambahkan."
+        : "Daftar PIC ruangan berhasil diganti.",
+    );
     onAssigned();
     onOpenChange(false);
     resetState();
@@ -132,6 +162,71 @@ export default function AssignRoomPicDialog({
           </select>
         </div>
 
+        <div className="space-y-2">
+          <label className="text-xs font-medium">Mode Assignment</label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => {
+                setAssignmentMode("append");
+                setMessage("");
+              }}
+              className={`rounded-lg border px-3 py-3 text-left transition ${
+                assignmentMode === "append"
+                  ? "border-sky-600 bg-sky-50 ring-2 ring-sky-100"
+                  : "border-slate-200 bg-white hover:border-sky-300"
+              }`}
+            >
+              <p className="text-sm font-semibold text-slate-900">Append</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Tambahkan PIC baru tanpa menghapus PIC yang sudah ada.
+              </p>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAssignmentMode("replace");
+                setMessage("");
+              }}
+              className={`rounded-lg border px-3 py-3 text-left transition ${
+                assignmentMode === "replace"
+                  ? "border-amber-600 bg-amber-50 ring-2 ring-amber-100"
+                  : "border-slate-200 bg-white hover:border-amber-300"
+              }`}
+            >
+              <p className="text-sm font-semibold text-slate-900">Replace</p>
+              <p className="mt-1 text-xs text-slate-500">
+                Ganti seluruh daftar PIC ruangan dengan pilihan baru.
+              </p>
+            </button>
+          </div>
+        </div>
+
+        {selectedRoomId ? (
+          <div className="space-y-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-3">
+            <div className="flex items-center justify-between gap-3">
+              <p className="text-xs font-medium text-slate-700">PIC Saat Ini</p>
+              <span className="text-[11px] text-slate-500">
+                {existingPicNames.length} user
+              </span>
+            </div>
+            {existingPicNames.length ? (
+              <div className="flex flex-wrap gap-2">
+                {existingPicNames.map((picName) => (
+                  <span
+                    key={picName}
+                    className="inline-flex max-w-full items-center rounded-full bg-slate-200 px-2.5 py-1 text-xs font-medium text-slate-700"
+                  >
+                    <span className="truncate">{picName}</span>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">Belum ada PIC pada ruangan ini.</p>
+            )}
+          </div>
+        ) : null}
+
         <div className="space-y-1">
           <label className="text-xs font-medium">Cari PIC</label>
           <Input
@@ -144,25 +239,30 @@ export default function AssignRoomPicDialog({
         </div>
 
         {selectedPicChips.length ? (
-          <div className="flex flex-wrap gap-2">
-            {selectedPicChips.map((user) => (
-              <span
-                key={user.id}
-                className="inline-flex max-w-full items-center gap-1 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-900"
-              >
-                <span className="truncate">{user.name}</span>
-                <button
-                  type="button"
-                  className="rounded-full p-0.5 text-sky-700 hover:bg-sky-200"
-                  onClick={() =>
-                    setSelectedPicIds((prev) => prev.filter((id) => id !== user.id))
-                  }
-                  aria-label={`Hapus ${user.name}`}
+          <div className="space-y-1">
+            <p className="text-xs font-medium text-slate-700">
+              {assignmentMode === "append" ? "PIC yang Akan Ditambahkan" : "PIC Pengganti"}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {selectedPicChips.map((user) => (
+                <span
+                  key={user.id}
+                  className="inline-flex max-w-full items-center gap-1 rounded-full bg-sky-100 px-2.5 py-1 text-xs font-medium text-sky-900"
                 >
-                  <X className="h-3 w-3" />
-                </button>
-              </span>
-            ))}
+                  <span className="truncate">{user.name}</span>
+                  <button
+                    type="button"
+                    className="rounded-full p-0.5 text-sky-700 hover:bg-sky-200"
+                    onClick={() =>
+                      setSelectedPicIds((prev) => prev.filter((id) => id !== user.id))
+                    }
+                    aria-label={`Hapus ${user.name}`}
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
           </div>
         ) : null}
 
@@ -174,14 +274,19 @@ export default function AssignRoomPicDialog({
           ) : (
             filteredPicUsers.map((user) => {
               const checked = selectedPicSet.has(user.id);
+              const alreadyAssigned = existingPicSet.has(user.id);
+              const disabled = assignmentMode === "append" && alreadyAssigned;
               return (
                 <label
                   key={user.id}
-                  className="flex cursor-pointer items-start gap-3 border-b px-3 py-2 last:border-b-0 hover:bg-sky-50"
+                  className={`flex items-start gap-3 border-b px-3 py-2 last:border-b-0 ${
+                    disabled ? "cursor-not-allowed bg-slate-50/70" : "cursor-pointer hover:bg-sky-50"
+                  }`}
                 >
                   <input
                     type="checkbox"
                     checked={checked}
+                    disabled={disabled}
                     onChange={(event) => {
                       setSelectedPicIds((prev) =>
                         event.target.checked
@@ -196,6 +301,13 @@ export default function AssignRoomPicDialog({
                     <p className="truncate text-xs text-slate-500">
                       {[user.role, user.department].filter(Boolean).join(" • ")}
                     </p>
+                    {alreadyAssigned ? (
+                      <p className="mt-0.5 text-[11px] font-medium text-slate-500">
+                        {assignmentMode === "append"
+                          ? "Sudah menjadi PIC pada ruangan ini"
+                          : "PIC saat ini"}
+                      </p>
+                    ) : null}
                   </div>
                 </label>
               );
@@ -221,7 +333,11 @@ export default function AssignRoomPicDialog({
             className="gap-2"
           >
             <Plus className="h-4 w-4" />
-            {isSubmitting ? "Menyimpan..." : "Simpan PIC Ruangan"}
+            {isSubmitting
+              ? "Menyimpan..."
+              : assignmentMode === "append"
+                ? "Tambahkan PIC Ruangan"
+                : "Ganti PIC Ruangan"}
           </Button>
         </DialogFooter>
       </form>

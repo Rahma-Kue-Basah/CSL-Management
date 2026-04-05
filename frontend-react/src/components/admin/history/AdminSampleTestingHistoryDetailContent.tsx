@@ -28,6 +28,10 @@ type Props = {
   onOpenUserDetail?: (userId: string | number) => void;
 };
 
+function hasValue(value?: string | null) {
+  return Boolean(value && value.trim() && value !== "-");
+}
+
 export default function AdminSampleTestingRecordDetailContent({
   item,
   isLoading,
@@ -37,6 +41,8 @@ export default function AdminSampleTestingRecordDetailContent({
   showAside = true,
   onOpenUserDetail,
 }: Props) {
+  const isGuestRequester = item ? !hasValue(item.requesterDepartment) : false;
+
   return (
     <>
       {error ? (
@@ -96,7 +102,15 @@ export default function AdminSampleTestingRecordDetailContent({
           >
             <AdminRecordDetailGrid>
               <AdminRecordDetailItem label="Nama Pemohon" value={item.name} />
-              <AdminRecordDetailItem label="Institusi" value={item.institution} />
+              {isGuestRequester ? (
+                <>
+                  <AdminRecordDetailItem label="Institusi" value={item.institution} />
+                  <AdminRecordDetailItem
+                    label="Alamat Institusi"
+                    value={item.institutionAddress}
+                  />
+                </>
+              ) : null}
               <AdminRecordDetailItem label="Email" value={item.email} />
               <AdminRecordDetailItem label="Telepon" value={item.phoneNumber} />
               <AdminRecordDetailItem
@@ -109,6 +123,12 @@ export default function AdminSampleTestingRecordDetailContent({
                     : undefined
                 }
               />
+              {!isGuestRequester ? (
+                <AdminRecordDetailItem
+                  label="Prodi Pemohon"
+                  value={item.requesterDepartment}
+                />
+              ) : null}
               <AdminRecordDetailItem label="Status" value={item.status} status />
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
@@ -157,6 +177,22 @@ export default function AdminSampleTestingRecordDetailContent({
                     : undefined
                 }
               />
+              <AdminRecordDetailItem
+                label="Waktu Disetujui"
+                value={formatDateTimeWib(item.approvedAt)}
+              />
+              {item.status === "Rejected" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Ditolak"
+                  value={formatDateTimeWib(item.rejectedAt)}
+                />
+              ) : null}
+              {item.status === "Completed" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Selesai"
+                  value={formatDateTimeWib(item.completedAt)}
+                />
+              ) : null}
             </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
         </AdminRecordDetailShell>

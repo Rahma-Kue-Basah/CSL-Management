@@ -4,19 +4,17 @@ import { useEffect, useRef, useState } from "react";
 import { Building2, ChevronDown, Plus, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import {
   AdminFilterField,
   AdminFilterGrid,
   ADMIN_FILTER_INPUT_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
 } from "@/components/admin/admin-filter-fields";
-import MentorTaskTable from "@/components/admin/user-management/MentorTaskTable";
-import UserDetailDialog from "@/components/admin/user-management/UserDetailDialog";
 import AssignRoomPicDialog from "@/components/admin/task-management/AssignRoomPicDialog";
+import RoomPicDetailDialog from "@/components/admin/task-management/RoomPicDetailDialog";
+import TaskManagementPageShell from "@/components/admin/task-management/task-management-page-shell";
+import MentorTaskTable from "@/components/admin/user-management/MentorTaskTable";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -27,29 +25,27 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
+import { ROLE_OPTIONS } from "@/constants/roles";
 import { useRoomOptions } from "@/hooks/rooms/use-room-options";
 import {
   bulkRemoveRoomPicAssignments,
   removeRoomPicAssignments,
   useRoomPicTaskUsers,
+  type RoomPicTaskUserRow,
 } from "@/hooks/users/use-room-pic-task-users";
-import type { UserRow } from "@/hooks/users/use-users";
-
-type RoomPicTableUser = UserRow & {
-  roomNames?: string[];
-};
 
 export default function TaskManagementRoomPicPage() {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const [search, setSearch] = useState("");
   const [department, setDepartment] = useState("");
+  const [role, setRole] = useState("");
   const [room, setRoom] = useState("");
   const [filterOpen, setFilterOpen] = useState(false);
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
   const [createOpen, setCreateOpen] = useState(false);
-  const [detailUser, setDetailUser] = useState<RoomPicTableUser | null>(null);
-  const [removeCandidate, setRemoveCandidate] = useState<RoomPicTableUser | null>(null);
+  const [detailUser, setDetailUser] = useState<RoomPicTaskUserRow | null>(null);
+  const [removeCandidate, setRemoveCandidate] = useState<RoomPicTaskUserRow | null>(null);
   const [bulkRemoveOpen, setBulkRemoveOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -64,6 +60,7 @@ export default function TaskManagementRoomPicPage() {
   } = useRoomPicTaskUsers(
     {
       department,
+      role,
       room,
       search: debouncedSearch,
     },
@@ -157,26 +154,22 @@ export default function TaskManagementRoomPicPage() {
   };
 
   return (
-    <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
-      <AdminPageHeader
-        title="PIC Ruangan"
-        description={`Total ${totalCount} user terdaftar sebagai PIC ruangan.`}
-        icon={<Building2 className="h-5 w-5 text-sky-200" />}
-      />
-
-      {error || errorMessage ? (
-        <InlineErrorAlert>{error || errorMessage}</InlineErrorAlert>
-      ) : null}
-
-      <AdminFilterCard
-        open={filterOpen}
-        onToggle={() => setFilterOpen((prev) => !prev)}
-        onReset={() => {
-          setSearch("");
-          setDepartment("");
-          setRoom("");
-        }}
-      >
+    <>
+      <TaskManagementPageShell
+      title="PIC Ruangan"
+      description={`Total ${totalCount} user terdaftar sebagai PIC ruangan.`}
+      icon={<Building2 className="h-5 w-5 text-sky-200" />}
+      error={error || errorMessage}
+      filterOpen={filterOpen}
+      onToggleFilter={() => setFilterOpen((prev) => !prev)}
+      onResetFilter={() => {
+        setSearch("");
+        setDepartment("");
+        setRole("");
+        setRoom("");
+        setDebouncedSearch("");
+      }}
+      filterContent={
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -206,6 +199,22 @@ export default function TaskManagementRoomPicPage() {
                 ))}
               </select>
             </AdminFilterField>
+            <AdminFilterField label="Role">
+              <select
+                value={role}
+                onChange={(event) => setRole(event.target.value)}
+                className={ADMIN_FILTER_SELECT_CLASS}
+              >
+                <option value="">Semua</option>
+                {ROLE_OPTIONS.filter(
+                  (option) => option.value === "Lecturer" || option.value === "Admin",
+                ).map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </AdminFilterField>
             <AdminFilterField label="Ruangan">
               <select
                 value={room}
@@ -222,71 +231,73 @@ export default function TaskManagementRoomPicPage() {
             </AdminFilterField>
           </AdminFilterGrid>
         </form>
-      </AdminFilterCard>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              disabled={selectedCount === 0}
-            >
-              Aksi Terpilih
-              {selectedCount ? ` (${selectedCount})` : ""}
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent side="bottom" align="start" className="w-56">
-            <DropdownMenuItem
-              variant="destructive"
-              disabled={selectedCount === 0}
-              onClick={() => setBulkRemoveOpen(true)}
-            >
-              <Trash2 className="h-4 w-4" />
-              Lepaskan PIC Ruangan
-            </DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              disabled={selectedCount === 0}
-              onClick={() => setSelectedIds([])}
-              className="text-xs text-slate-500"
-            >
-              <X className="h-3.5 w-3.5" />
-              Clear selection
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4" />
-          Tambahkan PIC Ruangan
-        </Button>
-      </div>
-
-      <MentorTaskTable
-        users={users}
-        isLoading={isLoading}
-        hasLoadedOnce={hasLoadedOnce}
-        selectedIds={selectedIds}
-        allVisibleSelected={allVisibleSelected}
-        onToggleItemSelection={toggleItemSelection}
-        onToggleSelectAllVisible={toggleSelectAllVisible}
-        selectAllRef={selectAllRef}
-        onOpenDetail={(user) => setDetailUser(user)}
-        onDelete={setRemoveCandidate}
-        isDeleting={false}
-        selectionLabel="PIC ruangan"
-        removeLabel="Lepaskan PIC Ruangan"
-        emptyMessage="Tidak ada PIC ruangan terdaftar."
-        roomHeader="Ruangan"
-        getRoomLabel={(user) =>
-          user.roomNames?.length ? user.roomNames.join(", ") : "-"
-        }
-        secondaryHeader="Role"
-        getSecondaryLabel={(user) => user.role}
-      />
+      }
+      actions={
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                disabled={selectedCount === 0}
+              >
+                Aksi Terpilih
+                {selectedCount ? ` (${selectedCount})` : ""}
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="bottom" align="start" className="w-56">
+              <DropdownMenuItem
+                variant="destructive"
+                disabled={selectedCount === 0}
+                onClick={() => setBulkRemoveOpen(true)}
+              >
+                <Trash2 className="h-4 w-4" />
+                Lepaskan PIC Ruangan
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={selectedCount === 0}
+                onClick={() => setSelectedIds([])}
+                className="text-xs text-slate-500"
+              >
+                <X className="h-3.5 w-3.5" />
+                Clear selection
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Tambahkan PIC Ruangan
+          </Button>
+        </>
+      }
+      >
+        <MentorTaskTable
+          users={users}
+          isLoading={isLoading}
+          hasLoadedOnce={hasLoadedOnce}
+          selectedIds={selectedIds}
+          allVisibleSelected={allVisibleSelected}
+          onToggleItemSelection={toggleItemSelection}
+          onToggleSelectAllVisible={toggleSelectAllVisible}
+          selectAllRef={selectAllRef}
+          onOpenDetail={(user) => setDetailUser(user)}
+          onDelete={setRemoveCandidate}
+          isDeleting={false}
+          selectionLabel="PIC ruangan"
+          removeLabel="Lepaskan PIC Ruangan"
+          emptyMessage="Tidak ada PIC ruangan terdaftar."
+          roomHeader="Ruangan"
+          getRoomLabel={(user) =>
+            user.roomNames?.length ? user.roomNames.join(", ") : "-"
+          }
+          secondaryHeader="Role"
+          getSecondaryLabel={(user) => user.role}
+        />
+      </TaskManagementPageShell>
 
       <AssignRoomPicDialog
         open={createOpen}
@@ -294,16 +305,12 @@ export default function TaskManagementRoomPicPage() {
         onAssigned={() => setReloadKey((prev) => prev + 1)}
       />
 
-      <UserDetailDialog
+      <RoomPicDetailDialog
         open={Boolean(detailUser)}
         user={detailUser}
-        mode="view"
-        canManageUsers={false}
         onOpenChange={(open) => {
           if (!open) setDetailUser(null);
         }}
-        onDeleteRequest={() => {}}
-        onUserUpdated={() => {}}
       />
 
       <ConfirmDeleteDialog
@@ -333,6 +340,6 @@ export default function TaskManagementRoomPicPage() {
           void handleBulkRemovePic();
         }}
       />
-    </section>
+    </>
   );
 }

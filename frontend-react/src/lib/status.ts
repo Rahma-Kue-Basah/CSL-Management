@@ -15,6 +15,12 @@ export type StatusOption = {
   label: string;
 };
 
+export type ReviewActionKind =
+  | "booking"
+  | "use"
+  | "pengujian"
+  | "borrow";
+
 export const REQUEST_STATUS_OPTIONS: StatusOption[] = [
   { value: "", label: "Semua Status" },
   { value: "active", label: "Active" },
@@ -142,4 +148,19 @@ export function getStatusDisplayLabel(status?: string | null) {
   if (normalized === "lost_damaged") return "Lost/Damaged";
 
   return String(status ?? "").trim() || "-";
+}
+
+export function shouldShowReviewAction(
+  kind: ReviewActionKind,
+  status?: string | null,
+) {
+  const normalized = normalizeStatus(status);
+
+  if (kind === "borrow") {
+    return !["completed", "rejected", "expired", "returned"].includes(
+      normalized,
+    );
+  }
+
+  return !["completed", "rejected", "expired"].includes(normalized);
 }

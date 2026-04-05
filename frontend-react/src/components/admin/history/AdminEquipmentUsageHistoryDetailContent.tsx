@@ -31,6 +31,10 @@ type Props = {
   onOpenUserDetail?: (userId: string | number) => void;
 };
 
+function hasValue(value?: string | null) {
+  return Boolean(value && value.trim() && value !== "-");
+}
+
 export default function AdminEquipmentUsageRecordDetailContent({
   item,
   isLoading,
@@ -42,6 +46,8 @@ export default function AdminEquipmentUsageRecordDetailContent({
   onOpenEquipmentDetail,
   onOpenUserDetail,
 }: Props) {
+  const isGuestRequester = item ? !hasValue(item.requesterDepartment) : false;
+
   return (
     <>
       {error ? (
@@ -111,6 +117,7 @@ export default function AdminEquipmentUsageRecordDetailContent({
                     : undefined
                 }
               />
+              <AdminRecordDetailItem label="Ruangan" value={item.roomName} />
               <AdminRecordDetailItem label="Jumlah" value={item.quantity} />
               <AdminRecordDetailItem
                 label="Pengguna"
@@ -127,6 +134,37 @@ export default function AdminEquipmentUsageRecordDetailContent({
             <div className="mt-3">
               <AdminRecordDetailItem label="Tujuan" value={item.purpose} />
             </div>
+          </AdminRecordDetailSection>
+
+          <AdminRecordDetailSection
+            title="Informasi Pemohon"
+            icon={<ClipboardList className="h-5 w-5" />}
+          >
+            <AdminRecordDetailGrid>
+              {!isGuestRequester ? (
+                <AdminRecordDetailItem
+                  label="Prodi Pemohon"
+                  value={item.requesterDepartment}
+                />
+              ) : null}
+              <AdminRecordDetailItem label="PIC Lab" value={item.roomPicName} />
+              <AdminRecordDetailItem label="No. Telepon" value={item.requesterPhone} />
+              {!isGuestRequester ? (
+                <AdminRecordDetailItem
+                  label="Dosen/Pembimbing"
+                  value={item.requesterMentor}
+                />
+              ) : null}
+              {isGuestRequester ? (
+                <>
+                  <AdminRecordDetailItem label="Institusi" value={item.institution} />
+                  <AdminRecordDetailItem
+                    label="Alamat Institusi"
+                    value={item.institutionAddress}
+                  />
+                </>
+              ) : null}
+            </AdminRecordDetailGrid>
           </AdminRecordDetailSection>
 
           <AdminRecordDetailSection
@@ -161,10 +199,40 @@ export default function AdminEquipmentUsageRecordDetailContent({
                 }
               />
               <AdminRecordDetailItem
+                label="Waktu Disetujui"
+                value={formatDateTimeWib(item.approvedAt)}
+              />
+              {item.status === "Rejected" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Ditolak"
+                  value={formatDateTimeWib(item.rejectedAt)}
+                />
+              ) : null}
+              {item.status === "Completed" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Selesai"
+                  value={formatDateTimeWib(item.completedAt)}
+                />
+              ) : null}
+              {item.status === "Expired" ? (
+                <AdminRecordDetailItem
+                  label="Waktu Kedaluwarsa"
+                  value={formatDateTimeWib(item.expiredAt)}
+                />
+              ) : null}
+              <AdminRecordDetailItem
                 label="Catatan Pemohon"
                 value={item.note || "-"}
               />
             </AdminRecordDetailGrid>
+            {item.status === "Rejected" ? (
+              <div className="mt-3">
+                <AdminRecordDetailItem
+                  label="Alasan Penolakan"
+                  value={item.rejectionNote || "-"}
+                />
+              </div>
+            ) : null}
           </AdminRecordDetailSection>
         </AdminRecordDetailShell>
       )}

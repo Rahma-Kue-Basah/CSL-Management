@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
-import { Eye, Trash2 } from "lucide-react";
+import { ClipboardCheck, Eye, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -13,6 +13,8 @@ import AdminHistorySummaryCards from "@/components/admin/history/AdminHistorySum
 import AdminHistoryTable from "@/components/admin/history/AdminHistoryTable";
 import RelatedEquipmentDetailDialog from "@/components/admin/history/RelatedEquipmentDetailDialog";
 import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
+import { ActionTooltip } from "@/components/shared/ActionTooltip";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import { DataPagination } from "@/components/shared/data-pagination";
@@ -37,6 +39,7 @@ import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
 import {
   mapBorrow,
+  useBorrowDetail,
   useBorrows,
   type BorrowRow,
 } from "@/hooks/borrows/use-borrows";
@@ -54,6 +57,7 @@ import {
   BORROW_STATUS_OPTIONS,
   getStatusBadgeClass,
   getStatusDisplayLabel,
+  shouldShowReviewAction,
 } from "@/lib/status";
 import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 
@@ -89,6 +93,7 @@ export default function AdminEquipmentBorrowHistoryPage() {
   const [selectedIds, setSelectedIds] = useState<Array<number | string>>([]);
   const [isBulkDeleteOpen, setIsBulkDeleteOpen] = useState(false);
   const [detailTarget, setDetailTarget] = useState<BorrowRow | null>(null);
+  const [reviewTarget, setReviewTarget] = useState<BorrowRow | null>(null);
   const [relatedEquipmentId, setRelatedEquipmentId] = useState<string | number | null>(null);
   const [relatedUserId, setRelatedUserId] = useState<string | number | null>(null);
   const [isExportingSelectedPdf, setIsExportingSelectedPdf] = useState(false);
@@ -144,6 +149,13 @@ export default function AdminEquipmentBorrowHistoryPage() {
       reloadKey,
       "all",
     );
+  const {
+    borrow: detailBorrow,
+    isLoading: isDetailLoading,
+    error: detailError,
+  } = useBorrowDetail(detailTarget?.id ?? null, reloadKey, {
+    enabled: Boolean(detailTarget),
+  });
   const filteredBorrows = useMemo(
     () => borrows.filter((item) => matchesSearch(item, debouncedSearch)),
     [borrows, debouncedSearch],
@@ -573,21 +585,36 @@ export default function AdminEquipmentBorrowHistoryPage() {
                 </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      onClick={() => setDetailTarget(item)}
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
-                      onClick={() => setDeleteTarget(item)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {shouldShowReviewAction("borrow", item.status) ? (
+                      <ActionTooltip label="Review pengajuan">
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => setReviewTarget(item)}
+                        >
+                          <ClipboardCheck className="h-4 w-4" />
+                        </Button>
+                      </ActionTooltip>
+                    ) : null}
+                    <ActionTooltip label="Lihat detail">
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => setDetailTarget(item)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </ActionTooltip>
+                    <ActionTooltip label="Hapus riwayat">
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        className="border-rose-200 text-rose-600 hover:bg-rose-50 hover:text-rose-700"
+                        onClick={() => setDeleteTarget(item)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </ActionTooltip>
                   </div>
                 </td>
               </tr>
@@ -625,6 +652,36 @@ export default function AdminEquipmentBorrowHistoryPage() {
           />
 
           <Dialog
+            open={Boolean(reviewTarget)}
+            onOpenChange={(open) => {
+              if (!open) setReviewTarget(null);
+            }}
+          >
+            <DialogContent
+              showCloseButton={false}
+              className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden border-0 bg-transparent p-0 shadow-none sm:w-[50vw] sm:max-w-[760px] sm:min-w-[640px] sm:max-w-none"
+            >
+              <DialogHeader className="sr-only">
+                <DialogTitle>Review Pengajuan Peminjaman Alat</DialogTitle>
+                <DialogDescription>
+                  Review pengajuan peminjaman alat ditampilkan dalam modal.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
+                {reviewTarget ? (
+                  <DashboardDetailReviewPanel
+                    context={{ kind: "borrow", id: String(reviewTarget.id) }}
+                    onActionComplete={() => {
+                      setReviewTarget(null);
+                      setReloadKey((prev) => prev + 1);
+                    }}
+                  />
+                ) : null}
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog
             open={Boolean(detailTarget)}
             onOpenChange={(open) => {
               if (!open) setDetailTarget(null);
@@ -640,16 +697,28 @@ export default function AdminEquipmentBorrowHistoryPage() {
                   Detail record peminjaman alat ditampilkan dalam modal.
                 </DialogDescription>
               </DialogHeader>
-              <div className="max-h-[85vh] overflow-y-auto px-1 pt-1">
-                <AdminEquipmentBorrowHistoryDetailContent
-                  item={detailTarget}
-                  isLoading={false}
-                  error=""
-                  backLabel="Tutup"
-                  onBack={() => setDetailTarget(null)}
-                  onOpenEquipmentDetail={setRelatedEquipmentId}
-                  onOpenUserDetail={setRelatedUserId}
-                />
+              <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
+                <div className="space-y-4">
+                  <AdminEquipmentBorrowHistoryDetailContent
+                    item={detailBorrow}
+                    isLoading={isDetailLoading}
+                    error={detailError}
+                    backLabel="Tutup"
+                    onBack={() => setDetailTarget(null)}
+                    onOpenEquipmentDetail={setRelatedEquipmentId}
+                    onOpenUserDetail={setRelatedUserId}
+                  />
+                  {detailTarget ? (
+                    <DashboardDetailReviewPanel
+                      context={{ kind: "borrow", id: String(detailTarget.id) }}
+                      initialBorrow={detailBorrow}
+                      onActionComplete={() => {
+                        setDetailTarget(null);
+                        setReloadKey((prev) => prev + 1);
+                      }}
+                    />
+                  ) : null}
+                </div>
               </div>
             </DialogContent>
           </Dialog>

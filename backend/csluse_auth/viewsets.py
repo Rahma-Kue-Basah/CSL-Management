@@ -286,6 +286,7 @@ class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
 
         assigned_only = self._parse_bool_query(self.request.query_params.get("assigned_only"))
         department = self.request.query_params.get("department")
+        role = self.request.query_params.get("role")
         room = self.request.query_params.get("room")
         search = self.request.query_params.get("search") or self.request.query_params.get("q")
 
@@ -296,6 +297,9 @@ class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
 
         if department:
             queryset = queryset.filter(profile__department__iexact=department)
+
+        if role:
+            queryset = queryset.filter(profile__role__iexact=role)
 
         if room:
             queryset = queryset.filter(profile__rooms_as_pic__id=room).distinct()

@@ -4,18 +4,17 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Trash2, UserPlus, Users, X } from "lucide-react";
 import { toast } from "sonner";
 
-import { AdminPageHeader } from "@/components/admin/admin-page-header";
-import { AdminFilterCard } from "@/components/admin/admin-filter-card";
 import {
   AdminFilterField,
   AdminFilterGrid,
   ADMIN_FILTER_INPUT_CLASS,
+  ADMIN_FILTER_SELECT_CLASS,
 } from "@/components/admin/admin-filter-fields";
+import TaskManagementPageShell from "@/components/admin/task-management/task-management-page-shell";
 import AssignMentorDialog from "@/components/admin/user-management/AssignMentorDialog";
 import MentorTaskTable from "@/components/admin/user-management/MentorTaskTable";
 import UserDetailDialog from "@/components/admin/user-management/UserDetailDialog";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { DataPagination } from "@/components/shared/data-pagination";
 import { Button } from "@/components/ui/button";
 import {
@@ -170,27 +169,21 @@ export default function MentorTaskManagementPage() {
   };
 
   return (
-    <section className="w-full min-w-0 space-y-4 overflow-x-hidden px-4 pb-6">
-      <AdminPageHeader
-        title="Dosen Pembimbing"
-        description={`Total ${totalCount || users.length} dosen pembimbing terdaftar.`}
-        icon={<Users className="h-5 w-5 text-sky-200" />}
-      />
-
-      {error || errorMessage ? (
-        <InlineErrorAlert>{error || errorMessage}</InlineErrorAlert>
-      ) : null}
-
-      <AdminFilterCard
-        open={filterOpen}
-        onToggle={() => setFilterOpen((prev) => !prev)}
-        onReset={() => {
-          setSearch("");
-          setDepartment("");
-          setDebouncedSearch("");
-          setPage(1);
-        }}
-      >
+    <>
+      <TaskManagementPageShell
+      title="Dosen Pembimbing"
+      description={`Total ${totalCount || users.length} dosen pembimbing terdaftar.`}
+      icon={<Users className="h-5 w-5 text-sky-200" />}
+      error={error || errorMessage}
+      filterOpen={filterOpen}
+      onToggleFilter={() => setFilterOpen((prev) => !prev)}
+      onResetFilter={() => {
+        setSearch("");
+        setDepartment("");
+        setDebouncedSearch("");
+        setPage(1);
+      }}
+      filterContent={
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -213,7 +206,7 @@ export default function MentorTaskManagementPage() {
             <AdminFilterField label="Department">
               <select
                 value={department}
-                className="h-8 w-full rounded-md border border-slate-400 bg-white px-2 text-xs outline-none shadow-xs focus-visible:border-sky-600 focus-visible:ring-[3px] focus-visible:ring-sky-100"
+                className={ADMIN_FILTER_SELECT_CLASS}
                 onChange={(event) => {
                   setDepartment(event.target.value);
                   setPage(1);
@@ -229,10 +222,10 @@ export default function MentorTaskManagementPage() {
             </AdminFilterField>
           </AdminFilterGrid>
         </form>
-      </AdminFilterCard>
-
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center justify-between gap-3">
+      }
+      actions={
+        <>
+          <div className="flex items-center justify-between gap-3">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -267,38 +260,41 @@ export default function MentorTaskManagementPage() {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
-        {canManageUsers ? (
-          <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
-            <UserPlus className="h-4 w-4" />
-            Tambahkan Dosen Pembimbing
-          </Button>
-        ) : null}
-      </div>
-
-      <MentorTaskTable
-        users={users}
-        isLoading={isLoading}
-        hasLoadedOnce={hasLoadedOnce}
-        selectedIds={selectedIds}
-        allVisibleSelected={allVisibleSelected}
-        onToggleItemSelection={toggleItemSelection}
-        onToggleSelectAllVisible={toggleSelectAllVisible}
-        selectAllRef={selectAllRef}
-        onOpenDetail={(user) => setDetailUser(user)}
-        onDelete={setRemoveCandidate}
-        isDeleting={isSubmitting}
-      />
-
-      <DataPagination
-        page={page}
-        totalPages={totalPages}
-        totalCount={totalCount}
-        pageSize={PAGE_SIZE}
-        itemLabel="dosen pembimbing"
-        isLoading={isLoading}
-        onPageChange={setPage}
-      />
+          </div>
+          {canManageUsers ? (
+            <Button type="button" size="sm" onClick={() => setCreateOpen(true)}>
+              <UserPlus className="h-4 w-4" />
+              Tambahkan Dosen Pembimbing
+            </Button>
+          ) : null}
+        </>
+      }
+        footer={
+          <DataPagination
+            page={page}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            pageSize={PAGE_SIZE}
+            itemLabel="dosen pembimbing"
+            isLoading={isLoading}
+            onPageChange={setPage}
+          />
+        }
+      >
+        <MentorTaskTable
+          users={users}
+          isLoading={isLoading}
+          hasLoadedOnce={hasLoadedOnce}
+          selectedIds={selectedIds}
+          allVisibleSelected={allVisibleSelected}
+          onToggleItemSelection={toggleItemSelection}
+          onToggleSelectAllVisible={toggleSelectAllVisible}
+          selectAllRef={selectAllRef}
+          onOpenDetail={(user) => setDetailUser(user)}
+          onDelete={setRemoveCandidate}
+          isDeleting={isSubmitting}
+        />
+      </TaskManagementPageShell>
 
       <AssignMentorDialog
         open={createOpen}
@@ -344,6 +340,6 @@ export default function MentorTaskManagementPage() {
           void handleBulkRemoveMentor();
         }}
       />
-    </section>
+    </>
   );
 }
