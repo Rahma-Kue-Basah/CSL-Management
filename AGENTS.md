@@ -1,0 +1,130 @@
+# AGENTS.md
+
+## Ringkasan Project
+
+Project ini adalah aplikasi internal CSL/CSL Use dengan arsitektur full-stack:
+
+- `backend/`: Django 4.2 + Django REST Framework
+- `frontend-react/`: React 19 + Vite + TypeScript
+- `infra/`: infrastruktur deployment, saat ini berisi konfigurasi Nginx
+- root repo: orchestration via `docker-compose.yml`, `docker-compose.prod.yml`, dan `Makefile`
+
+Fungsi bisnis utama yang terlihat dari struktur route dan folder:
+
+- autentikasi dan otorisasi pengguna
+- dashboard pengguna
+- booking ruangan
+- penggunaan alat
+- peminjaman alat
+- pengujian sampel
+- approval/review workflow
+- admin history, inventory, task management, dan user management
+
+## Struktur Penting
+
+### Backend
+
+- entry point: `backend/manage.py`
+- Django settings: `backend/config/settings.py`
+- root URL config: `backend/config/urls.py`
+- app utama domain: `backend/csluse`
+- app autentikasi/admin auth: `backend/csluse_auth`
+
+Catatan backend:
+
+- default settings module adalah `config.settings`
+- auth menggunakan `dj-rest-auth` + JWT cookie auth
+- API docs tersedia via `api/schema/` dan `api/docs/`
+- environment file ada di `backend/.env` dan `backend/.env.prod`
+
+### Frontend
+
+- package manifest: `frontend-react/package.json`
+- app entry: `frontend-react/src/main.tsx`
+- router utama: `frontend-react/src/routes/router.tsx`
+- halaman ada di `frontend-react/src/pages`
+- reusable component ada di `frontend-react/src/components`
+- data fetching logic banyak ditempatkan di `frontend-react/src/hooks`
+- service/API wrapper ada di `frontend-react/src/services`
+- styling global ada di `frontend-react/src/styles`
+
+Catatan frontend:
+
+- routing memakai `react-router-dom`
+- data fetching memakai `@tanstack/react-query`
+- ada kombinasi komponen `antd`, `radix`, dan util UI internal
+- lockfile yang tersedia adalah `frontend-react/package-lock.json`, jadi default package manager adalah `npm`
+
+## Cara Menjalankan
+
+### Via Docker Compose
+
+Dari root repo:
+
+- `make dev` untuk menjalankan stack development
+- `make dev-build` untuk build ulang lalu menjalankan
+- `make dev-down` untuk menghentikan
+- `make dev-logs` untuk melihat logs
+
+Default port yang terlihat dari compose:
+
+- frontend diexpose ke `http://localhost:3000`
+- backend tersedia sebagai service internal dan expose port `8000` untuk antar-container
+
+### Frontend Lokal
+
+Di `frontend-react/`:
+
+- `npm install`
+- `npm run dev`
+- `npm run build`
+- `npm run lint`
+
+### Backend Lokal
+
+Backend memakai Python + Django dengan dependency di `backend/requirements.txt`.
+
+Baseline command yang relevan:
+
+- `python manage.py runserver`
+- `python manage.py migrate`
+- `python manage.py createsuperuser`
+
+Jalankan dari direktori `backend/` dengan virtualenv yang sesuai.
+
+## Domain dan Routing
+
+Dari router frontend, domain besar aplikasi meliputi:
+
+- `dashboard`
+- `schedule`
+- `booking-rooms`
+- `use-equipment`
+- `borrow-equipment`
+- `sample-testing`
+- `approval`
+- area admin untuk inventory, history, user management, dan task management
+
+Saat menambah fitur, usahakan mengikuti pembagian domain yang sudah ada:
+
+- page di `src/pages/...`
+- UI/domain component di `src/components/...`
+- server state hook di `src/hooks/...`
+- integrasi API di `src/services/...`
+
+## Working Notes Untuk Agent
+
+- Repo ini sedang aktif dikembangkan dan worktree bisa dalam keadaan dirty. Jangan revert perubahan yang tidak Anda buat.
+- Prioritaskan perubahan kecil yang konsisten dengan pola folder yang sudah ada.
+- Untuk frontend, cek route, page, hook, dan service terkait sebelum menambah file baru.
+- Untuk backend, cek `config/urls.py`, view/viewset, serializer, dan model yang terkait sebelum mengubah kontrak API.
+- Jika mengubah flow approval, history, atau task management, validasi efeknya ke role/guard di router frontend.
+
+## Checklist Context Dasar Sebelum Mulai Kerja
+
+- pahami apakah perubahan ada di `backend`, `frontend-react`, atau keduanya
+- identifikasi domain fitur: booking room, use equipment, borrow equipment, sample testing, admin, atau auth
+- cek apakah perubahan menyentuh route, hook data fetching, dan API contract
+- cek file `.env` atau compose bila masalah terkait auth, cookie, origin, atau deployment
+
+Dokumen ini adalah baseline context. Tambahkan bagian yang lebih spesifik saat pola testing, convention coding, atau workflow deployment project ini sudah lebih terdokumentasi.
