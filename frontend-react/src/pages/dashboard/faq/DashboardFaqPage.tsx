@@ -68,6 +68,8 @@ function FaqCard({
 export default function DashboardFaqPage() {
   const { faqs, isLoading, error } = useFaqs();
   const [openId, setOpenId] = useState<string | number | null>(null);
+  const leftColumnFaqs = faqs.filter((_, index) => index % 2 === 0);
+  const rightColumnFaqs = faqs.filter((_, index) => index % 2 === 1);
 
   useEffect(() => {
     if (!faqs.length) {
@@ -107,25 +109,38 @@ export default function DashboardFaqPage() {
 
   return (
     <section className="space-y-5">
-      <div className="space-y-3 xl:columns-2 xl:gap-3 xl:space-y-0">
-        {faqs.length === 0 ? (
-          <div className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
-            Belum ada FAQ yang tersedia.
-          </div>
-        ) : faqs.length ? (
-          faqs.map((item) => (
-            <div key={item.id} className="mb-3 break-inside-avoid xl:inline-block xl:w-full">
+      {faqs.length === 0 ? (
+        <div className="rounded-xl border border-slate-200 bg-white px-4 py-8 text-center text-sm text-slate-500">
+          Belum ada FAQ yang tersedia.
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2 xl:items-start">
+          <div className="space-y-3">
+            {leftColumnFaqs.map((item) => (
               <FaqCard
+                key={item.id}
                 item={item}
                 open={openId === item.id}
                 onToggle={() =>
                   setOpenId((current) => (current === item.id ? null : item.id))
                 }
               />
-            </div>
-          ))
-        ) : null}
-      </div>
+            ))}
+          </div>
+          <div className="space-y-3">
+            {rightColumnFaqs.map((item) => (
+              <FaqCard
+                key={item.id}
+                item={item}
+                open={openId === item.id}
+                onToggle={() =>
+                  setOpenId((current) => (current === item.id ? null : item.id))
+                }
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

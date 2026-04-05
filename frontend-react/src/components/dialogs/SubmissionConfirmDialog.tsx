@@ -19,36 +19,22 @@ import { cn } from "@/lib/utils";
 type SubmissionSummaryItemProps = {
   label: string;
   value: string;
-  orientation?: "vertical" | "horizontal";
 };
 
 export function SubmissionSummaryItem({
   label,
   value,
-  orientation = "vertical",
 }: SubmissionSummaryItemProps) {
   const displayValue = value?.trim() ? value : "-";
-  const isHorizontal = orientation === "horizontal";
 
   return (
-    <div
-      className={cn(
-        "rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3",
-        isHorizontal && "flex items-start justify-between gap-4",
-      )}
-    >
-      <p
-        className={cn(
-          "text-[11px] font-semibold tracking-[0.08em] text-slate-500",
-          isHorizontal && "shrink-0 pt-0.5",
-        )}
-      >
+    <div className="rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3">
+      <p className="text-[11px] font-semibold tracking-[0.08em] text-slate-500">
         {label}
       </p>
       <p
         className={cn(
-          "text-sm leading-6",
-          isHorizontal ? "text-right" : "mt-1",
+          "mt-1 text-sm leading-6",
           displayValue === "-"
             ? "italic text-slate-400"
             : "font-medium text-slate-800",

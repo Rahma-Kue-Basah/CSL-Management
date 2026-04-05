@@ -390,72 +390,58 @@ export default function SampleTestingFormPage() {
           <SubmissionSummaryItem
             label="Nama Pemohon"
             value={formData.name}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Email"
             value={formData.email}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Institusi"
             value={formData.institution}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Nomor Telepon"
             value={formData.phoneNumber}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Alamat Institusi"
             value={formData.institutionAddress}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Sampel"
             value={displaySampleLabel}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Jenis Sampel"
             value={formData.sampleType}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Merek Sampel"
             value={formData.sampleBrand}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Kemasan Sampel"
             value={formData.samplePackaging}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Berat Sampel"
             value={formData.sampleWeight}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Jumlah Sampel"
             value={formData.sampleQuantity}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Cara Penyajian / Penanganan"
             value={formData.sampleTestingServing}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Metode Pengujian"
             value={formData.sampleTestingMethod}
-            orientation="horizontal"
           />
           <SubmissionSummaryItem
             label="Jenis Pengujian"
             value={formData.sampleTestingType}
-            orientation="horizontal"
           />
         </div>
       </SubmissionConfirmDialog>

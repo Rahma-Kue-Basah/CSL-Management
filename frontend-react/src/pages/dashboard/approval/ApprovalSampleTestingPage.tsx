@@ -8,6 +8,7 @@ import { useNavigate } from "react-router-dom";
 import { DashboardDetailReviewDialog } from "@/components/dashboard/layout/DashboardDetailReviewDialog";
 import { DataPagination } from "@/components/shared/data-pagination";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import {
   getStatusBadgeClass,
@@ -18,6 +19,7 @@ import {
 import { formatDateTimeWib } from "@/lib/date-format";
 import { usePengujians } from "@/hooks/pengujians/use-pengujians";
 import { toEndOfDay, toStartOfDay } from "@/lib/date";
+import { getPengujianProgressFlow } from "@/lib/request-progress";
 
 const PAGE_SIZE = 10;
 
@@ -95,6 +97,7 @@ export default function ApprovalSampleTestingPage() {
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [reviewPengujianId, setReviewPengujianId] = useState<string | null>(null);
+  const [progressPengujianId, setProgressPengujianId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("q") ?? "";
@@ -129,6 +132,8 @@ export default function ApprovalSampleTestingPage() {
     1,
     Math.ceil((totalCount || pengujians.length) / PAGE_SIZE),
   );
+  const progressPengujian =
+    pengujians.find((item) => String(item.id) === progressPengujianId) ?? null;
 
   return (
     <section className="space-y-4">
@@ -220,11 +225,13 @@ export default function ApprovalSampleTestingPage() {
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap">{item.sampleTestingType}</td>
                   <td className="px-3 py-2.5">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+                    <button
+                      type="button"
+                      onClick={() => setProgressPengujianId(String(item.id))}
+                      className={`inline-flex cursor-pointer rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                     >
                       {getStatusDisplayLabel(item.status)}
-                    </span>
+                    </button>
                   </td>
                   <td className="px-3 py-2.5 whitespace-nowrap text-slate-700">
                     {formatDateTimeWib(item.createdAt)}
@@ -284,6 +291,17 @@ export default function ApprovalSampleTestingPage() {
         }
         onActionComplete={() => setReloadKey((prev) => prev + 1)}
       />
+      {progressPengujian ? (
+        <RequestProgressDialog
+          open={Boolean(progressPengujianId)}
+          onOpenChange={(open) => {
+            if (!open) setProgressPengujianId(null);
+          }}
+          title="Progress Pengujian Sampel"
+          code={progressPengujian.code}
+          steps={getPengujianProgressFlow(progressPengujian)}
+        />
+      ) : null}
 
     </section>
   );
