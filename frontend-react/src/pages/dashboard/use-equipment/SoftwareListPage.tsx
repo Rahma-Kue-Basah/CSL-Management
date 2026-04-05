@@ -55,7 +55,7 @@ export default function SoftwareListPage() {
           <tbody className="text-sm">
             {isLoading || !hasLoadedOnce ? (
               <tr>
-                <td colSpan={6} className="px-3 py-10 text-center text-slate-500">
+                <td colSpan={6} className="px-3 py-5 text-center text-slate-500">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Memuat data...
@@ -83,7 +83,7 @@ export default function SoftwareListPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={6} className="px-3 py-10 text-center text-slate-500">
+                <td colSpan={6} className="px-3 py-5 text-center text-slate-500">
                   Belum ada software yang tersedia.
                 </td>
               </tr>

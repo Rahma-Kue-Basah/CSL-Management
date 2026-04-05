@@ -220,7 +220,7 @@ export default function SampleTestingListContent({
           <tbody className="text-sm">
             {isLoading || !hasLoadedOnce ? (
               <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-slate-500">
+                <td colSpan={7} className="px-3 py-5 text-center text-slate-500">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Memuat data...
@@ -280,7 +280,7 @@ export default function SampleTestingListContent({
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="px-3 py-10 text-center text-slate-500">
+                <td colSpan={7} className="px-3 py-5 text-center text-slate-500">
                   {emptyMessage}
                 </td>
               </tr>
