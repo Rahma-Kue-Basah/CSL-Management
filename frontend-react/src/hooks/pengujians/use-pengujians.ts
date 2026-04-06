@@ -50,6 +50,28 @@ export type PengujianRow = {
   approvedAt: string;
   rejectedAt: string;
   completedAt: string;
+  documents: PengujianDocument[];
+};
+
+export type PengujianDocumentType =
+  | "testing_agreement"
+  | "signed_testing_agreement"
+  | "invoice"
+  | "payment_proof"
+  | "test_result_letter";
+
+export type PengujianDocument = {
+  id: string;
+  documentType: PengujianDocumentType;
+  documentLabel: string;
+  originalName: string;
+  mimeType: string;
+  size: number;
+  url: string;
+  uploadedById: string;
+  uploadedByName: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type ApiPengujian = {
@@ -89,6 +111,19 @@ type ApiPengujian = {
     full_name?: string | null;
     email?: string | null;
   } | null;
+  documents?: Array<{
+    id?: string | number | null;
+    document_type?: PengujianDocumentType | null;
+    document_label?: string | null;
+    original_name?: string | null;
+    mime_type?: string | null;
+    size?: number | null;
+    url?: string | null;
+    uploaded_by?: string | number | null;
+    uploaded_by_name?: string | null;
+    created_at?: string | null;
+    updated_at?: string | null;
+  }> | null;
 };
 
 type ApiPengujiansResponse = {
@@ -98,9 +133,10 @@ type ApiPengujiansResponse = {
     total?: number;
     pending?: number;
     approved?: number;
+    diproses?: number;
+    menunggu_pembayaran?: number;
     completed?: number;
     rejected?: number;
-    expired?: number;
   } | null;
 };
 
@@ -108,9 +144,10 @@ export type PengujianAggregates = {
   total: number;
   pending: number;
   approved: number;
+  diproses: number;
+  menungguPembayaran: number;
   completed: number;
   rejected: number;
-  expired: number;
 };
 
 export function mapPengujian(item: ApiPengujian): PengujianRow {
@@ -152,6 +189,21 @@ export function mapPengujian(item: ApiPengujian): PengujianRow {
     approvedAt: String(item.approved_at ?? "-"),
     rejectedAt: String(item.rejected_at ?? "-"),
     completedAt: String(item.completed_at ?? "-"),
+    documents: Array.isArray(item.documents)
+      ? item.documents.map((document) => ({
+          id: String(document.id ?? ""),
+          documentType: (document.document_type ?? "testing_agreement") as PengujianDocumentType,
+          documentLabel: String(document.document_label ?? "-"),
+          originalName: String(document.original_name ?? "-"),
+          mimeType: String(document.mime_type ?? ""),
+          size: Number(document.size ?? 0),
+          url: String(document.url ?? ""),
+          uploadedById: String(document.uploaded_by ?? ""),
+          uploadedByName: String(document.uploaded_by_name ?? "-"),
+          createdAt: String(document.created_at ?? "-"),
+          updatedAt: String(document.updated_at ?? "-"),
+        }))
+      : [],
   };
 }
 
@@ -261,9 +313,10 @@ export function usePengujians(
     total: 0,
     pending: 0,
     approved: 0,
+    diproses: 0,
+    menungguPembayaran: 0,
     completed: 0,
     rejected: 0,
-    expired: 0,
   });
 
   useEffect(() => {
@@ -318,9 +371,10 @@ export function usePengujians(
           total: Array.isArray(payload) ? mapped.length : Number(payload.aggregates?.total ?? 0),
           pending: Array.isArray(payload) ? 0 : Number(payload.aggregates?.pending ?? 0),
           approved: Array.isArray(payload) ? 0 : Number(payload.aggregates?.approved ?? 0),
+          diproses: Array.isArray(payload) ? 0 : Number(payload.aggregates?.diproses ?? 0),
+          menungguPembayaran: Array.isArray(payload) ? 0 : Number(payload.aggregates?.menunggu_pembayaran ?? 0),
           completed: Array.isArray(payload) ? 0 : Number(payload.aggregates?.completed ?? 0),
           rejected: Array.isArray(payload) ? 0 : Number(payload.aggregates?.rejected ?? 0),
-          expired: Array.isArray(payload) ? 0 : Number(payload.aggregates?.expired ?? 0),
         });
       } catch (err) {
         if (err instanceof DOMException && err.name === "AbortError") return;

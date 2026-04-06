@@ -50,6 +50,8 @@ export const SAMPLE_TESTING_STATUS_OPTIONS: StatusOption[] = [
   { value: "active", label: "Active" },
   { value: "pending", label: "Pending" },
   { value: "approved", label: "Approved" },
+  { value: "diproses", label: "Diproses" },
+  { value: "menunggu pembayaran", label: "Menunggu Pembayaran" },
   { value: "rejected", label: "Rejected" },
   { value: "completed", label: "Completed" },
 ];
@@ -69,6 +71,16 @@ export function getStatusBadgeClass(
     return bordered
       ? "border-emerald-200 bg-emerald-50 text-emerald-700"
       : "bg-emerald-100 text-emerald-700";
+  }
+  if (normalized === "diproses") {
+    return bordered
+      ? "border-blue-200 bg-blue-50 text-blue-700"
+      : "bg-blue-100 text-blue-700";
+  }
+  if (normalized === "menunggu pembayaran") {
+    return bordered
+      ? "border-violet-200 bg-violet-50 text-violet-700"
+      : "bg-violet-100 text-violet-700";
   }
   if (normalized === "pending") {
     return bordered
@@ -120,6 +132,8 @@ export function getStatusSummaryTone(status?: string | null): StatusSummaryTone 
   const normalized = normalizeStatus(status);
 
   if (normalized === "approved") return "emerald";
+  if (normalized === "diproses") return "blue";
+  if (normalized === "menunggu pembayaran") return "blue";
   if (normalized === "pending") return "amber";
   if (normalized === "returned pending inspection" || normalized === "returned_pending_inspection") {
     return "blue";
@@ -136,6 +150,8 @@ export function getStatusDisplayLabel(status?: string | null) {
 
   if (normalized === "pending") return "Pending";
   if (normalized === "approved") return "Approved";
+  if (normalized === "diproses") return "Diproses";
+  if (normalized === "menunggu pembayaran") return "Menunggu Pembayaran";
   if (normalized === "completed") return "Completed";
   if (normalized === "rejected") return "Rejected";
   if (normalized === "expired") return "Expired";

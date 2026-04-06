@@ -16,6 +16,7 @@ from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 from .models import (
     Image,
+    Document,
     Room,
     Equipment,
     Software,
@@ -30,6 +31,7 @@ from .models import (
 )
 from .serializers import (
     ImageSerializer,
+    DocumentSerializer,
     RoomSerializer,
     RoomListSerializer,
     RoomDropdownSerializer,
@@ -78,6 +80,10 @@ from .email_notifications import (
 STATUS_VALUE_MAP = {
     "pending": "Pending",
     "approved": "Approved",
+    "diproses": "Diproses",
+    "menunggu pembayaran": "Menunggu Pembayaran",
+    "waiting_payment": "Menunggu Pembayaran",
+    "waiting payment": "Menunggu Pembayaran",
     "rejected": "Rejected",
     "expired": "Expired",
     "returned_pending_inspection": "Returned Pending Inspection",
@@ -88,6 +94,19 @@ STATUS_VALUE_MAP = {
     "overdue": "Overdue",
     "lost_damaged": "Lost/Damaged",
     "lost/damaged": "Lost/Damaged",
+}
+
+PENGUJIAN_APPROVER_DOCUMENT_TYPES = {"testing_agreement", "invoice", "test_result_letter"}
+PENGUJIAN_REQUESTER_DOCUMENT_TYPES = {
+    "signed_testing_agreement",
+    "payment_proof",
+}
+PENGUJIAN_DOCUMENT_MAX_SIZE = 5 * 1024 * 1024
+PENGUJIAN_NEXT_DOCUMENT_TYPES = {
+    "testing_agreement": "signed_testing_agreement",
+    "signed_testing_agreement": "invoice",
+    "invoice": "payment_proof",
+    "payment_proof": "test_result_letter",
 }
 
 
@@ -777,6 +796,8 @@ def build_status_aggregates(queryset, completed_statuses=None):
         "total": queryset.count(),
         "pending": queryset.filter(status="Pending").count(),
         "approved": queryset.filter(status="Approved").count(),
+        "diproses": queryset.filter(status="Diproses").count(),
+        "menunggu_pembayaran": queryset.filter(status="Menunggu Pembayaran").count(),
         "completed": queryset.filter(status__in=completed_statuses).count(),
         "rejected": queryset.filter(status="Rejected").count(),
         "expired": queryset.filter(status="Expired").count(),
@@ -3236,7 +3257,7 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                         "rejected": 0,
                         "expired": 0,
                     },
-                    "upcoming_approved": None,
+                    "upcoming_approved": [],
                     "recent_activities": [],
                 }
             )
@@ -3270,7 +3291,14 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                 .distinct()
                 .order_by("-created_at")
             )
-            pengujians = []
+            if is_administrator_or_above(request.user):
+                pengujians = list(
+                    Pengujian.objects
+                    .select_related("requested_by", "approved_by")
+                    .order_by("-created_at")
+                )
+            else:
+                pengujians = []
         else:
             bookings = list(
                 Booking.objects
@@ -3308,6 +3336,7 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                     "id": f"booking-{item.id}",
                     "title": _overview_title(getattr(getattr(item, "room", None), "name", None), item.code or "Booking Ruangan"),
                     "type": "Booking Ruangan",
+                    "requester_name": _profile_display_name(getattr(item, "requested_by", None)) or "",
                     "start_time": item.start_time,
                     "end_time": item.end_time,
                     "href": f"/booking-rooms/approval/{item.id}" if is_pic_scope_role else f"/booking-rooms/{item.id}",
@@ -3319,6 +3348,7 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                     "id": f"use-{item.id}",
                     "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Penggunaan Alat"),
                     "type": "Penggunaan Alat",
+                    "requester_name": _profile_display_name(getattr(item, "requested_by", None)) or "",
                     "start_time": item.start_time,
                     "end_time": item.end_time,
                     "href": f"/use-equipment/approval/{item.id}" if is_pic_scope_role else f"/use-equipment/{item.id}",
@@ -3330,13 +3360,14 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                     "id": f"borrow-{item.id}",
                     "title": _overview_title(getattr(getattr(item, "equipment", None), "name", None), item.code or "Peminjaman Alat"),
                     "type": "Peminjaman Alat",
+                    "requester_name": _profile_display_name(getattr(item, "requested_by", None)) or "",
                     "start_time": item.start_time,
                     "end_time": item.end_time,
                     "href": f"/borrow-equipment/approval/{item.id}" if is_pic_scope_role else f"/borrow-equipment/{item.id}",
                 })
 
         upcoming_items.sort(key=lambda item: item["start_time"])
-        upcoming_approved = upcoming_items[0] if upcoming_items else None
+        upcoming_approved = upcoming_items
 
         recent_activities = []
 
@@ -3381,7 +3412,11 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                 "type": "Pengujian Sampel",
                 "status": item.status,
                 "created_at": item.created_at,
-                "href": "/sample-testing",
+                "href": (
+                    f"/sample-testing/approval/{item.id}"
+                    if is_pic_scope_role and is_administrator_or_above(request.user)
+                    else f"/sample-testing/{item.id}"
+                ),
             })
 
         recent_activities.sort(key=lambda item: item["created_at"], reverse=True)
@@ -3399,7 +3434,12 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
                     status_count(bookings, "Approved")
                     + status_count(uses, "Approved")
                     + status_count(borrows, "Approved")
-                    + status_count(pengujians, "Approved")
+                    + status_count(
+                        pengujians,
+                        "Approved",
+                        "Diproses",
+                        "Menunggu Pembayaran",
+                    )
                 ),
                 "completed": (
                     status_count(bookings, "Completed")
@@ -3535,7 +3575,12 @@ class FAQViewSet(viewsets.ModelViewSet):
 
 
 class PengujianViewSet(viewsets.ModelViewSet):
-    queryset = Pengujian.objects.select_related('requested_by', 'approved_by').order_by('-created_at')
+    queryset = (
+        Pengujian.objects
+        .select_related('requested_by', 'approved_by')
+        .prefetch_related('documents__uploaded_by__user')
+        .order_by('-created_at')
+    )
     serializer_class = PengujianSerializer
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
@@ -3564,6 +3609,10 @@ class PengujianViewSet(viewsets.ModelViewSet):
     def _current_profile(self):
         return getattr(self.request.user, "profile", None)
 
+    def _is_request_owner(self, pengujian):
+        current_profile = self._current_profile()
+        return bool(current_profile and pengujian.requested_by_id == current_profile.id)
+
     def _ensure_review_permission(self, pengujian):
         if not self._is_staff_or_above():
             raise PermissionDenied(
@@ -3579,6 +3628,87 @@ class PengujianViewSet(viewsets.ModelViewSet):
             raise PermissionDenied(
                 "Anda tidak dapat memproses pengajuan milik sendiri kecuali sebagai Admin atau SuperAdministrator."
             )
+
+    def _ensure_document_upload_permission(self, pengujian, document_type):
+        current_profile = self._current_profile()
+
+        if document_type in PENGUJIAN_APPROVER_DOCUMENT_TYPES:
+            self._ensure_review_permission(pengujian)
+            if (
+                pengujian.approved_by_id
+                and current_profile
+                and pengujian.approved_by_id != current_profile.id
+                and not is_administrator_or_above(self.request.user)
+            ):
+                raise PermissionDenied(
+                    "Dokumen approver hanya dapat diunggah oleh approver yang menyetujui atau Admin."
+                )
+            return
+
+        if document_type in PENGUJIAN_REQUESTER_DOCUMENT_TYPES:
+            if self._is_request_owner(pengujian) or is_administrator_or_above(self.request.user):
+                return
+            raise PermissionDenied(
+                "Dokumen requester hanya dapat diunggah oleh pemohon atau Admin."
+            )
+
+        raise ValidationError({"document_type": "Jenis dokumen tidak dikenali."})
+
+    def _get_existing_document_map(self, pengujian):
+        return {
+            document.document_type: document
+            for document in pengujian.documents.all()
+        }
+
+    def _validate_document_upload_sequence(self, pengujian, document_type, existing_documents):
+        if pengujian.status in {"Pending", "Rejected", "Completed"}:
+            raise ValidationError(
+                {"status": "Dokumen hanya dapat diunggah setelah pengajuan disetujui dan sebelum selesai."}
+            )
+
+        required_types = {
+            "signed_testing_agreement": ["testing_agreement"],
+            "invoice": ["signed_testing_agreement"],
+            "payment_proof": ["invoice"],
+            "test_result_letter": ["payment_proof"],
+        }.get(document_type, [])
+
+        missing_types = [
+            required_type
+            for required_type in required_types
+            if required_type not in existing_documents
+        ]
+        if missing_types:
+            raise ValidationError(
+                {
+                    "document_type": (
+                        "Dokumen sebelumnya belum tersedia untuk tahap ini."
+                    )
+                }
+            )
+
+        next_document_type = PENGUJIAN_NEXT_DOCUMENT_TYPES.get(document_type)
+        if (
+            document_type in existing_documents
+            and next_document_type
+            and next_document_type in existing_documents
+        ):
+            raise ValidationError(
+                {
+                    "document_type": (
+                        "Dokumen ini tidak dapat diganti karena tahap berikutnya sudah memiliki dokumen."
+                    )
+                }
+            )
+
+    def _resolve_pengujian_status_after_document_upload(self, pengujian, document_type):
+        if document_type == "invoice":
+            return "Menunggu Pembayaran"
+        if document_type == "test_result_letter":
+            return "Completed"
+        if pengujian.status == "Approved":
+            return "Diproses"
+        return pengujian.status
 
     def _ensure_transition(self, pengujian, allowed_sources, target_status):
         if pengujian.status not in allowed_sources:
@@ -3810,15 +3940,89 @@ class PengujianViewSet(viewsets.ModelViewSet):
         _notify_request_status(instance, kind="pengujian", status_value="Rejected", actor_profile=actor_profile, request=request)
         return Response(serializer.data)
 
+    @action(
+        detail=True,
+        methods=['post'],
+        url_path='documents/upload',
+        parser_classes=[MultiPartParser, FormParser],
+    )
+    def upload_document(self, request, pk=None):
+        instance = self.get_object()
+        document_type = str(request.data.get("document_type") or "").strip()
+        uploaded_file = request.FILES.get("file")
+
+        if not uploaded_file:
+            raise ValidationError({"file": "File dokumen wajib diunggah."})
+
+        allowed_extensions = {".pdf", ".doc", ".docx", ".jpg", ".jpeg", ".png", ".webp"}
+        _, extension = os.path.splitext(uploaded_file.name or "")
+        if extension.lower() not in allowed_extensions:
+            raise ValidationError(
+                {"file": "Format dokumen harus berupa image, PDF, DOC, atau DOCX."}
+            )
+        if (getattr(uploaded_file, "size", 0) or 0) > PENGUJIAN_DOCUMENT_MAX_SIZE:
+            raise ValidationError(
+                {"file": "Ukuran dokumen maksimal 5 MB."}
+            )
+
+        existing_documents = self._get_existing_document_map(instance)
+        self._ensure_document_upload_permission(instance, document_type)
+        self._validate_document_upload_sequence(instance, document_type, existing_documents)
+
+        current_profile = self._current_profile()
+        document_instance = existing_documents.get(document_type)
+        previous_document_name = ""
+        previous_document_storage = None
+        if document_instance and document_instance.document:
+            previous_document_name = document_instance.document.name or ""
+            previous_document_storage = document_instance.document.storage
+
+        if document_instance is None:
+            document_instance = Document(pengujian=instance, document_type=document_type)
+
+        document_instance.document = uploaded_file
+        document_instance.original_name = os.path.basename(uploaded_file.name or "")
+        document_instance.mime_type = getattr(uploaded_file, "content_type", "") or ""
+        document_instance.size = getattr(uploaded_file, "size", 0) or 0
+        document_instance.uploaded_by = current_profile
+        document_instance.save()
+
+        if (
+            previous_document_name
+            and previous_document_storage is not None
+            and previous_document_name != document_instance.document.name
+        ):
+            previous_document_storage.delete(previous_document_name)
+
+        next_status = self._resolve_pengujian_status_after_document_upload(instance, document_type)
+        update_fields = []
+        now = timezone.now()
+
+        if instance.status != next_status:
+            instance.status = next_status
+            update_fields.extend(["status", "updated_at"])
+
+        if next_status == "Completed" and instance.completed_at is None:
+            instance.completed_at = now
+            update_fields.extend(["completed_at", "updated_at"])
+
+        if update_fields:
+            instance.save(update_fields=list(dict.fromkeys(update_fields)))
+
+        serializer = self.get_serializer(instance)
+        return Response(
+            {
+                "document": DocumentSerializer(document_instance, context=self.get_serializer_context()).data,
+                "pengujian": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
     @action(detail=True, methods=['post'])
     def complete(self, request, pk=None):
         instance = self.get_object()
         self._ensure_review_permission(instance)
-        if not self._can_finalize_use_review(instance):
-            raise PermissionDenied(
-                "Hanya PIC ruangan alat terkait atau Admin yang dapat menandai penggunaan sebagai selesai."
-            )
-        self._ensure_transition(instance, ["Approved"], "Completed")
+        self._ensure_transition(instance, ["Approved", "Diproses", "Menunggu Pembayaran"], "Completed")
         serializer = self._transition_serializer(
             instance,
             data={'status': 'Completed', **request.data},

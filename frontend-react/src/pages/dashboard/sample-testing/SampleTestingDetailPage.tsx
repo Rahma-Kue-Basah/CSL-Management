@@ -5,10 +5,11 @@ import { ArrowLeft, ClipboardList, FlaskConical, UserRound } from "lucide-react"
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
-import SampleTestingDetailContent, {
+import {
   SampleTestingMetaItem,
   SampleTestingSectionCard,
 } from "@/components/dashboard/sample-testing/SampleTestingDetailContent";
+import SampleTestingDocumentsSection from "@/components/dashboard/sample-testing/SampleTestingDocumentsSection";
 import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
 import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
 import { ProgressSteps } from "@/components/shared/progress-steps";
@@ -121,6 +122,12 @@ export default function SampleTestingDetailPage() {
       {isApprovalPage ? (
         <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
           <div className="space-y-4">
+            <SampleTestingDocumentsSection
+              item={item}
+              viewerRole="approver"
+              onUploaded={() => setReloadKey((prev) => prev + 1)}
+            />
+
             <SampleTestingSectionCard
               title="Detail Pengujian Sampel"
               subtitle="Ringkasan informasi sampel dan pengujian yang diajukan."
@@ -145,24 +152,6 @@ export default function SampleTestingDetailPage() {
                 value={item.sampleTestingType}
               />
             </SampleTestingSectionCard>
-
-            <RequestInformationCard
-              icon={<ClipboardList className="h-4 w-4" />}
-              requesterName={item.name}
-              requesterDepartment={item.requesterDepartment}
-              status={item.status}
-              onStatusClick={() => setProgressOpen(true)}
-              approvedByName={item.approvedByName}
-            >
-              <SampleTestingMetaItem
-                label="Tanggal Dibuat"
-                value={formatDateTimeWib(item.createdAt)}
-              />
-              <SampleTestingMetaItem
-                label="Terakhir Diperbarui"
-                value={formatDateTimeWib(item.updatedAt)}
-              />
-            </RequestInformationCard>
           </div>
           <div className="space-y-4">
             {id ? (
@@ -188,15 +177,99 @@ export default function SampleTestingDetailPage() {
               <SampleTestingMetaItem label="Nomor Telepon" value={item.phoneNumber} />
 
             </SampleTestingSectionCard>
+
+            <RequestInformationCard
+              icon={<ClipboardList className="h-4 w-4" />}
+              requesterName={item.name}
+              requesterDepartment={item.requesterDepartment}
+              status={item.status}
+              onStatusClick={() => setProgressOpen(true)}
+              approvedByName={item.approvedByName}
+            >
+              <SampleTestingMetaItem
+                label="Tanggal Dibuat"
+                value={formatDateTimeWib(item.createdAt)}
+              />
+              <SampleTestingMetaItem
+                label="Terakhir Diperbarui"
+                value={formatDateTimeWib(item.updatedAt)}
+              />
+            </RequestInformationCard>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          <SampleTestingDetailContent
-            item={item}
-            showHeader={false}
-            onStatusClick={() => setProgressOpen(true)}
-          />
+        <div className="grid gap-4 xl:grid-cols-[1.35fr_0.65fr]">
+          <div className="space-y-4">
+            <SampleTestingDocumentsSection
+              item={item}
+              viewerRole="requester"
+              onUploaded={() => setReloadKey((prev) => prev + 1)}
+            />
+
+            <SampleTestingSectionCard
+              title="Detail Pengujian Sampel"
+              subtitle="Ringkasan informasi sampel dan pengujian yang diajukan."
+              icon={<FlaskConical className="h-5 w-5" />}
+            >
+              <SampleTestingMetaItem label="Nama Sampel" value={item.sampleName} />
+              <SampleTestingMetaItem label="Jenis Sampel" value={item.sampleType} />
+              <SampleTestingMetaItem label="Merek Sampel" value={item.sampleBrand} />
+              <SampleTestingMetaItem label="Kemasan Sampel" value={item.samplePackaging} />
+              <SampleTestingMetaItem label="Berat Sampel" value={item.sampleWeight} />
+              <SampleTestingMetaItem label="Jumlah Sampel" value={item.sampleQuantity} />
+              <SampleTestingMetaItem
+                label="Cara Penyajian / Penanganan"
+                value={item.sampleTestingServing}
+              />
+              <SampleTestingMetaItem
+                label="Metode Pengujian"
+                value={item.sampleTestingMethod}
+              />
+            <SampleTestingMetaItem
+              label="Jenis Pengujian"
+              value={item.sampleTestingType}
+            />
+          </SampleTestingSectionCard>
+          </div>
+
+          <div className="space-y-4">
+            <SampleTestingSectionCard
+              title="Informasi Pemohon"
+              subtitle="Identitas pemohon dan informasi institusi yang dicantumkan saat pengajuan."
+              icon={<UserRound className="h-5 w-5" />}
+            >
+              <SampleTestingMetaItem label="Nama Pemohon" value={item.name} />
+              <SampleTestingMetaItem label="Institusi" value={item.institution} />
+              <SampleTestingMetaItem
+                label="Alamat Institusi"
+                value={item.institutionAddress}
+              />
+              <SampleTestingMetaItem label="Email" value={item.email} />
+              <SampleTestingMetaItem label="Nomor Telepon" value={item.phoneNumber} />
+              <SampleTestingMetaItem
+                label="Prodi Pemohon"
+                value={item.requesterDepartment}
+              />
+            </SampleTestingSectionCard>
+
+            <RequestInformationCard
+              icon={<ClipboardList className="h-4 w-4" />}
+              requesterName={item.name}
+              requesterDepartment={item.requesterDepartment}
+              status={item.status}
+              onStatusClick={() => setProgressOpen(true)}
+              approvedByName={item.approvedByName}
+            >
+              <SampleTestingMetaItem
+                label="Tanggal Dibuat"
+                value={formatDateTimeWib(item.createdAt)}
+              />
+              <SampleTestingMetaItem
+                label="Terakhir Diperbarui"
+                value={formatDateTimeWib(item.updatedAt)}
+              />
+            </RequestInformationCard>
+          </div>
         </div>
       )}
       <RequestProgressDialog

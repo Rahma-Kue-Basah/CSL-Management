@@ -7,6 +7,7 @@ import {
   UserRound,
 } from "lucide-react";
 
+import SampleTestingDocumentsSection from "@/components/dashboard/sample-testing/SampleTestingDocumentsSection";
 import {
   AdminRecordAsideCard,
   AdminRecordAsideItem,
@@ -194,6 +195,18 @@ export default function AdminSampleTestingRecordDetailContent({
                 />
               ) : null}
             </AdminRecordDetailGrid>
+          </AdminRecordDetailSection>
+
+          <AdminRecordDetailSection
+            title="Dokumen Pengujian"
+            icon={<ClipboardList className="h-5 w-5" />}
+          >
+            <SampleTestingDocumentsSection
+              item={item}
+              viewerRole="approver"
+              embedded
+              allowActions={false}
+            />
           </AdminRecordDetailSection>
         </AdminRecordDetailShell>
       )}

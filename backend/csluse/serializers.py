@@ -7,6 +7,7 @@ from typing import Optional
 from csluse_auth.models import Profile
 from .models import (
     Image,
+    Document,
     Room,
     Equipment,
     Software,
@@ -53,6 +54,40 @@ class ImageSerializer(serializers.ModelSerializer):
         if obj.url:
             return obj.url
         return obj.image.url if obj.image else None
+
+
+class DocumentSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+    document_label = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = [
+            "id",
+            "document_type",
+            "document_label",
+            "original_name",
+            "mime_type",
+            "size",
+            "url",
+            "uploaded_by",
+            "uploaded_by_name",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = fields
+
+    def get_url(self, obj) -> Optional[str]:
+        return obj.document.url if obj.document else None
+
+    def get_uploaded_by_name(self, obj) -> str:
+        if obj.uploaded_by:
+            return obj.uploaded_by.full_name or obj.uploaded_by.user.email
+        return "-"
+
+    def get_document_label(self, obj) -> str:
+        return obj.get_document_type_display()
 
 
 class RoomSerializer(serializers.ModelSerializer):
@@ -984,6 +1019,7 @@ class ScheduleFeedItemSerializer(serializers.Serializer):
 class PengujianSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
+    documents = DocumentSerializer(many=True, read_only=True)
 
     def validate(self, attrs):
         instance = getattr(self, "instance", None)
@@ -1207,6 +1243,7 @@ class DashboardOverviewUpcomingSerializer(serializers.Serializer):
     id = serializers.CharField()
     title = serializers.CharField()
     type = serializers.CharField()
+    requester_name = serializers.CharField(allow_blank=True, required=False)
     start_time = serializers.DateTimeField()
     end_time = serializers.DateTimeField(allow_null=True)
     href = serializers.CharField()
@@ -1224,5 +1261,5 @@ class DashboardOverviewActivitySerializer(serializers.Serializer):
 
 class DashboardOverviewSerializer(serializers.Serializer):
     totals = DashboardOverviewTotalsSerializer()
-    upcoming_approved = DashboardOverviewUpcomingSerializer(allow_null=True)
+    upcoming_approved = DashboardOverviewUpcomingSerializer(many=True)
     recent_activities = DashboardOverviewActivitySerializer(many=True)

@@ -118,6 +118,8 @@ const API_PENGUJIAN_REJECT = (id: string | number) =>
   `${API_PENGUJIANS}${id}/reject/`;
 const API_PENGUJIAN_COMPLETE = (id: string | number) =>
   `${API_PENGUJIANS}${id}/complete/`;
+const API_PENGUJIAN_UPLOAD_DOCUMENT = (id: string | number) =>
+  `${API_PENGUJIANS}${id}/documents/upload/`;
 
 // REGION: Equipments API Endpoints
 const API_EQUIPMENTS = `${API_BASE_URL}/equipments/`;
@@ -247,6 +249,7 @@ export {
   API_PENGUJIAN_APPROVE,
   API_PENGUJIAN_REJECT,
   API_PENGUJIAN_COMPLETE,
+  API_PENGUJIAN_UPLOAD_DOCUMENT,
   API_EQUIPMENTS,
   API_EQUIPMENTS_DROPDOWN,
   API_EQUIPMENTS_EXPORT,

@@ -18,10 +18,11 @@ export type DashboardOverviewUpcoming = {
   id: string;
   title: string;
   type: string;
+  requester_name?: string;
   start_time: string;
   end_time?: string | null;
   href: string;
-} | null;
+};
 
 export type DashboardOverviewActivity = {
   id: string;
@@ -35,7 +36,7 @@ export type DashboardOverviewActivity = {
 
 export type DashboardOverviewResponse = {
   totals: DashboardOverviewTotals;
-  upcoming_approved: DashboardOverviewUpcoming;
+  upcoming_approved: DashboardOverviewUpcoming[];
   recent_activities: DashboardOverviewActivity[];
 };
 
@@ -45,7 +46,7 @@ type DashboardOverviewTotalsPayload = Partial<DashboardOverviewTotals> & {
 
 type DashboardOverviewPayload = {
   totals?: DashboardOverviewTotalsPayload;
-  upcoming_approved?: DashboardOverviewUpcoming;
+  upcoming_approved?: DashboardOverviewUpcoming[];
   recent_activities?: DashboardOverviewActivity[];
 };
 
@@ -58,7 +59,7 @@ const EMPTY_OVERVIEW: DashboardOverviewResponse = {
     rejected: 0,
     expired: 0,
   },
-  upcoming_approved: null,
+  upcoming_approved: [],
   recent_activities: [],
 };
 
@@ -95,7 +96,9 @@ export function useDashboardOverview() {
             rejected: payload.totals?.rejected ?? payload.totals?.failed ?? 0,
             expired: payload.totals?.expired ?? 0,
           },
-          upcoming_approved: payload.upcoming_approved ?? null,
+          upcoming_approved: Array.isArray(payload.upcoming_approved)
+            ? payload.upcoming_approved
+            : [],
           recent_activities: Array.isArray(payload.recent_activities)
             ? payload.recent_activities
             : [],

@@ -136,7 +136,83 @@ export function getUseProgressFlow(item: BasicProgressInput): ProgressStepItem[]
 export function getPengujianProgressFlow(
   item: BasicProgressInput,
 ): ProgressStepItem[] {
-  return getBookingProgressFlow(item);
+  const status = normalizeStatus(item.status);
+  const steps: ProgressStepItem[] = [
+    {
+      key: "submitted",
+      label: "Diajukan",
+      time: formatDateTimeWib(item.createdAt),
+      state: "finish",
+    },
+    {
+      key: "approved",
+      label: "Disetujui",
+      state: "wait",
+    },
+    {
+      key: "processed",
+      label: "Diproses",
+      state: "wait",
+    },
+    {
+      key: "waiting-payment",
+      label: "Menunggu Pembayaran",
+      state: "wait",
+    },
+    {
+      key: "completed",
+      label: "Selesai",
+      state: "wait",
+    },
+  ];
+
+  if (status === "pending") return steps;
+  if (status === "approved") {
+    steps[1].state = "finish";
+    steps[1].time = pickTime(item.approvedAt, item.updatedAt);
+    steps[2].state = "process";
+    return steps;
+  }
+  if (status === "diproses") {
+    steps[1].state = "finish";
+    steps[1].time = pickTime(item.approvedAt, item.updatedAt);
+    steps[2].state = "finish";
+    steps[2].time = pickTime(item.updatedAt);
+    steps[3].state = "process";
+    return steps;
+  }
+  if (status === "menunggu pembayaran") {
+    steps[1].state = "finish";
+    steps[1].time = pickTime(item.approvedAt, item.updatedAt);
+    steps[2].state = "finish";
+    steps[2].time = pickTime(item.updatedAt);
+    steps[3].state = "finish";
+    steps[3].time = pickTime(item.updatedAt);
+    steps[4].state = "process";
+    return steps;
+  }
+  if (status === "completed") {
+    steps[1].state = "finish";
+    steps[1].time = pickTime(item.approvedAt, item.updatedAt);
+    steps[2].state = "finish";
+    steps[2].time = pickTime(item.updatedAt);
+    steps[3].state = "finish";
+    steps[3].time = pickTime(item.updatedAt);
+    steps[4].state = "finish";
+    steps[4].time = pickTime(item.completedAt, item.updatedAt);
+    return steps;
+  }
+  if (status === "rejected") {
+    steps[1] = {
+      key: "rejected",
+      label: "Ditolak",
+      time: pickTime(item.rejectedAt, item.updatedAt),
+      state: "error",
+    };
+    return steps.slice(0, 2);
+  }
+
+  return steps;
 }
 
 export function getBorrowProgressFlow(

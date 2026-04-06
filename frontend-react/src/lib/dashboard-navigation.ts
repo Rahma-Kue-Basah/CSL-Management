@@ -62,6 +62,13 @@ const TOP_NAV_MENU_CONFIG: Array<Pick<TopNavItem, "id" | "label" | "href">> = [
   { id: "sample-testing", label: "Pengujian Sampel" },
 ];
 
+const ADMIN_APPROVAL_DEFAULT_MENU_IDS = new Set([
+  "booking-rooms",
+  "use-equipment",
+  "borrow-equipment",
+  "sample-testing",
+]);
+
 export function getHeaderIcon(menuId: string, actionId: string | null) {
   if (menuId === "dashboard") {
     if (actionId === "announcements") return Bell;
@@ -388,6 +395,16 @@ function getDefaultActionId(
   role: string | null | undefined,
   menu: SidebarShortcut,
 ) {
+  const normalizedRole = normalizeRoleValue(role);
+
+  if (
+    ADMIN_APPROVAL_DEFAULT_MENU_IDS.has(menu.id) &&
+    (normalizedRole === "Admin" || normalizedRole === "SuperAdministrator")
+  ) {
+    const approvalAction = menu.actions.find((item) => item.id === "all-requests");
+    if (approvalAction) return approvalAction.id;
+  }
+
   if (isApprovalOnlyRole(role)) {
     const approvalAction = menu.actions.find((item) => item.id === "all-requests");
     if (approvalAction) return approvalAction.id;

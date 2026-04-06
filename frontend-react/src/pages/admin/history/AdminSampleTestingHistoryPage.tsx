@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
-import { ClipboardCheck, Eye, Trash2 } from "lucide-react";
+import { Eye, FileText, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -11,8 +11,8 @@ import AdminHistoryBulkActions from "@/components/admin/history/AdminHistoryBulk
 import AdminHistoryExportActions from "@/components/admin/history/AdminHistoryExportActions";
 import AdminHistorySummaryCards from "@/components/admin/history/AdminHistorySummaryCards";
 import AdminHistoryTable from "@/components/admin/history/AdminHistoryTable";
+import SampleTestingDocumentsDialog from "@/components/dashboard/sample-testing/SampleTestingDocumentsDialog";
 import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
-import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
 import { ActionTooltip } from "@/components/shared/ActionTooltip";
 import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
 import { AdminFilterCard } from "@/components/admin/admin-filter-card";
@@ -52,8 +52,8 @@ import {
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
+  normalizeStatus,
   SAMPLE_TESTING_STATUS_OPTIONS,
-  shouldShowReviewAction,
 } from "@/lib/status";
 import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
 
@@ -63,6 +63,16 @@ const ORDERING_OPTIONS = [
   { value: "newest", label: "Terbaru" },
   { value: "oldest", label: "Terlama" },
 ];
+
+function canShowDocumentAction(status: string) {
+  const normalized = normalizeStatus(status);
+  return [
+    "approved",
+    "diproses",
+    "menunggu pembayaran",
+    "completed",
+  ].includes(normalized);
+}
 
 function matchesSearch(row: PengujianRow, query: string) {
   if (!query) return true;
@@ -92,7 +102,7 @@ export default function AdminSampleTestingHistoryPage() {
   const [reloadKey, setReloadKey] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState<PengujianRow | null>(null);
   const [detailTarget, setDetailTarget] = useState<PengujianRow | null>(null);
-  const [reviewTarget, setReviewTarget] = useState<PengujianRow | null>(null);
+  const [documentsTarget, setDocumentsTarget] = useState<PengujianRow | null>(null);
   const [relatedUserId, setRelatedUserId] = useState<string | number | null>(
     null,
   );
@@ -348,6 +358,8 @@ export default function AdminSampleTestingHistoryPage() {
               { label: "Total", value: aggregates.total, tone: "blue" },
               { label: "Pending", value: aggregates.pending },
               { label: "Approved", value: aggregates.approved },
+              { label: "Diproses", value: aggregates.diproses },
+              { label: "Menunggu Bayar", value: aggregates.menungguPembayaran },
               { label: "Completed", value: aggregates.completed },
               { label: "Rejected", value: aggregates.rejected },
             ]}
@@ -557,17 +569,6 @@ export default function AdminSampleTestingHistoryPage() {
                 </td>
                 <td className="sticky right-0 z-10 relative bg-card px-3 py-2 before:absolute before:inset-y-0 before:left-0 before:w-px before:bg-slate-200">
                   <div className="flex justify-center gap-2">
-                    {shouldShowReviewAction("pengujian", item.status) ? (
-                      <ActionTooltip label="Review pengajuan">
-                        <Button
-                          variant="outline"
-                          size="icon-sm"
-                          onClick={() => setReviewTarget(item)}
-                        >
-                          <ClipboardCheck className="h-4 w-4" />
-                        </Button>
-                      </ActionTooltip>
-                    ) : null}
                     <ActionTooltip label="Lihat detail">
                       <Button
                         variant="outline"
@@ -577,6 +578,18 @@ export default function AdminSampleTestingHistoryPage() {
                         <Eye className="h-4 w-4" />
                       </Button>
                     </ActionTooltip>
+                    {canShowDocumentAction(item.status) ? (
+                      <ActionTooltip label="Dokumen pengujian">
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          className="border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                          onClick={() => setDocumentsTarget(item)}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </Button>
+                      </ActionTooltip>
+                    ) : null}
                     <ActionTooltip label="Hapus riwayat">
                       <Button
                         variant="outline"
@@ -624,36 +637,6 @@ export default function AdminSampleTestingHistoryPage() {
           />
 
           <Dialog
-            open={Boolean(reviewTarget)}
-            onOpenChange={(open) => {
-              if (!open) setReviewTarget(null);
-            }}
-          >
-            <DialogContent
-              showCloseButton={false}
-              className="w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] gap-0 overflow-hidden border-0 bg-transparent p-0 shadow-none sm:w-[50vw] sm:max-w-[760px] sm:min-w-[640px] sm:max-w-none"
-            >
-              <DialogHeader className="sr-only">
-                <DialogTitle>Review Pengajuan Pengujian Sampel</DialogTitle>
-                <DialogDescription>
-                  Review pengajuan pengujian sampel ditampilkan dalam modal.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="max-h-[85vh] overflow-y-auto px-1 pt-1 pb-4">
-                {reviewTarget ? (
-                  <DashboardDetailReviewPanel
-                    context={{ kind: "pengujian", id: String(reviewTarget.id) }}
-                    onActionComplete={() => {
-                      setReviewTarget(null);
-                      setReloadKey((prev) => prev + 1);
-                    }}
-                  />
-                ) : null}
-              </div>
-            </DialogContent>
-          </Dialog>
-
-          <Dialog
             open={Boolean(detailTarget)}
             onOpenChange={(open) => {
               if (!open) setDetailTarget(null);
@@ -680,20 +663,20 @@ export default function AdminSampleTestingHistoryPage() {
                     onBack={() => setDetailTarget(null)}
                     onOpenUserDetail={setRelatedUserId}
                   />
-                  {detailTarget ? (
-                    <DashboardDetailReviewPanel
-                      context={{ kind: "pengujian", id: String(detailTarget.id) }}
-                      initialPengujian={detailPengujian}
-                      onActionComplete={() => {
-                        setDetailTarget(null);
-                        setReloadKey((prev) => prev + 1);
-                      }}
-                    />
-                  ) : null}
                 </div>
               </div>
             </DialogContent>
           </Dialog>
+
+          <SampleTestingDocumentsDialog
+            open={Boolean(documentsTarget)}
+            onOpenChange={(open) => {
+              if (!open) setDocumentsTarget(null);
+            }}
+            pengujianId={documentsTarget ? String(documentsTarget.id) : null}
+            viewerRole="approver"
+            allowActions={false}
+          />
 
           <RelatedUserDetailDialog
             open={Boolean(relatedUserId)}

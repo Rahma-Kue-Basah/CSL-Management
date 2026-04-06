@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { CalendarClock, CheckCircle2, Eye, FlaskConical, Loader2, PackageSearch, RotateCcw, ShieldCheck, X } from "lucide-react";
+import { CalendarClock, CheckCircle2, CircleDollarSign, Eye, FileText, FlaskConical, Loader2, PackageSearch, RotateCcw, Settings2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useNavigate } from "react-router-dom";
 
-import { DashboardDetailReviewDialog } from "@/components/dashboard/layout/DashboardDetailReviewDialog";
+import SampleTestingDocumentsDialog from "@/components/dashboard/sample-testing/SampleTestingDocumentsDialog";
 import { DataPagination } from "@/components/shared/data-pagination";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
@@ -14,7 +14,7 @@ import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
   getStatusSummaryTone,
-  shouldShowReviewAction,
+  normalizeStatus,
 } from "@/lib/status";
 import { formatDateTimeWib } from "@/lib/date-format";
 import { usePengujians } from "@/hooks/pengujians/use-pengujians";
@@ -22,6 +22,16 @@ import { toEndOfDay, toStartOfDay } from "@/lib/date";
 import { getPengujianProgressFlow } from "@/lib/request-progress";
 
 const PAGE_SIZE = 10;
+
+function canShowDocumentAction(status: string) {
+  const normalized = normalizeStatus(status);
+  return [
+    "approved",
+    "diproses",
+    "menunggu pembayaran",
+    "completed",
+  ].includes(normalized);
+}
 
 function SummaryCard({
   label,
@@ -96,8 +106,8 @@ export default function ApprovalSampleTestingPage() {
   const navigate = useNavigate();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
-  const [reviewPengujianId, setReviewPengujianId] = useState<string | null>(null);
   const [progressPengujianId, setProgressPengujianId] = useState<string | null>(null);
+  const [documentsPengujianId, setDocumentsPengujianId] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("q") ?? "";
@@ -137,7 +147,7 @@ export default function ApprovalSampleTestingPage() {
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-8">
         <SummaryCard
           label="Total Pengajuan"
           value={aggregates.total}
@@ -157,6 +167,18 @@ export default function ApprovalSampleTestingPage() {
           tone={getStatusSummaryTone("Approved")}
         />
         <SummaryCard
+          label="Diproses"
+          value={aggregates.diproses}
+          icon={<Settings2 className="h-4 w-4" />}
+          tone={getStatusSummaryTone("Diproses")}
+        />
+        <SummaryCard
+          label="Menunggu Bayar"
+          value={aggregates.menungguPembayaran}
+          icon={<CircleDollarSign className="h-4 w-4" />}
+          tone={getStatusSummaryTone("Menunggu Pembayaran")}
+        />
+        <SummaryCard
           label="Completed"
           value={aggregates.completed}
           icon={<FlaskConical className="h-4 w-4" />}
@@ -168,18 +190,12 @@ export default function ApprovalSampleTestingPage() {
           icon={<RotateCcw className="h-4 w-4" />}
           tone={getStatusSummaryTone("Rejected")}
         />
-        <SummaryCard
-          label="Expired"
-          value={aggregates.expired}
-          icon={<X className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Expired")}
-        />
       </div>
 
       {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
       <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[1120px]">
+        <table className="w-full min-w-[1180px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>
@@ -238,13 +254,13 @@ export default function ApprovalSampleTestingPage() {
                   </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
-                      {shouldShowReviewAction("pengujian", item.status) ? (
+                      {canShowDocumentAction(item.status) ? (
                         <TableActionIconButton
                           type="button"
-                          label="Review"
-                          icon={<ShieldCheck className="h-3.5 w-3.5" />}
-                          className="w-8 rounded-md border border-sky-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
-                          onClick={() => setReviewPengujianId(String(item.id))}
+                          label="Dokumen"
+                          icon={<FileText className="h-3.5 w-3.5" />}
+                          className="w-8 rounded-md border border-blue-200 bg-blue-50 p-0 text-blue-700 shadow-none hover:bg-blue-100"
+                          onClick={() => setDocumentsPengujianId(String(item.id))}
                         />
                       ) : null}
                       <TableActionIconButton
@@ -278,19 +294,6 @@ export default function ApprovalSampleTestingPage() {
         isLoading={isLoading}
         onPageChange={setPage}
       />
-
-      <DashboardDetailReviewDialog
-        open={Boolean(reviewPengujianId)}
-        onOpenChange={(open) => {
-          if (!open) setReviewPengujianId(null);
-        }}
-        context={
-          reviewPengujianId
-            ? { kind: "pengujian", id: reviewPengujianId }
-            : null
-        }
-        onActionComplete={() => setReloadKey((prev) => prev + 1)}
-      />
       {progressPengujian ? (
         <RequestProgressDialog
           open={Boolean(progressPengujianId)}
@@ -302,6 +305,15 @@ export default function ApprovalSampleTestingPage() {
           steps={getPengujianProgressFlow(progressPengujian)}
         />
       ) : null}
+      <SampleTestingDocumentsDialog
+        open={Boolean(documentsPengujianId)}
+        onOpenChange={(open) => {
+          if (!open) setDocumentsPengujianId(null);
+        }}
+        pengujianId={documentsPengujianId}
+        viewerRole="approver"
+        onUploaded={() => setReloadKey((prev) => prev + 1)}
+      />
 
     </section>
   );

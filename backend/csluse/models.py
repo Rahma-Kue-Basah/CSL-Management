@@ -427,6 +427,8 @@ class Pengujian(BaseModel):
     STATUS_CHOICES = [
         ('Pending', 'Pending'),
         ('Approved', 'Approved'),
+        ('Diproses', 'Diproses'),
+        ('Menunggu Pembayaran', 'Menunggu Pembayaran'),
         ('Rejected', 'Rejected'),
         ('Completed', 'Completed'),
     ]
@@ -447,6 +449,45 @@ class Pengujian(BaseModel):
 
     def __str__(self):
         return f"{self.name} - {self.email}"
+
+
+class Document(BaseModel):
+    DOCUMENT_TYPE_CHOICES = [
+        ('testing_agreement', 'Surat perjanjian pengujian'),
+        ('signed_testing_agreement', 'Surat perjanjian pengujian yang sudah ditandatangani'),
+        ('invoice', 'Invoice'),
+        ('payment_proof', 'Bukti bayar'),
+        ('test_result_letter', 'Surat hasil uji'),
+    ]
+
+    pengujian = models.ForeignKey(
+        Pengujian,
+        on_delete=models.CASCADE,
+        related_name='documents',
+    )
+    document = models.FileField(upload_to='documents/sample-testing/')
+    document_type = models.CharField(max_length=64, choices=DOCUMENT_TYPE_CHOICES)
+    original_name = models.CharField(max_length=255, blank=True)
+    mime_type = models.CharField(max_length=255, blank=True)
+    size = models.PositiveBigIntegerField(default=0)
+    uploaded_by = models.ForeignKey(
+        Profile,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='uploaded_documents',
+    )
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['pengujian', 'document_type'],
+                name='unique_pengujian_document_type',
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.pengujian.code} - {self.document_type}"
 
 class Notification(BaseModel):
     recipient = models.ForeignKey(

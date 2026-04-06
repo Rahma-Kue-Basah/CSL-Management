@@ -37,6 +37,7 @@ type UpcomingApprovedItem = {
   id: string;
   title: string;
   type: string;
+  requesterName?: string;
   startTime: string;
   endTime?: string;
   href: string;
@@ -204,6 +205,11 @@ function UpcomingApprovedCard({ item }: { item: UpcomingApprovedItem }) {
               {item.title}
             </h2>
             <p className="mt-1 text-sm text-slate-600">{item.type}</p>
+            {item.requesterName ? (
+              <p className="mt-1 text-xs font-medium text-slate-500">
+                Pemohon: {item.requesterName}
+              </p>
+            ) : null}
           </div>
           <div className="rounded-xl bg-emerald-100 p-2.5 text-emerald-700">
             <BellRing className="h-5 w-5" />
@@ -230,18 +236,19 @@ function UpcomingApprovedCard({ item }: { item: UpcomingApprovedItem }) {
 export default function DashboardOverviewPage() {
   const { overview, isLoading, error } = useDashboardOverview();
 
-  const upcomingApproved = useMemo<UpcomingApprovedItem | null>(() => {
-    if (!overview.upcoming_approved) return null;
-
-    return {
-      id: overview.upcoming_approved.id,
-      title: overview.upcoming_approved.title,
-      type: overview.upcoming_approved.type,
-      startTime: overview.upcoming_approved.start_time,
-      endTime: overview.upcoming_approved.end_time ?? undefined,
-      href: overview.upcoming_approved.href,
-    };
-  }, [overview.upcoming_approved]);
+  const upcomingApproved = useMemo<UpcomingApprovedItem[]>(
+    () =>
+      overview.upcoming_approved.map((item) => ({
+        id: item.id,
+        title: item.title,
+        type: item.type,
+        requesterName: item.requester_name ?? "",
+        startTime: item.start_time,
+        endTime: item.end_time ?? undefined,
+        href: item.href,
+      })),
+    [overview.upcoming_approved],
+  );
 
   const recentActivities = useMemo<OverviewItem[]>(
     () =>
@@ -322,8 +329,12 @@ export default function DashboardOverviewPage() {
       {!isLoading && !error ? (
         <div className="grid gap-6 xl:grid-cols-[0.92fr_1.08fr]">
           <div>
-            {upcomingApproved ? (
-              <UpcomingApprovedCard item={upcomingApproved} />
+            {upcomingApproved.length ? (
+              <div className="space-y-3">
+                {upcomingApproved.map((item) => (
+                  <UpcomingApprovedCard key={item.id} item={item} />
+                ))}
+              </div>
             ) : (
               <SectionCard
                 title="Jadwal Terdekat"

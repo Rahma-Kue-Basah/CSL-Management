@@ -231,22 +231,50 @@ function getPengujianStatusHint(
   titleClassName?: string;
   textClassName?: string;
 } | null {
-  if (isApprovedStatus(status)) {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "approved") {
     return {
-      title: "Pengujian siap diselesaikan",
+      title: "Pengujian sudah disetujui",
       message: reviewer
-        ? "Pengajuan sudah disetujui. Tandai sebagai selesai setelah proses pengujian sampel benar-benar selesai."
-        : "Pengajuan sudah disetujui dan sedang menunggu proses pengujian sampel selesai.",
+        ? "Lanjutkan proses dengan mengunggah surat perjanjian pengujian pada section dokumen."
+        : "Pengajuan sudah disetujui dan menunggu dokumen lanjutan dari approver.",
       indicators: reviewer
-        ? [
-            "Gunakan aksi Tandai Selesai setelah hasil pengujian sampel selesai diproses.",
-          ]
-        : [
-            "Status akan diperbarui menjadi selesai oleh petugas setelah proses pengujian selesai.",
-          ],
+        ? ["Upload surat perjanjian pengujian untuk memindahkan status ke Diproses."]
+        : ["Pantau dokumen lanjutan pada section dokumen pengujian."],
       className: "border-sky-200 bg-sky-50/80",
       titleClassName: "text-sky-800",
       textClassName: "text-sky-900",
+    };
+  }
+
+  if (normalized === "diproses") {
+    return {
+      title: "Pengujian sedang diproses",
+      message: reviewer
+        ? "Lengkapi tahapan dokumen sampai invoice diterbitkan."
+        : "Lengkapi dokumen requester agar proses dapat lanjut ke tahap pembayaran.",
+      indicators: reviewer
+        ? ["Upload invoice saat tahap administrasi pengujian siap masuk pembayaran."]
+        : ["Upload surat perjanjian yang sudah ditandatangani bila belum tersedia."],
+      className: "border-blue-200 bg-blue-50/80",
+      titleClassName: "text-blue-800",
+      textClassName: "text-blue-900",
+    };
+  }
+
+  if (normalized === "menunggu pembayaran") {
+    return {
+      title: "Menunggu pembayaran",
+      message: reviewer
+        ? "Sistem sedang menunggu bukti bayar dan surat hasil uji untuk menyelesaikan pengujian."
+        : "Upload bukti bayar, lalu surat hasil uji untuk menyelesaikan proses.",
+      indicators: reviewer
+        ? ["Pantau dokumen requester pada section dokumen pengujian."]
+        : ["Setelah bukti bayar terunggah, lanjutkan upload surat hasil uji pada tahap akhir."],
+      className: "border-violet-200 bg-violet-50/80",
+      titleClassName: "text-violet-800",
+      textClassName: "text-violet-900",
     };
   }
 
@@ -1445,9 +1473,9 @@ function PengujianReviewPanel({
     initialPengujian,
   });
   const { updatePengujianStatus, pendingAction } = useUpdatePengujianStatus();
-  const [confirmType, setConfirmType] = useState<
-    "approve" | "reject" | "complete" | null
-  >(null);
+  const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
+    null,
+  );
 
   if (isLoading) return <PanelLoadingState />;
   if (error || !pengujian) {
@@ -1460,8 +1488,6 @@ function PengujianReviewPanel({
 
   const canReviewPengujian =
     isReviewerRole(profile?.role) && isPendingStatus(pengujian.status);
-  const canCompletePengujian =
-    isReviewerRole(profile?.role) && isApprovedStatus(pengujian.status);
   const isGuestRequester = isGuestRole(pengujian.requesterRole);
   const pengujianStatusHint = getPengujianStatusHint(
     pengujian.status,
@@ -1483,12 +1509,7 @@ function PengujianReviewPanel({
       current
         ? {
             ...current,
-            status:
-              type === "approve"
-                ? "Approved"
-                : type === "reject"
-                  ? "Rejected"
-                  : "Completed",
+            status: type === "approve" ? "Approved" : "Rejected",
             updatedAt: now,
             approvedById:
               type === "approve"
@@ -1500,7 +1521,7 @@ function PengujianReviewPanel({
                 : current.approvedByName,
             approvedAt: type === "approve" ? now : current.approvedAt,
             rejectedAt: type === "reject" ? now : current.rejectedAt,
-            completedAt: type === "complete" ? now : current.completedAt,
+            completedAt: current.completedAt,
           }
         : current,
     );
@@ -1509,9 +1530,7 @@ function PengujianReviewPanel({
     toast.success(
       type === "approve"
         ? "Pengajuan pengujian sampel berhasil disetujui."
-        : type === "reject"
-          ? "Pengajuan pengujian sampel berhasil ditolak."
-          : "Pengajuan pengujian sampel berhasil ditandai selesai.",
+        : "Pengajuan pengujian sampel berhasil ditolak.",
     );
     onActionComplete?.();
   };
@@ -1595,17 +1614,6 @@ function PengujianReviewPanel({
             </Button>
           </>
         ) : null}
-        {canCompletePengujian ? (
-          <Button
-            type="button"
-            className="h-10 rounded-md border border-sky-600 bg-sky-600 px-4 text-white shadow-sm hover:bg-sky-700"
-            onClick={() => setConfirmType("complete")}
-            disabled={pendingAction.pengujianId === pengujian.id}
-          >
-            <Check className="h-4 w-4" />
-            Tandai Selesai
-          </Button>
-        ) : null}
       </RequestReviewCard>
 
       <StatusConfirmDialog
@@ -1619,9 +1627,7 @@ function PengujianReviewPanel({
         onConfirm={handlePengujianAction}
         isSubmitting={pendingAction.pengujianId === pengujian.id}
         subjectLabel={
-          confirmType === "complete"
-            ? "pengujian sampel ini sebagai selesai"
-            : "pengajuan pengujian sampel ini"
+          "pengajuan pengujian sampel ini"
         }
       />
     </>

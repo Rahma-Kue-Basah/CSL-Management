@@ -4,17 +4,20 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   CalendarClock,
   CheckCircle2,
+  CircleDollarSign,
+  FileText,
   Eye,
   FlaskConical,
   Loader2,
   PackageSearch,
   RotateCcw,
-  X,
+  Settings2,
 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useNavigate } from "react-router-dom";
 
 import { DataPagination } from "@/components/shared/data-pagination";
+import SampleTestingDocumentsDialog from "@/components/dashboard/sample-testing/SampleTestingDocumentsDialog";
 import InlineErrorAlert from "@/components/shared/inline-error-alert";
 import { RequestProgressDialog } from "@/components/shared/request-progress-dialog";
 import type { ProgressStepItem } from "@/components/shared/progress-steps";
@@ -25,6 +28,7 @@ import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
   getStatusSummaryTone,
+  normalizeStatus,
 } from "@/lib/status";
 import { toEndOfDay, toStartOfDay } from "@/lib/date";
 import {
@@ -33,6 +37,16 @@ import {
 } from "@/hooks/pengujians/use-pengujians";
 
 const PAGE_SIZE = 10;
+
+function canShowDocumentAction(status: string) {
+  const normalized = normalizeStatus(status);
+  return [
+    "approved",
+    "diproses",
+    "menunggu pembayaran",
+    "completed",
+  ].includes(normalized);
+}
 
 function SummaryCard({
   label,
@@ -117,6 +131,7 @@ export default function SampleTestingListContent({
     code: string;
     steps: ProgressStepItem[];
   } | null>(null);
+  const [documentsPengujianId, setDocumentsPengujianId] = useState<string | null>(null);
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("q") ?? "";
   const createdAfter = searchParams.get("created_after") ?? "";
@@ -149,7 +164,7 @@ export default function SampleTestingListContent({
 
   return (
     <section className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-8">
         <SummaryCard
           label="Total Pengajuan"
           value={aggregates.total}
@@ -169,6 +184,18 @@ export default function SampleTestingListContent({
           tone={getStatusSummaryTone("Approved")}
         />
         <SummaryCard
+          label="Diproses"
+          value={aggregates.diproses}
+          icon={<Settings2 className="h-4 w-4" />}
+          tone={getStatusSummaryTone("Diproses")}
+        />
+        <SummaryCard
+          label="Menunggu Bayar"
+          value={aggregates.menungguPembayaran}
+          icon={<CircleDollarSign className="h-4 w-4" />}
+          tone={getStatusSummaryTone("Menunggu Pembayaran")}
+        />
+        <SummaryCard
           label="Completed"
           value={aggregates.completed}
           icon={<FlaskConical className="h-4 w-4" />}
@@ -180,18 +207,12 @@ export default function SampleTestingListContent({
           icon={<RotateCcw className="h-4 w-4" />}
           tone={getStatusSummaryTone("Rejected")}
         />
-        <SummaryCard
-          label="Expired"
-          value={aggregates.expired}
-          icon={<X className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Expired")}
-        />
       </div>
 
       {error ? <InlineErrorAlert>{error}</InlineErrorAlert> : null}
 
       <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
-        <table className="w-full min-w-[1100px]">
+        <table className="w-full min-w-[1160px]">
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">
@@ -267,6 +288,15 @@ export default function SampleTestingListContent({
                   </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex items-center justify-center gap-2">
+                      {canShowDocumentAction(item.status) ? (
+                        <TableActionIconButton
+                          type="button"
+                          label="Dokumen"
+                          icon={<FileText className="h-3.5 w-3.5" />}
+                          className="w-8 rounded-md border border-blue-200 bg-blue-50 p-0 text-blue-700 shadow-none hover:bg-blue-100"
+                          onClick={() => setDocumentsPengujianId(String(item.id))}
+                        />
+                      ) : null}
                       <TableActionIconButton
                         type="button"
                         label="Lihat detail"
@@ -307,6 +337,14 @@ export default function SampleTestingListContent({
         title="Progress Pengujian Sampel"
         code={progressState?.code ?? ""}
         steps={progressState?.steps ?? []}
+      />
+      <SampleTestingDocumentsDialog
+        open={Boolean(documentsPengujianId)}
+        onOpenChange={(open) => {
+          if (!open) setDocumentsPengujianId(null);
+        }}
+        pengujianId={documentsPengujianId}
+        viewerRole="requester"
       />
     </section>
   );

@@ -1,0 +1,416 @@
+"use client";
+
+import { useState, useRef } from "react";
+import { FileText, Loader2, Upload, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
+
+import {
+  SubmissionConfirmDialog,
+  SubmissionSummaryItem,
+} from "@/components/dialogs/SubmissionConfirmDialog";
+import { Button } from "@/components/ui/button";
+import {
+  type PengujianDocument,
+  type PengujianDocumentType,
+  type PengujianRow,
+} from "@/hooks/pengujians/use-pengujians";
+import { useUploadPengujianDocument } from "@/hooks/pengujians/use-upload-pengujian-document";
+import { formatDateTimeWib } from "@/lib/date-format";
+
+import { SampleTestingSectionCard } from "./SampleTestingDetailContent";
+
+type DocumentDefinition = {
+  type: PengujianDocumentType;
+  label: string;
+  owner: "approver" | "requester";
+  containerClassName?: string;
+};
+
+const DOCUMENT_DEFINITIONS: DocumentDefinition[] = [
+  {
+    type: "testing_agreement",
+    label: "Surat perjanjian pengujian",
+    owner: "approver",
+  },
+  {
+    type: "signed_testing_agreement",
+    label: "Surat perjanjian pengujian yang sudah ditandatangani",
+    owner: "requester",
+  },
+  {
+    type: "invoice",
+    label: "Invoice",
+    owner: "approver",
+  },
+  {
+    type: "payment_proof",
+    label: "Bukti bayar",
+    owner: "requester",
+  },
+  {
+    type: "test_result_letter",
+    label: "Surat hasil uji",
+    owner: "approver",
+    containerClassName: "border-sky-300 bg-sky-50/90",
+  },
+];
+const DOCUMENT_DEFINITIONS_DISPLAY = [...DOCUMENT_DEFINITIONS].reverse();
+
+const DOCUMENT_PREVIOUS_STAGE_MAP: Partial<
+  Record<PengujianDocumentType, PengujianDocumentType>
+> = {
+  signed_testing_agreement: "testing_agreement",
+  invoice: "signed_testing_agreement",
+  payment_proof: "invoice",
+  test_result_letter: "payment_proof",
+};
+
+const DOCUMENT_NEXT_STAGE_MAP: Partial<
+  Record<PengujianDocumentType, PengujianDocumentType>
+> = {
+  testing_agreement: "signed_testing_agreement",
+  signed_testing_agreement: "invoice",
+  invoice: "payment_proof",
+  payment_proof: "test_result_letter",
+};
+const MAX_DOCUMENT_SIZE = 5 * 1024 * 1024;
+
+function isPreviewableDocument(document: PengujianDocument) {
+  const mimeType = String(document.mimeType || "").toLowerCase();
+  const fileName = String(document.originalName || "").toLowerCase();
+
+  return (
+    mimeType.startsWith("image/") ||
+    mimeType === "application/pdf" ||
+    fileName.endsWith(".pdf") ||
+    fileName.endsWith(".png") ||
+    fileName.endsWith(".jpg") ||
+    fileName.endsWith(".jpeg") ||
+    fileName.endsWith(".webp")
+  );
+}
+
+function getDocumentByType(
+  documents: PengujianDocument[],
+  type: PengujianDocumentType,
+) {
+  return documents.find((item) => item.documentType === type) ?? null;
+}
+
+function canShowSection(status: string) {
+  const normalized = status.trim().toLowerCase();
+  return [
+    "approved",
+    "diproses",
+    "menunggu pembayaran",
+    "completed",
+  ].includes(normalized);
+}
+
+function getUploadBlockReason(
+  documents: PengujianDocument[],
+  documentType: PengujianDocumentType,
+) {
+  const previousType = DOCUMENT_PREVIOUS_STAGE_MAP[documentType];
+  if (!previousType) return "";
+
+  const previousDocument = getDocumentByType(documents, previousType);
+  if (previousDocument) return "";
+
+  const previousDefinition = DOCUMENT_DEFINITIONS.find(
+    (item) => item.type === previousType,
+  );
+  return previousDefinition
+    ? `Upload ${previousDefinition.label} terlebih dahulu.`
+    : "Dokumen tahap sebelumnya belum tersedia.";
+}
+
+function canReplaceDocument(
+  documents: PengujianDocument[],
+  documentType: PengujianDocumentType,
+) {
+  const nextType = DOCUMENT_NEXT_STAGE_MAP[documentType];
+  if (!nextType) return true;
+  return !getDocumentByType(documents, nextType);
+}
+
+function shouldRenderDocumentForViewer(
+  documents: PengujianDocument[],
+  documentType: PengujianDocumentType,
+) {
+  const testingAgreement = getDocumentByType(documents, "testing_agreement");
+  const signedAgreement = getDocumentByType(
+    documents,
+    "signed_testing_agreement",
+  );
+  const invoice = getDocumentByType(documents, "invoice");
+  const paymentProof = getDocumentByType(documents, "payment_proof");
+  const currentDocument = getDocumentByType(documents, documentType);
+
+  if (documentType === "testing_agreement") return true;
+  if (documentType === "signed_testing_agreement") {
+    return Boolean(testingAgreement || currentDocument);
+  }
+  if (documentType === "invoice") {
+    return Boolean(signedAgreement || currentDocument);
+  }
+  if (documentType === "payment_proof") {
+    return Boolean(invoice || currentDocument);
+  }
+  if (documentType === "test_result_letter") {
+    return Boolean(paymentProof || currentDocument);
+  }
+
+  return true;
+}
+
+export default function SampleTestingDocumentsSection({
+  item,
+  viewerRole,
+  onUploaded,
+  embedded = false,
+  allowActions = true,
+}: {
+  item: PengujianRow;
+  viewerRole: "approver" | "requester";
+  onUploaded?: () => void;
+  embedded?: boolean;
+  allowActions?: boolean;
+}) {
+  const { uploadDocument, pendingDocumentType } = useUploadPengujianDocument();
+  const inputRefs = useRef<
+    Partial<Record<PengujianDocumentType, HTMLInputElement | null>>
+  >({});
+  const [uploadDraft, setUploadDraft] = useState<{
+    documentType: PengujianDocumentType;
+    label: string;
+    file: File;
+  } | null>(null);
+
+  if (!canShowSection(item.status)) {
+    return null;
+  }
+
+  const handleUpload = async () => {
+    if (!uploadDraft) return;
+
+    const result = await uploadDocument(
+      item.id,
+      uploadDraft.documentType,
+      uploadDraft.file,
+    );
+    if (!result.ok) {
+      toast.error(result.message);
+      if (inputRefs.current[uploadDraft.documentType]) {
+        inputRefs.current[uploadDraft.documentType]!.value = "";
+      }
+      return;
+    }
+
+    toast.success("Dokumen berhasil diunggah.");
+    if (inputRefs.current[uploadDraft.documentType]) {
+      inputRefs.current[uploadDraft.documentType]!.value = "";
+    }
+    setUploadDraft(null);
+    onUploaded?.();
+  };
+
+  const content = (
+    <>
+      <div className="space-y-3">
+        {DOCUMENT_DEFINITIONS_DISPLAY.map((definition) => {
+          if (
+            !shouldRenderDocumentForViewer(
+              item.documents,
+              definition.type,
+            )
+          ) {
+            return null;
+          }
+
+          const document = getDocumentByType(item.documents, definition.type);
+          const isOwner = viewerRole === definition.owner;
+          const uploadBlockReason = getUploadBlockReason(
+            item.documents,
+            definition.type,
+          );
+          const canUpload = allowActions && isOwner && !uploadBlockReason;
+          const canReplace = canReplaceDocument(item.documents, definition.type);
+          const canPreview = document ? isPreviewableDocument(document) : false;
+
+          return (
+            <div
+              key={definition.type}
+              className={`rounded-md border px-4 py-4 ${definition.containerClassName ?? "border-slate-200 bg-slate-50/80"}`}
+            >
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <div className="min-w-0 space-y-2">
+                  <p className="text-sm font-medium text-slate-900">
+                    {definition.label}
+                  </p>
+                  {document ? (
+                    <div className="flex items-center gap-2 text-xs">
+                      <p className="text-emerald-700">
+                        Diunggah oleh {document.uploadedByName} pada{" "}
+                        {formatDateTimeWib(document.createdAt)}
+                      </p>
+                      {allowActions && isOwner && canReplace ? (
+                        <button
+                          type="button"
+                          className="text-sky-700 underline-offset-2 hover:underline"
+                          disabled={
+                            pendingDocumentType === definition.type || !canUpload
+                          }
+                          onClick={() => inputRefs.current[definition.type]?.click()}
+                        >
+                          Ganti Dokumen
+                        </button>
+                      ) : null}
+                    </div>
+                  ) : (
+                    <p className="text-xs italic text-slate-400">
+                      Dokumen belum diunggah.
+                    </p>
+                  )}
+                </div>
+
+                <div className="w-full max-w-sm space-y-2">
+                  {document ? (
+                    <Button
+                      asChild
+                      type="button"
+                      variant="outline"
+                      className="h-auto w-full py-3"
+                    >
+                      <a
+                        href={document.url}
+                        target={canPreview ? "_blank" : undefined}
+                        rel={canPreview ? "noreferrer" : undefined}
+                        download={canPreview ? undefined : document.originalName || true}
+                      >
+                        <span className="flex items-start gap-3 text-left">
+                          <ExternalLink className="mt-0.5 h-4 w-4 shrink-0" />
+                          <span className="min-w-0">
+                            <span className="mb-1 block text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
+                              {canPreview ? "Lihat Dokumen" : "Unduh Dokumen"}
+                            </span>
+                            <span className="block break-all text-sm font-medium text-slate-900">
+                              {document.originalName}
+                            </span>
+                          </span>
+                        </span>
+                      </a>
+                    </Button>
+                  ) : null}
+
+                  {allowActions && isOwner ? (
+                    <>
+                      <input
+                        ref={(node) => {
+                          inputRefs.current[definition.type] = node;
+                        }}
+                        type="file"
+                        accept=".pdf,.doc,.docx,image/*"
+                        className="hidden"
+                        disabled={
+                          pendingDocumentType === definition.type || !canUpload
+                        }
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] ?? null;
+                          if (!file) return;
+                          if (file.size > MAX_DOCUMENT_SIZE) {
+                            toast.error("Ukuran dokumen maksimal 5 MB.");
+                            event.target.value = "";
+                            return;
+                          }
+                          setUploadDraft({
+                            documentType: definition.type,
+                            label: definition.label,
+                            file,
+                          });
+                        }}
+                      />
+                      {!document ? (
+                        <Button
+                          type="button"
+                          className="w-full border-blue-600 bg-blue-600 text-white hover:bg-blue-700"
+                          disabled={
+                            pendingDocumentType === definition.type || !canUpload
+                          }
+                          onClick={() => inputRefs.current[definition.type]?.click()}
+                        >
+                          {pendingDocumentType === definition.type ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <Upload className="h-4 w-4" />
+                          )}
+                          Upload Dokumen
+                        </Button>
+                      ) : null}
+                      {uploadBlockReason ? (
+                        <p className="text-xs text-slate-500">
+                          {uploadBlockReason}
+                        </p>
+                      ) : null}
+                    </>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <SubmissionConfirmDialog
+        open={Boolean(uploadDraft)}
+        onOpenChange={(open) => {
+          if (!open && uploadDraft) {
+            if (inputRefs.current[uploadDraft.documentType]) {
+              inputRefs.current[uploadDraft.documentType]!.value = "";
+            }
+            setUploadDraft(null);
+          }
+        }}
+        title="Konfirmasi Upload Dokumen"
+        description="Periksa kembali dokumen yang dipilih sebelum diunggah."
+        isSubmitting={Boolean(
+          uploadDraft && pendingDocumentType === uploadDraft.documentType,
+        )}
+        onConfirm={() => {
+          void handleUpload();
+        }}
+      >
+        <SubmissionSummaryItem
+          label="Jenis Dokumen"
+          value={uploadDraft?.label ?? "-"}
+        />
+        <SubmissionSummaryItem
+          label="Nama File"
+          value={uploadDraft?.file.name ?? "-"}
+        />
+        <SubmissionSummaryItem
+          label="Ukuran File"
+          value={
+            uploadDraft
+              ? `${(uploadDraft.file.size / 1024 / 1024).toFixed(2)} MB`
+              : "-"
+          }
+        />
+      </SubmissionConfirmDialog>
+    </>
+  );
+
+  if (embedded) {
+    return content;
+  }
+
+  return (
+    <SampleTestingSectionCard
+      title="Dokumen Pengujian"
+      subtitle="Tahap dokumen lanjutan setelah pengajuan disetujui sampai proses pengujian selesai."
+      icon={<FileText className="h-5 w-5" />}
+    >
+      {content}
+    </SampleTestingSectionCard>
+  );
+}

@@ -166,12 +166,7 @@ export function RequestReviewCard({
           >
             {children}
           </div>
-        ) : showChecklistSection &&
-          (checklistLoading || checklist.length || checklistEmptyMessage) ? null : (
-          <p className="text-sm text-slate-500">
-            Tidak ada aksi review yang tersedia untuk pengajuan ini.
-          </p>
-        )}
+        ) : null}
       </div>
     </section>
   );
