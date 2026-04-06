@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DateRange } from "react-day-picker";
 import { Eye, FileText, Trash2 } from "lucide-react";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 
 import { AdminPageHeader } from "@/components/admin/admin-page-header";
@@ -74,29 +75,21 @@ function canShowDocumentAction(status: string) {
   ].includes(normalized);
 }
 
-function matchesSearch(row: PengujianRow, query: string) {
-  if (!query) return true;
-  const haystack = [
-    row.code,
-    row.name,
-    row.institution,
-    row.email,
-    row.sampleType,
-  ]
-    .join(" ")
-    .toLowerCase();
-  return haystack.includes(query.toLowerCase());
-}
-
 export default function AdminSampleTestingHistoryPage() {
+  const [searchParams] = useSearchParams();
   const selectAllRef = useRef<HTMLInputElement | null>(null);
+  const queryParam = searchParams.get("q") ?? "";
+  const statusParam = searchParams.get("status") ?? "";
+  const requestedByParam = searchParams.get("requested_by") ?? "";
+  const departmentParam = searchParams.get("department") ?? "";
+  const orderingParam = searchParams.get("ordering") ?? "newest";
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [status, setStatus] = useState("");
-  const [requestedBy, setRequestedBy] = useState("");
-  const [department, setDepartment] = useState("");
-  const [ordering, setOrdering] = useState("newest");
+  const [search, setSearch] = useState(queryParam);
+  const [debouncedSearch, setDebouncedSearch] = useState(queryParam);
+  const [status, setStatus] = useState(statusParam);
+  const [requestedBy, setRequestedBy] = useState(requestedByParam);
+  const [department, setDepartment] = useState(departmentParam);
+  const [ordering, setOrdering] = useState(orderingParam);
   const [createdRange, setCreatedRange] = useState<DateRange | undefined>();
   const [filterOpen, setFilterOpen] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
@@ -145,6 +138,16 @@ export default function AdminSampleTestingHistoryPage() {
     return () => clearTimeout(timeoutId);
   }, [search]);
 
+  useEffect(() => {
+    setSearch(queryParam);
+    setDebouncedSearch(queryParam);
+    setStatus(statusParam);
+    setRequestedBy(requestedByParam);
+    setDepartment(departmentParam);
+    setOrdering(orderingParam);
+    setPage(1);
+  }, [departmentParam, orderingParam, queryParam, requestedByParam, statusParam]);
+
   const {
     pengujians,
     totalCount,
@@ -156,6 +159,7 @@ export default function AdminSampleTestingHistoryPage() {
     page,
     PAGE_SIZE,
     {
+      q: debouncedSearch,
       status,
       requestedBy,
       department,
@@ -172,12 +176,8 @@ export default function AdminSampleTestingHistoryPage() {
     enabled: Boolean(detailTarget),
   });
 
-  const filteredItems = useMemo(
-    () => pengujians.filter((item) => matchesSearch(item, debouncedSearch)),
-    [pengujians, debouncedSearch],
-  );
   const visibleItems = useMemo(() => {
-    const items = [...filteredItems];
+    const items = [...pengujians];
 
     if (ordering === "oldest") {
       items.sort(
@@ -190,16 +190,15 @@ export default function AdminSampleTestingHistoryPage() {
       (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
     );
     return items;
-  }, [filteredItems, ordering]);
+  }, [pengujians, ordering]);
   const selectedRows = useMemo(() => {
     const selectedIdSet = new Set(selectedIds.map((id) => String(id)));
     return pengujians.filter((item) => selectedIdSet.has(String(item.id)));
   }, [pengujians, selectedIds]);
 
   const totalPages = useMemo(
-    () =>
-      Math.max(1, Math.ceil((totalCount || filteredItems.length) / PAGE_SIZE)),
-    [totalCount, filteredItems.length],
+    () => Math.max(1, Math.ceil(totalCount / PAGE_SIZE)),
+    [totalCount],
   );
   const selectedCount = selectedIds.length;
   const allVisibleSelected =
@@ -609,7 +608,7 @@ export default function AdminSampleTestingHistoryPage() {
           <DataPagination
             page={page}
             totalPages={totalPages}
-            totalCount={totalCount || filteredItems.length}
+            totalCount={totalCount}
             pageSize={PAGE_SIZE}
             itemLabel="pengujian sampel"
             isLoading={isLoading}

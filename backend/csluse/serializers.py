@@ -90,6 +90,137 @@ class DocumentSerializer(serializers.ModelSerializer):
         return obj.get_document_type_display()
 
 
+class AdminDocumentListSerializer(serializers.ModelSerializer):
+    url = serializers.SerializerMethodField()
+    uploaded_by_name = serializers.SerializerMethodField()
+    document_label = serializers.SerializerMethodField()
+    pengujian_id = serializers.SerializerMethodField()
+    pengujian_code = serializers.SerializerMethodField()
+    pengujian_status = serializers.SerializerMethodField()
+    institution = serializers.SerializerMethodField()
+    requester_id = serializers.SerializerMethodField()
+    requester_name = serializers.SerializerMethodField()
+    requester_department = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Document
+        fields = [
+            "id",
+            "document_type",
+            "document_label",
+            "original_name",
+            "mime_type",
+            "size",
+            "url",
+            "uploaded_by",
+            "uploaded_by_name",
+            "created_at",
+            "updated_at",
+            "pengujian_id",
+            "pengujian_code",
+            "pengujian_status",
+            "institution",
+            "requester_id",
+            "requester_name",
+            "requester_department",
+        ]
+        read_only_fields = fields
+
+    def get_url(self, obj) -> Optional[str]:
+        return obj.document.url if obj.document else None
+
+    def get_uploaded_by_name(self, obj) -> str:
+        if obj.uploaded_by:
+            return obj.uploaded_by.full_name or obj.uploaded_by.user.email
+        return "-"
+
+    def get_document_label(self, obj) -> str:
+        return obj.get_document_type_display()
+
+    def get_pengujian_id(self, obj):
+        return getattr(obj.pengujian, "id", None)
+
+    def get_pengujian_code(self, obj) -> str:
+        return getattr(obj.pengujian, "code", "-")
+
+    def get_pengujian_status(self, obj) -> str:
+        return getattr(obj.pengujian, "status", "-")
+
+    def get_institution(self, obj) -> str:
+        return getattr(obj.pengujian, "institution", "-")
+
+    def get_requester_id(self, obj):
+        requested_by = getattr(obj.pengujian, "requested_by", None)
+        return getattr(requested_by, "id", None)
+
+    def get_requester_name(self, obj) -> str:
+        requested_by = getattr(obj.pengujian, "requested_by", None)
+        if requested_by:
+            return requested_by.full_name or requested_by.user.email
+        return "-"
+
+    def get_requester_department(self, obj) -> str:
+        requested_by = getattr(obj.pengujian, "requested_by", None)
+        return getattr(requested_by, "department", "-") or "-"
+
+
+class AdminPengujianDocumentGroupSerializer(serializers.ModelSerializer):
+    requester_id = serializers.SerializerMethodField()
+    requester_name = serializers.SerializerMethodField()
+    requester_department = serializers.SerializerMethodField()
+    institution = serializers.SerializerMethodField()
+    pengujian_id = serializers.SerializerMethodField()
+    pengujian_code = serializers.SerializerMethodField()
+    pengujian_status = serializers.SerializerMethodField()
+    documents = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Pengujian
+        fields = [
+            "pengujian_id",
+            "pengujian_code",
+            "pengujian_status",
+            "institution",
+            "requester_id",
+            "requester_name",
+            "requester_department",
+            "documents",
+        ]
+        read_only_fields = fields
+
+    def get_pengujian_id(self, obj):
+        return getattr(obj, "id", None)
+
+    def get_pengujian_code(self, obj) -> str:
+        return getattr(obj, "code", "-")
+
+    def get_pengujian_status(self, obj) -> str:
+        return getattr(obj, "status", "-")
+
+    def get_institution(self, obj) -> str:
+        return getattr(obj, "institution", "-")
+
+    def get_requester_id(self, obj):
+        requested_by = getattr(obj, "requested_by", None)
+        return getattr(requested_by, "id", None)
+
+    def get_requester_name(self, obj) -> str:
+        requested_by = getattr(obj, "requested_by", None)
+        if requested_by:
+            return requested_by.full_name or requested_by.user.email
+        return "-"
+
+    def get_requester_department(self, obj) -> str:
+        requested_by = getattr(obj, "requested_by", None)
+        return getattr(requested_by, "department", "-") or "-"
+
+    def get_documents(self, obj):
+        documents = getattr(obj, "filtered_documents", None)
+        if documents is None:
+            documents = obj.documents.all()
+        return DocumentSerializer(documents, many=True, context=self.context).data
+
+
 class RoomSerializer(serializers.ModelSerializer):
     pics = serializers.PrimaryKeyRelatedField(
         many=True,

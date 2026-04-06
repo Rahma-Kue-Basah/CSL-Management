@@ -42,7 +42,13 @@ type MenuItem = {
   items?: MenuItem[];
 };
 
-type GroupMenuKey = "information" | "inventory" | "record" | "user" | "task";
+type GroupMenuKey =
+  | "information"
+  | "inventory"
+  | "record"
+  | "document"
+  | "user"
+  | "task";
 
 type LinkMenuConfig = {
   type: "link";
@@ -114,6 +120,20 @@ const adminMenuConfig: MenuConfig[] = [
   },
   {
     type: "group",
+    key: "document",
+    label: "Dokumen",
+    icon: FileText,
+    tooltip: "Dokumen",
+    searchTerms: ["dokumen", "surat", "invoice", "pengujian"],
+    items: [
+      {
+        label: "Pengujian Sampel",
+        href: "/admin/documents/sample-testing",
+      },
+    ],
+  },
+  {
+    type: "group",
     key: "inventory",
     label: "Inventarisasi",
     icon: Package,
@@ -174,6 +194,7 @@ export function AppSidebar() {
     information: false,
     inventory: false,
     record: false,
+    document: false,
     user: false,
     task: false,
   });
@@ -250,6 +271,7 @@ export function AppSidebar() {
 
   const nextOpenMenus: Record<GroupMenuKey, boolean> = {
     record: openMenus.record || groupMenuStates.record.isActive,
+    document: openMenus.document || groupMenuStates.document.isActive,
     inventory: openMenus.inventory || groupMenuStates.inventory.isActive,
     user: openMenus.user || groupMenuStates.user.isActive,
     information: openMenus.information || groupMenuStates.information.isActive,

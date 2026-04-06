@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
-from django.db.models import Q, Sum
+from django.db.models import Prefetch, Q, Sum
 from rest_framework import viewsets, status
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.permissions import IsAuthenticated
@@ -32,6 +32,8 @@ from .models import (
 from .serializers import (
     ImageSerializer,
     DocumentSerializer,
+    AdminDocumentListSerializer,
+    AdminPengujianDocumentGroupSerializer,
     RoomSerializer,
     RoomListSerializer,
     RoomDropdownSerializer,
@@ -3816,6 +3818,51 @@ class PengujianViewSet(viewsets.ModelViewSet):
             | Q(sample_type__icontains=query)
         ).distinct()
 
+    def _apply_document_filters(self, qs):
+        query = (self.request.query_params.get("q") or "").strip()
+        status_param = self.request.query_params.get("status")
+        requested_by = self.request.query_params.get("requested_by")
+        department = self.request.query_params.get("department")
+        created_after = self.request.query_params.get("created_after")
+        created_before = self.request.query_params.get("created_before")
+        document_type = (self.request.query_params.get("document_type") or "").strip()
+        ordering = (self.request.query_params.get("ordering") or "").strip().lower()
+
+        if query:
+            qs = qs.filter(
+                Q(pengujian__code__icontains=query)
+                | Q(pengujian__name__icontains=query)
+                | Q(pengujian__institution__icontains=query)
+                | Q(pengujian__email__icontains=query)
+                | Q(pengujian__sample_type__icontains=query)
+                | Q(original_name__icontains=query)
+                | Q(uploaded_by__full_name__icontains=query)
+                | Q(uploaded_by__user__email__icontains=query)
+            ).distinct()
+        if status_param:
+            qs = qs.filter(pengujian__status=normalize_status_value(status_param))
+        if requested_by:
+            qs = qs.filter(pengujian__requested_by_id=requested_by)
+        if department:
+            qs = qs.filter(pengujian__requested_by__department__iexact=department)
+        if created_after:
+            qs = qs.filter(created_at__gte=created_after)
+        if created_before:
+            qs = qs.filter(created_at__lte=created_before)
+        if document_type:
+            document_types = [
+                item.strip()
+                for item in document_type.split(",")
+                if item.strip()
+            ]
+            if document_types:
+                qs = qs.filter(document_type__in=document_types)
+        if ordering == "oldest":
+            qs = qs.order_by("created_at", "id")
+        else:
+            qs = qs.order_by("-created_at", "-id")
+        return qs
+
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
@@ -3923,6 +3970,52 @@ class PengujianViewSet(viewsets.ModelViewSet):
         if not self._is_staff_or_above():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon pengujian sampel.")
         return build_requester_dropdown_response(super().get_queryset())
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("status", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("requested_by", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("department", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("created_after", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("created_before", OpenApiTypes.DATETIME, OpenApiParameter.QUERY),
+            OpenApiParameter("document_type", OpenApiTypes.STR, OpenApiParameter.QUERY),
+            OpenApiParameter("ordering", OpenApiTypes.STR, OpenApiParameter.QUERY),
+        ]
+    )
+    @action(detail=False, methods=['get'], url_path='all/documents')
+    def all_documents(self, request):
+        if not self._is_staff_or_above():
+            raise PermissionDenied("Anda tidak memiliki akses untuk melihat dokumen pengujian sampel.")
+
+        document_queryset = (
+            Document.objects.select_related(
+                "uploaded_by__user",
+            )
+            .all()
+        )
+        document_queryset = self._apply_document_filters(document_queryset)
+        queryset = (
+            Pengujian.objects.select_related("requested_by__user")
+            .filter(documents__in=document_queryset)
+            .distinct()
+            .prefetch_related(
+                Prefetch(
+                    "documents",
+                    queryset=document_queryset,
+                    to_attr="filtered_documents",
+                )
+            )
+        )
+        page = self.paginate_queryset(queryset)
+        serializer = AdminPengujianDocumentGroupSerializer(
+            page if page is not None else queryset,
+            many=True,
+            context=self.get_serializer_context(),
+        )
+        if page is not None:
+            return self.get_paginated_response(serializer.data)
+        return Response({"results": serializer.data, "count": queryset.count()})
 
     @action(detail=True, methods=['post'])
     def reject(self, request, pk=None):

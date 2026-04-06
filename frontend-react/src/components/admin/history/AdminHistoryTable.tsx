@@ -17,6 +17,7 @@ type AdminHistoryTableProps = {
   onToggleSelectAll: (checked: boolean) => void;
   selectAllRef?: RefObject<HTMLInputElement | null>;
   selectAllAriaLabel?: string;
+  selectAllDisabled?: boolean;
   children: ReactNode;
 };
 
@@ -31,6 +32,7 @@ export default function AdminHistoryTable({
   onToggleSelectAll,
   selectAllRef,
   selectAllAriaLabel = "Pilih semua record pada halaman ini",
+  selectAllDisabled = false,
   children,
 }: AdminHistoryTableProps) {
   return (
@@ -45,6 +47,7 @@ export default function AdminHistoryTable({
                 aria-label={selectAllAriaLabel}
                 className="h-4 w-4 rounded border-slate-300 align-middle"
                 checked={allVisibleSelected}
+                disabled={selectAllDisabled}
                 onChange={(event) => onToggleSelectAll(event.target.checked)}
               />
             </th>

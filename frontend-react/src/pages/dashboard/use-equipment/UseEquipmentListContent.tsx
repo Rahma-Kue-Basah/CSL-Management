@@ -39,6 +39,16 @@ import {
 } from "@/lib/date";
 
 const PAGE_SIZE = 10;
+const TABLE_COLUMN_WIDTHS = [
+  "10rem",
+  "16rem",
+  "12rem",
+  "12rem",
+  "12rem",
+  "12rem",
+  "10rem",
+  "8rem",
+] as const;
 
 function SummaryCard({
   label,
@@ -275,6 +285,11 @@ export default function UseEquipmentListContent({
           </div>
           <div className="w-full max-w-full overflow-x-auto rounded-xl border border-amber-200 bg-white">
             <table className="w-full min-w-[1120px]">
+              <colgroup>
+                {TABLE_COLUMN_WIDTHS.map((width) => (
+                  <col key={width} style={{ width }} />
+                ))}
+              </colgroup>
               <thead className="border-b border-amber-300 bg-amber-100">
                 <tr className="text-left text-sm">
                   <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-900">Kode</th>
@@ -362,6 +377,11 @@ export default function UseEquipmentListContent({
 
       <div className="w-full max-w-full overflow-x-auto rounded-xl border border-slate-200 bg-white">
         <table className="w-full min-w-[1120px]">
+          <colgroup>
+            {TABLE_COLUMN_WIDTHS.slice(0, showRequesterColumn ? 8 : 7).map((width) => (
+              <col key={width} style={{ width }} />
+            ))}
+          </colgroup>
           <thead className="border-b border-slate-800 bg-slate-900">
             <tr className="text-left text-sm">
               <th className="px-3 py-3 font-medium whitespace-nowrap text-slate-50">Kode</th>

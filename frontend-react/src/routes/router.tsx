@@ -60,6 +60,7 @@ import AdminRoomBookingHistoryPage from "@/pages/admin/history/AdminRoomBookingH
 import AdminEquipmentUsageHistoryPage from "@/pages/admin/history/AdminEquipmentUsageHistoryPage";
 import AdminEquipmentBorrowHistoryPage from "@/pages/admin/history/AdminEquipmentBorrowHistoryPage";
 import AdminSampleTestingHistoryPage from "@/pages/admin/history/AdminSampleTestingHistoryPage";
+import AdminSampleTestingDocumentPage from "@/pages/admin/documents/AdminSampleTestingDocumentPage";
 import AdminMyProfilePage from "@/pages/admin/profile/AdminMyProfilePage";
 import UserManagementAllPage from "@/pages/admin/user-management/UserManagementAllPage";
 import UserManagementStudentPage from "@/pages/admin/user-management/UserManagementStudentPage";
@@ -448,6 +449,13 @@ export const router = createBrowserRouter([
           { path: "equipment-usage", element: <AdminEquipmentUsageHistoryPage /> },
           { path: "equipment-borrows", element: <AdminEquipmentBorrowHistoryPage /> },
           { path: "sample-testing", element: <AdminSampleTestingHistoryPage /> },
+        ],
+      },
+      {
+        path: "documents",
+        children: [
+          { index: true, element: <Navigate to="sample-testing" replace /> },
+          { path: "sample-testing", element: <AdminSampleTestingDocumentPage /> },
         ],
       },
       {
