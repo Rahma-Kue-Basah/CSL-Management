@@ -1,41 +1,50 @@
 import uuid
 
+from allauth.account.models import EmailAddress
+from django.contrib.admin.models import CHANGE, DELETION, LogEntry
 from django.contrib.auth import get_user_model
-from django.contrib.admin.models import CHANGE, DELETION
-from django.contrib.admin.models import LogEntry
 from django.db import models
 from django.db.models import Exists, OuterRef
-from allauth.account.models import EmailAddress
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied
 from rest_framework.generics import get_object_or_404
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema
 
-from .models import Profile
+from csluse.models import Booking, Borrow, Equipment, Pengujian, Room, Use
+from csluse.viewsets import DefaultPagination
+
 from .audit import log_admin_action
+from .models import Profile
+from .permissions import (
+    SUPER_ADMINISTRATOR,
+    IsAdministratorOrAbove,
+    IsStaffOrAbove,
+    has_role,
+)
 from .serializers import (
-    ProfileSerializer,
-    UserWithProfileSerializer,
-    UserBulkDeleteSerializer,
-    PicUserSerializer,
-    PicUserDropdownSerializer,
     AdminActionSerializer,
     AdminDashboardKpisSerializer,
+    PicUserDropdownSerializer,
+    PicUserSerializer,
+    ProfileSerializer,
+    UserBulkDeleteSerializer,
+    UserWithProfileSerializer,
 )
-from .permissions import SUPER_ADMINISTRATOR, has_role, IsStaffOrAbove
-from csluse.viewsets import DefaultPagination
-from csluse.models import Room, Equipment, Booking, Borrow, Use, Pengujian
-from .permissions import IsAdministratorOrAbove
+
 
 User = get_user_model()
+
+
+# region Profile Viewsets
+
 
 class ProfileViewSet(viewsets.ModelViewSet):
     serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
-    http_method_names = ['get', 'patch']
+    http_method_names = ["get", "patch"]
 
     def get_queryset(self):
         return Profile.objects.filter(user=self.request.user)
@@ -68,8 +77,29 @@ class ProfileViewSet(viewsets.ModelViewSet):
         )
 
 
-class UserWithProfileViewSet(viewsets.ModelViewSet):
+class AdminProfileViewSet(viewsets.ModelViewSet):
+    serializer_class = ProfileSerializer
+    permission_classes = [IsAuthenticated, IsAdministratorOrAbove]
+    queryset = Profile.objects.select_related("user").all()
+    http_method_names = ["get", "patch"]
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            CHANGE,
+            "Updated profile via CSL Admin (profile management).",
+        )
+
+
+# endregion Profile Viewsets
+
+
+# region User Management Viewsets
+
+
+class UserWithProfileViewSet(viewsets.ModelViewSet):
     serializer_class = UserWithProfileSerializer
     permission_classes = [IsAuthenticated, IsAdministratorOrAbove]
     queryset = User.objects.select_related("profile").all()
@@ -103,7 +133,9 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
 
     def _ensure_user_deletable(self, target):
         is_target_super_admin = has_role(target, SUPER_ADMINISTRATOR) or getattr(
-            target, "is_superuser", False
+            target,
+            "is_superuser",
+            False,
         )
         if is_target_super_admin:
             raise PermissionDenied("Tidak bisa menghapus SuperAdministrator.")
@@ -131,7 +163,6 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
             return get_object_or_404(queryset, pk=lookup_value)
 
     def get_queryset(self):
-        """Enable lightweight filtering and search over user profiles."""
         request = self.request
         is_mentor = self._parse_is_mentor_filter(request.query_params.get("is_mentor"))
 
@@ -144,15 +175,14 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
             )
         )
 
-        # Exact-match filters
         filters = {
             "profile__department__iexact": request.query_params.get("department"),
             "profile__role__iexact": request.query_params.get("role"),
             "profile__batch": request.query_params.get("batch"),
             "profile__user_type__iexact": request.query_params.get("user_type"),
         }
-
         filters = {key: value for key, value in filters.items() if value}
+
         if filters:
             qs = qs.filter(**filters)
         if is_mentor is not None:
@@ -192,6 +222,7 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
             "profile__user_type__iexact": user_type,
         }
         base_filters = {key: value for key, value in base_filters.items() if value}
+
         if base_filters:
             aggregate_qs = aggregate_qs.filter(**base_filters)
         if is_mentor is not None:
@@ -210,7 +241,10 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(queryset)
         serializer = self.get_serializer(page if page is not None else queryset, many=True)
         if page is not None:
-            return self._append_aggregates(self.get_paginated_response(serializer.data), aggregates)
+            return self._append_aggregates(
+                self.get_paginated_response(serializer.data),
+                aggregates,
+            )
         return Response({"results": serializer.data, "aggregates": aggregates})
 
     @action(detail=False, methods=["get"], url_path="export")
@@ -261,6 +295,12 @@ class UserWithProfileViewSet(viewsets.ModelViewSet):
         )
 
 
+# endregion User Management Viewsets
+
+
+# region PIC Management Viewsets
+
+
 class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = PicUserSerializer
     permission_classes = [IsAuthenticated, IsStaffOrAbove]
@@ -279,16 +319,10 @@ class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         queryset = (
-            User.objects
-            .select_related("profile")
+            User.objects.select_related("profile")
             .filter(
                 models.Q(profile__role__iregex=r"^(lecturer|admin)$")
-                | models.Q(
-                    groups__name__in=[
-                        "Lecturer",
-                        "Administrator",
-                    ]
-                )
+                | models.Q(groups__name__in=["Lecturer", "Administrator"])
             )
             .exclude(groups__name="SuperAdministrator")
             .distinct()
@@ -334,7 +368,10 @@ class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
         user = self.get_object()
         profile = getattr(user, "profile", None)
         if profile is None:
-            return Response({"detail": "Profile user tidak ditemukan."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Profile user tidak ditemukan."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         removed_count = profile.rooms_as_pic.count()
         profile.rooms_as_pic.clear()
@@ -387,20 +424,10 @@ class PicUserViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
 
-class AdminProfileViewSet(viewsets.ModelViewSet):
-    serializer_class = ProfileSerializer
-    permission_classes = [IsAuthenticated, IsAdministratorOrAbove]
-    queryset = Profile.objects.select_related("user").all()
-    http_method_names = ["get", "patch"]
+# endregion PIC Management Viewsets
 
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        log_admin_action(
-            self.request.user,
-            instance,
-            CHANGE,
-            "Updated profile via CSL Admin (profile management).",
-        )
+
+# region Admin Monitoring Viewsets
 
 
 class AdminActionViewSet(viewsets.ReadOnlyModelViewSet):
@@ -409,11 +436,7 @@ class AdminActionViewSet(viewsets.ReadOnlyModelViewSet):
     http_method_names = ["get"]
 
     def get_queryset(self):
-        return (
-            LogEntry.objects
-            .select_related("user", "content_type")
-            .order_by("-action_time")
-        )
+        return LogEntry.objects.select_related("user", "content_type").order_by("-action_time")
 
     @action(detail=False, methods=["get"], url_path="recent")
     def recent(self, request):
@@ -446,3 +469,6 @@ class AdminDashboardViewSet(viewsets.ReadOnlyModelViewSet):
             "total_pengujians": Pengujian.objects.count(),
         }
         return Response(data)
+
+
+# endregion Admin Monitoring Viewsets

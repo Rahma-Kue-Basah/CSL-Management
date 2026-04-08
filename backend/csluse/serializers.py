@@ -1,27 +1,31 @@
-from rest_framework import serializers
-from django.utils import timezone
 import re
-
 from typing import Optional
 
+from django.utils import timezone
+from rest_framework import serializers
+
 from csluse_auth.models import Profile
+from csluse_auth.serializers import ProfileSerializer, RoomPicDetailSerializer
+
 from .models import (
-    Image,
-    Document,
-    Room,
-    Equipment,
-    Software,
+    Announcement,
     Booking,
     BookingEquipmentItem,
     Borrow,
-    Announcement,
-    Schedule,
+    Document,
+    Equipment,
     FAQ,
-    Pengujian,
-    Use,
+    Image,
     Notification,
+    Pengujian,
+    Room,
+    Schedule,
+    Software,
+    Use,
 )
-from csluse_auth.serializers import ProfileSerializer, RoomPicDetailSerializer
+
+
+# region Shared Media And Document Serializers
 
 
 class RoomPicListSerializer(serializers.ModelSerializer):
@@ -32,6 +36,7 @@ class RoomPicListSerializer(serializers.ModelSerializer):
             "full_name",
         ]
 
+
 class ImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(write_only=True)
     url = serializers.SerializerMethodField()
@@ -39,15 +44,15 @@ class ImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Image
         fields = [
-            'id',
-            'image',
-            'name',
-            'url',
+            "id",
+            "image",
+            "name",
+            "url",
         ]
         read_only_fields = [
-            'id',
-            'name',
-            'url',
+            "id",
+            "name",
+            "url",
         ]
 
     def get_url(self, obj) -> Optional[str]:
@@ -221,6 +226,12 @@ class AdminPengujianDocumentGroupSerializer(serializers.ModelSerializer):
         return DocumentSerializer(documents, many=True, context=self.context).data
 
 
+# endregion Shared Media And Document Serializers
+
+
+# region Inventory Serializers
+
+
 class RoomSerializer(serializers.ModelSerializer):
     pics = serializers.PrimaryKeyRelatedField(
         many=True,
@@ -366,7 +377,10 @@ class SoftwareEquipmentListSerializer(serializers.ModelSerializer):
 
 
 class SoftwareSerializer(serializers.ModelSerializer):
-    equipment_detail = SoftwareEquipmentListSerializer(source="equipment", read_only=True)
+    equipment_detail = SoftwareEquipmentListSerializer(
+        source="equipment",
+        read_only=True,
+    )
 
     class Meta:
         model = Software
@@ -383,7 +397,10 @@ class SoftwareSerializer(serializers.ModelSerializer):
 
 
 class SoftwareListSerializer(serializers.ModelSerializer):
-    equipment_detail = SoftwareEquipmentListSerializer(source="equipment", read_only=True)
+    equipment_detail = SoftwareEquipmentListSerializer(
+        source="equipment",
+        read_only=True,
+    )
 
     class Meta:
         model = Software
@@ -399,6 +416,12 @@ class SoftwareListSerializer(serializers.ModelSerializer):
         ]
 
 
+# endregion Inventory Serializers
+
+
+# region Reference Serializers
+
+
 class RecordProfileListSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(source="user.email", read_only=True)
 
@@ -411,63 +434,6 @@ class RecordProfileListSerializer(serializers.ModelSerializer):
             "role",
             "department",
         ]
-
-
-def _resolve_requester_profile(serializer_instance):
-    request = serializer_instance.context.get("request")
-    request_user = getattr(request, "user", None)
-    request_profile = getattr(request_user, "profile", None)
-    if request_profile is not None:
-        return request_profile
-    instance = getattr(serializer_instance, "instance", None)
-    return getattr(instance, "requested_by", None)
-
-
-def _apply_requester_mentor_rules(serializer_instance, attrs):
-    purpose = attrs.get("purpose", getattr(serializer_instance.instance, "purpose", "Other"))
-    requester_profile = _resolve_requester_profile(serializer_instance)
-    mentor_profile = attrs.get(
-        "requester_mentor_profile",
-        getattr(serializer_instance.instance, "requester_mentor_profile", None),
-    )
-    is_internal_requester = (
-        requester_profile is not None
-        and str(getattr(requester_profile, "role", "") or "").strip().lower() != "guest"
-    )
-
-    if purpose != "Skripsi/TA":
-        attrs["requester_mentor"] = None
-        attrs["requester_mentor_profile"] = None
-        attrs["is_approved_by_mentor"] = False
-        attrs["mentor_approved_at"] = None
-        return attrs
-
-    if not is_internal_requester:
-        attrs["requester_mentor"] = None
-        attrs["requester_mentor_profile"] = None
-        attrs["is_approved_by_mentor"] = False
-        attrs["mentor_approved_at"] = None
-        return attrs
-
-    if mentor_profile is None:
-        raise serializers.ValidationError(
-            {"requester_mentor_profile": "Dosen pembimbing wajib dipilih untuk tujuan Skripsi/TA."}
-        )
-
-    if (
-        str(getattr(mentor_profile, "role", "") or "").strip().lower() != "lecturer"
-        or not bool(getattr(mentor_profile, "is_mentor", False))
-    ):
-        raise serializers.ValidationError(
-            {"requester_mentor_profile": "User yang dipilih harus lecturer yang terdaftar sebagai dosen pembimbing."}
-        )
-
-    attrs["requester_mentor"] = (
-        str(getattr(mentor_profile, "full_name", "") or "").strip()
-        or getattr(getattr(mentor_profile, "user", None), "email", None)
-        or None
-    )
-    return attrs
 
 
 class RecordRoomListSerializer(serializers.ModelSerializer):
@@ -488,6 +454,28 @@ class RecordEquipmentListSerializer(serializers.ModelSerializer):
             "id",
             "name",
         ]
+
+
+class RecordBulkDeleteSerializer(serializers.Serializer):
+    ids = serializers.ListField(
+        child=serializers.UUIDField(),
+        allow_empty=False,
+        error_messages={
+            "empty": "Pilih minimal satu record untuk dihapus.",
+        },
+    )
+
+    def validate_ids(self, value):
+        unique_ids = list(dict.fromkeys(value))
+        if len(unique_ids) != len(value):
+            raise serializers.ValidationError("Terdapat ID record yang duplikat.")
+        return unique_ids
+
+
+# endregion Reference Serializers
+
+
+# region Notification Serializers
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -542,6 +530,14 @@ class NotificationSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
 
+# endregion Notification Serializers
+
+
+# region Booking Serializers
+
+
+# region Booking Supporting Serializers
+
 
 class BookingEquipmentItemWriteSerializer(serializers.Serializer):
     equipment = serializers.PrimaryKeyRelatedField(queryset=Equipment.objects.all())
@@ -559,6 +555,12 @@ class BookingEquipmentItemDetailSerializer(serializers.ModelSerializer):
             "equipment",
             "equipment_detail",
         ]
+
+
+# endregion Booking Supporting Serializers
+
+
+# region Booking Main Serializers
 
 
 class BookingSerializer(serializers.ModelSerializer):
@@ -782,22 +784,31 @@ class BookingSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = [
-            'requested_by',
-            'code',
-            'approved_by',
-            'approved_at',
-            'rejected_at',
-            'expired_at',
-            'completed_at',
-            'is_approved_by_mentor',
-            'mentor_approved_at',
+            "requested_by",
+            "code",
+            "approved_by",
+            "approved_at",
+            "rejected_at",
+            "expired_at",
+            "completed_at",
+            "is_approved_by_mentor",
+            "mentor_approved_at",
         ]
+
+
+# endregion Booking Main Serializers
+
+
+# region Booking List Serializers
 
 
 class BookingListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
     approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
-    requester_mentor_profile_detail = RecordProfileListSerializer(source="requester_mentor_profile", read_only=True)
+    requester_mentor_profile_detail = RecordProfileListSerializer(
+        source="requester_mentor_profile",
+        read_only=True,
+    )
     room_detail = RecordRoomListSerializer(source="room", read_only=True)
     equipment_items_detail = BookingEquipmentItemDetailSerializer(
         source="equipment_items",
@@ -843,7 +854,10 @@ class BookingListSerializer(serializers.ModelSerializer):
 
 class BookingUserListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
-    requester_mentor_profile_detail = RecordProfileListSerializer(source="requester_mentor_profile", read_only=True)
+    requester_mentor_profile_detail = RecordProfileListSerializer(
+        source="requester_mentor_profile",
+        read_only=True,
+    )
     room_detail = RecordRoomListSerializer(source="room", read_only=True)
     equipment_items_detail = BookingEquipmentItemDetailSerializer(
         source="equipment_items",
@@ -883,6 +897,18 @@ class BookingUserListSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+# endregion Booking List Serializers
+
+
+# endregion Booking Serializers
+
+
+# region Borrow Serializers
+
+
+# region Borrow Main Serializers
 
 
 class BorrowSerializer(serializers.ModelSerializer):
@@ -975,20 +1001,29 @@ class BorrowSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Borrow
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = [
-            'requested_by',
-            'code',
-            'approved_by',
-            'is_approved_by_mentor',
-            'mentor_approved_at',
+            "requested_by",
+            "code",
+            "approved_by",
+            "is_approved_by_mentor",
+            "mentor_approved_at",
         ]
+
+
+# endregion Borrow Main Serializers
+
+
+# region Borrow List Serializers
 
 
 class BorrowListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
     approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
-    requester_mentor_profile_detail = RecordProfileListSerializer(source="requester_mentor_profile", read_only=True)
+    requester_mentor_profile_detail = RecordProfileListSerializer(
+        source="requester_mentor_profile",
+        read_only=True,
+    )
     equipment_detail = RecordEquipmentListSerializer(source="equipment", read_only=True)
 
     class Meta:
@@ -1026,20 +1061,13 @@ class BorrowListSerializer(serializers.ModelSerializer):
         ]
 
 
-class RecordBulkDeleteSerializer(serializers.Serializer):
-    ids = serializers.ListField(
-        child=serializers.UUIDField(),
-        allow_empty=False,
-        error_messages={
-            "empty": "Pilih minimal satu record untuk dihapus.",
-        },
-    )
+# endregion Borrow List Serializers
 
-    def validate_ids(self, value):
-        unique_ids = list(dict.fromkeys(value))
-        if len(unique_ids) != len(value):
-            raise serializers.ValidationError("Terdapat ID record yang duplikat.")
-        return unique_ids
+
+# endregion Borrow Serializers
+
+
+# region Content And Scheduling Serializers
 
 
 class AnnouncementListSerializer(serializers.ModelSerializer):
@@ -1147,6 +1175,15 @@ class ScheduleFeedItemSerializer(serializers.Serializer):
     schedule_item = serializers.DictField(allow_null=True, required=False)
 
 
+# endregion Content And Scheduling Serializers
+
+
+# region Sample Testing Serializers
+
+
+# region Sample Testing Main Serializers
+
+
 class PengujianSerializer(serializers.ModelSerializer):
     requested_by_detail = ProfileSerializer(source="requested_by", read_only=True)
     approved_by_detail = ProfileSerializer(source="approved_by", read_only=True)
@@ -1195,8 +1232,14 @@ class PengujianSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Pengujian
-        fields = '__all__'
-        read_only_fields = ['requested_by', 'code', 'approved_by']
+        fields = "__all__"
+        read_only_fields = ["requested_by", "code", "approved_by"]
+
+
+# endregion Sample Testing Main Serializers
+
+
+# region Sample Testing List Serializers
 
 
 class PengujianListSerializer(serializers.ModelSerializer):
@@ -1231,6 +1274,18 @@ class PengujianListSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+# endregion Sample Testing List Serializers
+
+
+# endregion Sample Testing Serializers
+
+
+# region Equipment Use Serializers
+
+
+# region Equipment Use Main Serializers
 
 
 class UseSerializer(serializers.ModelSerializer):
@@ -1314,20 +1369,29 @@ class UseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Use
-        fields = '__all__'
+        fields = "__all__"
         read_only_fields = [
-            'requested_by',
-            'code',
-            'approved_by',
-            'is_approved_by_mentor',
-            'mentor_approved_at',
+            "requested_by",
+            "code",
+            "approved_by",
+            "is_approved_by_mentor",
+            "mentor_approved_at",
         ]
+
+
+# endregion Equipment Use Main Serializers
+
+
+# region Equipment Use List Serializers
 
 
 class UseListSerializer(serializers.ModelSerializer):
     requested_by_detail = RecordProfileListSerializer(source="requested_by", read_only=True)
     approved_by_detail = RecordProfileListSerializer(source="approved_by", read_only=True)
-    requester_mentor_profile_detail = RecordProfileListSerializer(source="requester_mentor_profile", read_only=True)
+    requester_mentor_profile_detail = RecordProfileListSerializer(
+        source="requester_mentor_profile",
+        read_only=True,
+    )
     equipment_detail = RecordEquipmentListSerializer(source="equipment", read_only=True)
 
     class Meta:
@@ -1359,6 +1423,15 @@ class UseListSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         ]
+
+
+# endregion Equipment Use List Serializers
+
+
+# endregion Equipment Use Serializers
+
+
+# region Dashboard Overview Serializers
 
 
 class DashboardOverviewTotalsSerializer(serializers.Serializer):
@@ -1394,3 +1467,69 @@ class DashboardOverviewSerializer(serializers.Serializer):
     totals = DashboardOverviewTotalsSerializer()
     upcoming_approved = DashboardOverviewUpcomingSerializer(many=True)
     recent_activities = DashboardOverviewActivitySerializer(many=True)
+
+
+# endregion Dashboard Overview Serializers
+
+
+# region Utilities
+
+
+def _resolve_requester_profile(serializer_instance):
+    request = serializer_instance.context.get("request")
+    request_user = getattr(request, "user", None)
+    request_profile = getattr(request_user, "profile", None)
+    if request_profile is not None:
+        return request_profile
+    instance = getattr(serializer_instance, "instance", None)
+    return getattr(instance, "requested_by", None)
+
+
+def _apply_requester_mentor_rules(serializer_instance, attrs):
+    purpose = attrs.get("purpose", getattr(serializer_instance.instance, "purpose", "Other"))
+    requester_profile = _resolve_requester_profile(serializer_instance)
+    mentor_profile = attrs.get(
+        "requester_mentor_profile",
+        getattr(serializer_instance.instance, "requester_mentor_profile", None),
+    )
+    is_internal_requester = (
+        requester_profile is not None
+        and str(getattr(requester_profile, "role", "") or "").strip().lower() != "guest"
+    )
+
+    if purpose != "Skripsi/TA":
+        attrs["requester_mentor"] = None
+        attrs["requester_mentor_profile"] = None
+        attrs["is_approved_by_mentor"] = False
+        attrs["mentor_approved_at"] = None
+        return attrs
+
+    if not is_internal_requester:
+        attrs["requester_mentor"] = None
+        attrs["requester_mentor_profile"] = None
+        attrs["is_approved_by_mentor"] = False
+        attrs["mentor_approved_at"] = None
+        return attrs
+
+    if mentor_profile is None:
+        raise serializers.ValidationError(
+            {"requester_mentor_profile": "Dosen pembimbing wajib dipilih untuk tujuan Skripsi/TA."}
+        )
+
+    if (
+        str(getattr(mentor_profile, "role", "") or "").strip().lower() != "lecturer"
+        or not bool(getattr(mentor_profile, "is_mentor", False))
+    ):
+        raise serializers.ValidationError(
+            {"requester_mentor_profile": "User yang dipilih harus lecturer yang terdaftar sebagai dosen pembimbing."}
+        )
+
+    attrs["requester_mentor"] = (
+        str(getattr(mentor_profile, "full_name", "") or "").strip()
+        or getattr(getattr(mentor_profile, "user", None), "email", None)
+        or None
+    )
+    return attrs
+
+
+# endregion Utilities

@@ -111,781 +111,20 @@ PENGUJIAN_NEXT_DOCUMENT_TYPES = {
     "payment_proof": "test_result_letter",
 }
 
-
-def normalize_status_value(value):
-    if value is None:
-        return value
-    raw = str(value).strip()
-    if not raw:
-        return raw
-    return STATUS_VALUE_MAP.get(raw.lower(), raw)
-
-
-def is_active_status_filter(value):
-    if value is None:
-        return False
-    return str(value).strip().lower() == "active"
-
-
-def _has_review_value(value):
-    return bool(str(value or "").strip())
-
-
-def _review_issue(label, value):
-    return {
-        "label": str(label),
-        "value": str(value),
-    }
-
-
-def _review_result(*, issues=None, passed_indicators=None):
-    return {
-        "issues": issues or [],
-        "passed_indicators": passed_indicators or [],
-    }
-
-
-def _requires_mentor_approval(instance):
-    return (
-        str(getattr(instance, "purpose", "") or "").strip() == "Skripsi/TA"
-        and getattr(instance, "requester_mentor_profile_id", None) is not None
-    )
-
-
-def _is_assigned_mentor(user, instance):
-    profile = getattr(user, "profile", None)
-    return (
-        profile is not None
-        and getattr(instance, "requester_mentor_profile_id", None) == profile.id
-    )
-
-
-def _mentor_review_pending(instance):
-    return (
-        getattr(instance, "status", None) == "Pending"
-        and _requires_mentor_approval(instance)
-        and not bool(getattr(instance, "is_approved_by_mentor", False))
-    )
-
-
-def _can_run_final_pic_review(instance):
-    return not _requires_mentor_approval(instance) or bool(
-        getattr(instance, "is_approved_by_mentor", False)
-    )
-
-
-def _booking_review_result(booking):
-    issues = []
-    passed_indicators = []
-    required_fields_complete = True
-
-    if not _has_review_value(booking.requester_phone):
-        required_fields_complete = False
-        issues.append(
-            _review_issue(
-                "Nomor telepon belum diisi",
-                "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
-            )
-        )
-    if not _has_review_value(booking.requester_mentor):
-        required_fields_complete = False
-        issues.append(
-            _review_issue(
-                "Dosen pembimbing belum diisi",
-                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
-            )
-        )
-    if (booking.attendee_count or 0) > 1 and not _has_review_value(booking.attendee_names):
-        required_fields_complete = False
-        issues.append(
-            _review_issue(
-                "Nama peserta belum diisi",
-                "Jumlah peserta lebih dari 1, tetapi daftar nama peserta belum dilengkapi.",
-            )
-        )
-    if str(booking.purpose or "").strip() == "Workshop":
-        if not _has_review_value(booking.workshop_title):
-            required_fields_complete = False
-            issues.append(
-                _review_issue(
-                    "Judul workshop belum diisi",
-                    "Pengajuan workshop belum memiliki judul kegiatan.",
-                )
-            )
-        if not _has_review_value(booking.workshop_pic):
-            required_fields_complete = False
-            issues.append(
-                _review_issue(
-                    "PIC workshop belum diisi",
-                    "Pengajuan workshop belum mencantumkan PIC workshop.",
-                )
-            )
-        if not _has_review_value(booking.workshop_institution):
-            required_fields_complete = False
-            issues.append(
-                _review_issue(
-                    "Institusi workshop belum diisi",
-                    "Pengajuan workshop belum mencantumkan institusi workshop.",
-                )
-            )
-
-    practicum_count = 0
-    approved_booking_count = 0
-    if booking.room_id and booking.start_time and booking.end_time:
-        practicum_count = Schedule.objects.filter(
-            room_id=booking.room_id,
-            start_time__lt=booking.end_time,
-            end_time__gt=booking.start_time,
-        ).count()
-        if practicum_count:
-            issues.append(
-                _review_issue(
-                    "Bentrok jadwal praktikum",
-                    f"Ruangan sudah dipakai untuk {practicum_count} jadwal praktikum pada rentang waktu ini.",
-                )
-            )
-
-        approved_booking_count = (
-            Booking.objects.filter(
-                room_id=booking.room_id,
-                status="Approved",
-                start_time__lt=booking.end_time,
-                end_time__gt=booking.start_time,
-            )
-            .exclude(pk=booking.pk)
-            .count()
-        )
-        if approved_booking_count:
-            issues.append(
-                _review_issue(
-                    "Bentrok booking aktif",
-                    f"Ruangan juga memiliki {approved_booking_count} booking lain yang sudah disetujui pada rentang waktu ini.",
-                )
-            )
-
-    if practicum_count == 0:
-        passed_indicators.append("Tidak bentrok dengan jadwal praktikum pada ruangan yang sama")
-    if approved_booking_count == 0:
-        passed_indicators.append("Tidak bentrok dengan booking lain yang sudah disetujui")
-    if required_fields_complete:
-        passed_indicators.append("Field penting untuk approval sudah terisi semua")
-
-    return _review_result(issues=issues, passed_indicators=passed_indicators)
-
-
-def _equipment_review_overlap_issues(
-    *,
-    equipment_id,
-    requested_quantity,
-    stock_quantity,
-    start_time,
-    end_time,
-    exclude_borrow_id=None,
-    exclude_use_id=None,
-):
-    issues = []
-    passed_indicators = []
-    if not equipment_id or not start_time or not end_time:
-        return _review_result(issues=issues, passed_indicators=passed_indicators)
-
-    booking_allocated_qty = (
-        Booking.objects.filter(
-            equipment_items__equipment_id=equipment_id,
-            status__in=["Pending", "Approved"],
-            start_time__lt=end_time,
-            end_time__gt=start_time,
-        )
-        .aggregate(total=Sum("equipment_items__quantity"))
-        .get("total")
-        or 0
-    )
-
-    borrow_qs = Borrow.objects.filter(
-        equipment_id=equipment_id,
-        status__in=["Pending", "Approved", "Borrowed", "Overdue", "Lost/Damaged"],
-        start_time__lt=end_time,
-        end_time__gt=start_time,
-    )
-    if exclude_borrow_id is not None:
-        borrow_qs = borrow_qs.exclude(pk=exclude_borrow_id)
-    borrow_allocated_qty = borrow_qs.aggregate(total=Sum("quantity")).get("total") or 0
-
-    use_qs = Use.objects.filter(
-        equipment_id=equipment_id,
-        status__in=["Pending", "Approved"],
-        start_time__lt=end_time,
-        end_time__gt=start_time,
-    )
-    if exclude_use_id is not None:
-        use_qs = use_qs.exclude(pk=exclude_use_id)
-    use_allocated_qty = use_qs.aggregate(total=Sum("quantity")).get("total") or 0
-
-    allocated_qty = booking_allocated_qty + borrow_allocated_qty + use_allocated_qty
-    remaining_qty = max((stock_quantity or 0) - allocated_qty, 0)
-
-    if requested_quantity > remaining_qty:
-        segments = []
-        if booking_allocated_qty:
-            segments.append(f"{booking_allocated_qty} unit untuk booking")
-        if use_allocated_qty:
-            segments.append(f"{use_allocated_qty} unit untuk penggunaan alat")
-        if borrow_allocated_qty:
-            segments.append(f"{borrow_allocated_qty} unit untuk peminjaman alat")
-        issues.append(
-            _review_issue(
-                "Stok tidak mencukupi pada rentang waktu yang sama",
-                (
-                    f"Stok total alat {stock_quantity} unit. "
-                    f"Sudah teralokasi {allocated_qty} unit"
-                    + (f" ({', '.join(segments)})" if segments else "")
-                    + f", sehingga sisa stok hanya {remaining_qty} unit untuk rentang waktu ini."
-                ),
-            )
-        )
-    else:
-        passed_indicators.append("Sisa stok alat pada rentang waktu yang sama masih mencukupi")
-
-    return _review_result(issues=issues, passed_indicators=passed_indicators)
-
-
-def _use_review_result(use_item):
-    issues = []
-    passed_indicators = []
-    required_fields_complete = True
-
-    if not _has_review_value(use_item.requester_phone):
-        required_fields_complete = False
-        issues.append(
-            _review_issue(
-                "Nomor telepon belum diisi",
-                "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
-            )
-        )
-    if not _has_review_value(use_item.requester_mentor):
-        required_fields_complete = False
-        issues.append(
-            _review_issue(
-                "Dosen pembimbing belum diisi",
-                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
-            )
-        )
-
-    equipment = getattr(use_item, "equipment", None)
-    equipment_available = False
-    stock_within_limit = False
-    if equipment is not None:
-        if str(equipment.status or "") != "Available":
-            issues.append(
-                _review_issue(
-                    "Status alat tidak available",
-                    f"Status alat saat ini {equipment.status}. Pastikan alat memang dapat digunakan sebelum approve.",
-                )
-            )
-        else:
-            equipment_available = True
-        if (use_item.quantity or 0) > (equipment.quantity or 0):
-            issues.append(
-                _review_issue(
-                    "Jumlah melebihi stok",
-                    f"Pengajuan meminta {use_item.quantity} unit, sementara stok alat hanya {equipment.quantity}.",
-                )
-            )
-        else:
-            stock_within_limit = True
-
-    overlap_result = _equipment_review_overlap_issues(
-        equipment_id=getattr(use_item, "equipment_id", None),
-        requested_quantity=use_item.quantity or 0,
-        stock_quantity=getattr(equipment, "quantity", 0) if equipment is not None else 0,
-        start_time=use_item.start_time,
-        end_time=use_item.end_time,
-        exclude_use_id=use_item.pk,
-    )
-    issues.extend(overlap_result["issues"])
-    passed_indicators.extend(overlap_result["passed_indicators"])
-
-    if equipment_available:
-        passed_indicators.insert(0, "Status alat masih available")
-    if stock_within_limit:
-        passed_indicators.append("Jumlah pengajuan tidak melebihi stok alat")
-    if required_fields_complete:
-        passed_indicators.append("Field penting untuk approval sudah terisi semua")
-
-    return _review_result(issues=issues, passed_indicators=passed_indicators)
-
-
-def _borrow_review_result(borrow):
-    issues = []
-    passed_indicators = []
-    required_fields_complete = True
-
-    if not _has_review_value(borrow.requester_phone):
-        required_fields_complete = False
-        issues.append(
-            _review_issue(
-                "Nomor telepon belum diisi",
-                "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
-            )
-        )
-    if not _has_review_value(borrow.requester_mentor):
-        required_fields_complete = False
-        issues.append(
-            _review_issue(
-                "Dosen pembimbing belum diisi",
-                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
-            )
-        )
-
-    equipment = getattr(borrow, "equipment", None)
-    equipment_available = False
-    stock_within_limit = False
-    if equipment is not None:
-        if str(equipment.status or "") != "Available":
-            issues.append(
-                _review_issue(
-                    "Status alat tidak available",
-                    f"Status alat saat ini {equipment.status}. Pastikan alat memang dapat dipinjam sebelum approve.",
-                )
-            )
-        else:
-            equipment_available = True
-        if (borrow.quantity or 0) > (equipment.quantity or 0):
-            issues.append(
-                _review_issue(
-                    "Jumlah melebihi stok",
-                    f"Pengajuan meminta {borrow.quantity} unit, sementara stok alat hanya {equipment.quantity}.",
-                )
-            )
-        else:
-            stock_within_limit = True
-
-    overlap_result = _equipment_review_overlap_issues(
-        equipment_id=getattr(borrow, "equipment_id", None),
-        requested_quantity=borrow.quantity or 0,
-        stock_quantity=getattr(equipment, "quantity", 0) if equipment is not None else 0,
-        start_time=borrow.start_time,
-        end_time=borrow.end_time,
-        exclude_borrow_id=borrow.pk,
-    )
-    issues.extend(overlap_result["issues"])
-    passed_indicators.extend(overlap_result["passed_indicators"])
-
-    if equipment_available:
-        passed_indicators.insert(0, "Status alat masih available")
-    if stock_within_limit:
-        passed_indicators.append("Jumlah pengajuan tidak melebihi stok alat")
-    if required_fields_complete:
-        passed_indicators.append("Field penting untuk approval sudah terisi semua")
-
-    return _review_result(issues=issues, passed_indicators=passed_indicators)
-
-
-def is_staff_or_above(user):
-    return (
-        user
-        and user.is_authenticated
-        and (
-            getattr(user, "is_superuser", False)
-            or has_role(user, STAFF)
-            or has_role(user, ADMINISTRATOR)
-            or has_role(user, SUPER_ADMINISTRATOR)
-        )
-    )
-
-
-def is_reviewer_or_above(user):
-    return (
-        user
-        and user.is_authenticated
-        and (
-            getattr(user, "is_superuser", False)
-            or has_role(user, LECTURER)
-            or has_role(user, STAFF)
-            or has_role(user, ADMINISTRATOR)
-            or has_role(user, SUPER_ADMINISTRATOR)
-        )
-    )
-
-
-def is_administrator_or_above(user):
-    return (
-        user
-        and user.is_authenticated
-        and (
-            getattr(user, "is_superuser", False)
-            or has_role(user, ADMINISTRATOR)
-            or has_role(user, SUPER_ADMINISTRATOR)
-        )
-    )
-
-
-def can_manage_all_approval_records(user):
-    return is_administrator_or_above(user)
-
-
-def build_requester_dropdown_response(queryset):
-    requester_ids = (
-        queryset.exclude(requested_by__isnull=True)
-        .values_list("requested_by_id", flat=True)
-        .distinct()
-    )
-    profiles = (
-        Profile.objects
-        .select_related("user")
-        .filter(id__in=requester_ids)
-        .order_by("full_name", "user__email")
-    )
-    return Response([
-        {
-            "id": str(profile.id),
-            "full_name": profile.full_name or profile.user.email,
-            "email": profile.user.email,
-            "department": profile.department,
-        }
-        for profile in profiles
-    ])
-
-
+# region Support Classes
 class DefaultPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 100
 
 
-def _profile_display_name(profile):
-    if not profile:
-        return None
-    return (
-        getattr(profile, 'full_name', None)
-        or getattr(getattr(profile, 'user', None), 'email', None)
-        or str(profile)
-    )
+# endregion
 
 
-def _profile_role(profile):
-    if not profile:
-        return None
-    return getattr(profile, "role", None)
+# region ViewSets
 
 
-def _event_title_with_requester(base_title, profile):
-    requester_name = _profile_display_name(profile)
-    if not requester_name:
-        return base_title
-    return f"{base_title} - {requester_name}"
-
-
-def _overview_title(value, fallback):
-    if value is None:
-        return fallback
-    raw = str(value).strip()
-    return raw or fallback
-
-
-def _create_notification(recipient, *, title, category, message):
-    if recipient is None:
-        return None
-    return Notification.objects.create(
-        recipient=recipient,
-        title=title,
-        category=category,
-        message=message,
-    )
-
-
-def _request_label(kind):
-    labels = {
-        "booking": "booking ruangan",
-        "borrow": "peminjaman alat",
-        "use": "penggunaan alat",
-        "pengujian": "pengujian sampel",
-    }
-    return labels.get(kind, "request")
-
-
-def _request_identifier(instance, fallback):
-    return (
-        getattr(instance, "code", None)
-        or getattr(instance, "sample_name", None)
-        or getattr(instance, "name", None)
-        or fallback
-    )
-
-
-def _notification_recipient_email(recipient):
-    if recipient is None:
-        return None
-    user = getattr(recipient, "user", None)
-    email = getattr(user, "email", None)
-    return (email or "").strip() or None
-
-
-def _notification_recipient_name(instance, recipient):
-    return (
-        _profile_display_name(recipient)
-        or getattr(instance, "name", None)
-        or _notification_recipient_email(recipient)
-        or "Pengguna"
-    )
-
-
-def _notification_email_extra_context(
-    instance,
-    *,
-    recipient,
-    kind,
-    title,
-    message,
-    cta_url,
-    cta_label,
-):
-    return {
-        "user_display": _notification_recipient_name(instance, recipient),
-        "notification_title": title,
-        "notification_message": message,
-        "request_label": _request_label(kind).title(),
-        "request_label_lower": _request_label(kind),
-        "request_identifier": _request_identifier(instance, _request_label(kind).title()),
-        "cta_url": cta_url,
-        "cta_label": cta_label,
-    }
-
-
-def _send_request_status_email(
-    instance,
-    *,
-    recipient,
-    kind,
-    title,
-    message,
-    status_value,
-    request=None,
-):
-    recipient_email = _notification_recipient_email(recipient)
-    if not recipient_email:
-        return
-
-    cta_url = notification_cta_url(kind, instance)
-    cta_label = notification_cta_label(kind)
-    context = build_email_context(
-        request=request,
-        extra_context={
-            **_notification_email_extra_context(
-                instance,
-                recipient=recipient,
-                kind=kind,
-                title=title,
-                message=message,
-                cta_url=cta_url,
-                cta_label=cta_label,
-            ),
-            "status_label": "disetujui" if status_value == "Approved" else "ditolak",
-        },
-    )
-    send_notification_email(
-        recipient_email,
-        template_base="csluse/email/request_status",
-        context=context,
-    )
-
-
-def _send_borrow_overdue_email(
-    instance,
-    *,
-    recipient,
-    title,
-    message,
-    due_text,
-    equipment_name,
-    request=None,
-):
-    recipient_email = _notification_recipient_email(recipient)
-    if not recipient_email:
-        return
-
-    cta_url = notification_cta_url("borrow", instance)
-    context = build_email_context(
-        request=request,
-        extra_context={
-            **_notification_email_extra_context(
-                instance,
-                recipient=recipient,
-                kind="borrow",
-                title=title,
-                message=message,
-                cta_url=cta_url,
-                cta_label="Lihat Detail Peminjaman",
-            ),
-            "equipment_name": equipment_name,
-            "due_text": due_text,
-        },
-    )
-    send_notification_email(
-        recipient_email,
-        template_base="csluse/email/borrow_overdue",
-        context=context,
-    )
-
-
-def _notify_request_status(instance, *, kind, status_value, actor_profile=None, request=None):
-    recipient = getattr(instance, "requested_by", None)
-    if recipient is None:
-        return
-
-    request_label = _request_label(kind)
-    request_identifier = _request_identifier(instance, request_label.title())
-    actor_name = _profile_display_name(actor_profile) or "tim laboratorium"
-    category = "Approved" if status_value == "Approved" else "Rejected"
-    action_label = "disetujui" if status_value == "Approved" else "ditolak"
-    title = f"{request_label.title()} {request_identifier} {action_label}"
-    message = (
-        f"Pengajuan {request_label} Anda ({request_identifier}) telah "
-        f"{action_label} oleh {actor_name}."
-    )
-
-    _create_notification(
-        recipient,
-        title=title,
-        category=category,
-        message=message,
-    )
-    _send_request_status_email(
-        instance,
-        recipient=recipient,
-        kind=kind,
-        title=title,
-        message=message,
-        status_value=status_value,
-        request=request,
-    )
-
-
-def _notify_borrow_overdue(instance, request=None):
-    recipient = getattr(instance, "requested_by", None)
-    if recipient is None:
-        return
-
-    borrow_identifier = _request_identifier(instance, "Borrow")
-    equipment_name = getattr(getattr(instance, "equipment", None), "name", "alat")
-    due_at = getattr(instance, "end_time", None)
-    due_text = timezone.localtime(due_at).strftime("%d %b %Y %H:%M WIB") if due_at else "jadwal pengembalian"
-    title = f"Peminjaman {borrow_identifier} melewati batas waktu"
-    message = (
-        f"Peminjaman alat Anda ({borrow_identifier}) untuk {equipment_name} "
-        f"sudah overdue sejak {due_text}. Segera lakukan pengembalian."
-    )
-
-    _create_notification(
-        recipient,
-        title=title,
-        category="Reminder",
-        message=message,
-    )
-    _send_borrow_overdue_email(
-        instance,
-        recipient=recipient,
-        title=title,
-        message=message,
-        due_text=due_text,
-        equipment_name=equipment_name,
-        request=request,
-    )
-
-
-def build_status_aggregates(queryset, completed_statuses=None):
-    completed_statuses = completed_statuses or ["Completed"]
-    return {
-        "total": queryset.count(),
-        "pending": queryset.filter(status="Pending").count(),
-        "approved": queryset.filter(status="Approved").count(),
-        "diproses": queryset.filter(status="Diproses").count(),
-        "menunggu_pembayaran": queryset.filter(status="Menunggu Pembayaran").count(),
-        "completed": queryset.filter(status__in=completed_statuses).count(),
-        "rejected": queryset.filter(status="Rejected").count(),
-        "expired": queryset.filter(status="Expired").count(),
-    }
-
-
-def build_borrow_status_aggregates(queryset):
-    return {
-        "total": queryset.count(),
-        "pending": queryset.filter(status="Pending").count(),
-        "approved": queryset.filter(status="Approved").count(),
-        "rejected": queryset.filter(status="Rejected").count(),
-        "expired": queryset.filter(status="Expired").count(),
-        "borrowed": queryset.filter(status="Borrowed").count(),
-        "returned_pending_inspection": queryset.filter(
-            status="Returned Pending Inspection"
-        ).count(),
-        "returned": queryset.filter(status="Returned").count(),
-        "overdue": queryset.filter(status="Overdue").count(),
-        "lost_damaged": queryset.filter(status="Lost/Damaged").count(),
-    }
-
-
-def sync_booking_statuses():
-    now = timezone.now()
-    expired_pending = (
-        Booking.objects
-        .filter(status="Pending", end_time__lt=now, expired_at__isnull=True)
-        .update(status="Expired", expired_at=now, updated_at=now)
-    )
-    completed_approved = (
-        Booking.objects
-        .filter(status="Approved", end_time__lt=now, completed_at__isnull=True)
-        .update(status="Completed", completed_at=now, updated_at=now)
-    )
-    return {
-        "expired_pending": expired_pending,
-        "completed_approved": completed_approved,
-    }
-
-
-def sync_use_statuses():
-    now = timezone.now()
-    expired_finished = (
-        Use.objects
-        .filter(status="Pending", end_time__lt=now, expired_at__isnull=True)
-        .update(status="Expired", expired_at=now, updated_at=now)
-    )
-    expired_started_without_end = (
-        Use.objects
-        .filter(status="Pending", end_time__isnull=True, start_time__lt=now, expired_at__isnull=True)
-        .update(status="Expired", expired_at=now, updated_at=now)
-    )
-    return {
-        "expired_finished": expired_finished,
-        "expired_started_without_end": expired_started_without_end,
-    }
-
-
-def sync_borrow_statuses():
-    now = timezone.now()
-    expired_pending = (
-        Borrow.objects
-        .filter(status="Pending", start_time__lt=now, expired_at__isnull=True)
-        .update(status="Expired", expired_at=now, updated_at=now)
-    )
-    overdue_borrows = list(
-        Borrow.objects
-        .filter(status="Borrowed", end_time__lt=now, overdue_at__isnull=True)
-        .select_related("requested_by", "equipment")
-    )
-    if overdue_borrows:
-        Borrow.objects.filter(pk__in=[item.pk for item in overdue_borrows]).update(
-            status="Overdue",
-            overdue_at=now,
-            updated_at=now,
-        )
-        for item in overdue_borrows:
-            item.status = "Overdue"
-            _notify_borrow_overdue(item)
-    return {
-        "expired_pending": expired_pending,
-        "marked_overdue": len(overdue_borrows),
-    }
-
-
+# region Media
 class ImageViewSet(viewsets.ModelViewSet):
     
     queryset = Image.objects.all().order_by('-created_at')
@@ -913,6 +152,10 @@ class ImageViewSet(viewsets.ModelViewSet):
             instance.save(update_fields=['url'])
 
 
+# endregion
+
+
+# region Inventory
 class RoomViewSet(viewsets.ModelViewSet):
     queryset = Room.objects.prefetch_related('pics').select_related('image').order_by('-created_at')
     serializer_class = RoomSerializer
@@ -1448,6 +691,202 @@ class EquipmentViewSet(viewsets.ModelViewSet):
         return Response({'occupied': occupied})
 
 
+class SoftwareViewSet(viewsets.ModelViewSet):
+    queryset = (
+        Software.objects
+        .select_related('equipment', 'equipment__room')
+        .order_by('-created_at')
+    )
+    serializer_class = SoftwareSerializer
+    permission_classes = [IsAuthenticated]
+    pagination_class = DefaultPagination
+
+    def get_serializer_class(self):
+        if self.action == "list":
+            return SoftwareListSerializer
+        return SoftwareSerializer
+
+    def get_permissions(self):
+        if self.action in {"create", "bulk_create"}:
+            return [IsAuthenticated(), IsStaffOrAbove()]
+        if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
+            return [IsAuthenticated(), IsAdministratorOrAbove()]
+        return super().get_permissions()
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("equipment", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("room", OpenApiTypes.UUID, OpenApiParameter.QUERY),
+            OpenApiParameter("pic", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="PIC of the room"),
+            OpenApiParameter("pic_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="Alias for pic"),
+            OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY),
+        ]
+    )
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        equipment_id = self.request.query_params.get('equipment')
+        room_id = self.request.query_params.get('room')
+        pic_id = self.request.query_params.get('pic') or self.request.query_params.get('pic_id')
+        query = (self.request.query_params.get('q') or self.request.query_params.get('search') or '').strip()
+
+        if equipment_id:
+            qs = qs.filter(equipment_id=equipment_id)
+        if room_id:
+            qs = qs.filter(equipment__room_id=room_id)
+        if pic_id:
+            qs = qs.filter(equipment__room__pics__id=pic_id).distinct()
+        if query:
+            qs = qs.filter(
+                Q(name__icontains=query)
+                | Q(version__icontains=query)
+                | Q(license_info__icontains=query)
+                | Q(description__icontains=query)
+                | Q(equipment__name__icontains=query)
+                | Q(equipment__room__name__icontains=query)
+            ).distinct()
+        return qs
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            CHANGE,
+            "Updated software via CSL Admin (inventory).",
+        )
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        log_admin_action(
+            self.request.user,
+            instance,
+            ADDITION,
+            "Created software via CSL Admin (inventory).",
+        )
+
+    @action(detail=False, methods=['post'], url_path='bulk-create')
+    def bulk_create(self, request):
+        rows = request.data.get("rows")
+        if not isinstance(rows, list) or not rows:
+            return Response(
+                {"detail": "rows wajib berupa array dan tidak boleh kosong."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        results = []
+        success_count = 0
+
+        for index, row in enumerate(rows, start=1):
+            row_number = row.get("index", index) if isinstance(row, dict) else index
+            serializer = self.get_serializer(data=row)
+            if serializer.is_valid():
+                instance = serializer.save()
+                log_admin_action(
+                    self.request.user,
+                    instance,
+                    ADDITION,
+                    "Created software via CSL Admin bulk import.",
+                )
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "success",
+                        "message": "Sukses",
+                        "id": str(instance.id),
+                    }
+                )
+                success_count += 1
+            else:
+                results.append(
+                    {
+                        "index": row_number,
+                        "status": "error",
+                        "message": serializer.errors,
+                    }
+                )
+
+        failed_count = len(results) - success_count
+        response_status = (
+            status.HTTP_201_CREATED
+            if failed_count == 0
+            else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "results": results,
+                "success_count": success_count,
+                "failed_count": failed_count,
+            },
+            status=response_status,
+        )
+
+    def _delete_software_instance(self, instance):
+        log_admin_action(
+            self.request.user,
+            instance,
+            DELETION,
+            "Deleted software via CSL Admin (inventory).",
+        )
+        super().perform_destroy(instance)
+
+    def perform_destroy(self, instance):
+        self._delete_software_instance(instance)
+
+    @action(detail=False, methods=['post'], url_path='bulk-delete')
+    def bulk_delete(self, request):
+        if not is_administrator_or_above(request.user):
+            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data software.")
+
+        serializer = RecordBulkDeleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        ids = serializer.validated_data["ids"]
+
+        software_map = {
+            str(item.id): item
+            for item in Software.objects.filter(id__in=ids)
+        }
+        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in software_map]
+        deleted_ids = []
+
+        for item_id in ids:
+            software = software_map.get(str(item_id))
+            if software is None:
+                continue
+            self._delete_software_instance(software)
+            deleted_ids.append(str(item_id))
+
+        response_status = (
+            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
+        )
+        return Response(
+            {
+                "deleted_ids": deleted_ids,
+                "deleted_count": len(deleted_ids),
+                "failed_ids": missing_ids,
+                "failed_count": len(missing_ids),
+                "detail": (
+                    "Semua software terpilih berhasil dihapus."
+                    if not missing_ids
+                    else "Sebagian software tidak ditemukan."
+                ),
+            },
+            status=response_status,
+        )
+
+    @action(detail=False, methods=['get'], url_path='export')
+    def export(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = SoftwareListSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+
+# endregion
+
+
+# region Booking Rooms
 class BookingViewSet(viewsets.ModelViewSet):
     queryset = (
         Booking.objects
@@ -1917,198 +1356,10 @@ class BookingViewSet(viewsets.ModelViewSet):
         serializer.save(completed_at=now)
         return Response(serializer.data)
 
-class SoftwareViewSet(viewsets.ModelViewSet):
-    queryset = (
-        Software.objects
-        .select_related('equipment', 'equipment__room')
-        .order_by('-created_at')
-    )
-    serializer_class = SoftwareSerializer
-    permission_classes = [IsAuthenticated]
-    pagination_class = DefaultPagination
 
-    def get_serializer_class(self):
-        if self.action == "list":
-            return SoftwareListSerializer
-        return SoftwareSerializer
+# endregion
 
-    def get_permissions(self):
-        if self.action in {"create", "bulk_create"}:
-            return [IsAuthenticated(), IsStaffOrAbove()]
-        if self.action in {"update", "partial_update", "destroy", "bulk_delete"}:
-            return [IsAuthenticated(), IsAdministratorOrAbove()]
-        return super().get_permissions()
-
-    @extend_schema(
-        parameters=[
-            OpenApiParameter("equipment", OpenApiTypes.UUID, OpenApiParameter.QUERY),
-            OpenApiParameter("room", OpenApiTypes.UUID, OpenApiParameter.QUERY),
-            OpenApiParameter("pic", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="PIC of the room"),
-            OpenApiParameter("pic_id", OpenApiTypes.UUID, OpenApiParameter.QUERY, description="Alias for pic"),
-            OpenApiParameter("q", OpenApiTypes.STR, OpenApiParameter.QUERY),
-        ]
-    )
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
-
-    def get_queryset(self):
-        qs = super().get_queryset()
-        equipment_id = self.request.query_params.get('equipment')
-        room_id = self.request.query_params.get('room')
-        pic_id = self.request.query_params.get('pic') or self.request.query_params.get('pic_id')
-        query = (self.request.query_params.get('q') or self.request.query_params.get('search') or '').strip()
-
-        if equipment_id:
-            qs = qs.filter(equipment_id=equipment_id)
-        if room_id:
-            qs = qs.filter(equipment__room_id=room_id)
-        if pic_id:
-            qs = qs.filter(equipment__room__pics__id=pic_id).distinct()
-        if query:
-            qs = qs.filter(
-                Q(name__icontains=query)
-                | Q(version__icontains=query)
-                | Q(license_info__icontains=query)
-                | Q(description__icontains=query)
-                | Q(equipment__name__icontains=query)
-                | Q(equipment__room__name__icontains=query)
-            ).distinct()
-        return qs
-
-    def perform_update(self, serializer):
-        instance = serializer.save()
-        log_admin_action(
-            self.request.user,
-            instance,
-            CHANGE,
-            "Updated software via CSL Admin (inventory).",
-        )
-
-    def perform_create(self, serializer):
-        instance = serializer.save()
-        log_admin_action(
-            self.request.user,
-            instance,
-            ADDITION,
-            "Created software via CSL Admin (inventory).",
-        )
-
-    @action(detail=False, methods=['post'], url_path='bulk-create')
-    def bulk_create(self, request):
-        rows = request.data.get("rows")
-        if not isinstance(rows, list) or not rows:
-            return Response(
-                {"detail": "rows wajib berupa array dan tidak boleh kosong."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        results = []
-        success_count = 0
-
-        for index, row in enumerate(rows, start=1):
-            row_number = row.get("index", index) if isinstance(row, dict) else index
-            serializer = self.get_serializer(data=row)
-            if serializer.is_valid():
-                instance = serializer.save()
-                log_admin_action(
-                    self.request.user,
-                    instance,
-                    ADDITION,
-                    "Created software via CSL Admin bulk import.",
-                )
-                results.append(
-                    {
-                        "index": row_number,
-                        "status": "success",
-                        "message": "Sukses",
-                        "id": str(instance.id),
-                    }
-                )
-                success_count += 1
-            else:
-                results.append(
-                    {
-                        "index": row_number,
-                        "status": "error",
-                        "message": serializer.errors,
-                    }
-                )
-
-        failed_count = len(results) - success_count
-        response_status = (
-            status.HTTP_201_CREATED
-            if failed_count == 0
-            else status.HTTP_207_MULTI_STATUS
-        )
-        return Response(
-            {
-                "results": results,
-                "success_count": success_count,
-                "failed_count": failed_count,
-            },
-            status=response_status,
-        )
-
-    def _delete_software_instance(self, instance):
-        log_admin_action(
-            self.request.user,
-            instance,
-            DELETION,
-            "Deleted software via CSL Admin (inventory).",
-        )
-        super().perform_destroy(instance)
-
-    def perform_destroy(self, instance):
-        self._delete_software_instance(instance)
-
-    @action(detail=False, methods=['post'], url_path='bulk-delete')
-    def bulk_delete(self, request):
-        if not is_administrator_or_above(request.user):
-            raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data software.")
-
-        serializer = RecordBulkDeleteSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        ids = serializer.validated_data["ids"]
-
-        software_map = {
-            str(item.id): item
-            for item in Software.objects.filter(id__in=ids)
-        }
-        missing_ids = [str(item_id) for item_id in ids if str(item_id) not in software_map]
-        deleted_ids = []
-
-        for item_id in ids:
-            software = software_map.get(str(item_id))
-            if software is None:
-                continue
-            self._delete_software_instance(software)
-            deleted_ids.append(str(item_id))
-
-        response_status = (
-            status.HTTP_200_OK if not missing_ids else status.HTTP_207_MULTI_STATUS
-        )
-        return Response(
-            {
-                "deleted_ids": deleted_ids,
-                "deleted_count": len(deleted_ids),
-                "failed_ids": missing_ids,
-                "failed_count": len(missing_ids),
-                "detail": (
-                    "Semua software terpilih berhasil dihapus."
-                    if not missing_ids
-                    else "Sebagian software tidak ditemukan."
-                ),
-            },
-            status=response_status,
-        )
-
-    @action(detail=False, methods=['get'], url_path='export')
-    def export(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
-        serializer = SoftwareListSerializer(queryset, many=True)
-        return Response(serializer.data)
-
-
+# region Borrow Equipment
 class BorrowViewSet(viewsets.ModelViewSet):
     queryset = (
         Borrow.objects
@@ -2736,6 +1987,10 @@ class BorrowViewSet(viewsets.ModelViewSet):
         return self.receive_return(request, pk=pk)
 
 
+# endregion
+
+
+# region Content
 class AnnouncementViewSet(viewsets.ModelViewSet):
     queryset = Announcement.objects.select_related('created_by').order_by('-created_at')
     serializer_class = AnnouncementSerializer
@@ -2847,6 +2102,10 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         )
 
 
+# endregion
+
+
+# region Scheduling And Overview
 class ScheduleViewSet(viewsets.ModelViewSet):
     queryset = Schedule.objects.select_related('room', 'created_by').order_by('start_time')
     serializer_class = ScheduleSerializer
@@ -3468,6 +2727,10 @@ class DashboardOverviewViewSet(viewsets.ViewSet):
         return Response(serializer.data)
 
 
+# endregion
+
+
+# region FAQ
 class FAQViewSet(viewsets.ModelViewSet):
     queryset = FAQ.objects.select_related('created_by').order_by('-created_at')
     serializer_class = FAQSerializer
@@ -3576,6 +2839,10 @@ class FAQViewSet(viewsets.ModelViewSet):
         )
 
 
+# endregion
+
+
+# region Sample Testing
 class PengujianViewSet(viewsets.ModelViewSet):
     queryset = (
         Pengujian.objects
@@ -4126,6 +3393,10 @@ class PengujianViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+# endregion
+
+
+# region Use Equipment
 class UseViewSet(viewsets.ModelViewSet):
     queryset = (
         Use.objects
@@ -4559,6 +3830,10 @@ class UseViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
 
+# endregion
+
+
+# region Notifications
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [IsAuthenticated]
@@ -4569,3 +3844,778 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         if profile is None:
             return Notification.objects.none()
         return Notification.objects.filter(recipient=profile).order_by("-created_at")
+
+
+# endregion
+
+
+# region Helpers
+def normalize_status_value(value):
+    if value is None:
+        return value
+    raw = str(value).strip()
+    if not raw:
+        return raw
+    return STATUS_VALUE_MAP.get(raw.lower(), raw)
+
+
+def is_active_status_filter(value):
+    if value is None:
+        return False
+    return str(value).strip().lower() == "active"
+
+
+def _has_review_value(value):
+    return bool(str(value or "").strip())
+
+
+def _review_issue(label, value):
+    return {
+        "label": str(label),
+        "value": str(value),
+    }
+
+
+def _review_result(*, issues=None, passed_indicators=None):
+    return {
+        "issues": issues or [],
+        "passed_indicators": passed_indicators or [],
+    }
+
+
+def _requires_mentor_approval(instance):
+    return (
+        str(getattr(instance, "purpose", "") or "").strip() == "Skripsi/TA"
+        and getattr(instance, "requester_mentor_profile_id", None) is not None
+    )
+
+
+def _is_assigned_mentor(user, instance):
+    profile = getattr(user, "profile", None)
+    return (
+        profile is not None
+        and getattr(instance, "requester_mentor_profile_id", None) == profile.id
+    )
+
+
+def _mentor_review_pending(instance):
+    return (
+        getattr(instance, "status", None) == "Pending"
+        and _requires_mentor_approval(instance)
+        and not bool(getattr(instance, "is_approved_by_mentor", False))
+    )
+
+
+def _can_run_final_pic_review(instance):
+    return not _requires_mentor_approval(instance) or bool(
+        getattr(instance, "is_approved_by_mentor", False)
+    )
+
+
+def _booking_review_result(booking):
+    issues = []
+    passed_indicators = []
+    required_fields_complete = True
+
+    if not _has_review_value(booking.requester_phone):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Nomor telepon belum diisi",
+                "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
+            )
+        )
+    if not _has_review_value(booking.requester_mentor):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Dosen pembimbing belum diisi",
+                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
+            )
+        )
+    if (booking.attendee_count or 0) > 1 and not _has_review_value(booking.attendee_names):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Nama peserta belum diisi",
+                "Jumlah peserta lebih dari 1, tetapi daftar nama peserta belum dilengkapi.",
+            )
+        )
+    if str(booking.purpose or "").strip() == "Workshop":
+        if not _has_review_value(booking.workshop_title):
+            required_fields_complete = False
+            issues.append(
+                _review_issue(
+                    "Judul workshop belum diisi",
+                    "Pengajuan workshop belum memiliki judul kegiatan.",
+                )
+            )
+        if not _has_review_value(booking.workshop_pic):
+            required_fields_complete = False
+            issues.append(
+                _review_issue(
+                    "PIC workshop belum diisi",
+                    "Pengajuan workshop belum mencantumkan PIC workshop.",
+                )
+            )
+        if not _has_review_value(booking.workshop_institution):
+            required_fields_complete = False
+            issues.append(
+                _review_issue(
+                    "Institusi workshop belum diisi",
+                    "Pengajuan workshop belum mencantumkan institusi workshop.",
+                )
+            )
+
+    practicum_count = 0
+    approved_booking_count = 0
+    if booking.room_id and booking.start_time and booking.end_time:
+        practicum_count = Schedule.objects.filter(
+            room_id=booking.room_id,
+            start_time__lt=booking.end_time,
+            end_time__gt=booking.start_time,
+        ).count()
+        if practicum_count:
+            issues.append(
+                _review_issue(
+                    "Bentrok jadwal praktikum",
+                    f"Ruangan sudah dipakai untuk {practicum_count} jadwal praktikum pada rentang waktu ini.",
+                )
+            )
+
+        approved_booking_count = (
+            Booking.objects.filter(
+                room_id=booking.room_id,
+                status="Approved",
+                start_time__lt=booking.end_time,
+                end_time__gt=booking.start_time,
+            )
+            .exclude(pk=booking.pk)
+            .count()
+        )
+        if approved_booking_count:
+            issues.append(
+                _review_issue(
+                    "Bentrok booking aktif",
+                    f"Ruangan juga memiliki {approved_booking_count} booking lain yang sudah disetujui pada rentang waktu ini.",
+                )
+            )
+
+    if practicum_count == 0:
+        passed_indicators.append("Tidak bentrok dengan jadwal praktikum pada ruangan yang sama")
+    if approved_booking_count == 0:
+        passed_indicators.append("Tidak bentrok dengan booking lain yang sudah disetujui")
+    if required_fields_complete:
+        passed_indicators.append("Field penting untuk approval sudah terisi semua")
+
+    return _review_result(issues=issues, passed_indicators=passed_indicators)
+
+
+def _equipment_review_overlap_issues(
+    *,
+    equipment_id,
+    requested_quantity,
+    stock_quantity,
+    start_time,
+    end_time,
+    exclude_borrow_id=None,
+    exclude_use_id=None,
+):
+    issues = []
+    passed_indicators = []
+    if not equipment_id or not start_time or not end_time:
+        return _review_result(issues=issues, passed_indicators=passed_indicators)
+
+    booking_allocated_qty = (
+        Booking.objects.filter(
+            equipment_items__equipment_id=equipment_id,
+            status__in=["Pending", "Approved"],
+            start_time__lt=end_time,
+            end_time__gt=start_time,
+        )
+        .aggregate(total=Sum("equipment_items__quantity"))
+        .get("total")
+        or 0
+    )
+
+    borrow_qs = Borrow.objects.filter(
+        equipment_id=equipment_id,
+        status__in=["Pending", "Approved", "Borrowed", "Overdue", "Lost/Damaged"],
+        start_time__lt=end_time,
+        end_time__gt=start_time,
+    )
+    if exclude_borrow_id is not None:
+        borrow_qs = borrow_qs.exclude(pk=exclude_borrow_id)
+    borrow_allocated_qty = borrow_qs.aggregate(total=Sum("quantity")).get("total") or 0
+
+    use_qs = Use.objects.filter(
+        equipment_id=equipment_id,
+        status__in=["Pending", "Approved"],
+        start_time__lt=end_time,
+        end_time__gt=start_time,
+    )
+    if exclude_use_id is not None:
+        use_qs = use_qs.exclude(pk=exclude_use_id)
+    use_allocated_qty = use_qs.aggregate(total=Sum("quantity")).get("total") or 0
+
+    allocated_qty = booking_allocated_qty + borrow_allocated_qty + use_allocated_qty
+    remaining_qty = max((stock_quantity or 0) - allocated_qty, 0)
+
+    if requested_quantity > remaining_qty:
+        segments = []
+        if booking_allocated_qty:
+            segments.append(f"{booking_allocated_qty} unit untuk booking")
+        if use_allocated_qty:
+            segments.append(f"{use_allocated_qty} unit untuk penggunaan alat")
+        if borrow_allocated_qty:
+            segments.append(f"{borrow_allocated_qty} unit untuk peminjaman alat")
+        issues.append(
+            _review_issue(
+                "Stok tidak mencukupi pada rentang waktu yang sama",
+                (
+                    f"Stok total alat {stock_quantity} unit. "
+                    f"Sudah teralokasi {allocated_qty} unit"
+                    + (f" ({', '.join(segments)})" if segments else "")
+                    + f", sehingga sisa stok hanya {remaining_qty} unit untuk rentang waktu ini."
+                ),
+            )
+        )
+    else:
+        passed_indicators.append("Sisa stok alat pada rentang waktu yang sama masih mencukupi")
+
+    return _review_result(issues=issues, passed_indicators=passed_indicators)
+
+
+def _use_review_result(use_item):
+    issues = []
+    passed_indicators = []
+    required_fields_complete = True
+
+    if not _has_review_value(use_item.requester_phone):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Nomor telepon belum diisi",
+                "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
+            )
+        )
+    if not _has_review_value(use_item.requester_mentor):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Dosen pembimbing belum diisi",
+                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
+            )
+        )
+
+    equipment = getattr(use_item, "equipment", None)
+    equipment_available = False
+    stock_within_limit = False
+    if equipment is not None:
+        if str(equipment.status or "") != "Available":
+            issues.append(
+                _review_issue(
+                    "Status alat tidak available",
+                    f"Status alat saat ini {equipment.status}. Pastikan alat memang dapat digunakan sebelum approve.",
+                )
+            )
+        else:
+            equipment_available = True
+        if (use_item.quantity or 0) > (equipment.quantity or 0):
+            issues.append(
+                _review_issue(
+                    "Jumlah melebihi stok",
+                    f"Pengajuan meminta {use_item.quantity} unit, sementara stok alat hanya {equipment.quantity}.",
+                )
+            )
+        else:
+            stock_within_limit = True
+
+    overlap_result = _equipment_review_overlap_issues(
+        equipment_id=getattr(use_item, "equipment_id", None),
+        requested_quantity=use_item.quantity or 0,
+        stock_quantity=getattr(equipment, "quantity", 0) if equipment is not None else 0,
+        start_time=use_item.start_time,
+        end_time=use_item.end_time,
+        exclude_use_id=use_item.pk,
+    )
+    issues.extend(overlap_result["issues"])
+    passed_indicators.extend(overlap_result["passed_indicators"])
+
+    if equipment_available:
+        passed_indicators.insert(0, "Status alat masih available")
+    if stock_within_limit:
+        passed_indicators.append("Jumlah pengajuan tidak melebihi stok alat")
+    if required_fields_complete:
+        passed_indicators.append("Field penting untuk approval sudah terisi semua")
+
+    return _review_result(issues=issues, passed_indicators=passed_indicators)
+
+
+def _borrow_review_result(borrow):
+    issues = []
+    passed_indicators = []
+    required_fields_complete = True
+
+    if not _has_review_value(borrow.requester_phone):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Nomor telepon belum diisi",
+                "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
+            )
+        )
+    if not _has_review_value(borrow.requester_mentor):
+        required_fields_complete = False
+        issues.append(
+            _review_issue(
+                "Dosen pembimbing belum diisi",
+                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
+            )
+        )
+
+    equipment = getattr(borrow, "equipment", None)
+    equipment_available = False
+    stock_within_limit = False
+    if equipment is not None:
+        if str(equipment.status or "") != "Available":
+            issues.append(
+                _review_issue(
+                    "Status alat tidak available",
+                    f"Status alat saat ini {equipment.status}. Pastikan alat memang dapat dipinjam sebelum approve.",
+                )
+            )
+        else:
+            equipment_available = True
+        if (borrow.quantity or 0) > (equipment.quantity or 0):
+            issues.append(
+                _review_issue(
+                    "Jumlah melebihi stok",
+                    f"Pengajuan meminta {borrow.quantity} unit, sementara stok alat hanya {equipment.quantity}.",
+                )
+            )
+        else:
+            stock_within_limit = True
+
+    overlap_result = _equipment_review_overlap_issues(
+        equipment_id=getattr(borrow, "equipment_id", None),
+        requested_quantity=borrow.quantity or 0,
+        stock_quantity=getattr(equipment, "quantity", 0) if equipment is not None else 0,
+        start_time=borrow.start_time,
+        end_time=borrow.end_time,
+        exclude_borrow_id=borrow.pk,
+    )
+    issues.extend(overlap_result["issues"])
+    passed_indicators.extend(overlap_result["passed_indicators"])
+
+    if equipment_available:
+        passed_indicators.insert(0, "Status alat masih available")
+    if stock_within_limit:
+        passed_indicators.append("Jumlah pengajuan tidak melebihi stok alat")
+    if required_fields_complete:
+        passed_indicators.append("Field penting untuk approval sudah terisi semua")
+
+    return _review_result(issues=issues, passed_indicators=passed_indicators)
+
+
+def is_staff_or_above(user):
+    return (
+        user
+        and user.is_authenticated
+        and (
+            getattr(user, "is_superuser", False)
+            or has_role(user, STAFF)
+            or has_role(user, ADMINISTRATOR)
+            or has_role(user, SUPER_ADMINISTRATOR)
+        )
+    )
+
+
+def is_reviewer_or_above(user):
+    return (
+        user
+        and user.is_authenticated
+        and (
+            getattr(user, "is_superuser", False)
+            or has_role(user, LECTURER)
+            or has_role(user, STAFF)
+            or has_role(user, ADMINISTRATOR)
+            or has_role(user, SUPER_ADMINISTRATOR)
+        )
+    )
+
+
+def is_administrator_or_above(user):
+    return (
+        user
+        and user.is_authenticated
+        and (
+            getattr(user, "is_superuser", False)
+            or has_role(user, ADMINISTRATOR)
+            or has_role(user, SUPER_ADMINISTRATOR)
+        )
+    )
+
+
+def can_manage_all_approval_records(user):
+    return is_administrator_or_above(user)
+
+
+def build_requester_dropdown_response(queryset):
+    requester_ids = (
+        queryset.exclude(requested_by__isnull=True)
+        .values_list("requested_by_id", flat=True)
+        .distinct()
+    )
+    profiles = (
+        Profile.objects
+        .select_related("user")
+        .filter(id__in=requester_ids)
+        .order_by("full_name", "user__email")
+    )
+    return Response([
+        {
+            "id": str(profile.id),
+            "full_name": profile.full_name or profile.user.email,
+            "email": profile.user.email,
+            "department": profile.department,
+        }
+        for profile in profiles
+    ])
+
+
+def _profile_display_name(profile):
+    if not profile:
+        return None
+    return (
+        getattr(profile, 'full_name', None)
+        or getattr(getattr(profile, 'user', None), 'email', None)
+        or str(profile)
+    )
+
+
+def _profile_role(profile):
+    if not profile:
+        return None
+    return getattr(profile, "role", None)
+
+
+def _event_title_with_requester(base_title, profile):
+    requester_name = _profile_display_name(profile)
+    if not requester_name:
+        return base_title
+    return f"{base_title} - {requester_name}"
+
+
+def _overview_title(value, fallback):
+    if value is None:
+        return fallback
+    raw = str(value).strip()
+    return raw or fallback
+
+
+def _create_notification(recipient, *, title, category, message):
+    if recipient is None:
+        return None
+    return Notification.objects.create(
+        recipient=recipient,
+        title=title,
+        category=category,
+        message=message,
+    )
+
+
+def _request_label(kind):
+    labels = {
+        "booking": "booking ruangan",
+        "borrow": "peminjaman alat",
+        "use": "penggunaan alat",
+        "pengujian": "pengujian sampel",
+    }
+    return labels.get(kind, "request")
+
+
+def _request_identifier(instance, fallback):
+    return (
+        getattr(instance, "code", None)
+        or getattr(instance, "sample_name", None)
+        or getattr(instance, "name", None)
+        or fallback
+    )
+
+
+def _notification_recipient_email(recipient):
+    if recipient is None:
+        return None
+    user = getattr(recipient, "user", None)
+    email = getattr(user, "email", None)
+    return (email or "").strip() or None
+
+
+def _notification_recipient_name(instance, recipient):
+    return (
+        _profile_display_name(recipient)
+        or getattr(instance, "name", None)
+        or _notification_recipient_email(recipient)
+        or "Pengguna"
+    )
+
+
+def _notification_email_extra_context(
+    instance,
+    *,
+    recipient,
+    kind,
+    title,
+    message,
+    cta_url,
+    cta_label,
+):
+    return {
+        "user_display": _notification_recipient_name(instance, recipient),
+        "notification_title": title,
+        "notification_message": message,
+        "request_label": _request_label(kind).title(),
+        "request_label_lower": _request_label(kind),
+        "request_identifier": _request_identifier(instance, _request_label(kind).title()),
+        "cta_url": cta_url,
+        "cta_label": cta_label,
+    }
+
+
+def _send_request_status_email(
+    instance,
+    *,
+    recipient,
+    kind,
+    title,
+    message,
+    status_value,
+    request=None,
+):
+    recipient_email = _notification_recipient_email(recipient)
+    if not recipient_email:
+        return
+
+    cta_url = notification_cta_url(kind, instance)
+    cta_label = notification_cta_label(kind)
+    context = build_email_context(
+        request=request,
+        extra_context={
+            **_notification_email_extra_context(
+                instance,
+                recipient=recipient,
+                kind=kind,
+                title=title,
+                message=message,
+                cta_url=cta_url,
+                cta_label=cta_label,
+            ),
+            "status_label": "disetujui" if status_value == "Approved" else "ditolak",
+        },
+    )
+    send_notification_email(
+        recipient_email,
+        template_base="csluse/email/request_status",
+        context=context,
+    )
+
+
+def _send_borrow_overdue_email(
+    instance,
+    *,
+    recipient,
+    title,
+    message,
+    due_text,
+    equipment_name,
+    request=None,
+):
+    recipient_email = _notification_recipient_email(recipient)
+    if not recipient_email:
+        return
+
+    cta_url = notification_cta_url("borrow", instance)
+    context = build_email_context(
+        request=request,
+        extra_context={
+            **_notification_email_extra_context(
+                instance,
+                recipient=recipient,
+                kind="borrow",
+                title=title,
+                message=message,
+                cta_url=cta_url,
+                cta_label="Lihat Detail Peminjaman",
+            ),
+            "equipment_name": equipment_name,
+            "due_text": due_text,
+        },
+    )
+    send_notification_email(
+        recipient_email,
+        template_base="csluse/email/borrow_overdue",
+        context=context,
+    )
+
+
+def _notify_request_status(instance, *, kind, status_value, actor_profile=None, request=None):
+    recipient = getattr(instance, "requested_by", None)
+    if recipient is None:
+        return
+
+    request_label = _request_label(kind)
+    request_identifier = _request_identifier(instance, request_label.title())
+    actor_name = _profile_display_name(actor_profile) or "tim laboratorium"
+    category = "Approved" if status_value == "Approved" else "Rejected"
+    action_label = "disetujui" if status_value == "Approved" else "ditolak"
+    title = f"{request_label.title()} {request_identifier} {action_label}"
+    message = (
+        f"Pengajuan {request_label} Anda ({request_identifier}) telah "
+        f"{action_label} oleh {actor_name}."
+    )
+
+    _create_notification(
+        recipient,
+        title=title,
+        category=category,
+        message=message,
+    )
+    _send_request_status_email(
+        instance,
+        recipient=recipient,
+        kind=kind,
+        title=title,
+        message=message,
+        status_value=status_value,
+        request=request,
+    )
+
+
+def _notify_borrow_overdue(instance, request=None):
+    recipient = getattr(instance, "requested_by", None)
+    if recipient is None:
+        return
+
+    borrow_identifier = _request_identifier(instance, "Borrow")
+    equipment_name = getattr(getattr(instance, "equipment", None), "name", "alat")
+    due_at = getattr(instance, "end_time", None)
+    due_text = timezone.localtime(due_at).strftime("%d %b %Y %H:%M WIB") if due_at else "jadwal pengembalian"
+    title = f"Peminjaman {borrow_identifier} melewati batas waktu"
+    message = (
+        f"Peminjaman alat Anda ({borrow_identifier}) untuk {equipment_name} "
+        f"sudah overdue sejak {due_text}. Segera lakukan pengembalian."
+    )
+
+    _create_notification(
+        recipient,
+        title=title,
+        category="Reminder",
+        message=message,
+    )
+    _send_borrow_overdue_email(
+        instance,
+        recipient=recipient,
+        title=title,
+        message=message,
+        due_text=due_text,
+        equipment_name=equipment_name,
+        request=request,
+    )
+
+
+def build_status_aggregates(queryset, completed_statuses=None):
+    completed_statuses = completed_statuses or ["Completed"]
+    return {
+        "total": queryset.count(),
+        "pending": queryset.filter(status="Pending").count(),
+        "approved": queryset.filter(status="Approved").count(),
+        "diproses": queryset.filter(status="Diproses").count(),
+        "menunggu_pembayaran": queryset.filter(status="Menunggu Pembayaran").count(),
+        "completed": queryset.filter(status__in=completed_statuses).count(),
+        "rejected": queryset.filter(status="Rejected").count(),
+        "expired": queryset.filter(status="Expired").count(),
+    }
+
+
+def build_borrow_status_aggregates(queryset):
+    return {
+        "total": queryset.count(),
+        "pending": queryset.filter(status="Pending").count(),
+        "approved": queryset.filter(status="Approved").count(),
+        "rejected": queryset.filter(status="Rejected").count(),
+        "expired": queryset.filter(status="Expired").count(),
+        "borrowed": queryset.filter(status="Borrowed").count(),
+        "returned_pending_inspection": queryset.filter(
+            status="Returned Pending Inspection"
+        ).count(),
+        "returned": queryset.filter(status="Returned").count(),
+        "overdue": queryset.filter(status="Overdue").count(),
+        "lost_damaged": queryset.filter(status="Lost/Damaged").count(),
+    }
+
+
+def sync_booking_statuses():
+    now = timezone.now()
+    expired_pending = (
+        Booking.objects
+        .filter(status="Pending", end_time__lt=now, expired_at__isnull=True)
+        .update(status="Expired", expired_at=now, updated_at=now)
+    )
+    completed_approved = (
+        Booking.objects
+        .filter(status="Approved", end_time__lt=now, completed_at__isnull=True)
+        .update(status="Completed", completed_at=now, updated_at=now)
+    )
+    return {
+        "expired_pending": expired_pending,
+        "completed_approved": completed_approved,
+    }
+
+
+def sync_use_statuses():
+    now = timezone.now()
+    expired_finished = (
+        Use.objects
+        .filter(status="Pending", end_time__lt=now, expired_at__isnull=True)
+        .update(status="Expired", expired_at=now, updated_at=now)
+    )
+    expired_started_without_end = (
+        Use.objects
+        .filter(status="Pending", end_time__isnull=True, start_time__lt=now, expired_at__isnull=True)
+        .update(status="Expired", expired_at=now, updated_at=now)
+    )
+    return {
+        "expired_finished": expired_finished,
+        "expired_started_without_end": expired_started_without_end,
+    }
+
+
+def sync_borrow_statuses():
+    now = timezone.now()
+    expired_pending = (
+        Borrow.objects
+        .filter(status="Pending", start_time__lt=now, expired_at__isnull=True)
+        .update(status="Expired", expired_at=now, updated_at=now)
+    )
+    overdue_borrows = list(
+        Borrow.objects
+        .filter(status="Borrowed", end_time__lt=now, overdue_at__isnull=True)
+        .select_related("requested_by", "equipment")
+    )
+    if overdue_borrows:
+        Borrow.objects.filter(pk__in=[item.pk for item in overdue_borrows]).update(
+            status="Overdue",
+            overdue_at=now,
+            updated_at=now,
+        )
+        for item in overdue_borrows:
+            item.status = "Overdue"
+            _notify_borrow_overdue(item)
+    return {
+        "expired_pending": expired_pending,
+        "marked_overdue": len(overdue_borrows),
+    }
+
+
+# endregion

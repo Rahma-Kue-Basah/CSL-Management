@@ -1,7 +1,12 @@
 import re
+import uuid
+
 from django.contrib.auth import get_user_model
 from django.db import models
-import uuid
+
+
+# region Base Models
+
 
 class BaseModel(models.Model):
     id = models.UUIDField(default=uuid.uuid4, primary_key=True, editable=False)
@@ -12,7 +17,62 @@ class BaseModel(models.Model):
         abstract = True
 
 
+# endregion Base Models
+
+
+# region Profile Models
+
+
 class Profile(BaseModel):
+    USER_TYPE_CHOICES = [
+        ("Internal", "Internal"),
+        ("External", "External"),
+    ]
+    ROLE_CHOICES = [
+        ("Student", "Student"),
+        ("Lecturer", "Lecturer"),
+        ("Admin", "Admin"),
+        ("Staff", "Staff"),
+        ("Guest", "Guest"),
+    ]
+    DEPARTMENT_CHOICE = [
+        ("Accounting", "Accounting"),
+        ("Business", "Business"),
+        ("Event", "Event"),
+        ("Finance & Banking", "Finance & Banking"),
+        ("Branding", "Branding"),
+        ("Renewable Energy Engineering", "Renewable Energy Engineering"),
+        ("Energy Business and Technology", "Energy Business and Technology"),
+        ("Digital Business Technology", "Digital Business Technology"),
+        ("Food Business Technology", "Food Business Technology"),
+        ("Business Mathematics", "Business Mathematics"),
+        ("Computer Systems Engineering", "Computer Systems Engineering"),
+        ("Business Economics", "Business Economics"),
+        ("Hospitality Business", "Hospitality Business"),
+        ("International Business Law", "International Business Law"),
+        ("Product Design Innovation", "Product Design Innovation"),
+        ("Artificial Inteligence and Robotic", "Artificial Inteligence and Robotic"),
+        ("Hukum Bisnis Internasional", "Hukum Bisnis Internasional"),
+        ("S2 Manajemen Pemasaran dan Keuangan", "S2 Manajemen Pemasaran dan Keuangan"),
+        ("S2 Bisnis Analitik Terapan", "S2 Bisnis Analitik Terapan"),
+        ("S2 Inovasi Bisnis Baru", "S2 Inovasi Bisnis Baru"),
+        ("S2 Manajemen Bisnis", "S2 Manajemen Bisnis"),
+        ("S2 Manajemen Stratejik", "S2 Manajemen Stratejik"),
+        ("S3 Manajemen dan Kewirausahaan", "S3 Manajemen dan Kewirausahaan"),
+        ("Lainnya", "Lainnya"),
+    ]
+    BATCH_CHOICES = [
+        ("2020", "2020"),
+        ("2021", "2021"),
+        ("2022", "2022"),
+        ("2023", "2023"),
+        ("2024", "2024"),
+        ("2025", "2025"),
+        ("2026", "2026"),
+        ("2027", "2027"),
+        ("2028", "2028"),
+    ]
+
     user = models.OneToOneField(
         get_user_model(),
         on_delete=models.CASCADE,
@@ -20,65 +80,12 @@ class Profile(BaseModel):
     )
     full_name = models.CharField(max_length=150, blank=True)
     initials = models.CharField(max_length=3, blank=True)
-
-    USER_TYPE_CHOICES = [
-        ('Internal', 'Internal'),
-        ('External', 'External'),
-    ]
-
-    ROLE_CHOICES = [
-        ('Student', 'Student'),
-        ('Lecturer', 'Lecturer'),
-        ('Admin', 'Admin'),
-        ('Staff', 'Staff'),
-        ('Guest', 'Guest'),
-    ]
-
-    DEPARTMENT_CHOICE = [
-        ('Accounting', 'Accounting'),
-        ('Business', 'Business'),
-        ('Event', 'Event'),
-        ('Finance & Banking', 'Finance & Banking'),
-        ('Branding', 'Branding'),
-        ('Renewable Energy Engineering', 'Renewable Energy Engineering'),
-        ('Energy Business and Technology', 'Energy Business and Technology'),
-        ('Digital Business Technology', 'Digital Business Technology'),
-        ('Food Business Technology', 'Food Business Technology'),
-        ('Business Mathematics', 'Business Mathematics'),
-        ('Computer Systems Engineering', 'Computer Systems Engineering'),
-        ('Business Economics', 'Business Economics'),
-        ('Hospitality Business', 'Hospitality Business'),
-        ('International Business Law', 'International Business Law'),
-        ('Product Design Innovation', 'Product Design Innovation'),
-        ('Artificial Inteligence and Robotic', 'Artificial Inteligence and Robotic'),
-        ('Hukum Bisnis Internasional', 'Hukum Bisnis Internasional'),
-        ('S2 Manajemen Pemasaran dan Keuangan', 'S2 Manajemen Pemasaran dan Keuangan'),
-        ('S2 Bisnis Analitik Terapan', 'S2 Bisnis Analitik Terapan'),
-        ('S2 Inovasi Bisnis Baru', 'S2 Inovasi Bisnis Baru'),
-        ('S2 Manajemen Bisnis', 'S2 Manajemen Bisnis'),
-        ('S2 Manajemen Stratejik', 'S2 Manajemen Stratejik'),
-        ('S3 Manajemen dan Kewirausahaan', 'S3 Manajemen dan Kewirausahaan'),
-        ('Lainnya', 'Lainnya'),
-    ]
-
-    BATCH_CHOICES = [
-        ('2020', '2020'),
-        ('2021', '2021'),
-        ('2022', '2022'),
-        ('2023', '2023'),
-        ('2024', '2024'),
-        ('2025', '2025'),
-        ('2026', '2026'),
-        ('2027', '2027'),
-        ('2028', '2028'),
-    ]
-
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, blank=True, null=True)
     is_mentor = models.BooleanField(default=False)
     department = models.CharField(max_length=40, choices=DEPARTMENT_CHOICE, blank=True, null=True)
     id_number = models.CharField(max_length=40, blank=True, null=True)
     batch = models.CharField(max_length=4, choices=BATCH_CHOICES, blank=True, null=True)
-    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default='External')
+    user_type = models.CharField(max_length=10, choices=USER_TYPE_CHOICES, default="External")
     institution = models.CharField(max_length=255, blank=True, null=True)
 
     @staticmethod
@@ -121,3 +128,6 @@ class Profile(BaseModel):
 
     def __str__(self):
         return f"{self.user.email} - {self.full_name} - {self.role}"
+
+
+# endregion Profile Models

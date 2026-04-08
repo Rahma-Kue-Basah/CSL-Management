@@ -2,16 +2,18 @@ import re
 import secrets
 import string
 
-from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
+from allauth.account.models import EmailAddress
+from django.contrib.admin.models import ADDITION, CHANGE, DELETION, LogEntry
+from django.contrib.auth import get_user_model
 from dj_rest_auth.registration.serializers import RegisterSerializer
 from dj_rest_auth.serializers import LoginSerializer as BaseLoginSerializer
 from rest_framework import serializers
-from django.contrib.auth import get_user_model
-from allauth.account.models import EmailAddress
-
 
 from .audit import log_admin_action
 from .models import Profile
+
+
+User = get_user_model()
 
 ADMIN_ROLE_GROUPS = {"Administrator", "SuperAdministrator"}
 ROLE_NORMALIZATION_MAP = {
@@ -27,85 +29,12 @@ ROLE_WITH_BATCH = {"Student"}
 ROLE_WITH_ID_NUMBER = {"Student", "Lecturer", "Staff", "Admin"}
 
 
-def _normalize_nullable_value(value):
-    if value == "":
-        return None
-    return value
-
-
-def _apply_role_field_rules(attrs, instance=None):
-    role = attrs.get("role", getattr(instance, "role", None)) or "Guest"
-    is_mentor = attrs.get("is_mentor", getattr(instance, "is_mentor", False))
-
-    department = _normalize_nullable_value(attrs.get("department", serializers.empty))
-    batch = _normalize_nullable_value(attrs.get("batch", serializers.empty))
-    id_number = _normalize_nullable_value(attrs.get("id_number", serializers.empty))
-    institution = _normalize_nullable_value(attrs.get("institution", serializers.empty))
-
-    if department is not serializers.empty and role not in ROLE_WITH_DEPARTMENT and department:
-        raise serializers.ValidationError({
-            "department": "Department hanya boleh diisi untuk Student atau Lecturer."
-        })
-
-    if batch is not serializers.empty and role not in ROLE_WITH_BATCH and batch:
-        raise serializers.ValidationError({
-            "batch": "Batch hanya boleh diisi untuk Student."
-        })
-
-    if id_number is not serializers.empty and role not in ROLE_WITH_ID_NUMBER and id_number:
-        raise serializers.ValidationError({
-            "id_number": "ID Number hanya boleh diisi untuk Student, Lecturer, Staff, atau Admin."
-        })
-
-    if institution is not serializers.empty and role != "Guest" and institution:
-        raise serializers.ValidationError({
-            "institution": "Institusi hanya boleh diisi untuk Guest."
-        })
-
-    if role != "Lecturer" and is_mentor:
-        raise serializers.ValidationError({
-            "is_mentor": "is_mentor hanya boleh aktif untuk role Lecturer."
-        })
-
-    if role not in ROLE_WITH_DEPARTMENT:
-        attrs["department"] = None
-    elif department is not serializers.empty:
-        attrs["department"] = department
-
-    if role not in ROLE_WITH_BATCH:
-        attrs["batch"] = None
-    elif batch is not serializers.empty:
-        attrs["batch"] = batch
-
-    if role not in ROLE_WITH_ID_NUMBER:
-        attrs["id_number"] = None
-    elif id_number is not serializers.empty:
-        attrs["id_number"] = id_number
-
-    if role != "Guest":
-        attrs["institution"] = None
-    elif institution is not serializers.empty:
-        attrs["institution"] = institution
-
-    attrs["is_mentor"] = bool(is_mentor) if role == "Lecturer" else False
-
-    return attrs
-
-
-def _can_assign_profile_fields(request):
-    user = getattr(request, "user", None)
-    if not user or not user.is_authenticated:
-        return False
-    if getattr(user, "is_superuser", False):
-        return True
-    return user.groups.filter(name__in=ADMIN_ROLE_GROUPS).exists()
-
-User = get_user_model()
+# region Authentication Serializers
 
 
 class CustomLoginSerializer(BaseLoginSerializer):
-    """Custom login serializer that accepts both username and email"""
-    
+    """Custom login serializer that accepts both username and email."""
+
     username = serializers.CharField(
         label="Username or Email",
         write_only=True,
@@ -113,43 +42,40 @@ class CustomLoginSerializer(BaseLoginSerializer):
     )
 
     def validate(self, attrs):
-        username = attrs.get('username')
-        password = attrs.get('password')
+        username = attrs.get("username")
+        password = attrs.get("password")
 
         if username and password:
-            # Try to find user by username first
             try:
                 user = User.objects.get(username=username)
             except User.DoesNotExist:
-                # If not found, try to find by email
                 try:
                     user = User.objects.get(email=username)
                 except User.DoesNotExist:
-                    msg = 'Unable to log in with provided credentials.'
-                    raise serializers.ValidationError(msg, code='authorization')
+                    msg = "Unable to log in with provided credentials."
+                    raise serializers.ValidationError(msg, code="authorization")
 
-            # Verify password
             if not user.check_password(password):
-                msg = 'Unable to log in with provided credentials.'
-                raise serializers.ValidationError(msg, code='authorization')
+                msg = "Unable to log in with provided credentials."
+                raise serializers.ValidationError(msg, code="authorization")
 
             if not user.is_active:
-                msg = 'User account is disabled.'
-                raise serializers.ValidationError(msg, code='authorization')
-            
-            if not EmailAddress.objects.filter(user=user, verified=True).exists():
-                raise serializers.ValidationError({'detail': 'Email belum diverifikasi', 'code': 'email_not_verified'})
+                msg = "User account is disabled."
+                raise serializers.ValidationError(msg, code="authorization")
 
-            # Set backend attribute for multiple authentication backends
-            user.backend = 'django.contrib.auth.backends.ModelBackend'
-            attrs['user'] = user
+            if not EmailAddress.objects.filter(user=user, verified=True).exists():
+                raise serializers.ValidationError(
+                    {"detail": "Email belum diverifikasi", "code": "email_not_verified"}
+                )
+
+            user.backend = "django.contrib.auth.backends.ModelBackend"
+            attrs["user"] = user
             return attrs
 
         msg = 'Must include "username" and "password".'
-        raise serializers.ValidationError(msg, code='authorization')
+        raise serializers.ValidationError(msg, code="authorization")
 
     def get_auth_user(self, username, password):
-        """Override to support email login"""
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
@@ -157,43 +83,10 @@ class CustomLoginSerializer(BaseLoginSerializer):
                 user = User.objects.get(email=username)
             except User.DoesNotExist:
                 return None
-        
+
         if user.check_password(password) and user.is_active:
             return user
         return None
-
-
-def _generate_unique_username(base):
-    sanitized = re.sub(r"[^a-zA-Z0-9_]+", "", base).lower()
-    username = sanitized or "user"
-    max_length = User._meta.get_field("username").max_length
-
-    if len(username) > max_length:
-        username = username[:max_length]
-
-    if not User.objects.filter(username=username).exists():
-        return username
-
-    alphabet = string.ascii_lowercase + string.digits
-
-    def build_candidate(base_value, suffix_value):
-        base_limit = max_length - len(suffix_value)
-        trimmed = base_value[:base_limit] if base_limit > 0 else ""
-        return f"{trimmed}{suffix_value}" or "user"
-
-    for _ in range(20):
-        suffix = "_" + "".join(secrets.choice(alphabet) for _ in range(4))
-        candidate = build_candidate(username, suffix)
-        if not User.objects.filter(username=candidate).exists():
-            return candidate
-
-    suffix_counter = 1
-    while True:
-        suffix = f"_{suffix_counter}"
-        candidate = build_candidate(username, suffix)
-        if not User.objects.filter(username=candidate).exists():
-            return candidate
-        suffix_counter += 1
 
 
 class CustomRegisterSerializer(RegisterSerializer):
@@ -221,7 +114,6 @@ class CustomRegisterSerializer(RegisterSerializer):
     is_mentor = serializers.BooleanField(required=False, default=False)
 
     def validate_username(self, username):
-        # Allow duplicates here; we will auto-generate a unique username later.
         return username
 
     def validate_role(self, value):
@@ -334,6 +226,12 @@ class CustomRegisterSerializer(RegisterSerializer):
         return user
 
 
+# endregion Authentication Serializers
+
+
+# region Profile Serializers
+
+
 class ProfileSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
@@ -398,15 +296,12 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class RoomPicDetailSerializer(serializers.ModelSerializer):
     id = serializers.UUIDField(read_only=True)
-    # email = serializers.EmailField(source="user.email", read_only=True)
 
     class Meta:
         model = Profile
         fields = (
             "id",
-            # "email",
             "full_name",
-            # "role",
         )
         read_only_fields = ("id",)
 
@@ -439,6 +334,12 @@ class UserBulkDeleteSerializer(serializers.Serializer):
         if len(unique_ids) != len(value):
             raise serializers.ValidationError("Terdapat ID user yang duplikat.")
         return unique_ids
+
+
+# endregion Profile Serializers
+
+
+# region PIC Serializers
 
 
 class PicUserSerializer(serializers.ModelSerializer):
@@ -512,9 +413,13 @@ class PicUserDropdownSerializer(serializers.ModelSerializer):
         return None
 
 
-class EmailVerificationStatusSerializer(serializers.Serializer):
-    """Serializer to validate email status checks."""
+# endregion PIC Serializers
 
+
+# region Admin Serializers
+
+
+class EmailVerificationStatusSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
@@ -562,3 +467,118 @@ class AdminDashboardKpisSerializer(serializers.Serializer):
     total_borrows = serializers.IntegerField()
     total_uses = serializers.IntegerField()
     total_pengujians = serializers.IntegerField()
+
+
+# endregion Admin Serializers
+
+
+# region Utilities
+
+
+def _normalize_nullable_value(value):
+    if value == "":
+        return None
+    return value
+
+
+def _apply_role_field_rules(attrs, instance=None):
+    role = attrs.get("role", getattr(instance, "role", None)) or "Guest"
+    is_mentor = attrs.get("is_mentor", getattr(instance, "is_mentor", False))
+
+    department = _normalize_nullable_value(attrs.get("department", serializers.empty))
+    batch = _normalize_nullable_value(attrs.get("batch", serializers.empty))
+    id_number = _normalize_nullable_value(attrs.get("id_number", serializers.empty))
+    institution = _normalize_nullable_value(attrs.get("institution", serializers.empty))
+
+    if department is not serializers.empty and role not in ROLE_WITH_DEPARTMENT and department:
+        raise serializers.ValidationError(
+            {"department": "Department hanya boleh diisi untuk Student atau Lecturer."}
+        )
+
+    if batch is not serializers.empty and role not in ROLE_WITH_BATCH and batch:
+        raise serializers.ValidationError(
+            {"batch": "Batch hanya boleh diisi untuk Student."}
+        )
+
+    if id_number is not serializers.empty and role not in ROLE_WITH_ID_NUMBER and id_number:
+        raise serializers.ValidationError(
+            {"id_number": "ID Number hanya boleh diisi untuk Student, Lecturer, Staff, atau Admin."}
+        )
+
+    if institution is not serializers.empty and role != "Guest" and institution:
+        raise serializers.ValidationError(
+            {"institution": "Institusi hanya boleh diisi untuk Guest."}
+        )
+
+    if role != "Lecturer" and is_mentor:
+        raise serializers.ValidationError(
+            {"is_mentor": "is_mentor hanya boleh aktif untuk role Lecturer."}
+        )
+
+    if role not in ROLE_WITH_DEPARTMENT:
+        attrs["department"] = None
+    elif department is not serializers.empty:
+        attrs["department"] = department
+
+    if role not in ROLE_WITH_BATCH:
+        attrs["batch"] = None
+    elif batch is not serializers.empty:
+        attrs["batch"] = batch
+
+    if role not in ROLE_WITH_ID_NUMBER:
+        attrs["id_number"] = None
+    elif id_number is not serializers.empty:
+        attrs["id_number"] = id_number
+
+    if role != "Guest":
+        attrs["institution"] = None
+    elif institution is not serializers.empty:
+        attrs["institution"] = institution
+
+    attrs["is_mentor"] = bool(is_mentor) if role == "Lecturer" else False
+    return attrs
+
+
+def _can_assign_profile_fields(request):
+    user = getattr(request, "user", None)
+    if not user or not user.is_authenticated:
+        return False
+    if getattr(user, "is_superuser", False):
+        return True
+    return user.groups.filter(name__in=ADMIN_ROLE_GROUPS).exists()
+
+
+def _generate_unique_username(base):
+    sanitized = re.sub(r"[^a-zA-Z0-9_]+", "", base).lower()
+    username = sanitized or "user"
+    max_length = User._meta.get_field("username").max_length
+
+    if len(username) > max_length:
+        username = username[:max_length]
+
+    if not User.objects.filter(username=username).exists():
+        return username
+
+    alphabet = string.ascii_lowercase + string.digits
+
+    def build_candidate(base_value, suffix_value):
+        base_limit = max_length - len(suffix_value)
+        trimmed = base_value[:base_limit] if base_limit > 0 else ""
+        return f"{trimmed}{suffix_value}" or "user"
+
+    for _ in range(20):
+        suffix = "_" + "".join(secrets.choice(alphabet) for _ in range(4))
+        candidate = build_candidate(username, suffix)
+        if not User.objects.filter(username=candidate).exists():
+            return candidate
+
+    suffix_counter = 1
+    while True:
+        suffix = f"_{suffix_counter}"
+        candidate = build_candidate(username, suffix)
+        if not User.objects.filter(username=candidate).exists():
+            return candidate
+        suffix_counter += 1
+
+
+# endregion Utilities
