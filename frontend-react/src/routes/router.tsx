@@ -6,13 +6,11 @@ import AuthLayout from "@/layouts/AuthLayout";
 import AdminLayout from "@/layouts/AdminLayout";
 import { UserLayout } from "@/layouts/UserLayout";
 import {
-  hasAuthToken,
   RequireAdmin,
   RequireAuth,
   RequireFeatureScope,
   RequireMenuAccess,
   RequireStaffOrAbove,
-  useResolvedAuthStatus,
 } from "@/routes/guards";
 
 const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
@@ -170,11 +168,7 @@ function AuthLayoutOutlet() {
 }
 
 function RootRedirect() {
-  const status = useResolvedAuthStatus();
-
-  if (status === "checking") return null;
-
-  return <Navigate to={status === "authenticated" || hasAuthToken() ? "/dashboard" : "/login"} replace />;
+  return <Navigate to="/login" replace />;
 }
 
 export const router = createBrowserRouter([
@@ -463,6 +457,14 @@ export const router = createBrowserRouter([
                 <RequireStaffOrAbove>
                   {renderPage(BorrowEquipmentDetailPage)}
                 </RequireStaffOrAbove>
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: "equipment/:id",
+            element: (
+              <RequireFeatureScope featurePath="/borrow-equipment" scope="requester">
+                {renderPage(EquipmentDetailPage)}
               </RequireFeatureScope>
             ),
           },

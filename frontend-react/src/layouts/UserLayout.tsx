@@ -53,7 +53,7 @@ type UserLayoutProps = {
   children?: ReactNode;
 };
 
-const ACTION_PANEL_WIDTH = "22rem";
+const ACTION_PANEL_WIDTH = "20rem";
 const SIDEBAR_WIDTH = "5rem";
 
 function DashboardShell({ children }: UserLayoutProps) {

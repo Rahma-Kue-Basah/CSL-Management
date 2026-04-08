@@ -49,8 +49,8 @@ import {
 import { getBookingProgressFlow } from "@/lib/request";
 
 import {
+  getRequestStatusDisplayLabel,
   getStatusBadgeClass,
-  getStatusDisplayLabel,
   getStatusSummaryTone,
   shouldShowReviewAction,
 } from "@/lib/request";
@@ -247,34 +247,34 @@ export default function BookingRoomsListContent({
           tone={getStatusSummaryTone("total")}
         />
         <SummaryCard
-          label="Pending"
+          label="Menunggu"
           value={pendingCount}
           icon={<CalendarClock className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Pending")}
+          tone={getStatusSummaryTone("pending")}
         />
         <SummaryCard
-          label="Approved"
+          label="Disetujui"
           value={approvedCount}
           icon={<CheckCircle2 className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Approved")}
+          tone={getStatusSummaryTone("approved")}
         />
         <SummaryCard
-          label="Completed"
+          label="Selesai"
           value={completedCount}
           icon={<CheckCircle2 className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Completed")}
+          tone={getStatusSummaryTone("completed")}
         />
         <SummaryCard
-          label="Rejected"
+          label="Ditolak"
           value={rejectedCount}
           icon={<RotateCcw className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Rejected")}
+          tone={getStatusSummaryTone("rejected")}
         />
         <SummaryCard
-          label="Expired"
+          label="Kedaluwarsa"
           value={expiredCount}
           icon={<X className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Expired")}
+          tone={getStatusSummaryTone("expired")}
         />
       </div>
 
@@ -344,7 +344,7 @@ export default function BookingRoomsListContent({
                         <span
                           className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(booking.status)}`}
                         >
-                          {getStatusDisplayLabel(booking.status)}
+                          {getRequestStatusDisplayLabel(booking.status)}
                         </span>
                       </td>
                       <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(254,243,199,1)]">
@@ -473,7 +473,7 @@ export default function BookingRoomsListContent({
                       }
                       className={`inline-flex cursor-pointer rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(booking.status)}`}
                     >
-                      {getStatusDisplayLabel(booking.status)}
+                      {getRequestStatusDisplayLabel(booking.status)}
                     </button>
                   </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">

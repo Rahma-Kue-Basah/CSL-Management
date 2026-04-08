@@ -4,7 +4,7 @@
 
 Project ini adalah aplikasi internal CSL/CSL Use dengan arsitektur full-stack:
 
-- `backend/`: Django 4.2 + Django REST Framework
+- `backend/`: Django 4.2 + Django REST Framework + env Python 3.12
 - `frontend-react/`: React 19 + Vite + TypeScript
 - `infra/`: infrastruktur deployment, saat ini berisi konfigurasi Nginx
 - root repo: orchestration via `docker-compose.yml`, `docker-compose.prod.yml`, dan `Makefile`
@@ -153,6 +153,47 @@ Saat menambah fitur, usahakan mengikuti pembagian domain yang sudah ada:
 - Saat menambah file baru di folder yang sudah memakai barrel, update `index.ts` folder terkait bila file itu memang bagian dari public surface folder tersebut.
 - Jangan pakai barrel root yang terlalu lebar jika berisiko membuat nama komponen terlalu generik atau mudah bentrok. Prioritaskan barrel per domain/folder.
 - Jika sebuah helper atau util hanya dipakai internal di folder yang sama dan belum menjadi surface publik, tidak wajib dimasukkan ke barrel.
+
+### Konvensi Router Shim
+
+- Frontend tetap memakai `react-router-dom` sebagai router runtime, tetapi layer feature memakai shim `next/*` yang dipetakan ke `src/shims`.
+- Untuk page, component, dan hook frontend, utamakan:
+  - `next/navigation`
+  - `next/link`
+  - `next/image`
+- Import langsung dari `react-router-dom` dibatasi untuk file infrastruktur router, yaitu:
+  - `src/main.tsx`
+  - `src/routes/**`
+  - `src/shims/**`
+  - layout yang memang membutuhkan `Outlet`
+- Jika menambah navigasi baru di layer feature, jangan import `useNavigate`, `useLocation`, atau `Link` langsung dari `react-router-dom`. Gunakan shim yang sudah tersedia agar konsisten dengan codebase saat ini.
+- Jika butuh API router yang belum tersedia di shim, update file di `src/shims` terlebih dahulu daripada mencampur dua pola import di feature layer.
+
+## Konvensi Backend
+
+- Untuk file backend yang masih monolitik seperti `models.py`, `serializers.py`, `viewsets.py`, dan `settings.py`, utamakan penataan in-place sebelum memecah file.
+- Jika satu file memuat banyak domain, kelompokkan isi file dengan comment section atau region yang jelas per concern, misalnya:
+  - `Inventory`
+  - `Booking`
+  - `Borrow`
+  - `Sample Testing`
+  - `Notification`
+  - `Content`
+- Di `models.py`, `serializers.py`, dan file utilitas backend lain, helper function di luar class sebaiknya diletakkan di bagian bawah file, kecuali benar-benar dibutuhkan di bagian atas untuk keterbacaan.
+- Di `serializers.py` dan `viewsets.py`, pertahankan urutan yang mudah discan:
+  - serializer atau helper pendukung
+  - serializer atau viewset utama
+  - serializer list/detail/export bila ada
+- Hindari wildcard import di backend kecuali file memang sengaja dibuat sangat sederhana, seperti admin register minimal.
+- Untuk `admin.py`, default ke register sederhana. Tambahkan `ModelAdmin` hanya jika memang ada kebutuhan nyata seperti `list_filter`, `search_fields`, atau tampilan admin yang sering dipakai.
+- Untuk `settings.py`, utamakan perapihan non-behavioral:
+  - pengelompokan section
+  - urutan config
+  - pengurangan comment bawaan yang tidak perlu
+  - jangan ubah nama env atau behavior deployment tanpa kebutuhan yang jelas
+- Setelah merapikan backend, verifikasi minimal dengan:
+  - `python -m py_compile <file>`
+  - `python manage.py check`
 
 ## Checklist Context Dasar Sebelum Mulai Kerja
 

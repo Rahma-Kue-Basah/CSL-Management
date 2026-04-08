@@ -1180,9 +1180,9 @@ class BookingViewSet(viewsets.ModelViewSet):
                 "failed_ids": missing_ids,
                 "failed_count": len(missing_ids),
                 "detail": (
-                    "Semua record booking ruangan terpilih berhasil dihapus."
+                    "Semua record peminjaman lab terpilih berhasil dihapus."
                     if not missing_ids
-                    else "Sebagian record booking ruangan tidak ditemukan."
+                    else "Sebagian record peminjaman lab tidak ditemukan."
                 ),
             },
             status=response_status,
@@ -4327,7 +4327,7 @@ def _create_notification(recipient, *, title, category, message):
 
 def _request_label(kind):
     labels = {
-        "booking": "booking ruangan",
+        "booking": "peminjaman lab",
         "borrow": "peminjaman alat",
         "use": "penggunaan alat",
         "pengujian": "pengujian sampel",

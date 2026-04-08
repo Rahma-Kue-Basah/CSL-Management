@@ -25,6 +25,7 @@ import {
 } from "@/components/shared";
 
 import { Button, Input } from "@/components/ui";
+import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 
 import { useEquipmentOptions } from "@/hooks/shared/resources/equipments";
 
@@ -35,7 +36,7 @@ import { useMentorOptions } from "@/hooks/shared/resources/users";
 import { useCreateUse } from "@/hooks/use-equipment";
 
 import {
-  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
+  getRequestPurposeOptions,
   THESIS_PURPOSE,
 } from "@/constants/request-purpose";
 
@@ -81,7 +82,9 @@ export default function UseEquipmentFormPage() {
   const [endTime, setEndTime] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
-  const isGuestUser = profile.role === "Guest";
+  const normalizedRole = normalizeRoleValue(profile.role);
+  const isGuestUser = normalizedRole === ROLE_VALUES.GUEST;
+  const isLecturerUser = normalizedRole === ROLE_VALUES.LECTURER;
   const isThesisPurpose = formData.purpose === THESIS_PURPOSE;
   const {
     equipments,
@@ -95,6 +98,14 @@ export default function UseEquipmentFormPage() {
   } = useMentorOptions(!isGuestUser && isThesisPurpose);
   const { createUse, isSubmitting, errorMessage, setErrorMessage } = useCreateUse();
   const preselectedEquipmentId = searchParams.get("equipment") ?? "";
+  const availablePurposeOptions = useMemo(
+    () =>
+      getRequestPurposeOptions({
+        includeWorkshop: false,
+        includeThesis: !isLecturerUser,
+      }),
+    [isLecturerUser],
+  );
 
   const minEndDate = startDate ? new Date(startDate) : new Date(today);
   if (minEndDate) {
@@ -128,6 +139,16 @@ export default function UseEquipmentFormPage() {
     if (!equipments.some((equipment) => equipment.id === preselectedEquipmentId)) return;
     setFormData((prev) => ({ ...prev, equipmentId: preselectedEquipmentId }));
   }, [equipments, formData.equipmentId, preselectedEquipmentId]);
+
+  useEffect(() => {
+    if (availablePurposeOptions.some((option) => option.value === formData.purpose)) return;
+    setFormData((prev) => ({
+      ...prev,
+      purpose: "Penelitian",
+      requesterMentor: "",
+      requesterMentorProfileId: "",
+    }));
+  }, [availablePurposeOptions, formData.purpose]);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -205,7 +226,7 @@ export default function UseEquipmentFormPage() {
       setValidationMessage("Tujuan penggunaan alat wajib diisi.");
       return false;
     }
-    if (!REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.some((option) => option.value === formData.purpose)) {
+    if (!availablePurposeOptions.some((option) => option.value === formData.purpose)) {
       setValidationMessage("Pilihan tujuan tidak valid.");
       return false;
     }
@@ -320,7 +341,7 @@ export default function UseEquipmentFormPage() {
           <DashboardComboboxField
             label="Tujuan"
             value={formData.purpose}
-            options={REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP}
+            options={availablePurposeOptions}
             placeholder="Pilih tujuan"
             emptyText="Tujuan tidak ditemukan."
             disabled={isSubmitting}
@@ -499,7 +520,7 @@ export default function UseEquipmentFormPage() {
         <SubmissionSummaryItem
           label="Tujuan"
           value={
-            REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.find((option) => option.value === formData.purpose)
+            availablePurposeOptions.find((option) => option.value === formData.purpose)
               ?.label ?? formData.purpose
           }
         />

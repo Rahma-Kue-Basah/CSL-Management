@@ -33,18 +33,16 @@ export default function EquipmentListPage() {
   const status = searchParams.get("status") ?? "";
   const category = searchParams.get("category") ?? "";
   const room = searchParams.get("room") ?? "";
-  const moveable = searchParams.get("moveable") ?? "";
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, category, room, moveable]);
+  }, [search, status, category, room]);
 
   const { equipments, totalCount, isLoading, hasLoadedOnce, error } = useEquipments(page, PAGE_SIZE, {
     search: search.trim(),
     status,
     category,
     room,
-    is_moveable: moveable,
   });
 
   const totalPages = Math.max(1, Math.ceil((totalCount || equipments.length) / PAGE_SIZE));
@@ -65,8 +63,7 @@ export default function EquipmentListPage() {
               <th className="w-[140px] px-3 py-3 font-medium text-slate-50">Kategori</th>
               <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Status</th>
               <th className="w-[90px] px-3 py-3 font-medium text-slate-50">Jumlah</th>
-              <th className="w-[200px] px-3 py-3 font-medium text-slate-50">Ruangan</th>
-              <th className="w-[120px] px-3 py-3 font-medium text-slate-50">Moveable</th>
+              <th className="w-[320px] px-3 py-3 font-medium text-slate-50">Ruangan</th>
               <th className="sticky right-0 z-20 w-[150px] bg-slate-900 px-3 py-3 text-center font-medium text-slate-50 shadow-[-1px_0_0_0_rgba(51,65,85,1)]">
                 Aksi
               </th>
@@ -75,7 +72,7 @@ export default function EquipmentListPage() {
           <tbody className="text-sm">
             {isLoading || !hasLoadedOnce ? (
               <tr>
-                <td colSpan={7} className="px-3 py-5 text-center text-slate-500">
+                <td colSpan={6} className="px-3 py-5 text-center text-slate-500">
                   <div className="flex items-center justify-center gap-2">
                     <Loader2 className="h-4 w-4 animate-spin" />
                     Memuat data...
@@ -96,7 +93,6 @@ export default function EquipmentListPage() {
                   </td>
                   <td className="truncate px-3 py-2.5">{item.quantity}</td>
                   <td className="truncate px-3 py-2.5">{item.roomName}</td>
-                  <td className="truncate px-3 py-2.5">{item.isMoveable ? "Ya" : "Tidak"}</td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">
                     <div className="flex justify-center gap-2">
                       <TableActionIconButton
@@ -119,7 +115,7 @@ export default function EquipmentListPage() {
               ))
             ) : (
               <tr>
-                <td colSpan={7} className="px-3 py-5 text-center text-slate-500">
+                <td colSpan={6} className="px-3 py-5 text-center text-slate-500">
                   Belum ada peralatan yang tersedia.
                 </td>
               </tr>

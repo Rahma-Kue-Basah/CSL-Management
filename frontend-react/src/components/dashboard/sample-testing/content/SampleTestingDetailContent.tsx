@@ -5,7 +5,10 @@ import { FlaskConical, NotebookPen, UserRound } from "lucide-react";
 
 import type { SampleTestingRow } from "@/hooks/sample-testing";
 import { formatDateTimeWib } from "@/lib/date";
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
+import {
+  getSampleTestingStatusDisplayLabel,
+  getStatusBadgeClass,
+} from "@/lib/request";
 
 function hasDisplayValue(value?: string | null) {
   if (!value) return false;
@@ -78,7 +81,7 @@ export default function SampleTestingDetailContent({
         <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs text-slate-300">Detail Request</p>
+              <p className="text-xs text-slate-300">Detail Pengajuan</p>
               <h2 className="mt-1 text-xl font-bold text-slate-50">{item.code}</h2>
             </div>
             {onStatusClick ? (
@@ -87,13 +90,13 @@ export default function SampleTestingDetailContent({
                 onClick={onStatusClick}
                 className={`inline-flex cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
               >
-                {getStatusDisplayLabel(item.status)}
+                {getSampleTestingStatusDisplayLabel(item.status)}
               </button>
             ) : (
               <span
                 className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
               >
-                {getStatusDisplayLabel(item.status)}
+                {getSampleTestingStatusDisplayLabel(item.status)}
               </span>
             )}
           </div>
@@ -141,13 +144,13 @@ export default function SampleTestingDetailContent({
                     onClick={onStatusClick}
                     className={`inline-flex w-fit cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                   >
-                    {getStatusDisplayLabel(item.status)}
+                    {getSampleTestingStatusDisplayLabel(item.status)}
                   </button>
                 ) : (
                   <span
                     className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                   >
-                    {getStatusDisplayLabel(item.status)}
+                    {getSampleTestingStatusDisplayLabel(item.status)}
                   </span>
                 )}
               </div>

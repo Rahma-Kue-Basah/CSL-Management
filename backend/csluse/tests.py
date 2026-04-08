@@ -129,6 +129,66 @@ class CsluseWorkflowRegressionTests(APITestCase):
             "Digital Business Technology",
         )
 
+    def test_lecturer_can_create_booking_request(self):
+        start, end = self.future_window(days=3, start_hour=9)
+        self.client.force_authenticate(user=self.lecturer_user)
+
+        response = self.client.post(
+            "/api/bookings/",
+            {
+                "room": str(self.room.id),
+                "start_time": start.isoformat(),
+                "end_time": end.isoformat(),
+                "attendee_count": 1,
+                "purpose": "Penelitian",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["requested_by_detail"]["id"], str(self.lecturer_profile.id))
+        self.assertEqual(response.data["purpose"], "Penelitian")
+
+    def test_lecturer_can_create_use_request(self):
+        start, end = self.future_window(days=3, start_hour=10)
+        self.client.force_authenticate(user=self.lecturer_user)
+
+        response = self.client.post(
+            "/api/uses/",
+            {
+                "equipment": str(self.equipment.id),
+                "quantity": 1,
+                "start_time": start.isoformat(),
+                "end_time": end.isoformat(),
+                "purpose": "Penelitian",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["requested_by_detail"]["id"], str(self.lecturer_profile.id))
+        self.assertEqual(response.data["purpose"], "Penelitian")
+
+    def test_lecturer_can_create_borrow_request(self):
+        start, end = self.future_window(days=3, start_hour=11)
+        self.client.force_authenticate(user=self.lecturer_user)
+
+        response = self.client.post(
+            "/api/borrows/",
+            {
+                "equipment": str(self.equipment.id),
+                "quantity": 1,
+                "start_time": start.isoformat(),
+                "end_time": end.isoformat(),
+                "purpose": "Penelitian",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data["requested_by_detail"]["id"], str(self.lecturer_profile.id))
+        self.assertEqual(response.data["purpose"], "Penelitian")
+
     def future_window(self, *, days=1, start_hour=9, duration_hours=2):
         local_now = timezone.localtime(timezone.now()) + timedelta(days=days)
         start = local_now.replace(
@@ -556,9 +616,9 @@ class CsluseWorkflowRegressionTests(APITestCase):
         booking = self.create_booking(self.student_profile)
         Notification.objects.create(
             recipient=self.student_profile,
-            title=f"Booking Ruangan {booking.code} disetujui",
+            title=f"Peminjaman Lab {booking.code} disetujui",
             category="Approved",
-            message=f"Pengajuan booking ruangan Anda ({booking.code}) telah disetujui oleh Admin.",
+            message=f"Pengajuan peminjaman lab Anda ({booking.code}) telah disetujui oleh Admin.",
         )
         Notification.objects.create(
             recipient=self.staff_profile,

@@ -22,7 +22,6 @@ import {
   REQUESTER_ACCESS_ROLES,
   SAMPLE_TESTING_APPROVAL_ACCESS_ROLES,
   SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
-  isApprovalOnlyRole,
 } from "@/lib/dashboard";
 
 export type ShortcutAction = {
@@ -161,7 +160,7 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   {
     id: "schedule",
     label: "Jadwal Praktikum",
-    description: "Lihat jadwal praktikum dan booking laboratorium.",
+    description: "Lihat jadwal praktikum dan peminjaman laboratorium.",
     href: "/schedule",
     icon: CalendarDays,
     actions: [],
@@ -169,13 +168,13 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
   {
     id: "booking-rooms",
     label: "Peminjaman Lab",
-    description: "Kelola pengajuan booking dan pantau progresnya.",
+    description: "Kelola pengajuan peminjaman lab dan pantau progresnya.",
     href: "/booking-rooms/form",
     icon: Building2,
     actions: [
       {
         id: "request-form",
-        label: "Ajukan Booking",
+        label: "Ajukan Peminjaman Lab",
         description: "Buat pengajuan peminjaman lab melalui formulir.",
         href: "/booking-rooms/form",
         allowedRoles: REQUESTER_ACCESS_ROLES,
@@ -196,8 +195,8 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
       },
       {
         id: "rooms",
-        label: "Ruangan yang Bisa di-Booking",
-        description: "Lihat daftar ruangan yang tersedia untuk dibooking.",
+        label: "Ruangan yang Tersedia",
+        description: "Lihat daftar ruangan yang tersedia untuk peminjaman lab.",
         href: "/rooms",
         allowedRoles: CATALOG_ACCESS_ROLES,
       },
@@ -233,8 +232,8 @@ export const SIDEBAR_SHORTCUTS: SidebarShortcut[] = [
       },
       {
         id: "equipment",
-        label: "Peralatan yang Bisa Dibooking",
-        description: "Lihat daftar peralatan yang tersedia untuk dibooking.",
+        label: "Peralatan yang Tersedia",
+        description: "Lihat daftar peralatan yang tersedia untuk pengajuan penggunaan alat.",
         href: "/equipment",
         allowedRoles: CATALOG_ACCESS_ROLES,
       },
@@ -401,11 +400,6 @@ function getDefaultActionId(
     ADMIN_APPROVAL_DEFAULT_MENU_IDS.has(menu.id) &&
     (normalizedRole === "Admin" || normalizedRole === "SuperAdministrator")
   ) {
-    const approvalAction = menu.actions.find((item) => item.id === "all-requests");
-    if (approvalAction) return approvalAction.id;
-  }
-
-  if (isApprovalOnlyRole(role)) {
     const approvalAction = menu.actions.find((item) => item.id === "all-requests");
     if (approvalAction) return approvalAction.id;
   }

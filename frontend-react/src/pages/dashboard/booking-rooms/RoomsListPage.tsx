@@ -84,7 +84,7 @@ export default function RoomsListPage() {
                       />
                       <TableActionIconButton
                         type="button"
-                        label="Ajukan booking"
+                        label="Ajukan peminjaman lab"
                         icon={<CalendarPlus2 className="h-3.5 w-3.5" />}
                         className="w-8 rounded-md border border-slate-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
                         onClick={() => router.push(`/booking-rooms/form?room=${room.id}`)}

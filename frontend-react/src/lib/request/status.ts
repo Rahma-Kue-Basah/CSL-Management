@@ -23,37 +23,37 @@ export type ReviewActionKind =
 
 export const REQUEST_STATUS_OPTIONS: StatusOption[] = [
   { value: "", label: "Semua Status" },
-  { value: "active", label: "Active" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "expired", label: "Expired" },
-  { value: "completed", label: "Completed" },
+  { value: "active", label: "Aktif" },
+  { value: "pending", label: "Menunggu" },
+  { value: "approved", label: "Disetujui" },
+  { value: "rejected", label: "Ditolak" },
+  { value: "expired", label: "Kedaluwarsa" },
+  { value: "completed", label: "Selesai" },
 ];
 
 export const BORROW_STATUS_OPTIONS: StatusOption[] = [
   { value: "", label: "Semua Status" },
-  { value: "active", label: "Active" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
-  { value: "rejected", label: "Rejected" },
-  { value: "expired", label: "Expired" },
-  { value: "borrowed", label: "Borrowed" },
-  { value: "returned_pending_inspection", label: "Returned Pending Inspection" },
-  { value: "returned", label: "Returned" },
-  { value: "overdue", label: "Overdue" },
-  { value: "lost_damaged", label: "Lost/Damaged" },
+  { value: "active", label: "Aktif" },
+  { value: "pending", label: "Menunggu" },
+  { value: "approved", label: "Disetujui" },
+  { value: "rejected", label: "Ditolak" },
+  { value: "expired", label: "Kedaluwarsa" },
+  { value: "borrowed", label: "Dipinjam" },
+  { value: "returned_pending_inspection", label: "Dikembalikan Menunggu Inspeksi" },
+  { value: "returned", label: "Dikembalikan" },
+  { value: "overdue", label: "Terlambat" },
+  { value: "lost_damaged", label: "Hilang/Rusak" },
 ];
 
 export const SAMPLE_TESTING_STATUS_OPTIONS: StatusOption[] = [
   { value: "", label: "Semua Status" },
-  { value: "active", label: "Active" },
-  { value: "pending", label: "Pending" },
-  { value: "approved", label: "Approved" },
+  { value: "active", label: "Aktif" },
+  { value: "pending", label: "Menunggu" },
+  { value: "approved", label: "Disetujui" },
   { value: "diproses", label: "Diproses" },
   { value: "menunggu pembayaran", label: "Menunggu Pembayaran" },
-  { value: "rejected", label: "Rejected" },
-  { value: "completed", label: "Completed" },
+  { value: "rejected", label: "Ditolak" },
+  { value: "completed", label: "Selesai" },
 ];
 
 export function normalizeStatus(status?: string | null) {
@@ -164,6 +164,55 @@ export function getStatusDisplayLabel(status?: string | null) {
   if (normalized === "lost_damaged") return "Lost/Damaged";
 
   return String(status ?? "").trim() || "-";
+}
+
+export function getRequestStatusDisplayLabel(status?: string | null) {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "active") return "Aktif";
+  if (normalized === "pending") return "Menunggu";
+  if (normalized === "approved") return "Disetujui";
+  if (normalized === "completed") return "Selesai";
+  if (normalized === "rejected") return "Ditolak";
+  if (normalized === "expired") return "Kedaluwarsa";
+
+  return getStatusDisplayLabel(status);
+}
+
+export function getBorrowStatusDisplayLabel(status?: string | null) {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "active") return "Aktif";
+  if (normalized === "pending") return "Menunggu";
+  if (normalized === "approved") return "Disetujui";
+  if (normalized === "rejected") return "Ditolak";
+  if (normalized === "expired") return "Kedaluwarsa";
+  if (normalized === "borrowed") return "Dipinjam";
+  if (
+    normalized === "returned pending inspection" ||
+    normalized === "returned_pending_inspection"
+  ) {
+    return "Dikembalikan Menunggu Inspeksi";
+  }
+  if (normalized === "returned") return "Dikembalikan";
+  if (normalized === "overdue") return "Terlambat";
+  if (normalized === "lost_damaged") return "Hilang/Rusak";
+
+  return getStatusDisplayLabel(status);
+}
+
+export function getSampleTestingStatusDisplayLabel(status?: string | null) {
+  const normalized = normalizeStatus(status);
+
+  if (normalized === "active") return "Aktif";
+  if (normalized === "pending") return "Menunggu";
+  if (normalized === "approved") return "Disetujui";
+  if (normalized === "diproses") return "Diproses";
+  if (normalized === "menunggu pembayaran") return "Menunggu Pembayaran";
+  if (normalized === "completed") return "Selesai";
+  if (normalized === "rejected") return "Ditolak";
+
+  return getStatusDisplayLabel(status);
 }
 
 export function shouldShowReviewAction(

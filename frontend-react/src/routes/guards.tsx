@@ -7,9 +7,13 @@ import {
   isPrivilegedRole,
   isStaffOrAboveRole,
   normalizeRoleValue,
-  ROLE_VALUES,
 } from "@/constants/roles";
-import { isApprovalOnlyRole } from "@/lib/dashboard";
+import {
+  APPROVAL_ACCESS_ROLES,
+  REQUESTER_ACCESS_ROLES,
+  SAMPLE_TESTING_APPROVAL_ACCESS_ROLES,
+  SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
+} from "@/lib/dashboard";
 import { authFetch, clearTokens } from "@/lib/auth";
 import {
   buildProfileFromApiResponse,
@@ -186,20 +190,31 @@ export function RequireFeatureScope({
 }) {
   const profile = getProfile();
   const normalizedRole = normalizeRoleValue(profile.role);
-  const isSampleTestingLecturer =
-    featurePath === "/sample-testing" && normalizedRole === ROLE_VALUES.LECTURER;
-  const approvalOnlyRole = isApprovalOnlyRole(profile.role) && !isSampleTestingLecturer;
+  const requesterAccessRoles =
+    featurePath === "/sample-testing"
+      ? SAMPLE_TESTING_REQUESTER_ACCESS_ROLES
+      : REQUESTER_ACCESS_ROLES;
+  const approvalAccessRoles =
+    featurePath === "/sample-testing"
+      ? SAMPLE_TESTING_APPROVAL_ACCESS_ROLES
+      : APPROVAL_ACCESS_ROLES;
+  const canAccessRequesterScope = requesterAccessRoles.some((role) => role === normalizedRole);
+  const canAccessApprovalScope = approvalAccessRoles.some((role) => role === normalizedRole);
 
-  if (scope === "requester" && approvalOnlyRole) {
+  if (scope === "requester" && !canAccessRequesterScope && canAccessApprovalScope) {
     return <Navigate to={`${featurePath}/approval`} replace />;
   }
 
-  if (scope === "approval" && isSampleTestingLecturer) {
+  if (scope === "requester" && !canAccessRequesterScope) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  if (scope === "approval" && !canAccessApprovalScope && canAccessRequesterScope) {
     return <Navigate to={featurePath} replace />;
   }
 
-  if (scope === "approval" && !approvalOnlyRole && !isPrivilegedRole(profile.role)) {
-    return <Navigate to={featurePath} replace />;
+  if (scope === "approval" && !canAccessApprovalScope) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return children;

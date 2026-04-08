@@ -24,6 +24,7 @@ import {
 } from "@/components/shared";
 
 import { Button, Input } from "@/components/ui";
+import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 
 import { useCreateBookingRoom } from "@/hooks/booking-rooms";
 
@@ -36,8 +37,7 @@ import { useRoomOptions } from "@/hooks/shared/resources/rooms";
 import { useMentorOptions } from "@/hooks/shared/resources/users";
 
 import {
-  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
-  REQUEST_PURPOSE_OPTIONS,
+  getRequestPurposeOptions,
   THESIS_PURPOSE,
   WORKSHOP_PURPOSE,
 } from "@/constants/request-purpose";
@@ -97,7 +97,9 @@ export default function BookingRoomsFormPage() {
   const [endTime, setEndTime] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
-  const isGuestUser = profile.role === "Guest";
+  const normalizedRole = normalizeRoleValue(profile.role);
+  const isGuestUser = normalizedRole === ROLE_VALUES.GUEST;
+  const isLecturerUser = normalizedRole === ROLE_VALUES.LECTURER;
   const isWorkshopPurpose = formData.purpose === WORKSHOP_PURPOSE;
   const isThesisPurpose = formData.purpose === THESIS_PURPOSE;
   const {
@@ -118,9 +120,14 @@ export default function BookingRoomsFormPage() {
   const { createBookingRoom, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBookingRoom();
   const preselectedRoomId = searchParams.get("room") ?? "";
-  const availablePurposeOptions = isGuestUser
-    ? REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP
-    : REQUEST_PURPOSE_OPTIONS;
+  const availablePurposeOptions = useMemo(
+    () =>
+      getRequestPurposeOptions({
+        includeWorkshop: !isGuestUser,
+        includeThesis: !isLecturerUser,
+      }),
+    [isGuestUser, isLecturerUser],
+  );
 
   const minEndDate = startDate ? new Date(startDate) : new Date(today);
   if (minEndDate) {
@@ -181,15 +188,17 @@ export default function BookingRoomsFormPage() {
   }, [formData.roomId, preselectedRoomId, rooms]);
 
   useEffect(() => {
-    if (!isGuestUser || formData.purpose !== WORKSHOP_PURPOSE) return;
+    if (availablePurposeOptions.some((option) => option.value === formData.purpose)) return;
     setFormData((prev) => ({
       ...prev,
       purpose: "Penelitian",
+      requesterMentor: "",
+      requesterMentorProfileId: "",
       workshopInstitution: "",
       workshopPic: "",
       workshopTitle: "",
     }));
-  }, [formData.purpose, isGuestUser]);
+  }, [availablePurposeOptions, formData.purpose]);
 
   const handleChange = (
     event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
@@ -833,7 +842,7 @@ export default function BookingRoomsFormPage() {
         <SubmissionSummaryItem
           label="Tujuan"
           value={
-            REQUEST_PURPOSE_OPTIONS.find((option) => option.value === formData.purpose)
+            availablePurposeOptions.find((option) => option.value === formData.purpose)
               ?.label ?? formData.purpose
           }
         />

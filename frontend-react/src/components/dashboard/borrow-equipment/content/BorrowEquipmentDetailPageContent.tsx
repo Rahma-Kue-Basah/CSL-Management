@@ -31,7 +31,10 @@ import {
   hasMentorApprovalTrace,
 } from "@/lib/request";
 
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
+import {
+  getBorrowStatusDisplayLabel,
+  getStatusBadgeClass,
+} from "@/lib/request";
 
 function hasDisplayValue(value?: string | null) {
   if (!value) return false;
@@ -212,7 +215,7 @@ export default function BorrowEquipmentDetailPage() {
     <section className="space-y-4">
       <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900 p-5">
         <div>
-          <p className="text-xs text-slate-300">Detail Request</p>
+          <p className="text-xs text-slate-300">Detail Pengajuan</p>
           <h2 className="mt-1 text-xl font-bold text-slate-50">{item.code}</h2>
           <div className="mt-3">
             <button
@@ -220,7 +223,7 @@ export default function BorrowEquipmentDetailPage() {
               onClick={() => setProgressOpen(true)}
               className={`inline-flex cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
             >
-              {getStatusDisplayLabel(item.status)}
+              {getBorrowStatusDisplayLabel(item.status)}
             </button>
           </div>
         </div>
@@ -336,7 +339,7 @@ export default function BorrowEquipmentDetailPage() {
                       <dd className="mt-1 text-sm text-slate-800">
                         {item.status === "Lost/Damaged"
                           ? "Hilang/Rusak"
-                          : getStatusDisplayLabel(item.status)}
+                          : getBorrowStatusDisplayLabel(item.status)}
                       </dd>
                     </div>
                     {hasDisplayValue(item.inspectionNote) ? (
@@ -430,7 +433,7 @@ export default function BorrowEquipmentDetailPage() {
                         <dd className="mt-1 text-sm text-slate-800">
                           {item.status === "Lost/Damaged"
                             ? "Hilang/Rusak"
-                            : getStatusDisplayLabel(item.status)}
+                            : getBorrowStatusDisplayLabel(item.status)}
                         </dd>
                       </div>
                       <div>

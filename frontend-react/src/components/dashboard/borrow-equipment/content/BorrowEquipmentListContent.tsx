@@ -46,8 +46,8 @@ import {
 import { getBorrowProgressFlow } from "@/lib/request";
 
 import {
+  getBorrowStatusDisplayLabel,
   getStatusBadgeClass,
-  getStatusDisplayLabel,
   getStatusSummaryTone,
   shouldShowReviewAction,
 } from "@/lib/request";
@@ -282,55 +282,55 @@ export default function BorrowEquipmentListContent({
           tone={getStatusSummaryTone("total")}
         />
         <SummaryCard
-          label="Pending"
+          label="Menunggu"
           value={aggregates.pending}
           icon={<CalendarClock className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Pending")}
+          tone={getStatusSummaryTone("pending")}
         />
         <SummaryCard
-          label="Approved"
+          label="Disetujui"
           value={aggregates.approved}
           icon={<CheckCircle2 className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Approved")}
+          tone={getStatusSummaryTone("approved")}
         />
         <SummaryCard
-          label="Borrowed"
+          label="Dipinjam"
           value={aggregates.borrowed}
           icon={<Truck className="h-4 w-4" />}
           tone="indigo"
         />
         <SummaryCard
-          label="Returned Pending Inspection"
+          label="Menunggu Inspeksi"
           value={aggregates.returned_pending_inspection}
           icon={<ShieldCheck className="h-4 w-4" />}
           tone="cyan"
         />
         <SummaryCard
-          label="Returned"
+          label="Dikembalikan"
           value={aggregates.returned}
           icon={<Undo2 className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Returned")}
+          tone={getStatusSummaryTone("returned")}
         />
         <SummaryCard
-          label="Rejected"
+          label="Ditolak"
           value={aggregates.rejected}
           icon={<RotateCcw className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Rejected")}
+          tone={getStatusSummaryTone("rejected")}
         />
         <SummaryCard
-          label="Expired"
+          label="Kedaluwarsa"
           value={aggregates.expired}
           icon={<Hourglass className="h-4 w-4" />}
-          tone={getStatusSummaryTone("Expired")}
+          tone={getStatusSummaryTone("expired")}
         />
         <SummaryCard
-          label="Overdue"
+          label="Terlambat"
           value={aggregates.overdue}
           icon={<CalendarClock className="h-4 w-4" />}
           tone="orange"
         />
         <SummaryCard
-          label="Lost/Damaged"
+          label="Hilang/Rusak"
           value={aggregates.lost_damaged}
           icon={<X className="h-4 w-4" />}
           tone="red"
@@ -405,7 +405,7 @@ export default function BorrowEquipmentListContent({
                         <span
                           className={`inline-flex rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                         >
-                          {getStatusDisplayLabel(item.status)}
+                          {getBorrowStatusDisplayLabel(item.status)}
                         </span>
                       </td>
                       <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(254,243,199,1)]">
@@ -535,7 +535,7 @@ export default function BorrowEquipmentListContent({
                       }
                       className={`inline-flex cursor-pointer rounded-full px-2 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
                     >
-                      {getStatusDisplayLabel(item.status)}
+                      {getBorrowStatusDisplayLabel(item.status)}
                     </button>
                   </td>
                   <td className="sticky right-0 z-10 bg-white px-3 py-2.5 text-center shadow-[-1px_0_0_0_rgba(226,232,240,1)]">

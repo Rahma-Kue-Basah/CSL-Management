@@ -211,7 +211,7 @@ export default function UseEquipmentDetailPage() {
         <div className="flex items-start gap-4">
           <div className="space-y-3">
             <div>
-              <p className="text-xs text-slate-300">Detail Request</p>
+              <p className="text-xs text-slate-300">Detail Pengajuan</p>
               <h2 className="mt-1 font-bold text-xl text-slate-50">
                 {item.code}
               </h2>

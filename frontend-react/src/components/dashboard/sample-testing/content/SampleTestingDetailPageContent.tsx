@@ -26,7 +26,10 @@ import { formatDateTimeWib } from "@/lib/date";
 
 import { getSampleTestingProgressFlow } from "@/lib/request";
 
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
+import {
+  getSampleTestingStatusDisplayLabel,
+  getStatusBadgeClass,
+} from "@/lib/request";
 
 function SampleTestingDetailSkeleton() {
   return (
@@ -99,7 +102,7 @@ export default function SampleTestingDetailPage() {
     <section className="space-y-4">
       <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900 p-5">
         <div>
-          <p className="text-xs text-slate-300">Detail Request</p>
+          <p className="text-xs text-slate-300">Detail Pengajuan</p>
           <h2 className="mt-1 text-xl font-bold text-slate-50">{item.code}</h2>
           <div className="mt-3">
             <button
@@ -107,7 +110,7 @@ export default function SampleTestingDetailPage() {
               onClick={() => setProgressOpen(true)}
               className={`inline-flex cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
             >
-              {getStatusDisplayLabel(item.status)}
+              {getSampleTestingStatusDisplayLabel(item.status)}
             </button>
           </div>
         </div>

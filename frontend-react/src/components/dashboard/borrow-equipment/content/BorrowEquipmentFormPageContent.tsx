@@ -26,6 +26,7 @@ import {
 } from "@/components/shared";
 
 import { Button, Input, Textarea } from "@/components/ui";
+import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 
 import { useCreateBorrow } from "@/hooks/borrow-equipment";
 
@@ -36,7 +37,7 @@ import { useLoadProfile } from "@/hooks/shared/profile";
 import { useMentorOptions } from "@/hooks/shared/resources/users";
 
 import {
-  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
+  getRequestPurposeOptions,
   THESIS_PURPOSE,
 } from "@/constants/request-purpose";
 
@@ -82,7 +83,9 @@ export default function BorrowEquipmentFormPage() {
   const [endTime, setEndTime] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
   const [validationMessage, setValidationMessage] = useState("");
-  const isGuestUser = profile.role === "Guest";
+  const normalizedRole = normalizeRoleValue(profile.role);
+  const isGuestUser = normalizedRole === ROLE_VALUES.GUEST;
+  const isLecturerUser = normalizedRole === ROLE_VALUES.LECTURER;
   const isThesisPurpose = formData.purpose === THESIS_PURPOSE;
   const {
     equipments,
@@ -97,6 +100,14 @@ export default function BorrowEquipmentFormPage() {
   const { createBorrow, isSubmitting, errorMessage, setErrorMessage } =
     useCreateBorrow();
   const preselectedEquipmentId = searchParams.get("equipment") ?? "";
+  const availablePurposeOptions = useMemo(
+    () =>
+      getRequestPurposeOptions({
+        includeWorkshop: false,
+        includeThesis: !isLecturerUser,
+      }),
+    [isLecturerUser],
+  );
 
   const equipmentOptions = useMemo<SelectOption[]>(
     () =>
@@ -114,9 +125,8 @@ export default function BorrowEquipmentFormPage() {
   );
   const selectedPurposeLabel = useMemo(
     () =>
-      REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.find((option) => option.value === formData.purpose)
-        ?.label ?? "-",
-    [formData.purpose],
+      availablePurposeOptions.find((option) => option.value === formData.purpose)?.label ?? "-",
+    [availablePurposeOptions, formData.purpose],
   );
   const mentorOptions = useMemo<SelectOption[]>(
     () => mentors.map((mentor) => ({ value: mentor.id, label: mentor.label })),
@@ -128,6 +138,16 @@ export default function BorrowEquipmentFormPage() {
     if (!equipments.some((equipment) => equipment.id === preselectedEquipmentId)) return;
     setFormData((prev) => ({ ...prev, equipmentId: preselectedEquipmentId }));
   }, [equipments, formData.equipmentId, preselectedEquipmentId]);
+
+  useEffect(() => {
+    if (availablePurposeOptions.some((option) => option.value === formData.purpose)) return;
+    setFormData((prev) => ({
+      ...prev,
+      purpose: "Penelitian",
+      requesterMentor: "",
+      requesterMentorProfileId: "",
+    }));
+  }, [availablePurposeOptions, formData.purpose]);
   const minEndDate = startDate ? new Date(startDate) : new Date(today);
   if (minEndDate) {
     minEndDate.setHours(0, 0, 0, 0);
@@ -228,7 +248,7 @@ export default function BorrowEquipmentFormPage() {
       return "Waktu selesai harus setelah waktu mulai.";
     }
     if (!formData.purpose.trim()) return "Pilih tujuan peminjaman.";
-    if (!REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP.some((option) => option.value === formData.purpose)) {
+    if (!availablePurposeOptions.some((option) => option.value === formData.purpose)) {
       return "Tujuan peminjaman tidak valid.";
     }
     if (!isGuestUser && isThesisPurpose && !formData.requesterMentorProfileId) {
@@ -333,7 +353,7 @@ export default function BorrowEquipmentFormPage() {
             <DashboardComboboxField
               label="Tujuan Peminjaman"
               value={formData.purpose}
-              options={REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP}
+              options={availablePurposeOptions}
               placeholder="Pilih tujuan"
               emptyText="Pilihan tujuan tidak tersedia"
               disabled={isSubmitting}

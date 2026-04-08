@@ -30,7 +30,6 @@ import {
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
   EQUIPMENT_STATUS_OPTIONS,
-  MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
 
 import { useChangePassword } from "@/hooks/auth";
@@ -45,7 +44,11 @@ import { useRoomOptions } from "@/hooks/shared/resources/rooms";
 
 import { formatDateKey, parseDateKey } from "@/lib/date";
 
-import { BORROW_STATUS_OPTIONS, REQUEST_STATUS_OPTIONS } from "@/lib/request";
+import {
+  BORROW_STATUS_OPTIONS,
+  REQUEST_STATUS_OPTIONS,
+  SAMPLE_TESTING_STATUS_OPTIONS,
+} from "@/lib/request";
 
 type DashboardActionPanelProps = {
   width: string;
@@ -86,9 +89,7 @@ type EquipmentFilterConfig = {
   onRoomChange: (value: string) => void;
   onReset: () => void;
   status?: string;
-  moveable?: string;
   onStatusChange?: (value: string) => void;
-  onMoveableChange?: (value: string) => void;
 };
 
 type SoftwareFilterConfig = {
@@ -301,7 +302,6 @@ export function DashboardActionPanel({
   const equipmentStatus = searchParams.get("status") ?? "";
   const equipmentCategory = searchParams.get("category") ?? "";
   const equipmentRoom = searchParams.get("room") ?? "";
-  const equipmentMoveable = searchParams.get("moveable") ?? "";
   const softwareKeyword = searchParams.get("q") ?? "";
   const softwareEquipment = searchParams.get("equipment") ?? "";
   const softwareRoom = searchParams.get("room") ?? "";
@@ -461,7 +461,7 @@ export function DashboardActionPanel({
   };
 
   const updateEquipmentFilter = (
-    key: "q" | "status" | "category" | "room" | "moveable",
+    key: "q" | "status" | "category" | "room",
     value: string,
   ) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -573,9 +573,7 @@ export function DashboardActionPanel({
     onRoomChange,
     onReset,
     status,
-    moveable,
     onStatusChange,
-    onMoveableChange,
   }: EquipmentFilterConfig) => (
     <FilterCard title="Filter Peralatan">
       <FilterField label="Cari">
@@ -630,22 +628,6 @@ export function DashboardActionPanel({
           ))}
         </select>
       </FilterField>
-      {typeof moveable === "string" && onMoveableChange ? (
-        <FilterField label="Moveable">
-          <select
-            value={moveable}
-            onChange={(event) => onMoveableChange(event.target.value)}
-            className={FILTER_CONTROL_CLASS}
-          >
-            <option value="">Semua</option>
-            {MOVEABLE_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </FilterField>
-      ) : null}
       <Button type="button" variant="outline" className={FILTER_BUTTON_CLASS} onClick={onReset}>
         Reset Filter
       </Button>
@@ -903,7 +885,9 @@ export function DashboardActionPanel({
                           status: bookingStatus,
                           dateRange: bookingCreatedRange,
                           placeholder: "Cari pengajuan...",
-                          statusOptions: REQUEST_STATUS_OPTIONS,
+                          statusOptions: showSampleTestingFilters
+                            ? SAMPLE_TESTING_STATUS_OPTIONS
+                            : REQUEST_STATUS_OPTIONS,
                           extraFields: showBookingFilters ? (
                             <>
                               <FilterField label="Ruangan">
@@ -1050,7 +1034,6 @@ export function DashboardActionPanel({
                           status: equipmentStatus,
                           category: equipmentCategory,
                           room: equipmentRoom,
-                          moveable: equipmentMoveable,
                           onKeywordChange: (value) =>
                             updateEquipmentFilter("q", value),
                           onStatusChange: (value) =>
@@ -1059,15 +1042,12 @@ export function DashboardActionPanel({
                             updateEquipmentFilter("category", value),
                           onRoomChange: (value) =>
                             updateEquipmentFilter("room", value),
-                          onMoveableChange: (value) =>
-                            updateEquipmentFilter("moveable", value),
                           onReset: () =>
                             resetFilters([
                               "q",
                               "status",
                               "category",
                               "room",
-                              "moveable",
                             ]),
                         })}
                     </AnimatedFilterSection>
