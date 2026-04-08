@@ -4,15 +4,15 @@ import { useEffect, useState } from "react";
 import { CheckCircle2, UserRound, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
-import AdminDetailActions from "@/components/shared/admin-detail-actions";
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
+import AdminDetailActions from "@/components/shared/AdminDetailActions";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
 import { Input } from "@/components/ui/input";
 import { BATCH_VALUES } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { ROLE_OPTIONS, normalizeRoleValue } from "@/constants/roles";
 import { USER_TYPE_LABELS } from "@/constants/user-types";
-import { useUpdateUserProfile } from "@/hooks/users/use-update-user-profile";
-import { getUserInitials, type UserRow } from "@/hooks/users/use-users";
+import { useUpdateUserProfile } from "@/hooks/shared/resources/users/use-update-user-profile";
+import { getUserInitials, type UserRow } from "@/hooks/shared/resources/users/use-users";
 import {
   applyUpdatedUser,
   createEmptyUserForm,
@@ -21,7 +21,7 @@ import {
   toUpdateUserPayload,
   type UserDetailMode,
   USER_MODAL_WIDTH_CLASS,
-} from "@/components/admin/user-management/user-management-fields";
+} from "@/components/admin/user-management/UserManagementFields";
 
 type UserDetailDialogProps = {
   open: boolean;

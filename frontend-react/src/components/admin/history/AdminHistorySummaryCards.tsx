@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utils";
-import { getStatusSummaryTone, type StatusSummaryTone } from "@/lib/status";
+import { cn } from "@/lib/core/utils";
+import { getStatusSummaryTone, type StatusSummaryTone } from "@/lib/request/status";
 
 type SummaryCardItem = {
   label: string;

@@ -26,12 +26,12 @@ import {
   MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
 import { useChangePassword } from "@/hooks/auth/use-change-password";
-import { useCalendarEvents } from "@/hooks/calendar/use-calendar-events";
-import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
-import { useHistoryRequesterOptions } from "@/hooks/history/use-history-requester-options";
-import { useRoomOptions } from "@/hooks/rooms/use-room-options";
-import { formatDateKey, parseDateKey } from "@/lib/date";
-import { BORROW_STATUS_OPTIONS, REQUEST_STATUS_OPTIONS } from "@/lib/status";
+import { useCalendarEvents } from "@/hooks/shared/calendar/use-calendar-events";
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
+import { useHistoryRequesterOptions } from "@/hooks/admin/history/use-history-requester-options";
+import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
+import { formatDateKey, parseDateKey } from "@/lib/date/utils";
+import { BORROW_STATUS_OPTIONS, REQUEST_STATUS_OPTIONS } from "@/lib/request/status";
 
 type DashboardActionPanelProps = {
   width: string;

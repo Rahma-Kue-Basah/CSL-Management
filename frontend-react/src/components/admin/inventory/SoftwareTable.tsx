@@ -3,9 +3,9 @@
 import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
-import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import type { SoftwareRow } from "@/hooks/softwares/use-softwares";
+import type { SoftwareRow } from "@/hooks/shared/resources/softwares/use-softwares";
 
 type SoftwareTableProps = {
   softwares: SoftwareRow[];

@@ -1,10 +1,10 @@
 import { Suspense } from "react";
-import UserManagementPage from "@/components/admin/user-management/user-management-page";
+import UserManagementContent from "@/components/admin/user-management/content/UserManagementContent";
 
 export default function UserManagementGuestPage() {
   return (
     <Suspense fallback={null}>
-      <UserManagementPage forcedRole="Guest" />
+      <UserManagementContent forcedRole="Guest" />
     </Suspense>
   );
 }

@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useLogin } from "@/hooks/auth/use-login";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 type LoginFormProps = ComponentPropsWithoutRef<"form">;
 

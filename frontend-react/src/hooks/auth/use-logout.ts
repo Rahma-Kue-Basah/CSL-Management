@@ -1,7 +1,7 @@
 import { useRouter } from "next/navigation";
 import { API_AUTH_LOGOUT } from "@/constants/api";
-import { authFetch, clearTokens } from "@/lib/auth";
-import { clearProfileCache } from "@/hooks/profile/use-load-profile";
+import { authFetch, clearTokens } from "@/lib/auth/fetch";
+import { clearProfileCache } from "@/hooks/shared/profile/use-load-profile";
 
 export function useLogout() {
   const router = useRouter();

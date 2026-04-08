@@ -18,7 +18,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { API_AUTH_LOGIN_GOOGLE } from "@/constants/api";
 import { useSignupGuest } from "@/hooks/auth/use-signup-guest";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 type SignupGuestFormProps = ComponentPropsWithoutRef<"form">;
 

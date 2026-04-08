@@ -4,21 +4,21 @@ import { useState } from "react";
 import { Eye, EyeOff, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
 import { BATCH_VALUES } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { ROLE_FILTER_OPTIONS, ROLE_OPTIONS, ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import { useCreateUser } from "@/hooks/users/use-create-user";
+import { useCreateUser } from "@/hooks/shared/resources/users/use-create-user";
 import {
   createEmptyUserForm,
   getVisibleUserFields,
   toCreateUserPayload,
   USER_MODAL_WIDTH_CLASS,
-} from "@/components/admin/user-management/user-management-fields";
+} from "@/components/admin/user-management/UserManagementFields";
 
 type CreateUserDialogProps = {
   open: boolean;

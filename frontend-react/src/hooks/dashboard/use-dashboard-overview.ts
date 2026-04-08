@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { API_DASHBOARD_OVERVIEW } from "@/constants/api";
-import { authFetch } from "@/lib/auth";
+import { authFetch } from "@/lib/auth/fetch";
 
 export type DashboardOverviewTotals = {
   total_requests: number;

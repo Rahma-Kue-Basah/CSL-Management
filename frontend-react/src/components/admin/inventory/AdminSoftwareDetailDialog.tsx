@@ -5,15 +5,15 @@ import { ArrowUpRight, Box } from "lucide-react";
 import { toast } from "sonner";
 
 import RelatedEquipmentDetailDialog from "@/components/admin/history/RelatedEquipmentDetailDialog";
-import AdminDetailActions from "@/components/shared/admin-detail-actions";
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import AdminDetailActions from "@/components/shared/AdminDetailActions";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { Input } from "@/components/ui/input";
-import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
-import type { SoftwareRow } from "@/hooks/softwares/use-softwares";
-import { useDeleteSoftware } from "@/hooks/softwares/use-delete-software";
-import { useUpdateSoftware } from "@/hooks/softwares/use-update-software";
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
+import type { SoftwareRow } from "@/hooks/shared/resources/softwares/use-softwares";
+import { useDeleteSoftware } from "@/hooks/shared/resources/softwares/use-delete-software";
+import { useUpdateSoftware } from "@/hooks/shared/resources/softwares/use-update-software";
 
 const INVENTORY_MODAL_WIDTH_CLASS =
   "w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-[50vw] sm:max-w-[960px] sm:min-w-[720px] sm:max-w-none";

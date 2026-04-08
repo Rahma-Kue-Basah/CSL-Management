@@ -3,10 +3,10 @@
 import type { RefObject } from "react";
 import { Boxes, Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
-import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
+import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import { Button } from "@/components/ui/button";
-import type { RoomRow } from "@/hooks/rooms/use-rooms";
+import type { RoomRow } from "@/hooks/shared/resources/rooms/use-rooms";
 
 type RoomTableProps = {
   rooms: RoomRow[];

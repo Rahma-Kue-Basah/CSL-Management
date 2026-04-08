@@ -5,13 +5,13 @@ import { MapPinned, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { PicMultiSelect } from "@/components/admin/inventory/PicMultiSelect";
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
-import { useCreateRoom } from "@/hooks/rooms/use-create-room";
-import { usePicUsers } from "@/hooks/users/use-pic-users";
+import { useCreateRoom } from "@/hooks/shared/resources/rooms/use-create-room";
+import { usePicUsers } from "@/hooks/shared/resources/users/use-pic-users";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 

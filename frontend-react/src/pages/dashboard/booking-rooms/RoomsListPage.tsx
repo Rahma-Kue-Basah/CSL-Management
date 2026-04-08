@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { CalendarPlus2, Eye, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { DataPagination } from "@/components/shared/data-pagination";
+import { DataPagination } from "@/components/shared/DataPagination";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import { useRooms } from "@/hooks/rooms/use-rooms";
+import { useRooms } from "@/hooks/shared/resources/rooms/use-rooms";
 
 const PAGE_SIZE = 20;
 

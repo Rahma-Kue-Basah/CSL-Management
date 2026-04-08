@@ -4,14 +4,14 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 import { Plus, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DialogFooter } from "@/components/ui/dialog";
 import { EQUIPMENT_CATEGORY_OPTIONS, MOVEABLE_OPTIONS } from "@/constants/equipments";
-import { useCreateEquipment } from "@/hooks/equipments/use-create-equipment";
-import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { useCreateEquipment } from "@/hooks/shared/resources/equipments/use-create-equipment";
+import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 

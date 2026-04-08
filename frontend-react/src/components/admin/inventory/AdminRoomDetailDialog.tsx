@@ -6,16 +6,16 @@ import { toast } from "sonner";
 
 import { PicMultiSelect } from "@/components/admin/inventory/PicMultiSelect";
 import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
-import AdminDetailActions from "@/components/shared/admin-detail-actions";
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import AdminDetailActions from "@/components/shared/AdminDetailActions";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useDeleteRoom } from "@/hooks/rooms/use-delete-room";
-import type { RoomRow } from "@/hooks/rooms/use-rooms";
-import { useUpdateRoom } from "@/hooks/rooms/use-update-room";
-import { usePicUsers } from "@/hooks/users/use-pic-users";
+import { useDeleteRoom } from "@/hooks/shared/resources/rooms/use-delete-room";
+import type { RoomRow } from "@/hooks/shared/resources/rooms/use-rooms";
+import { useUpdateRoom } from "@/hooks/shared/resources/rooms/use-update-room";
+import { usePicUsers } from "@/hooks/shared/resources/users/use-pic-users";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const INVENTORY_MODAL_WIDTH_CLASS =

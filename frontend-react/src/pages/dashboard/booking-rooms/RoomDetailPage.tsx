@@ -4,7 +4,7 @@ import { ArrowLeft, CalendarPlus2, Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
-import { useRoomDetail } from "@/hooks/rooms/use-rooms";
+import { useRoomDetail } from "@/hooks/shared/resources/rooms/use-rooms";
 
 type RoomDetailParams = {
   id?: string | string[];

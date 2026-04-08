@@ -7,12 +7,12 @@ import { toast } from "sonner";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import BulkImportDialogShell from "@/components/shared/BulkImportDialogShell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
-import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
 import {
   useBulkCreateSoftwares,
   type BulkSoftwareRow,
-} from "@/hooks/softwares/use-bulk-create-softwares";
+} from "@/hooks/shared/resources/softwares/use-bulk-create-softwares";
 
 const HEADER_MAP: Record<
   string,

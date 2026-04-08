@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
 import { CircleHelp, ImagePlus, Trash2 } from "lucide-react";
 
-import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/user-management-fields";
-import AdminDetailActions from "@/components/shared/admin-detail-actions";
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/UserManagementFields";
+import AdminDetailActions from "@/components/shared/AdminDetailActions";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { Button } from "@/components/ui/button";
 import {
   DialogDescription,

@@ -23,9 +23,9 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import { hasMenuAccess } from "@/constants/roles";
 import {
   canAccessAction,
@@ -35,7 +35,7 @@ import {
   SIDEBAR_SHORTCUTS,
   type SidebarShortcut,
   toMenuHref,
-} from "@/lib/dashboard-navigation";
+} from "@/lib/dashboard/navigation";
 
 type UserLayoutProps = {
   children?: ReactNode;

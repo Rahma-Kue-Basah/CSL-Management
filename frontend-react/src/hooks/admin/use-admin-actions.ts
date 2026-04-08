@@ -1,20 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import {
+  adminActionsService,
+  type AdminAction,
+} from "@/services/admin/admin-actions.service";
 
-import { API_AUTH_ADMIN_ACTIONS_MY, API_AUTH_ADMIN_ACTIONS_RECENT } from "@/constants/api";
-import { authFetch } from "@/lib/auth";
-
-export type AdminAction = {
-  id: number;
-  action_time: string;
-  action: "create" | "update" | "delete" | "unknown";
-  actor: string;
-  target: string;
-  object_id: string;
-  object_repr: string;
-  change_message: string;
-};
+export type { AdminAction };
 
 export function useAdminActions() {
   const [recentActions, setRecentActions] = useState<AdminAction[]>([]);
@@ -31,20 +23,10 @@ export function useAdminActions() {
       setError("");
 
       try {
-        const [recentResponse, myResponse] = await Promise.all([
-          authFetch(API_AUTH_ADMIN_ACTIONS_RECENT, { method: "GET", signal: controller.signal }),
-          authFetch(API_AUTH_ADMIN_ACTIONS_MY, { method: "GET", signal: controller.signal }),
+        const [recent, mine] = await Promise.all([
+          adminActionsService.getRecent(controller.signal),
+          adminActionsService.getMine(controller.signal),
         ]);
-
-        if (!recentResponse.ok) {
-          throw new Error(`Gagal memuat recent actions (${recentResponse.status})`);
-        }
-        if (!myResponse.ok) {
-          throw new Error(`Gagal memuat my actions (${myResponse.status})`);
-        }
-
-        const recent = (await recentResponse.json()) as AdminAction[];
-        const mine = (await myResponse.json()) as AdminAction[];
 
         setRecentActions(Array.isArray(recent) ? recent : []);
         setMyActions(Array.isArray(mine) ? mine : []);

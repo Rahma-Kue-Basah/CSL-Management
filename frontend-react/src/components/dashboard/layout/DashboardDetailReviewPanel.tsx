@@ -33,34 +33,34 @@ import {
 } from "@/constants/api";
 import { WORKSHOP_PURPOSE } from "@/constants/request-purpose";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import { authFetch } from "@/lib/auth";
+import { authFetch } from "@/lib/auth/fetch";
 import {
   useBookingDetail,
   type BookingRow,
-} from "@/hooks/bookings/use-bookings";
-import { useUpdateBookingStatus } from "@/hooks/bookings/use-update-booking-status";
-import { useBorrowDetail, type BorrowRow } from "@/hooks/borrows/use-borrows";
-import { useUpdateBorrowStatus } from "@/hooks/borrows/use-update-borrow-status";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
+} from "@/hooks/booking-rooms/use-bookings";
+import { useUpdateBookingStatus } from "@/hooks/booking-rooms/use-update-booking-status";
+import { useBorrowDetail, type BorrowRow } from "@/hooks/borrow-equipment/use-borrows";
+import { useUpdateBorrowStatus } from "@/hooks/borrow-equipment/use-update-borrow-status";
+import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
 import {
-  usePengujianDetail,
-  type PengujianRow,
-} from "@/hooks/pengujians/use-pengujians";
-import { useUpdatePengujianStatus } from "@/hooks/pengujians/use-update-pengujian-status";
-import { useUseDetail, type UseRow } from "@/hooks/uses/use-uses";
-import { useUpdateUseStatus } from "@/hooks/uses/use-update-use-status";
-import { formatDateTimeWib } from "@/lib/date-format";
+  useSampleTestingDetail,
+  type SampleTestingRow,
+} from "@/hooks/sample-testing/use-sample-testing";
+import { useUpdateSampleTestingStatus } from "@/hooks/sample-testing/use-update-sample-testing-status";
+import { useUseDetail, type UseRow } from "@/hooks/use-equipment/use-uses";
+import { useUpdateUseStatus } from "@/hooks/use-equipment/use-update-use-status";
+import { formatDateTimeWib } from "@/lib/date/format";
 import {
   canCurrentUserReviewPendingRequest,
   canCurrentUserFinalizeRequest,
   isWaitingForMentorApproval,
-} from "@/lib/mentor-approval";
+} from "@/lib/request/mentor-approval";
 
 export type ReviewContext =
   | { kind: "booking"; id: string }
   | { kind: "use"; id: string }
   | { kind: "borrow"; id: string }
-  | { kind: "pengujian"; id: string }
+  | { kind: "sample-testing"; id: string }
   | null;
 
 function normalizeStatus(value: string) {
@@ -1461,24 +1461,24 @@ function BorrowReviewPanel({
 function PengujianReviewPanel({
   id,
   onActionComplete,
-  initialPengujian,
+  initialSampleTesting,
 }: {
   id: string;
   onActionComplete?: () => void;
-  initialPengujian?: PengujianRow | null;
+  initialSampleTesting?: SampleTestingRow | null;
 }) {
   const { profile } = useLoadProfile();
-  const { pengujian, setPengujian, isLoading, error } = usePengujianDetail(id, {
-    enabled: !initialPengujian,
-    initialPengujian,
+  const { sampleTesting, setSampleTesting, isLoading, error } = useSampleTestingDetail(id, {
+    enabled: !initialSampleTesting,
+    initialSampleTesting,
   });
-  const { updatePengujianStatus, pendingAction } = useUpdatePengujianStatus();
+  const { updateSampleTestingStatus, pendingAction } = useUpdateSampleTestingStatus();
   const [confirmType, setConfirmType] = useState<"approve" | "reject" | null>(
     null,
   );
 
   if (isLoading) return <PanelLoadingState />;
-  if (error || !pengujian) {
+  if (error || !sampleTesting) {
     return (
       <PanelErrorState
         message={error || "Data pengujian sampel tidak ditemukan."}
@@ -1486,11 +1486,11 @@ function PengujianReviewPanel({
     );
   }
 
-  const canReviewPengujian =
-    isReviewerRole(profile?.role) && isPendingStatus(pengujian.status);
-  const isGuestRequester = isGuestRole(pengujian.requesterRole);
-  const pengujianStatusHint = getPengujianStatusHint(
-    pengujian.status,
+  const canReviewSampleTesting =
+    isReviewerRole(profile?.role) && isPendingStatus(sampleTesting.status);
+  const isGuestRequester = isGuestRole(sampleTesting.requesterRole);
+  const sampleTestingStatusHint = getPengujianStatusHint(
+    sampleTesting.status,
     isReviewerRole(profile?.role),
   );
 
@@ -1498,14 +1498,14 @@ function PengujianReviewPanel({
     if (!confirmType) return;
 
     const type = confirmType;
-    const result = await updatePengujianStatus(pengujian.id, type);
+    const result = await updateSampleTestingStatus(sampleTesting.id, type);
     if (!result.ok) {
       toast.error(result.message);
       return;
     }
 
     const now = new Date().toISOString();
-    setPengujian((current) =>
+    setSampleTesting((current) =>
       current
         ? {
             ...current,
@@ -1538,25 +1538,25 @@ function PengujianReviewPanel({
   return (
     <>
       <RequestReviewCard
-        status={pengujian.status}
-        code={pengujian.code}
+        status={sampleTesting.status}
+        code={sampleTesting.code}
         meta={[
-          { label: "Sampel", value: pengujian.sampleName || "-" },
-          { label: "Jenis Sampel", value: pengujian.sampleType || "-" },
+          { label: "Sampel", value: sampleTesting.sampleName || "-" },
+          { label: "Jenis Sampel", value: sampleTesting.sampleType || "-" },
           {
             label: "Jenis Pengujian",
-            value: pengujian.sampleTestingType || "-",
+            value: sampleTesting.sampleTestingType || "-",
           },
-          { label: "Pemohon", value: pengujian.name || "-" },
+          { label: "Pemohon", value: sampleTesting.name || "-" },
           ...(isGuestRequester
-            ? [{ label: "Institusi", value: pengujian.institution || "-" }]
+            ? [{ label: "Institusi", value: sampleTesting.institution || "-" }]
             : []),
 
           ...(!isGuestRequester
             ? [
                 {
                   label: "Prodi Pemohon",
-                  value: pengujian.requesterDepartment || "-",
+                  value: sampleTesting.requesterDepartment || "-",
                 },
               ]
             : []),
@@ -1564,41 +1564,41 @@ function PengujianReviewPanel({
             ? [
                 {
                   label: "Alamat Institusi",
-                  value: pengujian.institutionAddress || "-",
+                  value: sampleTesting.institutionAddress || "-",
                 },
               ]
             : []),
-          ...(pengujian.status === "Rejected"
+          ...(sampleTesting.status === "Rejected"
             ? [
                 {
                   label: "Waktu Ditolak",
-                  value: formatDateTimeWib(pengujian.rejectedAt),
+                  value: formatDateTimeWib(sampleTesting.rejectedAt),
                 },
               ]
             : []),
-          ...(pengujian.status === "Completed"
+          ...(sampleTesting.status === "Completed"
             ? [
                 {
                   label: "Waktu Selesai",
-                  value: formatDateTimeWib(pengujian.completedAt),
+                  value: formatDateTimeWib(sampleTesting.completedAt),
                 },
               ]
             : []),
         ]}
-        statusHintTitle={pengujianStatusHint?.title}
-        statusHintMessage={pengujianStatusHint?.message}
-        statusHintIndicators={pengujianStatusHint?.indicators}
-        statusHintClassName={pengujianStatusHint?.className}
-        statusHintTitleClassName={pengujianStatusHint?.titleClassName}
-        statusHintTextClassName={pengujianStatusHint?.textClassName}
+        statusHintTitle={sampleTestingStatusHint?.title}
+        statusHintMessage={sampleTestingStatusHint?.message}
+        statusHintIndicators={sampleTestingStatusHint?.indicators}
+        statusHintClassName={sampleTestingStatusHint?.className}
+        statusHintTitleClassName={sampleTestingStatusHint?.titleClassName}
+        statusHintTextClassName={sampleTestingStatusHint?.textClassName}
       >
-        {canReviewPengujian ? (
+        {canReviewSampleTesting ? (
           <>
             <Button
               type="button"
               className="h-10 rounded-md border border-emerald-600 bg-emerald-600 px-4 text-white shadow-sm hover:bg-emerald-700"
               onClick={() => setConfirmType("approve")}
-              disabled={pendingAction.pengujianId === pengujian.id}
+              disabled={pendingAction.sampleTestingId === sampleTesting.id}
             >
               <Check className="h-4 w-4" />
               Setujui
@@ -1607,7 +1607,7 @@ function PengujianReviewPanel({
               type="button"
               className="h-10 rounded-md border border-rose-600 bg-rose-600 px-4 text-white shadow-sm hover:bg-rose-700"
               onClick={() => setConfirmType("reject")}
-              disabled={pendingAction.pengujianId === pengujian.id}
+              disabled={pendingAction.sampleTestingId === sampleTesting.id}
             >
               <X className="h-4 w-4" />
               Tolak
@@ -1625,7 +1625,7 @@ function PengujianReviewPanel({
           if (!open) setConfirmType(null);
         }}
         onConfirm={handlePengujianAction}
-        isSubmitting={pendingAction.pengujianId === pengujian.id}
+        isSubmitting={pendingAction.sampleTestingId === sampleTesting.id}
         subjectLabel={
           "pengajuan pengujian sampel ini"
         }
@@ -1647,7 +1647,7 @@ export function parseReviewContext(pathname: string): ReviewContext {
     return { kind: "borrow", id: parts[2] };
   }
   if (parts[0] === "sample-testing" && parts[1] === "approval" && parts[2]) {
-    return { kind: "pengujian", id: parts[2] };
+    return { kind: "sample-testing", id: parts[2] };
   }
 
   return null;
@@ -1659,14 +1659,14 @@ export function DashboardDetailReviewPanel({
   initialBooking,
   initialUseItem,
   initialBorrow,
-  initialPengujian,
+  initialSampleTesting,
 }: {
   context: Exclude<ReviewContext, null>;
   onActionComplete?: () => void;
   initialBooking?: BookingRow | null;
   initialUseItem?: UseRow | null;
   initialBorrow?: BorrowRow | null;
-  initialPengujian?: PengujianRow | null;
+  initialSampleTesting?: SampleTestingRow | null;
 }) {
   if (context.kind === "booking") {
     return (
@@ -1688,12 +1688,12 @@ export function DashboardDetailReviewPanel({
     );
   }
 
-  if (context.kind === "pengujian") {
+  if (context.kind === "sample-testing") {
     return (
       <PengujianReviewPanel
         id={context.id}
         onActionComplete={onActionComplete}
-        initialPengujian={initialPengujian}
+        initialSampleTesting={initialSampleTesting}
       />
     );
   }

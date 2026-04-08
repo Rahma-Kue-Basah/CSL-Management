@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { ClipboardPlus, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { DataPagination } from "@/components/shared/data-pagination";
+import { DataPagination } from "@/components/shared/DataPagination";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import { useSoftwares } from "@/hooks/softwares/use-softwares";
+import { useSoftwares } from "@/hooks/shared/resources/softwares/use-softwares";
 
 const PAGE_SIZE = 20;
 

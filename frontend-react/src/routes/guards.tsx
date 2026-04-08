@@ -9,15 +9,15 @@ import {
   normalizeRoleValue,
   ROLE_VALUES,
 } from "@/constants/roles";
-import { isApprovalOnlyRole } from "@/lib/dashboard-access";
-import { authFetch, clearTokens } from "@/lib/auth";
+import { isApprovalOnlyRole } from "@/lib/dashboard/access";
+import { authFetch, clearTokens } from "@/lib/auth/fetch";
 import {
   buildProfileFromApiResponse,
   clearProfileCache,
   getCachedProfileSnapshot,
   persistProfileCache,
   type UserProfile,
-} from "@/hooks/profile/use-load-profile";
+} from "@/hooks/shared/profile/use-load-profile";
 
 type RoleProfile = Pick<UserProfile, "role">;
 let resolvedAuthStatus: AuthStatus | null = null;

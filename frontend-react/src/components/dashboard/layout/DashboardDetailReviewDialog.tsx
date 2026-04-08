@@ -19,7 +19,7 @@ function getReviewDialogTitle(context: Exclude<ReviewContext, null>) {
       return "Review Pengajuan Penggunaan Alat";
     case "borrow":
       return "Review Pengajuan Peminjaman Alat";
-    case "pengujian":
+    case "sample-testing":
       return "Review Pengajuan Pengujian Sampel";
   }
 }

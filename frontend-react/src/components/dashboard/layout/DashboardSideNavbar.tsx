@@ -3,7 +3,7 @@
 import type { ComponentType } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
+import { DashboardUserMenu } from "@/components/dashboard/DashboardUserMenu";
 import {
   Tooltip,
   TooltipContent,

@@ -3,10 +3,10 @@
 import type { ReactNode } from "react";
 import { Building2, Mail, Shield, UserRound } from "lucide-react";
 
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import { getUserInitials } from "@/hooks/users/use-users";
-import type { RoomPicTaskUserRow } from "@/hooks/users/use-room-pic-task-users";
-import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/user-management-fields";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import { getUserInitials } from "@/hooks/shared/resources/users/use-users";
+import type { RoomPicTaskUserRow } from "@/hooks/shared/resources/users/use-room-pic-task-users";
+import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/UserManagementFields";
 
 type RoomPicDetailDialogProps = {
   open: boolean;

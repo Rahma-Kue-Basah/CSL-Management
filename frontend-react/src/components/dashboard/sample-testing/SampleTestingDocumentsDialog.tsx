@@ -10,25 +10,25 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import SampleTestingDocumentsSection from "@/components/dashboard/sample-testing/SampleTestingDocumentsSection";
-import { usePengujianDetail } from "@/hooks/pengujians/use-pengujians";
+import { useSampleTestingDetail } from "@/hooks/sample-testing/use-sample-testing";
 
 export default function SampleTestingDocumentsDialog({
   open,
   onOpenChange,
-  pengujianId,
+  sampleTestingId,
   viewerRole,
   onUploaded,
   allowActions = true,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  pengujianId: string | null;
+  sampleTestingId: string | null;
   viewerRole: "approver" | "requester";
   onUploaded?: () => void;
   allowActions?: boolean;
 }) {
-  const { pengujian, isLoading, error } = usePengujianDetail(pengujianId, {
-    enabled: open && Boolean(pengujianId),
+  const { sampleTesting, isLoading, error } = useSampleTestingDetail(sampleTestingId, {
+    enabled: open && Boolean(sampleTestingId),
   });
 
   return (
@@ -44,7 +44,7 @@ export default function SampleTestingDocumentsDialog({
                 Dokumen Pengujian
               </DialogTitle>
               <DialogDescription className="mt-1 text-sm text-slate-500">
-                {pengujian?.code ?? "Memuat dokumen pengujian sampel."}
+                {sampleTesting?.code ?? "Memuat dokumen pengujian sampel."}
               </DialogDescription>
             </div>
           </div>
@@ -60,9 +60,9 @@ export default function SampleTestingDocumentsDialog({
             <div className="rounded-lg border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
               {error}
             </div>
-          ) : pengujian ? (
+          ) : sampleTesting ? (
             <SampleTestingDocumentsSection
-              item={pengujian}
+              item={sampleTesting}
               viewerRole={viewerRole}
               onUploaded={onUploaded}
               embedded

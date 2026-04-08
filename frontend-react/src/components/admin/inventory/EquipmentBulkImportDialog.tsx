@@ -7,12 +7,12 @@ import { toast } from "sonner";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import BulkImportDialogShell from "@/components/shared/BulkImportDialogShell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
 } from "@/constants/equipments";
-import { useBulkCreateEquipments, type BulkEquipmentRow } from "@/hooks/equipments/use-bulk-create-equipments";
-import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { useBulkCreateEquipments, type BulkEquipmentRow } from "@/hooks/shared/resources/equipments/use-bulk-create-equipments";
+import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
 
 const HEADER_MAP: Record<
   string,

@@ -10,17 +10,17 @@ import {
 } from "@/components/dialogs/SubmissionConfirmDialog";
 import { Button } from "@/components/ui/button";
 import {
-  type PengujianDocument,
-  type PengujianDocumentType,
-  type PengujianRow,
-} from "@/hooks/pengujians/use-pengujians";
-import { useUploadPengujianDocument } from "@/hooks/pengujians/use-upload-pengujian-document";
-import { formatDateTimeWib } from "@/lib/date-format";
+  type SampleTestingDocument,
+  type SampleTestingDocumentType,
+  type SampleTestingRow,
+} from "@/hooks/sample-testing/use-sample-testing";
+import { useUploadSampleTestingDocument } from "@/hooks/sample-testing/use-upload-sample-testing-document";
+import { formatDateTimeWib } from "@/lib/date/format";
 
-import { SampleTestingSectionCard } from "./SampleTestingDetailContent";
+import { SampleTestingSectionCard } from "./content/SampleTestingDetailContent";
 
 type DocumentDefinition = {
-  type: PengujianDocumentType;
+  type: SampleTestingDocumentType;
   label: string;
   owner: "approver" | "requester";
   containerClassName?: string;
@@ -57,7 +57,7 @@ const DOCUMENT_DEFINITIONS: DocumentDefinition[] = [
 const DOCUMENT_DEFINITIONS_DISPLAY = [...DOCUMENT_DEFINITIONS].reverse();
 
 const DOCUMENT_PREVIOUS_STAGE_MAP: Partial<
-  Record<PengujianDocumentType, PengujianDocumentType>
+  Record<SampleTestingDocumentType, SampleTestingDocumentType>
 > = {
   signed_testing_agreement: "testing_agreement",
   invoice: "signed_testing_agreement",
@@ -66,7 +66,7 @@ const DOCUMENT_PREVIOUS_STAGE_MAP: Partial<
 };
 
 const DOCUMENT_NEXT_STAGE_MAP: Partial<
-  Record<PengujianDocumentType, PengujianDocumentType>
+  Record<SampleTestingDocumentType, SampleTestingDocumentType>
 > = {
   testing_agreement: "signed_testing_agreement",
   signed_testing_agreement: "invoice",
@@ -75,7 +75,7 @@ const DOCUMENT_NEXT_STAGE_MAP: Partial<
 };
 const MAX_DOCUMENT_SIZE = 5 * 1024 * 1024;
 
-function isPreviewableDocument(document: PengujianDocument) {
+function isPreviewableDocument(document: SampleTestingDocument) {
   const mimeType = String(document.mimeType || "").toLowerCase();
   const fileName = String(document.originalName || "").toLowerCase();
 
@@ -91,8 +91,8 @@ function isPreviewableDocument(document: PengujianDocument) {
 }
 
 function getDocumentByType(
-  documents: PengujianDocument[],
-  type: PengujianDocumentType,
+  documents: SampleTestingDocument[],
+  type: SampleTestingDocumentType,
 ) {
   return documents.find((item) => item.documentType === type) ?? null;
 }
@@ -108,8 +108,8 @@ function canShowSection(status: string) {
 }
 
 function getUploadBlockReason(
-  documents: PengujianDocument[],
-  documentType: PengujianDocumentType,
+  documents: SampleTestingDocument[],
+  documentType: SampleTestingDocumentType,
 ) {
   const previousType = DOCUMENT_PREVIOUS_STAGE_MAP[documentType];
   if (!previousType) return "";
@@ -126,8 +126,8 @@ function getUploadBlockReason(
 }
 
 function canReplaceDocument(
-  documents: PengujianDocument[],
-  documentType: PengujianDocumentType,
+  documents: SampleTestingDocument[],
+  documentType: SampleTestingDocumentType,
 ) {
   const nextType = DOCUMENT_NEXT_STAGE_MAP[documentType];
   if (!nextType) return true;
@@ -135,8 +135,8 @@ function canReplaceDocument(
 }
 
 function shouldRenderDocumentForViewer(
-  documents: PengujianDocument[],
-  documentType: PengujianDocumentType,
+  documents: SampleTestingDocument[],
+  documentType: SampleTestingDocumentType,
 ) {
   const testingAgreement = getDocumentByType(documents, "testing_agreement");
   const signedAgreement = getDocumentByType(
@@ -171,18 +171,18 @@ export default function SampleTestingDocumentsSection({
   embedded = false,
   allowActions = true,
 }: {
-  item: PengujianRow;
+  item: SampleTestingRow;
   viewerRole: "approver" | "requester";
   onUploaded?: () => void;
   embedded?: boolean;
   allowActions?: boolean;
 }) {
-  const { uploadDocument, pendingDocumentType } = useUploadPengujianDocument();
+  const { uploadDocument, pendingDocumentType } = useUploadSampleTestingDocument();
   const inputRefs = useRef<
-    Partial<Record<PengujianDocumentType, HTMLInputElement | null>>
+    Partial<Record<SampleTestingDocumentType, HTMLInputElement | null>>
   >({});
   const [uploadDraft, setUploadDraft] = useState<{
-    documentType: PengujianDocumentType;
+    documentType: SampleTestingDocumentType;
     label: string;
     file: File;
   } | null>(null);

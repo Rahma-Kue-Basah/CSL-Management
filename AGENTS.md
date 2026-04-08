@@ -120,6 +120,22 @@ Saat menambah fitur, usahakan mengikuti pembagian domain yang sudah ada:
 - Untuk backend, cek `config/urls.py`, view/viewset, serializer, dan model yang terkait sebelum mengubah kontrak API.
 - Jika mengubah flow approval, history, atau task management, validasi efeknya ke role/guard di router frontend.
 
+## Konvensi Frontend
+
+- `src/pages` hanya untuk route page atau route entry component. Jangan simpan `Content`, `Dialog`, `Table`, `Section`, atau `Shell` di folder ini.
+- `src/components` untuk reusable UI, content component, dialog, table, section, shell, dan layout helper.
+- Untuk domain dashboard dan admin, usahakan struktur folder mengikuti domain route. Contoh: `pages/dashboard/sample-testing/...` berpasangan dengan `components/dashboard/sample-testing/...`.
+- Nama file React di `pages` dan `components` gunakan `PascalCase`.
+- Nama file hooks gunakan pola yang sudah ada, yaitu `kebab-case` dengan prefix `use-`, misalnya `use-room-options.ts`.
+- Nama file utilitas non-React di `lib`, `constants`, dan `services` boleh tetap `kebab-case` atau lowercase sesuai pola folder yang sudah berjalan.
+- Hindari membuat folder khusus seperti `approval/` jika route tersebut masih bagian dari domain utama. Lebih baik simpan page approval di folder domain yang sama, misalnya `sample-testing/SampleTestingAllListPage.tsx`.
+- Jika sebuah route punya dua scope seperti requester dan approval, usahakan pattern page-nya konsisten:
+  - `ListPage`
+  - `AllListPage`
+  - `FormPage`
+  - `DetailPage`
+- Saat rename file atau pindah folder, pastikan import path di `router.tsx`, page terkait, dan komponen domain ikut diperbarui lalu verifikasi minimal dengan `npm run build`.
+
 ## Checklist Context Dasar Sebelum Mulai Kerja
 
 - pahami apakah perubahan ada di `backend`, `frontend-react`, atau keduanya

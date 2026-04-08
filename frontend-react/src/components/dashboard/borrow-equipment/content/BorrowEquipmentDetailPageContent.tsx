@@ -1,0 +1,453 @@
+"use client";
+
+import { useState } from "react";
+import {
+  ArrowLeft,
+  CalendarClock,
+  CheckCircle2,
+  ClipboardList,
+  Hourglass,
+  NotebookPen,
+  Truck,
+  TriangleAlert,
+  Wrench,
+} from "lucide-react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
+import { ProgressSteps } from "@/components/shared/ProgressSteps";
+import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
+import { RequestProgressDialog } from "@/components/shared/RequestProgressDialog";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useBorrowDetail } from "@/hooks/borrow-equipment/use-borrows";
+import { formatDateTimeWib } from "@/lib/date/format";
+import { getBorrowProgressFlow } from "@/lib/request/progress";
+import {
+  getMentorApprovalStageLabel,
+  hasMentorApprovalTrace,
+} from "@/lib/request/mentor-approval";
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request/status";
+
+function hasDisplayValue(value?: string | null) {
+  if (!value) return false;
+  const normalized = value.trim();
+  return normalized !== "" && normalized !== "-";
+}
+
+function normalizeStatus(value: string) {
+  return value.toLowerCase();
+}
+
+function BorrowFlow({ steps }: { steps: ReturnType<typeof getBorrowProgressFlow> }) {
+  return (
+    <ProgressSteps steps={steps} minWidthClassName="min-w-[760px]" />
+  );
+}
+
+function DetailCard({
+  title,
+  subtitle,
+  icon,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+      <div className="flex items-start gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
+          {icon}
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold text-slate-900">{title}</p>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            {subtitle}
+          </p>
+        </div>
+      </div>
+      <div className="mt-4 space-y-2">{children}</div>
+    </section>
+  );
+}
+
+function DetailMetaItem({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  if (!hasDisplayValue(value)) return null;
+
+  return (
+    <div className="grid gap-1 rounded-md border border-slate-200 bg-slate-50/80 px-4 py-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-start md:gap-4">
+      <p className="text-xs text-slate-500">{label}</p>
+      <p className="text-xs leading-5 text-slate-800 break-words">{value}</p>
+    </div>
+  );
+}
+
+function BorrowDetailSkeleton() {
+  return (
+    <section className="space-y-6">
+      <div className="flex items-center justify-between gap-3">
+        <Skeleton className="h-9 w-44 rounded-md" />
+        <Skeleton className="h-8 w-24 rounded-full" />
+      </div>
+      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+        <Skeleton className="h-5 w-32" />
+        <div className="mt-4">
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+      </div>
+      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-40" />
+                <Skeleton className="h-3 w-64" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Skeleton className="h-16 w-full rounded-md" />
+              <Skeleton className="h-16 w-full rounded-md" />
+              <Skeleton className="h-16 w-full rounded-md" />
+              <Skeleton className="h-20 w-full rounded-md" />
+            </div>
+          </div>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-44" />
+                <Skeleton className="h-3 w-56" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-14 w-full rounded-md" />
+            </div>
+          </div>
+        </div>
+        <div className="space-y-6">
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_12px_30px_rgba(15,23,42,0.06)]">
+            <div className="flex items-start gap-3">
+              <Skeleton className="h-10 w-10 rounded-md" />
+              <div className="space-y-2">
+                <Skeleton className="h-4 w-36" />
+                <Skeleton className="h-3 w-48" />
+              </div>
+            </div>
+            <div className="mt-4 space-y-2">
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-14 w-full rounded-md" />
+              <Skeleton className="h-20 w-full rounded-md" />
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function BorrowEquipmentDetailPage() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { id } = useParams();
+  const [reloadKey, setReloadKey] = useState(0);
+  const [progressOpen, setProgressOpen] = useState(false);
+  const { borrow: item, isLoading, error } = useBorrowDetail(id, reloadKey);
+
+  const isAllPage = location.pathname.startsWith("/borrow-equipment/approval/");
+  const backHref = isAllPage ? "/borrow-equipment/approval" : "/borrow-equipment";
+  const backLabel = isAllPage
+    ? "Kembali ke Daftar Pengajuan"
+    : "Kembali ke Pengajuan Saya";
+
+  if (isLoading) {
+    return <BorrowDetailSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <section className="space-y-3">
+        <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+        <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
+          <ArrowLeft className="h-4 w-4" />
+          {backLabel}
+        </Button>
+      </section>
+    );
+  }
+
+  if (!item) {
+    return (
+      <section className="space-y-3">
+        <p className="text-sm text-slate-600">Data pengajuan peminjaman alat tidak ditemukan.</p>
+        <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
+          <ArrowLeft className="h-4 w-4" />
+          {backLabel}
+        </Button>
+      </section>
+    );
+  }
+
+  const flowSteps = getBorrowProgressFlow(item);
+
+  return (
+    <section className="space-y-4">
+      <div className="flex items-start justify-between gap-4 rounded-xl border border-slate-800 bg-slate-900 p-5">
+        <div>
+          <p className="text-xs text-slate-300">Detail Request</p>
+          <h2 className="mt-1 text-xl font-bold text-slate-50">{item.code}</h2>
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={() => setProgressOpen(true)}
+              className={`inline-flex cursor-pointer rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(item.status)}`}
+            >
+              {getStatusDisplayLabel(item.status)}
+            </button>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
+            <ArrowLeft className="h-4 w-4" />
+            Kembali
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-5">
+        <div className="mb-1 flex items-center gap-2">
+          {normalizeStatus(item.status) === "expired" ? (
+            <Hourglass className="h-4 w-4 text-slate-600" />
+          ) : (
+            <ClipboardList className="h-4 w-4 text-slate-600" />
+          )}
+          <h3 className="text-sm font-semibold text-slate-900">Progress Pengajuan</h3>
+        </div>
+        <BorrowFlow steps={flowSteps} />
+      </div>
+
+      <div
+        className={
+          isAllPage
+            ? "grid gap-4 xl:grid-cols-[1.35fr_0.65fr]"
+            : "space-y-4"
+        }
+      >
+        {isAllPage ? (
+          <>
+            <div className="space-y-4">
+              <DetailCard
+                title="Detail Peminjaman Alat"
+                subtitle="Ringkasan data peminjaman alat yang diajukan oleh pemohon."
+                icon={<Wrench className="h-4 w-4" />}
+              >
+                <DetailMetaItem label="Alat" value={item.equipmentName} />
+                <DetailMetaItem label="Jumlah" value={item.quantity} />
+                <DetailMetaItem
+                  label="Waktu Mulai"
+                  value={formatDateTimeWib(item.startTime)}
+                />
+                <DetailMetaItem
+                  label="Waktu Selesai"
+                  value={formatDateTimeWib(item.endTime)}
+                />
+                <DetailMetaItem label="Tujuan" value={item.purpose} />
+                <DetailMetaItem
+                  label="Nomor Telepon Pemohon"
+                  value={item.requesterPhone}
+                />
+                <DetailMetaItem
+                  label="Dosen Pembimbing"
+                  value={item.requesterMentor}
+                />
+                <DetailMetaItem label="Institusi" value={item.institution} />
+                <DetailMetaItem
+                  label="Alamat Institusi"
+                  value={item.institutionAddress}
+                />
+                <DetailMetaItem label="Catatan Pemohon" value={item.note || "-"} />
+              </DetailCard>
+
+              <RequestInformationCard
+                icon={<CalendarClock className="h-4 w-4" />}
+                requesterName={item.requesterName}
+                requesterDepartment={item.requesterDepartment}
+                status={item.status}
+                onStatusClick={() => setProgressOpen(true)}
+                approvedByName={item.approvedByName}
+                rejectionNote={item.rejectionNote}
+              >
+                {hasMentorApprovalTrace(item) ? (
+                  <>
+                    <DetailMetaItem
+                      label="Tahap Dosen Pembimbing"
+                      value={getMentorApprovalStageLabel(item)}
+                    />
+                    <DetailMetaItem
+                      label="Waktu Persetujuan Dosen Pembimbing"
+                      value={formatDateTimeWib(item.mentorApprovedAt)}
+                    />
+                  </>
+                ) : null}
+                <DetailMetaItem
+                  label="Pengembalian Aktual"
+                  value={formatDateTimeWib(item.endTimeActual)}
+                />
+              </RequestInformationCard>
+            </div>
+
+            <div className="space-y-4">
+              {id ? (
+                <DashboardDetailReviewPanel
+                  context={{ kind: "borrow", id }}
+                  initialBorrow={item}
+                  onActionComplete={() => setReloadKey((prev) => prev + 1)}
+                />
+              ) : null}
+
+              {hasDisplayValue(item.inspectionNote) ||
+              item.status === "Lost/Damaged" ? (
+                <section className="rounded-xl border border-slate-200 bg-white p-5">
+                  <div className="mb-4 flex items-center gap-2">
+                    <TriangleAlert className="h-4 w-4 text-slate-600" />
+                    <h3 className="text-sm font-semibold text-slate-900">Hasil Inspeksi</h3>
+                  </div>
+                  <dl className="space-y-4">
+                    <div>
+                      <dt className="text-xs font-medium text-slate-500">Status Akhir</dt>
+                      <dd className="mt-1 text-sm text-slate-800">
+                        {item.status === "Lost/Damaged"
+                          ? "Hilang/Rusak"
+                          : getStatusDisplayLabel(item.status)}
+                      </dd>
+                    </div>
+                    {hasDisplayValue(item.inspectionNote) ? (
+                      <div>
+                        <dt className="text-xs font-medium text-slate-500">Catatan Inspeksi</dt>
+                        <dd className="mt-1 text-sm text-slate-800">
+                          {item.inspectionNote}
+                        </dd>
+                      </div>
+                    ) : null}
+                  </dl>
+                </section>
+              ) : null}
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
+              <div className="space-y-4">
+                <DetailCard
+                  title="Detail Peminjaman Alat"
+                  subtitle="Ringkasan data peminjaman alat yang diajukan oleh pemohon."
+                  icon={<Wrench className="h-4 w-4" />}
+                >
+                  <DetailMetaItem label="Alat" value={item.equipmentName} />
+                  <DetailMetaItem label="Jumlah" value={item.quantity} />
+                  <DetailMetaItem
+                    label="Waktu Mulai"
+                    value={formatDateTimeWib(item.startTime)}
+                  />
+                  <DetailMetaItem
+                    label="Waktu Selesai"
+                    value={formatDateTimeWib(item.endTime)}
+                  />
+                  <DetailMetaItem label="Tujuan" value={item.purpose} />
+                  <DetailMetaItem
+                    label="Nomor Telepon Pemohon"
+                    value={item.requesterPhone}
+                  />
+                  <DetailMetaItem
+                    label="Dosen Pembimbing"
+                    value={item.requesterMentor}
+                  />
+                  <DetailMetaItem label="Institusi" value={item.institution} />
+                  <DetailMetaItem
+                    label="Alamat Institusi"
+                    value={item.institutionAddress}
+                  />
+                  <DetailMetaItem label="Catatan Pemohon" value={item.note || "-"} />
+                </DetailCard>
+              </div>
+
+              <div className="space-y-4">
+                <RequestInformationCard
+                  icon={<CalendarClock className="h-4 w-4" />}
+                  requesterName={item.requesterName}
+                  requesterDepartment={item.requesterDepartment}
+                  status={item.status}
+                  onStatusClick={() => setProgressOpen(true)}
+                  approvedByName={item.approvedByName}
+                  rejectionNote={item.rejectionNote}
+                >
+                  {hasMentorApprovalTrace(item) ? (
+                    <>
+                      <DetailMetaItem
+                        label="Tahap Dosen Pembimbing"
+                        value={getMentorApprovalStageLabel(item)}
+                      />
+                      <DetailMetaItem
+                        label="Waktu Persetujuan Dosen Pembimbing"
+                        value={formatDateTimeWib(item.mentorApprovedAt)}
+                      />
+                    </>
+                  ) : null}
+                  <DetailMetaItem
+                    label="Pengembalian Aktual"
+                    value={formatDateTimeWib(item.endTimeActual)}
+                  />
+                </RequestInformationCard>
+
+                {hasDisplayValue(item.inspectionNote) ||
+                item.status === "Lost/Damaged" ? (
+                  <section className="rounded-xl border border-slate-200 bg-white p-5">
+                    <div className="mb-4 flex items-center gap-2">
+                      <TriangleAlert className="h-4 w-4 text-slate-600" />
+                      <h3 className="text-sm font-semibold text-slate-900">Hasil Inspeksi</h3>
+                    </div>
+                    <dl className="space-y-4">
+                      <div>
+                        <dt className="text-xs font-medium text-slate-500">Status Akhir</dt>
+                        <dd className="mt-1 text-sm text-slate-800">
+                          {item.status === "Lost/Damaged"
+                            ? "Hilang/Rusak"
+                            : getStatusDisplayLabel(item.status)}
+                        </dd>
+                      </div>
+                      <div>
+                        <dt className="text-xs font-medium text-slate-500">Catatan Inspeksi</dt>
+                        <dd className="mt-1 text-sm text-slate-800">
+                          {item.inspectionNote || "-"}
+                        </dd>
+                      </div>
+                    </dl>
+                  </section>
+                ) : null}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+      <RequestProgressDialog
+        open={progressOpen}
+        onOpenChange={setProgressOpen}
+        title="Progress Peminjaman Alat"
+        code={item.code}
+        steps={getBorrowProgressFlow(item)}
+      />
+    </section>
+  );
+}

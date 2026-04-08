@@ -1,6 +1,6 @@
 "use client";
 
-import BookingRoomsListContent from "@/pages/dashboard/booking-rooms/BookingRoomsListContent";
+import BookingRoomsListContent from "@/components/dashboard/booking-rooms/content/BookingRoomsListContent";
 
 export default function BookingRoomsListPage() {
   return (

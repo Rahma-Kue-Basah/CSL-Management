@@ -6,16 +6,16 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import BulkImportDialogShell from "@/components/shared/BulkImportDialogShell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { BATCH_VALUES } from "@/constants/batches";
 import { DEPARTMENT_VALUES } from "@/constants/departments";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import { useBulkCreateUsers, type BulkRow } from "@/hooks/users/use-bulk-create-users";
+import { useBulkCreateUsers, type BulkRow } from "@/hooks/shared/resources/users/use-bulk-create-users";
 import {
   USER_MODAL_WIDTH_CLASS,
   createEmptyUserForm,
   getVisibleUserFields,
-} from "@/components/admin/user-management/user-management-fields";
+} from "@/components/admin/user-management/UserManagementFields";
 
 const HEADER_MAP: Record<
   string,

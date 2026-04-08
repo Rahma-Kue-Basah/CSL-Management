@@ -4,8 +4,8 @@ import type { RefObject } from "react";
 import { Eye, Trash2 } from "lucide-react";
 
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import { getUserInitials, type UserRow } from "@/hooks/users/use-users";
-import type { UserDetailMode } from "@/components/admin/user-management/user-management-fields";
+import { getUserInitials, type UserRow } from "@/hooks/shared/resources/users/use-users";
+import type { UserDetailMode } from "@/components/admin/user-management/UserManagementFields";
 
 type TaskTableUserRow = UserRow & {
   roomNames?: string[];

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { ClipboardCheck, Loader2 } from "lucide-react";
 
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -14,7 +14,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 type SubmissionSummaryItemProps = {
   label: string;

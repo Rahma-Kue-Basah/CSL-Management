@@ -1,6 +1,6 @@
 "use client";
 
-import UseEquipmentListContent from "@/pages/dashboard/use-equipment/UseEquipmentListContent";
+import UseEquipmentListContent from "@/components/dashboard/use-equipment/content/UseEquipmentListContent";
 
 export default function UseEquipmentAllListPage() {
   return (

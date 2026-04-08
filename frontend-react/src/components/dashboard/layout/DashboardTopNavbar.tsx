@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Bell, ChevronDown, CircleArrowOutUpRightIcon, LayoutGrid } from "lucide-react";
-import { DashboardUserMenu } from "@/components/dashboard/dashboard-user-menu";
+import { DashboardUserMenu } from "@/components/dashboard/DashboardUserMenu";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,9 +11,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { isPrivilegedRole } from "@/constants/roles";
-import { useLoadProfile } from "@/hooks/profile/use-load-profile";
-import type { TopNavItem } from "@/lib/dashboard-navigation";
-import { cn } from "@/lib/utils";
+import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
+import type { TopNavItem } from "@/lib/dashboard/navigation";
+import { cn } from "@/lib/core/utils";
 
 type DashboardTopNavbarProps = {
   activeMenuId: string;

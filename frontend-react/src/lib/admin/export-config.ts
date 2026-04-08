@@ -1,0 +1,131 @@
+"use client";
+
+import type { BookingRow } from "@/hooks/booking-rooms/use-bookings";
+import type { UseRow } from "@/hooks/use-equipment/use-uses";
+import type { BorrowRow } from "@/hooks/borrow-equipment/use-borrows";
+import type { SampleTestingRow } from "@/hooks/sample-testing/use-sample-testing";
+import type { UserRow } from "@/hooks/shared/resources/users/use-users";
+import type { RoomRow } from "@/hooks/shared/resources/rooms/use-rooms";
+import type { EquipmentRow } from "@/hooks/shared/resources/equipments/use-equipments";
+import type { SoftwareRow } from "@/hooks/shared/resources/softwares/use-softwares";
+import { formatDateTimeId } from "@/lib/date/format";
+import { getStatusDisplayLabel } from "@/lib/request/status";
+
+export type ExportColumn<TRow> = {
+  header: string;
+  cell: (row: TRow) => string;
+};
+
+export const BOOKING_EXPORT_COLUMNS: ExportColumn<BookingRow>[] = [
+  { header: "Kode", cell: (booking) => booking.code },
+  { header: "Status", cell: (booking) => getStatusDisplayLabel(booking.status) },
+  { header: "Ruangan", cell: (booking) => booking.roomName },
+  { header: "No. Ruangan", cell: (booking) => booking.roomNumber },
+  { header: "Peminjam", cell: (booking) => booking.requesterName },
+  { header: "Email Peminjam", cell: (booking) => booking.requesterEmail },
+  { header: "Jumlah Peserta", cell: (booking) => booking.attendeeCount },
+  { header: "Nama Peserta", cell: (booking) => booking.attendeeNames || "-" },
+  { header: "Peralatan", cell: (booking) => booking.equipmentName },
+  { header: "Keperluan", cell: (booking) => booking.purpose },
+  { header: "Waktu Mulai", cell: (booking) => formatDateTimeId(booking.startTime) },
+  { header: "Waktu Selesai", cell: (booking) => formatDateTimeId(booking.endTime) },
+  { header: "Disetujui Oleh", cell: (booking) => booking.approvedByName || "-" },
+  { header: "Catatan", cell: (booking) => booking.note || "-" },
+  { header: "Dibuat", cell: (booking) => formatDateTimeId(booking.createdAt) },
+];
+
+export const USE_EXPORT_COLUMNS: ExportColumn<UseRow>[] = [
+  { header: "Kode", cell: (item) => item.code },
+  { header: "Status", cell: (item) => getStatusDisplayLabel(item.status) },
+  { header: "Alat", cell: (item) => item.equipmentName },
+  { header: "Ruangan", cell: (item) => item.roomName },
+  { header: "Pengguna", cell: (item) => item.requesterName },
+  { header: "Jumlah", cell: (item) => item.quantity },
+  { header: "Keperluan", cell: (item) => item.purpose },
+  { header: "Waktu Mulai", cell: (item) => formatDateTimeId(item.startTime) },
+  { header: "Waktu Selesai", cell: (item) => formatDateTimeId(item.endTime) },
+  { header: "Disetujui Oleh", cell: (item) => item.approvedByName || "-" },
+  { header: "Catatan", cell: (item) => item.note || "-" },
+  { header: "Dibuat", cell: (item) => formatDateTimeId(item.createdAt) },
+];
+
+export const BORROW_EXPORT_COLUMNS: ExportColumn<BorrowRow>[] = [
+  { header: "Kode", cell: (item) => item.code },
+  { header: "Status", cell: (item) => getStatusDisplayLabel(item.status) },
+  { header: "Alat", cell: (item) => item.equipmentName },
+  { header: "Peminjam", cell: (item) => item.requesterName },
+  { header: "Jumlah", cell: (item) => item.quantity },
+  { header: "Keperluan", cell: (item) => item.purpose },
+  { header: "Waktu Mulai", cell: (item) => formatDateTimeId(item.startTime) },
+  { header: "Waktu Selesai", cell: (item) => formatDateTimeId(item.endTime) },
+  { header: "Waktu Kembali Aktual", cell: (item) => formatDateTimeId(item.endTimeActual) },
+  { header: "Disetujui Oleh", cell: (item) => item.approvedByName || "-" },
+  { header: "Catatan Peminjam", cell: (item) => item.note || "-" },
+  { header: "Catatan Inspeksi", cell: (item) => item.inspectionNote || "-" },
+  { header: "Dibuat", cell: (item) => formatDateTimeId(item.createdAt) },
+];
+
+export const SAMPLE_TESTING_EXPORT_COLUMNS: ExportColumn<SampleTestingRow>[] = [
+  { header: "Kode", cell: (item) => item.code },
+  { header: "Status", cell: (item) => getStatusDisplayLabel(item.status) },
+  { header: "Pemohon", cell: (item) => item.name },
+  { header: "Institusi", cell: (item) => item.institution },
+  { header: "Email", cell: (item) => item.email },
+  { header: "No. Telepon", cell: (item) => item.phoneNumber },
+  { header: "Nama Sampel", cell: (item) => item.sampleName },
+  { header: "Jenis Sampel", cell: (item) => item.sampleType },
+  { header: "Merk Sampel", cell: (item) => item.sampleBrand },
+  { header: "Kemasan Sampel", cell: (item) => item.samplePackaging },
+  { header: "Berat Sampel", cell: (item) => item.sampleWeight },
+  { header: "Jumlah Sampel", cell: (item) => item.sampleQuantity },
+  { header: "Layanan Uji", cell: (item) => item.sampleTestingServing },
+  { header: "Metode Uji", cell: (item) => item.sampleTestingMethod },
+  { header: "Tipe Uji", cell: (item) => item.sampleTestingType },
+  { header: "Disetujui Oleh", cell: (item) => item.approvedByName || "-" },
+  { header: "Dibuat", cell: (item) => formatDateTimeId(item.createdAt) },
+];
+
+export const USER_EXPORT_COLUMNS: ExportColumn<UserRow>[] = [
+  { header: "Nama", cell: (user) => user.name },
+  { header: "Inisial", cell: (user) => user.initials || "-" },
+  { header: "Email", cell: (user) => user.email },
+  { header: "Role", cell: (user) => user.role || "-" },
+  { header: "User Type", cell: (user) => user.userType || "-" },
+  { header: "Department", cell: (user) => user.department || "-" },
+  { header: "Batch", cell: (user) => user.batch || "-" },
+  { header: "ID Number", cell: (user) => user.idNumber || "-" },
+  { header: "Institusi", cell: (user) => user.institution || "-" },
+  { header: "Verified", cell: (user) => (user.isVerified ? "Verified" : "Unverified") },
+];
+
+export const ROOM_EXPORT_COLUMNS: ExportColumn<RoomRow>[] = [
+  { header: "Nama", cell: (room) => room.name },
+  { header: "No. Ruang", cell: (room) => room.number },
+  { header: "Lantai", cell: (room) => room.floor },
+  { header: "Kapasitas", cell: (room) => room.capacity },
+  { header: "Deskripsi", cell: (room) => room.description || "-" },
+  { header: "PIC", cell: (room) => room.picName || "-" },
+];
+
+export const EQUIPMENT_EXPORT_COLUMNS: ExportColumn<EquipmentRow>[] = [
+  { header: "Nama", cell: (item) => item.name },
+  { header: "Kategori", cell: (item) => item.category },
+  { header: "Status", cell: (item) => formatStatus(item.status) },
+  { header: "Jumlah", cell: (item) => item.quantity },
+  { header: "Ruangan", cell: (item) => item.roomName || "-" },
+  { header: "Moveable", cell: (item) => (item.isMoveable ? "Ya" : "Tidak") },
+];
+
+export const SOFTWARE_EXPORT_COLUMNS: ExportColumn<SoftwareRow>[] = [
+  { header: "Nama", cell: (item) => item.name },
+  { header: "Versi", cell: (item) => item.version || "-" },
+  { header: "Lisensi", cell: (item) => item.licenseInfo || "-" },
+  { header: "Expired", cell: (item) => item.licenseExpiration || "-" },
+  { header: "Peralatan", cell: (item) => item.equipmentName || "-" },
+  { header: "Ruangan", cell: (item) => item.roomName || "-" },
+];
+
+function formatStatus(value?: string | null) {
+  if (!value || value === "-") return "-";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}

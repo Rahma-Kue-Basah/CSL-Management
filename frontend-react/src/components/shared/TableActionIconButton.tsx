@@ -4,7 +4,7 @@ import type { ComponentProps, ReactNode } from "react";
 
 import { ActionTooltip } from "@/components/shared/ActionTooltip";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 type TableActionIconButtonProps = {
   label: string;

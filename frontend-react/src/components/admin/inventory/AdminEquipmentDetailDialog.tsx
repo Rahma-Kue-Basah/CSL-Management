@@ -5,10 +5,10 @@ import { ArrowUpRight, Trash2, Wrench } from "lucide-react";
 import { toast } from "sonner";
 
 import RelatedRoomDetailDialog from "@/components/admin/history/RelatedRoomDetailDialog";
-import AdminDetailActions from "@/components/shared/admin-detail-actions";
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import ConfirmDeleteDialog from "@/components/shared/confirm-delete-dialog";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import AdminDetailActions from "@/components/shared/AdminDetailActions";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -16,10 +16,10 @@ import {
   EQUIPMENT_STATUS_OPTIONS,
   MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
-import { useDeleteEquipment } from "@/hooks/equipments/use-delete-equipment";
-import type { EquipmentRow } from "@/hooks/equipments/use-equipments";
-import { useUpdateEquipment } from "@/hooks/equipments/use-update-equipment";
-import { useRoomOptions } from "@/hooks/rooms/use-room-options";
+import { useDeleteEquipment } from "@/hooks/shared/resources/equipments/use-delete-equipment";
+import type { EquipmentRow } from "@/hooks/shared/resources/equipments/use-equipments";
+import { useUpdateEquipment } from "@/hooks/shared/resources/equipments/use-update-equipment";
+import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const INVENTORY_MODAL_WIDTH_CLASS =

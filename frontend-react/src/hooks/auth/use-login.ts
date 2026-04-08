@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { API_AUTH_LOGIN, API_AUTH_USER_PROFILE } from "@/constants/api";
-import { authFetch } from "@/lib/auth";
+import { authFetch } from "@/lib/auth/fetch";
 import {
   buildProfileFromApiResponse,
   persistProfileCache,
-} from "@/hooks/profile/use-load-profile";
+} from "@/hooks/shared/profile/use-load-profile";
 
 type LoginStatus = "idle" | "submitting" | "success" | "error";
 

@@ -4,15 +4,15 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { UserPlus, X } from "lucide-react";
 import { toast } from "sonner";
 
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { API_AUTH_USERS } from "@/constants/api";
-import { useUpdateUserProfile } from "@/hooks/users/use-update-user-profile";
-import { authFetch } from "@/lib/auth";
-import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/user-management-fields";
+import { useUpdateUserProfile } from "@/hooks/shared/resources/users/use-update-user-profile";
+import { authFetch } from "@/lib/auth/fetch";
+import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/UserManagementFields";
 
 type LecturerCandidate = {
   userId: string;

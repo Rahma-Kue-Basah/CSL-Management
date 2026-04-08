@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Boxes, Loader2 } from "lucide-react";
 
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import { DataPagination } from "@/components/shared/data-pagination";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
-import { useEquipments } from "@/hooks/equipments/use-equipments";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import { DataPagination } from "@/components/shared/DataPagination";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { useEquipments } from "@/hooks/shared/resources/equipments/use-equipments";
 
 const PAGE_SIZE = 10;
 

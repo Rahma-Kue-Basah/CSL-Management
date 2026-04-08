@@ -1,7 +1,7 @@
 "use client";
 
 import AdminRoomDetailDialog from "@/components/admin/inventory/AdminRoomDetailDialog";
-import { useRoomDetail } from "@/hooks/rooms/use-rooms";
+import { useRoomDetail } from "@/hooks/shared/resources/rooms/use-rooms";
 
 type RelatedRoomDetailDialogProps = {
   roomId: string | number | null;

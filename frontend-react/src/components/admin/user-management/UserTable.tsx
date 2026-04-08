@@ -12,8 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
 import { USER_TYPE_VALUES } from "@/constants/user-types";
-import { getUserInitials, type UserRow } from "@/hooks/users/use-users";
-import type { UserDetailMode } from "@/components/admin/user-management/user-management-fields";
+import { getUserInitials, type UserRow } from "@/hooks/shared/resources/users/use-users";
+import type { UserDetailMode } from "@/components/admin/user-management/UserManagementFields";
 
 type UserTableProps = {
   users: UserRow[];

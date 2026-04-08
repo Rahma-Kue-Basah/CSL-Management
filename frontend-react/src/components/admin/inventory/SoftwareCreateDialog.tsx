@@ -4,13 +4,13 @@ import { useState, type ChangeEvent, type FormEvent } from "react";
 import { Box, Plus } from "lucide-react";
 import { toast } from "sonner";
 
-import AdminDetailDialogShell from "@/components/shared/admin-detail-dialog-shell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import { Button } from "@/components/ui/button";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useEquipmentOptions } from "@/hooks/equipments/use-equipment-options";
-import { useCreateSoftware } from "@/hooks/softwares/use-create-software";
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
+import { useCreateSoftware } from "@/hooks/shared/resources/softwares/use-create-software";
 
 type SoftwareCreateDialogProps = {
   open: boolean;

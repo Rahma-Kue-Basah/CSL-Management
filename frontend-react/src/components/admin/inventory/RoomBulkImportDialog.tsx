@@ -7,12 +7,12 @@ import { toast } from "sonner";
 import { DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import BulkImportDialogShell from "@/components/shared/BulkImportDialogShell";
-import InlineErrorAlert from "@/components/shared/inline-error-alert";
+import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
 import {
   useBulkCreateRooms,
   type BulkRoomRow,
-} from "@/hooks/rooms/use-bulk-create-rooms";
-import { usePicUsers } from "@/hooks/users/use-pic-users";
+} from "@/hooks/shared/resources/rooms/use-bulk-create-rooms";
+import { usePicUsers } from "@/hooks/shared/resources/users/use-pic-users";
 
 const HEADER_MAP: Record<
   string,

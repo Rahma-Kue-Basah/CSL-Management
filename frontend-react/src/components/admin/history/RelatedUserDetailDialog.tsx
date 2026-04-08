@@ -1,7 +1,7 @@
 "use client";
 
 import UserDetailDialog from "@/components/admin/user-management/UserDetailDialog";
-import { useUserDetail } from "@/hooks/users/use-users";
+import { useUserDetail } from "@/hooks/shared/resources/users/use-users";
 
 type RelatedUserDetailDialogProps = {
   userId: string | number | null;

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { useForgotPassword } from "@/hooks/auth/use-forgot-password";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 type ForgotPasswordFormProps = ComponentPropsWithoutRef<"form">;
 

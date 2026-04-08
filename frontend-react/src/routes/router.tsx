@@ -23,7 +23,7 @@ import DashboardHomePage from "@/pages/dashboard/DashboardHomePage";
 import DashboardOverviewPage from "@/pages/dashboard/overview/DashboardOverviewPage";
 import DashboardAnnouncementsPage from "@/pages/dashboard/announcements/DashboardAnnouncementsPage";
 import DashboardFaqPage from "@/pages/dashboard/faq/DashboardFaqPage";
-import DashboardStructureOrganizationsPage from "@/pages/dashboard/organization/DashboardStructureOrganizationsPage";
+import DashboardOrganizationStructurePage from "@/pages/dashboard/organization/DashboardOrganizationStructurePage";
 import SchedulePage from "@/pages/dashboard/schedule/SchedulePage";
 import BookingRoomsListPage from "@/pages/dashboard/booking-rooms/BookingRoomsListPage";
 import BookingRoomsAllListPage from "@/pages/dashboard/booking-rooms/BookingRoomsAllListPage";
@@ -39,6 +39,7 @@ import SoftwareListPage from "@/pages/dashboard/use-equipment/SoftwareListPage";
 import EquipmentDetailPage from "@/pages/dashboard/use-equipment/EquipmentDetailPage";
 import UseEquipmentDetailPage from "@/pages/dashboard/use-equipment/UseEquipmentDetailPage";
 import SampleTestingListPage from "@/pages/dashboard/sample-testing/SampleTestingListPage";
+import SampleTestingAllListPage from "@/pages/dashboard/sample-testing/SampleTestingAllListPage";
 import SampleTestingFormPage from "@/pages/dashboard/sample-testing/SampleTestingFormPage";
 import SampleTestingDetailPage from "@/pages/dashboard/sample-testing/SampleTestingDetailPage";
 import BorrowEquipmentListPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentListPage";
@@ -46,11 +47,10 @@ import BorrowEquipmentAllListPage from "@/pages/dashboard/borrow-equipment/Borro
 import BorrowEquipmentFormPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentFormPage";
 import BorrowEquipmentAvailablePage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentAvailablePage";
 import BorrowEquipmentDetailPage from "@/pages/dashboard/borrow-equipment/BorrowEquipmentDetailPage";
-import ApprovalSampleTestingPage from "@/pages/dashboard/approval/ApprovalSampleTestingPage";
 import NotificationsPage from "@/pages/dashboard/account/NotificationsPage";
 import MyProfilePage from "@/pages/dashboard/account/MyProfilePage";
 import AdminHomePage from "@/pages/admin/home/AdminHomePage";
-import AdminSchedulePage from "@/pages/admin/information/AdminSchedulePage";
+import AdminSchedulePage from "@/pages/admin/schedules/AdminSchedulePage";
 import AdminAnnouncementPage from "@/pages/admin/information/AdminAnnouncementPage";
 import AdminFaqPage from "@/pages/admin/information/AdminFaqPage";
 import AdminEquipmentPage from "@/pages/admin/inventory/AdminEquipmentPage";
@@ -60,7 +60,7 @@ import AdminRoomBookingHistoryPage from "@/pages/admin/history/AdminRoomBookingH
 import AdminEquipmentUsageHistoryPage from "@/pages/admin/history/AdminEquipmentUsageHistoryPage";
 import AdminEquipmentBorrowHistoryPage from "@/pages/admin/history/AdminEquipmentBorrowHistoryPage";
 import AdminSampleTestingHistoryPage from "@/pages/admin/history/AdminSampleTestingHistoryPage";
-import AdminSampleTestingDocumentPage from "@/pages/admin/documents/AdminSampleTestingDocumentPage";
+import AdminSampleTestingDocumentsPage from "@/pages/admin/documents/AdminSampleTestingDocumentsPage";
 import AdminMyProfilePage from "@/pages/admin/profile/AdminMyProfilePage";
 import UserManagementAllPage from "@/pages/admin/user-management/UserManagementAllPage";
 import UserManagementStudentPage from "@/pages/admin/user-management/UserManagementStudentPage";
@@ -119,7 +119,7 @@ export const router = createBrowserRouter([
           { path: "overview", element: <DashboardOverviewPage /> },
           { path: "announcements", element: <DashboardAnnouncementsPage /> },
           { path: "faq", element: <DashboardFaqPage /> },
-          { path: "organization-structure", element: <DashboardStructureOrganizationsPage /> },
+          { path: "organization-structure", element: <DashboardOrganizationStructurePage /> },
         ],
       },
       {
@@ -315,7 +315,7 @@ export const router = createBrowserRouter([
             element: (
               <RequireFeatureScope featurePath="/sample-testing" scope="approval">
                 <RequireStaffOrAbove>
-                  <ApprovalSampleTestingPage />
+                  <SampleTestingAllListPage />
                 </RequireStaffOrAbove>
               </RequireFeatureScope>
             ),
@@ -455,7 +455,7 @@ export const router = createBrowserRouter([
         path: "documents",
         children: [
           { index: true, element: <Navigate to="sample-testing" replace /> },
-          { path: "sample-testing", element: <AdminSampleTestingDocumentPage /> },
+          { path: "sample-testing", element: <AdminSampleTestingDocumentsPage /> },
         ],
       },
       {
