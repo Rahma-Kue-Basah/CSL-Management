@@ -7,7 +7,7 @@ import type { DateRange } from "react-day-picker";
 
 import { Eye, FileText, Trash2 } from "lucide-react";
 
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "next/navigation";
 
 import { toast } from "sonner";
 
@@ -99,7 +99,7 @@ function canShowDocumentAction(status: string) {
 }
 
 export default function AdminSampleTestingHistoryPage() {
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const queryParam = searchParams.get("q") ?? "";
   const statusParam = searchParams.get("status") ?? "";

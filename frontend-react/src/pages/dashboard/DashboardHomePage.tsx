@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 
 export default function DashboardHomePage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const isMobile = useIsMobile();
   const [shouldHideContent, setShouldHideContent] = useState(
     typeof window !== "undefined" ? window.innerWidth < 768 : false,
@@ -14,8 +14,8 @@ export default function DashboardHomePage() {
   useEffect(() => {
     setShouldHideContent(isMobile);
     if (!isMobile) return;
-    navigate("/dashboard/overview", { replace: true });
-  }, [isMobile, navigate]);
+    router.replace("/dashboard/overview");
+  }, [isMobile, router]);
 
   if (shouldHideContent) {
     return null;

@@ -12,7 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useParams, usePathname, useRouter } from "next/navigation";
 
 import { Button, Skeleton } from "@/components/ui";
 
@@ -162,14 +162,15 @@ function BorrowDetailSkeleton() {
 }
 
 export default function BorrowEquipmentDetailPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const { id } = useParams();
+  const borrowId = Array.isArray(id) ? id[0] : id;
   const [reloadKey, setReloadKey] = useState(0);
   const [progressOpen, setProgressOpen] = useState(false);
-  const { borrow: item, isLoading, error } = useBorrowDetail(id, reloadKey);
+  const { borrow: item, isLoading, error } = useBorrowDetail(borrowId, reloadKey);
 
-  const isAllPage = location.pathname.startsWith("/borrow-equipment/approval/");
+  const isAllPage = pathname.startsWith("/borrow-equipment/approval/");
   const backHref = isAllPage ? "/borrow-equipment/approval" : "/borrow-equipment";
   const backLabel = isAllPage
     ? "Kembali ke Daftar Pengajuan"
@@ -185,7 +186,7 @@ export default function BorrowEquipmentDetailPage() {
         <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
-        <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
+        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
         </Button>
@@ -197,7 +198,7 @@ export default function BorrowEquipmentDetailPage() {
     return (
       <section className="space-y-3">
         <p className="text-sm text-slate-600">Data pengajuan peminjaman alat tidak ditemukan.</p>
-        <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
+        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
         </Button>
@@ -224,7 +225,7 @@ export default function BorrowEquipmentDetailPage() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
+          <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
             <ArrowLeft className="h-4 w-4" />
             Kembali
           </Button>
@@ -314,9 +315,9 @@ export default function BorrowEquipmentDetailPage() {
             </div>
 
             <div className="space-y-4">
-              {id ? (
+              {borrowId ? (
                 <DashboardDetailReviewPanel
-                  context={{ kind: "borrow", id }}
+                  context={{ kind: "borrow", id: borrowId }}
                   initialBorrow={item}
                   onActionComplete={() => setReloadKey((prev) => prev + 1)}
                 />

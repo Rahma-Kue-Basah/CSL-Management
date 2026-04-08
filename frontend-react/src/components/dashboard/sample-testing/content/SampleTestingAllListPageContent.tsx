@@ -5,9 +5,7 @@ import { useEffect, useState, type ReactNode } from "react";
 
 import { CalendarClock, CheckCircle2, CircleDollarSign, Eye, FileText, FlaskConical, Loader2, PackageSearch, RotateCcw, Settings2 } from "lucide-react";
 
-import { useSearchParams } from "next/navigation";
-
-import { useNavigate } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { SampleTestingDocumentsDialog } from "@/components/dashboard/sample-testing";
 
@@ -115,7 +113,7 @@ function SummaryCard({
 }
 
 export default function SampleTestingAllListPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [progressSampleTestingId, setProgressSampleTestingId] = useState<string | null>(null);
@@ -280,7 +278,7 @@ export default function SampleTestingAllListPage() {
                         label="Lihat detail"
                         icon={<Eye className="h-3.5 w-3.5" />}
                         className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
-                        onClick={() => navigate(`/sample-testing/approval/${item.id}`)}
+                        onClick={() => router.push(`/sample-testing/approval/${item.id}`)}
                       />
                     </div>
                   </td>

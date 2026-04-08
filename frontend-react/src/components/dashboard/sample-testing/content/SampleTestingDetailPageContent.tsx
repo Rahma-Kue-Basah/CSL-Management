@@ -5,7 +5,7 @@ import { useState } from "react";
 
 import { ArrowLeft, ClipboardList, FlaskConical, UserRound } from "lucide-react";
 
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useParams, usePathname, useRouter } from "next/navigation";
 
 import { DashboardDetailReviewPanel } from "@/components/dashboard/layout";
 
@@ -49,18 +49,19 @@ function SampleTestingDetailSkeleton() {
 }
 
 export default function SampleTestingDetailPage() {
-  const navigate = useNavigate();
-  const location = useLocation();
+  const router = useRouter();
+  const pathname = usePathname();
   const { id } = useParams();
+  const sampleTestingId = Array.isArray(id) ? id[0] : id;
   const [reloadKey, setReloadKey] = useState(0);
   const [progressOpen, setProgressOpen] = useState(false);
   const { sampleTesting: item, isLoading, error } = useSampleTestingDetail(
-    id ?? null,
+    sampleTestingId ?? null,
     reloadKey,
     { enabled: true },
   );
 
-  const isApprovalPage = location.pathname.startsWith("/sample-testing/approval/");
+  const isApprovalPage = pathname.startsWith("/sample-testing/approval/");
   const backHref = isApprovalPage ? "/sample-testing/approval" : "/sample-testing";
   const backLabel = isApprovalPage
     ? "Kembali ke Daftar Pengajuan"
@@ -74,7 +75,7 @@ export default function SampleTestingDetailPage() {
         <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
           {error}
         </div>
-        <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
+        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
         </Button>
@@ -86,7 +87,7 @@ export default function SampleTestingDetailPage() {
     return (
       <section className="space-y-3">
         <p className="text-sm text-slate-600">Data pengajuan pengujian sampel tidak ditemukan.</p>
-        <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
+        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
           {backLabel}
         </Button>
@@ -110,7 +111,7 @@ export default function SampleTestingDetailPage() {
             </button>
           </div>
         </div>
-        <Button type="button" variant="outline" onClick={() => navigate(backHref)}>
+        <Button type="button" variant="outline" onClick={() => router.push(backHref)}>
           <ArrowLeft className="h-4 w-4" />
           Kembali
         </Button>
@@ -162,9 +163,9 @@ export default function SampleTestingDetailPage() {
             </SampleTestingSectionCard>
           </div>
           <div className="space-y-4">
-            {id ? (
+            {sampleTestingId ? (
               <DashboardDetailReviewPanel
-                context={{ kind: "sample-testing", id }}
+                context={{ kind: "sample-testing", id: sampleTestingId }}
                 initialSampleTesting={item}
                 onActionComplete={() => setReloadKey((prev) => prev + 1)}
               />

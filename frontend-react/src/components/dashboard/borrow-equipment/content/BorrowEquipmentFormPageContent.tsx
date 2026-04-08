@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 
 import { Loader2 } from "lucide-react";
 
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { toast } from "sonner";
 
@@ -71,8 +71,8 @@ const initialFormData: FormData = {
 };
 
 export default function BorrowEquipmentFormPage() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const { profile } = useLoadProfile();
@@ -271,7 +271,7 @@ export default function BorrowEquipmentFormPage() {
 
     toast.success("Pengajuan peminjaman alat berhasil dibuat.");
     setIsConfirmOpen(false);
-    navigate("/borrow-equipment");
+    router.push("/borrow-equipment");
   };
 
   return (

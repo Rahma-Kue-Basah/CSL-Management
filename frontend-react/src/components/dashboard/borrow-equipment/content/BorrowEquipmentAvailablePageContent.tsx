@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 
 import { Eye, HandHelping, Loader2 } from "lucide-react";
 
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { DataPagination, TableActionIconButton } from "@/components/shared";
 
@@ -26,8 +26,8 @@ function formatStatus(value: string) {
 }
 
 export default function BorrowEquipmentAvailablePage() {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const search = searchParams.get("q") ?? "";
   const category = searchParams.get("category") ?? "";
@@ -106,14 +106,14 @@ export default function BorrowEquipmentAvailablePage() {
                         label="Lihat detail"
                         icon={<Eye className="h-3.5 w-3.5" />}
                         className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
-                        onClick={() => navigate(`/equipment/${item.id}`)}
+                        onClick={() => router.push(`/equipment/${item.id}`)}
                       />
                       <TableActionIconButton
                         type="button"
                         label="Ajukan peminjaman"
                         icon={<HandHelping className="h-3.5 w-3.5" />}
                         className="w-8 rounded-md border border-slate-200 bg-sky-50 p-0 text-sky-700 shadow-none hover:bg-sky-100"
-                        onClick={() => navigate(`/borrow-equipment/form?equipment=${item.id}`)}
+                        onClick={() => router.push(`/borrow-equipment/form?equipment=${item.id}`)}
                       />
                     </div>
                   </td>

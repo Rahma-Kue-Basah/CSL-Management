@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { FileUp, Plus, UserPlus } from "lucide-react";
 
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams } from "next/navigation";
 
 import {
   AdminPageHeader,
@@ -79,7 +79,7 @@ export default function UserManagementContent({
   createButtonLabel = "Buat User",
 }: UserManagementContentProps) {
   const selectAllRef = useRef<HTMLInputElement | null>(null);
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const roleParam = forcedRole ?? searchParams.get("role");
   const isRoleScoped = Boolean(roleParam);
 

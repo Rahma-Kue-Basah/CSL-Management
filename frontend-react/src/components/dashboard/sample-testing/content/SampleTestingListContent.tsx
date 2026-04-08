@@ -16,9 +16,7 @@ import {
   Settings2,
 } from "lucide-react";
 
-import { useSearchParams } from "next/navigation";
-
-import { useNavigate } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   DataPagination,
@@ -137,7 +135,7 @@ export default function SampleTestingListContent({
   emptyMessage,
 }: SampleTestingListContentProps) {
   const searchParams = useSearchParams();
-  const navigate = useNavigate();
+  const router = useRouter();
   const [page, setPage] = useState(1);
   const [progressState, setProgressState] = useState<{
     code: string;
@@ -314,7 +312,7 @@ export default function SampleTestingListContent({
                         label="Lihat detail"
                         icon={<Eye className="h-3.5 w-3.5" />}
                         className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
-                        onClick={() => navigate(`/sample-testing/${item.id}`)}
+                        onClick={() => router.push(`/sample-testing/${item.id}`)}
                       />
                     </div>
                   </td>

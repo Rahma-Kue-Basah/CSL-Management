@@ -1,9 +1,9 @@
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui";
 
 export default function NotFoundPage() {
-  const navigate = useNavigate();
+  const router = useRouter();
 
   return (
     <main className="min-h-screen bg-slate-100 text-slate-900">
@@ -27,7 +27,7 @@ export default function NotFoundPage() {
               <Button
                 type="button"
                 className="bg-[#0048B4] text-white hover:bg-[#003b93]"
-                onClick={() => navigate(-1)}
+                onClick={() => router.back()}
               >
                 Kembali
               </Button>

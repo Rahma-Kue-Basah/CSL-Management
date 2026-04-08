@@ -7,7 +7,7 @@ import type { DateRange } from "react-day-picker";
 
 import { ChevronDown, Eye, ExternalLink, FileText } from "lucide-react";
 
-import { useNavigate } from "react-router-dom";
+import { useRouter } from "next/navigation";
 
 import { AdminPageHeader, AdminFilterCard } from "@/components/admin/shared";
 
@@ -51,7 +51,7 @@ export default function AdminSampleTestingDocumentsContent({
 }: {
   config: SupportedDocumentConfig;
 }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const selectAllRef = useRef<HTMLInputElement | null>(null);
   const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<Array<string | number>>([]);
@@ -446,7 +446,7 @@ export default function AdminSampleTestingDocumentsContent({
                           size="icon-sm"
                           className="border-slate-200 text-slate-700 hover:bg-slate-100 hover:text-slate-900"
                           onClick={() =>
-                            navigate(
+                            router.push(
                               `/admin/history/sample-testing?q=${encodeURIComponent(group.code)}`,
                             )
                           }

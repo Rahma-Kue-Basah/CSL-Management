@@ -17,7 +17,7 @@ import {
   X,
 } from "lucide-react";
 
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { DashboardDetailReviewDialog } from "@/components/dashboard/layout";
 
@@ -175,9 +175,9 @@ export default function BorrowEquipmentListContent({
   scope: "my" | "all";
   emptyMessage: string;
 }) {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { profile } = useLoadProfile();
-  const [searchParams] = useSearchParams();
+  const searchParams = useSearchParams();
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [reviewBorrowId, setReviewBorrowId] = useState<string | null>(null);
@@ -428,7 +428,7 @@ export default function BorrowEquipmentListContent({
                             label="Lihat detail"
                             icon={<Eye className="h-3.5 w-3.5" />}
                             className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
-                            onClick={() => navigate(`/borrow-equipment/approval/${item.id}`)}
+                            onClick={() => router.push(`/borrow-equipment/approval/${item.id}`)}
                           />
                         </div>
                       </td>
@@ -555,7 +555,7 @@ export default function BorrowEquipmentListContent({
                         icon={<Eye className="h-3.5 w-3.5" />}
                         className="w-8 rounded-md border border-slate-200 bg-slate-50 p-0 text-slate-700 shadow-none hover:bg-slate-100"
                         onClick={() =>
-                          navigate(
+                          router.push(
                             scope === "all"
                               ? `/borrow-equipment/approval/${item.id}`
                               : `/borrow-equipment/${item.id}`,
