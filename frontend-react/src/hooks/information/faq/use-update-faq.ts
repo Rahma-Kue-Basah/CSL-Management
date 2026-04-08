@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { buildFaqUrl, FAQS_ENDPOINT } from "@/hooks/information/faq/utils";
 import { extractApiErrorMessage } from "@/lib/core";
 import { faqService, type Faq } from "@/services/information";
 

@@ -4,7 +4,6 @@ import type { RefObject } from "react";
 import { Image as AntdImage } from "antd";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui";
 import { TableActionIconButton } from "@/components/shared";
 import type { Faq } from "@/hooks/information/faq";
 import { formatDateTimeId } from "@/lib/date";

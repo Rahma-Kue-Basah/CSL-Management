@@ -260,7 +260,7 @@ export function useLoadProfile(user?: ProfileUserInput | null) {
     const parts = source.trim().split(/\s+/);
     const letters = parts.slice(0, 2).map((part) => part[0]);
     return letters.join("").toUpperCase() || "U";
-  }, [profile.name, profile.email]);
+  }, [profile.initials, profile.name, profile.email]);
 
   return {
     profile,

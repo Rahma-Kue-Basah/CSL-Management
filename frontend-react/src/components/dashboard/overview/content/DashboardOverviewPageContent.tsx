@@ -11,7 +11,6 @@ import {
   Loader2,
   OctagonX,
   Package,
-  Sparkles,
   X,
 } from "lucide-react";
 

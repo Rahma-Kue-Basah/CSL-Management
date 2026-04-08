@@ -6,11 +6,8 @@ import { useState } from "react";
 import {
   ArrowLeft,
   CalendarClock,
-  CheckCircle2,
   ClipboardList,
   Hourglass,
-  NotebookPen,
-  Truck,
   TriangleAlert,
   Wrench,
 } from "lucide-react";

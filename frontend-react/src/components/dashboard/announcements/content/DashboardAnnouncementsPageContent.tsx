@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 import { CalendarDays, ChevronDown } from "lucide-react";
 
-import { Input, Skeleton } from "@/components/ui";
+import { Skeleton } from "@/components/ui";
 
 import {
   useAnnouncements,
@@ -82,7 +82,7 @@ function AnnouncementSkeleton() {
 
 export default function DashboardAnnouncementsPage() {
   const { announcements, isLoading, error } = useAnnouncements();
-  const [search, setSearch] = useState("");
+  const [search] = useState("");
 
   const filteredAnnouncements = useMemo(() => {
     const query = search.trim().toLowerCase();

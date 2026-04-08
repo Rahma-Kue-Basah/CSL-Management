@@ -108,10 +108,6 @@ function isInspectionPendingStatus(value: string) {
   );
 }
 
-function hasValue(value?: string | null) {
-  return Boolean(value && value.trim() && value !== "-");
-}
-
 function isGuestRole(role?: string | null) {
   return String(role ?? "").trim().toLowerCase() === "guest";
 }

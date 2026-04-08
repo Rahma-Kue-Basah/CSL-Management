@@ -70,7 +70,6 @@ export default function AdminFaqPage() {
     totalCount,
     setTotalCount,
     isLoading,
-    hasLoadedOnce,
     error,
     setError,
   } = useFaqs(

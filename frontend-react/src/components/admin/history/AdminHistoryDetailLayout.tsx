@@ -17,7 +17,7 @@ export function AdminRecordDetailShell({
   title,
   code,
   icon,
-  status,
+  status: _status,
   backLabel = "Kembali",
   onBack,
   actions,

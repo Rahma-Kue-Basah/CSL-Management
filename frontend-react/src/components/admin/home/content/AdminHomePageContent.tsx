@@ -5,7 +5,6 @@ import Link from "next/link";
 import {
   Building2,
   CalendarCheck2,
-  Clock3,
   Package,
   ShieldUser,
   Sparkles,

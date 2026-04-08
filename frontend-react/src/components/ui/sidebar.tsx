@@ -26,8 +26,6 @@ import {
   TooltipTrigger,
 } from "@/components/ui";
 
-import Image from "next/image";
-
 import { PanelLeftIcon } from "lucide-react";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";

@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { FileUp, Plus, Upload } from "lucide-react";
+import { FileUp, Plus } from "lucide-react";
 
 import { toast } from "sonner";
 

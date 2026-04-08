@@ -5,9 +5,7 @@ import { useState } from "react";
 
 import {
   ArrowLeft,
-  CalendarClock,
   MapPinned,
-  NotebookPen,
   UserRound,
 } from "lucide-react";
 
@@ -30,8 +28,6 @@ import {
   hasMentorApprovalTrace,
 } from "@/lib/request";
 
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
-
 type UseDetailParams = {
   id?: string | string[];
 };
@@ -45,62 +41,6 @@ function hasDisplayValue(value?: string | null) {
 function UseFlow({ steps }: { steps: ReturnType<typeof getUseProgressFlow> }) {
   return (
     <ProgressSteps steps={steps} minWidthClassName="min-w-[720px]" />
-  );
-}
-
-function DetailItem({
-  label,
-  value,
-  variant = "default",
-}: {
-  label: string;
-  value: string;
-  variant?: "default" | "status";
-}) {
-  const displayValue = value?.trim() ? value : "-";
-  const isEmpty = displayValue === "-";
-
-  return (
-    <div className="space-y-1.5 rounded-md border border-slate-200 bg-white px-4 py-3">
-      <p className="text-xs text-slate-500">{label}</p>
-      {variant === "status" && !isEmpty ? (
-        <span
-          className={`inline-flex w-fit rounded-full px-2.5 py-1 text-xs font-medium ${getStatusBadgeClass(displayValue)}`}
-        >
-          {getStatusDisplayLabel(displayValue)}
-        </span>
-      ) : (
-        <p
-          className={`text-sm leading-relaxed ${isEmpty ? "italic text-slate-400" : "text-slate-800"}`}
-        >
-          {displayValue}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function DetailSection({
-  title,
-  icon,
-  children,
-}: {
-  title: string;
-  icon: React.ReactNode;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="rounded-xl border border-slate-400/50 bg-white p-5">
-      <div className="mb-4 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
-          {icon}
-        </div>
-        <div>
-          <h3 className="text-sm text-slate-900">{title}</h3>
-        </div>
-      </div>
-      {children}
-    </section>
   );
 }
 

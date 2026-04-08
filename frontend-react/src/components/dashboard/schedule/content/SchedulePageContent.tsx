@@ -2,10 +2,8 @@
 
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
-import { Clock3 } from "lucide-react";
 
 import { InlineErrorAlert } from "@/components/shared";
-import { Skeleton } from "@/components/ui";
 import { useCalendarEvents } from "@/hooks/shared/calendar";
 import { parseDateKey } from "@/lib/date";
 import { formatHourLabel } from "@/lib/date";
@@ -250,7 +248,7 @@ export default function SchedulePage() {
   const categoryFilter = searchParams.get("category") ?? "";
   const selectedDateParam = searchParams.get("date") ?? "";
   const selectedDate = selectedDateParam ? parseDateKey(selectedDateParam) ?? new Date() : new Date();
-  const { events, isLoading, error } = useCalendarEvents();
+  const { events, error } = useCalendarEvents();
 
   const filteredEvents = useMemo(() => {
     const normalizedQuery = normalizeText(query);

@@ -3,7 +3,6 @@
 import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui";
 import { TableActionIconButton } from "@/components/shared";
 import type { Announcement } from "@/hooks/information/announcements";
 import { formatDateTimeWib } from "@/lib/date";

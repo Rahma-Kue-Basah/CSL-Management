@@ -1,7 +1,7 @@
 "use client";
 
 
-import { ArrowBigUpDashIcon, LogOut, UserRound, UserRoundSearch } from "lucide-react";
+import { LogOut, UserRound, UserRoundSearch } from "lucide-react";
 
 import Link from "next/link";
 

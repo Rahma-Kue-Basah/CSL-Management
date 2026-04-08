@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BellRing, Clock3 } from "lucide-react";
+import { Clock3 } from "lucide-react";
 import Link from "next/link";
 
 import { InlineErrorAlert } from "@/components/shared";

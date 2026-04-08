@@ -7,8 +7,6 @@ import { Boxes, Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
 import { ConfirmDeleteDialog, TableActionIconButton } from "@/components/shared";
 
-import { Button } from "@/components/ui";
-
 import type { RoomRow } from "@/hooks/shared/resources/rooms";
 
 type RoomTableProps = {

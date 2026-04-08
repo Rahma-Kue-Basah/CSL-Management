@@ -3,7 +3,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 
-import { CalendarDays, FileUp, Plus, Upload } from "lucide-react";
+import { CalendarDays, FileUp, Plus } from "lucide-react";
 
 import type { DateRange } from "react-day-picker";
 
@@ -35,8 +35,6 @@ import { Button } from "@/components/ui";
 import { useBookingDetail } from "@/hooks/booking-rooms";
 
 import { useCalendarEvents } from "@/hooks/shared/calendar";
-
-import type { CalendarEvent } from "@/hooks/shared/calendar";
 
 import { useRoomOptions } from "@/hooks/shared/resources/rooms";
 
@@ -424,8 +422,6 @@ export default function AdminSchedulePage() {
     }
 
     const failedIds = (result.failedIds ?? []).map((id) => String(id));
-    const deletedIds = (result.deletedIds ?? []).map((id) => String(id));
-
     if (failedIds.length) {
       setSchedulesError(result.message || "Sebagian jadwal gagal dihapus.");
       setSelectedIds(failedIds);

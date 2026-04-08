@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import type {
-  SampleTestingDocument,
   SampleTestingDocumentType,
 } from "@/hooks/sample-testing";
 import {

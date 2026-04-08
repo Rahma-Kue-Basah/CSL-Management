@@ -42,10 +42,6 @@ export const SCHEDULE_CATEGORIES: ScheduleCategory[] = [
   "Practicum",
 ];
 
-function getScheduleCategoryLabel(category: ScheduleCategory | string) {
-  return category === "Practicum" ? "Praktikum" : category;
-}
-
 function combineDateTime(date: Date | undefined, time: string) {
   if (!date || !time) return "";
   return `${format(date, "yyyy-MM-dd")}T${time}`;
