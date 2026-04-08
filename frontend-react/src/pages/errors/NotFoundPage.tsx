@@ -42,7 +42,7 @@ export default function NotFoundPage() {
             <div className="grid place-items-center">
               <div className="grid h-24 w-24 place-items-center md:h-28 md:w-28">
                 <img
-                  src="/logo/stem.png"
+                  src="/logo/stem.webp"
                   alt="STEM Logo"
                   className="h-24 w-24 object-contain md:h-28 md:w-28"
                 />

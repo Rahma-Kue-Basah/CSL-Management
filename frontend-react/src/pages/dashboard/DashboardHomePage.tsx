@@ -25,7 +25,7 @@ export default function DashboardHomePage() {
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50">
       <div className="relative aspect-[16/7] w-full">
         <Image
-          src="/images/welcome.jpg"
+          src="/images/welcome.webp"
           alt="Welcome"
           fill
           priority

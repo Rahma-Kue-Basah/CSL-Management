@@ -413,7 +413,7 @@ export function AppSidebar() {
                 className="mx-0 flex h-full w-full items-center justify-start gap-2 px-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-0 group-data-[collapsible=icon]:px-0"
               >
                 <Image
-                  src="/logo/stem-name-white.png"
+                  src="/logo/stem-name-white.webp"
                   alt="STEM Logo"
                   width={140}
                   height={40}
@@ -422,7 +422,7 @@ export function AppSidebar() {
                   priority
                 />
                 <Image
-                  src="/logo/prasmul-white.png"
+                  src="/logo/prasmul-white.webp"
                   alt="STEM Logo"
                   width={40}
                   height={40}

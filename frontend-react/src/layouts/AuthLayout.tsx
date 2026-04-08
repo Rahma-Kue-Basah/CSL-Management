@@ -10,7 +10,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="relative grid h-svh overflow-hidden lg:grid-cols-[2fr_3fr] font-sans">
       <div className="relative hidden overflow-hidden lg:block lg:h-svh">
-        <div className="absolute inset-0 bg-[url('/images/stem-building-2.png')] bg-cover bg-center" />
+        <div className="absolute inset-0 bg-[url('/images/stem-building-2.webp')] bg-cover bg-center" />
         <div className="absolute inset-0 bg-blue-500/80" />
         <div className="absolute left-12 top-16 max-w-xs text-white">
           <p className="text-sm uppercase tracking-[0.35em] text-white/70">
@@ -27,7 +27,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
       <div className="flex flex-col gap-6 p-6 md:p-10 lg:overflow-y-auto">
         <Link href="/">
           <Image
-            src="/logo/stem-name-2.png"
+            src="/logo/stem-name-2.webp"
             alt="CSL USE Logo"
             width={220}
             height={24}

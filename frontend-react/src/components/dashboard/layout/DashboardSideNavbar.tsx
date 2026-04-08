@@ -51,7 +51,7 @@ export function DashboardSideNavbar({
                 aria-label="Dashboard"
               >
                 <Image
-                  src="/logo/prasmul-white.png"
+                  src="/logo/prasmul-white.webp"
                   alt="STEM"
                   width={24}
                   height={24}
