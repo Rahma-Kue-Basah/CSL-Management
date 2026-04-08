@@ -1,16 +1,26 @@
 "use client";
 
+
 import type { ComponentPropsWithoutRef } from "react";
+
 import { useEffect, useState } from "react";
+
 import { Eye, EyeOff, Loader2 } from "lucide-react";
+
 import { useParams, useRouter } from "next/navigation";
 
-import { AlertMessage } from "@/components/ui/alert-message";
-import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { useResetPassword } from "@/hooks/auth/use-reset-password";
-import { cn } from "@/lib/core/utils";
+import {
+  AlertMessage,
+  Button,
+  Field,
+  FieldGroup,
+  FieldLabel,
+  Input,
+} from "@/components/ui";
+
+import { useResetPassword } from "@/hooks/auth";
+
+import { cn } from "@/lib/core";
 
 type ResetPasswordParams = {
   uid?: string | string[];

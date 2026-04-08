@@ -1,16 +1,18 @@
 "use client";
 
+
 import { Search } from "lucide-react";
+
 import type { DateRange } from "react-day-picker";
 
-import { AdminFilterCard } from "@/components/admin/shared/AdminFilterCard";
 import {
+  AdminFilterCard,
   AdminFilterField,
   AdminFilterGrid,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { Input } from "@/components/ui/input";
+} from "@/components/admin/shared";
+
+import { DateRangePicker, Input } from "@/components/ui";
 
 type RoomOption = {
   id: string | number;

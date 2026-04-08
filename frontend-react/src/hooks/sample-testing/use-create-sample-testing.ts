@@ -5,11 +5,11 @@ import { useState } from "react";
 import {
   extractApiErrorMessage,
   extractApiErrorMessageFromText,
-} from "@/lib/core/api-error";
+} from "@/lib/core";
 import {
   type CreateSampleTestingPayload,
   sampleTestingService,
-} from "@/services/sample-testing/sample-testing.service";
+} from "@/services/sample-testing";
 
 function parseSampleTestingError(
   data: unknown,

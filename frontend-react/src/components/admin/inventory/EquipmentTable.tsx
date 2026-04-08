@@ -1,11 +1,13 @@
 "use client";
 
+
 import type { RefObject } from "react";
+
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import type { EquipmentRow } from "@/hooks/shared/resources/equipments/use-equipments";
+import { ConfirmDeleteDialog, TableActionIconButton } from "@/components/shared";
+
+import type { EquipmentRow } from "@/hooks/shared/resources/equipments";
 
 type EquipmentTableProps = {
   equipments: EquipmentRow[];

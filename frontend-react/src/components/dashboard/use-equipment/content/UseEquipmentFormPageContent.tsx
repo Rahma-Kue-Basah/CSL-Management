@@ -1,36 +1,45 @@
 "use client";
 
+
 import { useEffect, useMemo, useState } from "react";
+
 import { Loader2 } from "lucide-react";
+
 import { useRouter, useSearchParams } from "next/navigation";
+
 import { toast } from "sonner";
 
 import {
   SubmissionConfirmDialog,
   SubmissionSummaryItem,
-} from "@/components/dialogs/SubmissionConfirmDialog";
+} from "@/components/dialogs";
+
 import {
   DashboardComboboxField,
   DashboardDateTimePickerField,
-} from "@/components/shared/DashboardFormFields";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
-import { useMentorOptions } from "@/hooks/shared/resources/users/use-mentor-options";
-import { useCreateUse } from "@/hooks/use-equipment/use-create-use";
-import {
-  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
-  THESIS_PURPOSE,
-} from "@/constants/request-purpose";
-import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date/format";
-import {
   combineDateTime,
   getMinSelectableTime,
   isSameCalendarDay,
   startOfToday,
   type SelectOption,
-} from "@/components/shared/DashboardFormFields";
+} from "@/components/shared";
+
+import { Button, Input } from "@/components/ui";
+
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
+
+import { useMentorOptions } from "@/hooks/shared/resources/users";
+
+import { useCreateUse } from "@/hooks/use-equipment";
+
+import {
+  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
+  THESIS_PURPOSE,
+} from "@/constants/request-purpose";
+
+import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date";
 
 type FormData = {
   equipmentId: string;

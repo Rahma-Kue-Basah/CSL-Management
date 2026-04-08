@@ -2,9 +2,9 @@
 
 import type { ComponentProps, ReactNode } from "react";
 
-import { ActionTooltip } from "@/components/shared/ActionTooltip";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/core/utils";
+import { ActionTooltip } from "./ActionTooltip";
+import { Button } from "@/components/ui";
+import { cn } from "@/lib/core";
 
 type TableActionIconButtonProps = {
   label: string;

@@ -1,6 +1,6 @@
 "use client";
 
-import { formatHourLabel } from "@/lib/date/format";
+import { formatHourLabel } from "@/lib/date";
 
 type HourlyScheduleEvent = {
   id: string | number;

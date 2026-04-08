@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import { BellRing, Clock3 } from "lucide-react";
 import Link from "next/link";
 
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Skeleton } from "@/components/ui/skeleton";
+import { InlineErrorAlert } from "@/components/shared";
+import { Skeleton } from "@/components/ui";
 import { API_NOTIFICATIONS } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
-import { formatDateTimeIdWithZone } from "@/lib/date/format";
+import { authFetch } from "@/lib/auth";
+import { formatDateTimeIdWithZone } from "@/lib/date";
 
 type NotificationItem = {
   id: string;

@@ -1,18 +1,22 @@
 "use client";
 
+
 import { useMemo, useState } from "react";
+
 import * as XLSX from "xlsx";
+
 import { toast } from "sonner";
 
-import { DialogFooter } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import BulkImportDialogShell from "@/components/shared/BulkImportDialogShell";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { DialogFooter, Button } from "@/components/ui";
+
+import { BulkImportDialogShell, InlineErrorAlert } from "@/components/shared";
+
 import {
   useBulkCreateRooms,
   type BulkRoomRow,
-} from "@/hooks/shared/resources/rooms/use-bulk-create-rooms";
-import { usePicUsers } from "@/hooks/shared/resources/users/use-pic-users";
+} from "@/hooks/shared/resources/rooms";
+
+import { usePicUsers } from "@/hooks/shared/resources/users";
 
 const HEADER_MAP: Record<
   string,

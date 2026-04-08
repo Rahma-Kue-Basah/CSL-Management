@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   roomsService,
   type RoomOption,
-} from "@/services/shared/resources/rooms.service";
+} from "@/services/shared/resources";
 
 export type { RoomOption };
 

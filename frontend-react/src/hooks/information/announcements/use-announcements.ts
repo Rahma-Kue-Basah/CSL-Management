@@ -5,7 +5,7 @@ import {
   announcementsService,
   type Announcement,
   type AnnouncementFilters,
-} from "@/services/information/announcements.service";
+} from "@/services/information";
 
 export type { Announcement, AnnouncementFilters };
 

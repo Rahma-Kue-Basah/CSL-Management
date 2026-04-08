@@ -1,12 +1,15 @@
 "use client";
 
+
 import type { RefObject } from "react";
+
 import { Boxes, Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import { Button } from "@/components/ui/button";
-import type { RoomRow } from "@/hooks/shared/resources/rooms/use-rooms";
+import { ConfirmDeleteDialog, TableActionIconButton } from "@/components/shared";
+
+import { Button } from "@/components/ui";
+
+import type { RoomRow } from "@/hooks/shared/resources/rooms";
 
 type RoomTableProps = {
   rooms: RoomRow[];

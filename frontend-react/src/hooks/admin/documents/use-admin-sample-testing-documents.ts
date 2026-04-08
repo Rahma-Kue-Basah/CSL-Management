@@ -4,11 +4,11 @@ import { useEffect, useState } from "react";
 import type {
   SampleTestingDocument,
   SampleTestingDocumentType,
-} from "@/hooks/sample-testing/use-sample-testing";
+} from "@/hooks/sample-testing";
 import {
   sampleTestingDocumentsService,
   type AdminSampleTestingDocumentGroup,
-} from "@/services/admin/sample-testing-documents.service";
+} from "@/services/admin";
 
 export type { AdminSampleTestingDocumentGroup };
 

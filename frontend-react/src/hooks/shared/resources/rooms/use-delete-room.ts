@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { extractApiErrorMessage } from "@/lib/core/api-error";
-import { roomsService } from "@/services/shared/resources/rooms.service";
+import { extractApiErrorMessage } from "@/lib/core";
+import { roomsService } from "@/services/shared/resources";
 
 function parseDeleteRoomError(data: unknown, fallback = "Gagal menghapus ruangan.") {
   return extractApiErrorMessage(data, fallback);

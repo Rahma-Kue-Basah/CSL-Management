@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   adminActionsService,
   type AdminAction,
-} from "@/services/admin/admin-actions.service";
+} from "@/services/admin";
 
 export type { AdminAction };
 

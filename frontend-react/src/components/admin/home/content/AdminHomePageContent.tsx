@@ -15,21 +15,21 @@ import {
   User,
 } from "lucide-react";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Skeleton } from "@/components/ui/skeleton";
+import { AdminPageHeader } from "@/components/admin/shared";
+import { InlineErrorAlert } from "@/components/shared";
+import { Skeleton } from "@/components/ui";
 import { API_AUTH_ADMIN_DASHBOARD_KPIS } from "@/constants/api";
 import {
   useAdminActions,
   type AdminAction,
-} from "@/hooks/admin/use-admin-actions";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
-import { authFetch } from "@/lib/auth/fetch";
+} from "@/hooks/admin";
+import { useLoadProfile } from "@/hooks/shared/profile";
+import { authFetch } from "@/lib/auth";
 import {
   formatDateId,
   formatDateTimeIdWithZone,
   formatTimeIdWithZone,
-} from "@/lib/date/format";
+} from "@/lib/date";
 
 type AdminKpis = {
   totalUsers: number;

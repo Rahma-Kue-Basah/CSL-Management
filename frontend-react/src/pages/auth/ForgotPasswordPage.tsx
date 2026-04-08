@@ -1,20 +1,25 @@
 "use client";
 
+
 import type { ComponentPropsWithoutRef } from "react";
+
 import { Loader2 } from "lucide-react";
+
 import Link from "next/link";
 
-import { AlertMessage } from "@/components/ui/alert-message";
-import { Button } from "@/components/ui/button";
 import {
+  AlertMessage,
+  Button,
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { useForgotPassword } from "@/hooks/auth/use-forgot-password";
-import { cn } from "@/lib/core/utils";
+  Input,
+} from "@/components/ui";
+
+import { useForgotPassword } from "@/hooks/auth";
+
+import { cn } from "@/lib/core";
 
 type ForgotPasswordFormProps = ComponentPropsWithoutRef<"form">;
 

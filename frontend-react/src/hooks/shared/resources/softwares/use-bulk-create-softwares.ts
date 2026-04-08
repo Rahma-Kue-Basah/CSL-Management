@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { extractApiErrorMessage } from "@/lib/core/api-error";
+import { extractApiErrorMessage } from "@/lib/core";
 import {
   softwaresService,
   type BulkSoftwareResult,
   type BulkSoftwareRow,
-} from "@/services/shared/resources/softwares.service";
+} from "@/services/shared/resources";
 
 export type { BulkSoftwareResult, BulkSoftwareRow };
 

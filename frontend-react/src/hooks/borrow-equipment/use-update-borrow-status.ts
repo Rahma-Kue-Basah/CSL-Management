@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 
-import { extractApiErrorMessage } from "@/lib/core/api-error";
+import { extractApiErrorMessage } from "@/lib/core";
 import {
   borrowEquipmentService,
   type BorrowStatusActionType,
-} from "@/services/borrow-equipment/borrow-equipment.service";
+} from "@/services/borrow-equipment";
 
 function parseBorrowStatusError(
   data: unknown,

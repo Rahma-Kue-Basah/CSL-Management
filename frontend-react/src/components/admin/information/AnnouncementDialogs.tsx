@@ -1,7 +1,10 @@
 "use client";
 
+
 import { useEffect, useRef, useState, type FormEvent } from "react";
+
 import { CKEditor } from "@ckeditor/ckeditor5-react";
+
 import {
   AutoLink,
   Bold,
@@ -16,17 +19,18 @@ import {
   Paragraph,
   type EditorConfig,
 } from "ckeditor5";
+
 import { Megaphone } from "lucide-react";
+
 import "ckeditor5/ckeditor5.css";
 
-import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
-import AdminDetailActions from "@/components/shared/AdminDetailActions";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/UserManagementFields";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { stripHtmlTags } from "@/lib/text/text";
+import { AdminDetailDialogShell, AdminDetailActions, InlineErrorAlert } from "@/components/shared";
+
+import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management";
+
+import { Button, DialogFooter, Input } from "@/components/ui";
+
+import { stripHtmlTags } from "@/lib/text";
 
 const DIALOG_WIDTH_CLASS = `${USER_MODAL_WIDTH_CLASS} gap-0 p-0 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`;
 

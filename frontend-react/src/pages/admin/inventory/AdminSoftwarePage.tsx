@@ -1,4 +1,4 @@
-import AdminSoftwarePageContent from "@/components/admin/inventory/content/AdminSoftwarePageContent";
+import { AdminSoftwarePageContent } from "@/components/admin/inventory/content";
 
 export default function AdminSoftwarePage() {
   return <AdminSoftwarePageContent />;

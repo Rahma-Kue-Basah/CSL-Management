@@ -1,19 +1,27 @@
 "use client";
 
+
 import Link from "next/link";
+
 import { Bell, ChevronDown, CircleArrowOutUpRightIcon, LayoutGrid } from "lucide-react";
-import { DashboardUserMenu } from "@/components/dashboard/DashboardUserMenu";
+
+import { DashboardUserMenu } from "@/components/dashboard";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Button } from "@/components/ui/button";
+  Button,
+} from "@/components/ui";
+
 import { isPrivilegedRole } from "@/constants/roles";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
-import type { TopNavItem } from "@/lib/dashboard/navigation";
-import { cn } from "@/lib/core/utils";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
+
+import type { TopNavItem } from "@/lib/dashboard";
+
+import { cn } from "@/lib/core";
 
 type DashboardTopNavbarProps = {
   activeMenuId: string;

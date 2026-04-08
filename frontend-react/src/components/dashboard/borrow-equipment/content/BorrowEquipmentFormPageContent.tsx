@@ -1,38 +1,46 @@
 "use client";
 
+
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+
 import { Loader2 } from "lucide-react";
+
 import { useNavigate, useSearchParams } from "react-router-dom";
+
 import { toast } from "sonner";
 
 import {
   SubmissionConfirmDialog,
   SubmissionSummaryItem,
-} from "@/components/dialogs/SubmissionConfirmDialog";
+} from "@/components/dialogs";
+
 import {
   DashboardComboboxField,
   DashboardDateTimePickerField,
-} from "@/components/shared/DashboardFormFields";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { useCreateBorrow } from "@/hooks/borrow-equipment/use-create-borrow";
-import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
-import { useMentorOptions } from "@/hooks/shared/resources/users/use-mentor-options";
-import {
-  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
-  THESIS_PURPOSE,
-} from "@/constants/request-purpose";
-import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date/format";
-import {
+  InlineErrorAlert,
   combineDateTime,
   getMinSelectableTime,
   isSameCalendarDay,
   startOfToday,
   type SelectOption,
-} from "@/components/shared/DashboardFormFields";
+} from "@/components/shared";
+
+import { Button, Input, Textarea } from "@/components/ui";
+
+import { useCreateBorrow } from "@/hooks/borrow-equipment";
+
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
+
+import { useMentorOptions } from "@/hooks/shared/resources/users";
+
+import {
+  REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
+  THESIS_PURPOSE,
+} from "@/constants/request-purpose";
+
+import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date";
 
 type FormData = {
   equipmentId: string;

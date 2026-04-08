@@ -7,7 +7,7 @@ import {
   UserRound,
 } from "lucide-react";
 
-import SampleTestingDocumentsSection from "@/components/dashboard/sample-testing/SampleTestingDocumentsSection";
+import { SampleTestingDocumentsSection } from "@/components/dashboard/sample-testing";
 import {
   AdminRecordAsideCard,
   AdminRecordAsideItem,
@@ -15,9 +15,9 @@ import {
   AdminRecordDetailItem,
   AdminRecordDetailSection,
   AdminRecordDetailShell,
-} from "@/components/admin/history/AdminHistoryDetailLayout";
-import type { SampleTestingRow } from "@/hooks/sample-testing/use-sample-testing";
-import { formatDateTimeWib } from "@/lib/date/format";
+} from "@/components/admin/history";
+import type { SampleTestingRow } from "@/hooks/sample-testing";
+import { formatDateTimeWib } from "@/lib/date";
 
 type Props = {
   item: SampleTestingRow | null;

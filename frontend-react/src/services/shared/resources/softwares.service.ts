@@ -4,7 +4,7 @@ import {
   API_SOFTWARES_BULK_CREATE,
   API_SOFTWARES_BULK_DELETE,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type SoftwareFilters = {
   equipment?: string;

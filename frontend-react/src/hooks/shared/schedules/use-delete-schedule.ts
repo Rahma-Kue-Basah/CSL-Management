@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { API_SCHEDULE_DETAIL, API_SCHEDULES_BULK_DELETE } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export function useDeleteSchedule() {
   const [isDeleting, setIsDeleting] = useState(false);

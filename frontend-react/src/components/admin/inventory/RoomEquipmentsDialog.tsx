@@ -1,12 +1,13 @@
 "use client";
 
+
 import { useEffect, useMemo, useState } from "react";
+
 import { Boxes, Loader2 } from "lucide-react";
 
-import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
-import { DataPagination } from "@/components/shared/DataPagination";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { useEquipments } from "@/hooks/shared/resources/equipments/use-equipments";
+import { AdminDetailDialogShell, DataPagination, InlineErrorAlert } from "@/components/shared";
+
+import { useEquipments } from "@/hooks/shared/resources/equipments";
 
 const PAGE_SIZE = 10;
 

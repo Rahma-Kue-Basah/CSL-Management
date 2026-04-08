@@ -3,8 +3,8 @@
 import { ArrowLeft, ClipboardPlus, Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { useEquipmentDetail } from "@/hooks/shared/resources/equipments/use-equipments";
+import { Button } from "@/components/ui";
+import { useEquipmentDetail } from "@/hooks/shared/resources/equipments";
 
 type EquipmentDetailParams = {
   id?: string | string[];

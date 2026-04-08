@@ -2,8 +2,8 @@
 
 import type { ComponentProps, ReactNode } from "react";
 
-import { AdminDetailHeader } from "@/components/admin/shared/AdminDetailHeader";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { AdminDetailHeader } from "@/components/admin/shared";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui";
 
 type AdminDetailDialogShellProps = {
   open: boolean;

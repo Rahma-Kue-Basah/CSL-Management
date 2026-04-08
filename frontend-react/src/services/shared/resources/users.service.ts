@@ -10,7 +10,7 @@ import {
   API_AUTH_USERS_BULK_DELETE,
 } from "@/constants/api";
 import { normalizeRoleValue } from "@/constants/roles";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type UserFilters = {
   department?: string;

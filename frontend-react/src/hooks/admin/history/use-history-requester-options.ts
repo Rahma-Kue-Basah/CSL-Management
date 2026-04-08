@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   adminHistoryService,
   type HistoryRequesterOption,
-} from "@/services/admin/history.service";
+} from "@/services/admin";
 
 export type { HistoryRequesterOption };
 

@@ -7,7 +7,7 @@ import {
   API_PENGUJIANS_ALL,
   API_PENGUJIANS_MY,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type SampleTestingServiceFilters = {
   q?: string;

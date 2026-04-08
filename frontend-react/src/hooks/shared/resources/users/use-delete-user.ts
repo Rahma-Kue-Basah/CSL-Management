@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { usersService } from "@/services/shared/resources/users.service";
+import { usersService } from "@/services/shared/resources";
 
 export function useDeleteUser() {
   const [isDeleting, setIsDeleting] = useState(false);

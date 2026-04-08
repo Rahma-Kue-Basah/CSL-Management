@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { borrowEquipmentService } from "@/services/borrow-equipment/borrow-equipment.service";
+import { borrowEquipmentService } from "@/services/borrow-equipment";
 
 export type BorrowFilters = {
   q?: string;

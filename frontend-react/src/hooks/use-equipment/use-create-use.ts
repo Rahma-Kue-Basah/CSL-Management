@@ -5,11 +5,11 @@ import { useState } from "react";
 import {
   extractApiErrorMessage,
   extractApiErrorMessageFromText,
-} from "@/lib/core/api-error";
+} from "@/lib/core";
 import {
   type CreateUsePayload,
   useEquipmentService,
-} from "@/services/use-equipment/use-equipment.service";
+} from "@/services/use-equipment";
 
 function parseUseError(
   data: unknown,

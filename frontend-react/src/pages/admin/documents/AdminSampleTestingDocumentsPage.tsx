@@ -1,4 +1,4 @@
-import AdminSampleTestingDocumentsContent from "@/components/admin/documents/content/AdminSampleTestingDocumentsContent";
+import { AdminSampleTestingDocumentsContent } from "@/components/admin/documents/content";
 
 export default function AdminSampleTestingDocumentsPage() {
   return (

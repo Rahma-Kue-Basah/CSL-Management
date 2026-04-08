@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 
 import { API_SCHEDULE_FEED } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
-import type { ScheduleItem } from "@/hooks/shared/schedules/use-schedules";
+import { authFetch } from "@/lib/auth";
+import type { ScheduleItem } from "@/hooks/shared/schedules";
 
 export type ScheduleFeedRow = {
   id: string;

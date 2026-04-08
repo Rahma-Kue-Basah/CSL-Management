@@ -7,8 +7,8 @@ import {
   exportAdminRecordExcel,
   exportAdminRecordPdf,
   fetchExportRecords,
-} from "@/lib/admin/export";
-import type { ExportColumn } from "@/lib/admin/export-config";
+} from "@/lib/admin";
+import type { ExportColumn } from "@/lib/admin";
 
 type UseAdminRecordExportOptions<TApiItem, TRow> = {
   endpoint: string;

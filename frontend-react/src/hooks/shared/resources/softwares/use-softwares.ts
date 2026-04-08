@@ -7,7 +7,7 @@ import {
   type SoftwareDetail,
   type SoftwareFilters,
   type SoftwareRow,
-} from "@/services/shared/resources/softwares.service";
+} from "@/services/shared/resources";
 
 export type { SoftwareDetail, SoftwareFilters, SoftwareRow };
 export { mapSoftware };

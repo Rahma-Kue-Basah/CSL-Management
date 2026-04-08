@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { useNavigate } from "react-router-dom";
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui";
 
 export default function NotFoundPage() {
   const navigate = useNavigate();

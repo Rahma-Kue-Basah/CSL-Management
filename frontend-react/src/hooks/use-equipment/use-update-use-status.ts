@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 
-import { extractApiErrorMessage } from "@/lib/core/api-error";
+import { extractApiErrorMessage } from "@/lib/core";
 import {
   useEquipmentService,
   type UseStatusActionType as ActionType,
-} from "@/services/use-equipment/use-equipment.service";
+} from "@/services/use-equipment";
 
 function parseUseStatusError(
   data: unknown,

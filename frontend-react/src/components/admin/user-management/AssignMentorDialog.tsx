@@ -1,18 +1,23 @@
 "use client";
 
+
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { UserPlus, X } from "lucide-react";
+
 import { toast } from "sonner";
 
-import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { AdminDetailDialogShell, InlineErrorAlert } from "@/components/shared";
+
+import { Button, DialogFooter, Input } from "@/components/ui";
+
 import { API_AUTH_USERS } from "@/constants/api";
-import { useUpdateUserProfile } from "@/hooks/shared/resources/users/use-update-user-profile";
-import { authFetch } from "@/lib/auth/fetch";
-import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/UserManagementFields";
+
+import { useUpdateUserProfile } from "@/hooks/shared/resources/users";
+
+import { authFetch } from "@/lib/auth";
+
+import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management";
 
 type LecturerCandidate = {
   userId: string;

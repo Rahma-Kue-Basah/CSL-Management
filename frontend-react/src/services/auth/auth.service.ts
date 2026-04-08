@@ -1,4 +1,4 @@
-import { http } from "@/services/shared/http";
+import { http } from "@/services/shared";
 
 export type LoginPayload = {
   username: string;

@@ -1,22 +1,31 @@
 "use client";
 
+
 import { Fragment, useEffect, useRef, useState } from "react";
+
 import { Outlet } from "react-router-dom";
-import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar } from "@/components/admin/layout/AppSidebar";
-import { Button } from "@/components/ui/button";
+
 import {
+  SidebarProvider,
+  SidebarTrigger,
+  Button,
   Breadcrumb,
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
+} from "@/components/ui";
+
+import { AppSidebar } from "@/components/admin/layout";
+
 import Link from "next/link";
+
 import { usePathname } from "next/navigation";
+
 import { CircleArrowOutUpRightIcon } from "lucide-react";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
 
 export default function AdminLayout({
   children,

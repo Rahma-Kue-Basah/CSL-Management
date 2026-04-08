@@ -2,7 +2,7 @@
 
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 import { USER_TYPE_VALUES } from "@/constants/user-types";
-import type { UserRow } from "@/hooks/shared/resources/users/use-users";
+import type { UserRow } from "@/hooks/shared/resources/users";
 
 export const USER_MODAL_WIDTH_CLASS =
   "w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] sm:w-[50vw] sm:max-w-[960px] sm:min-w-[720px] sm:max-w-none";

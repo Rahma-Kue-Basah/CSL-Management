@@ -1,39 +1,52 @@
 "use client";
 
+
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { FileUp, Plus, Upload } from "lucide-react";
+
 import { toast } from "sonner";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import { AdminFilterCard } from "@/components/admin/shared/AdminFilterCard";
 import {
+  AdminPageHeader,
+  AdminFilterCard,
   AdminFilterField,
   AdminFilterGrid,
   ADMIN_FILTER_INPUT_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
-import { DataPagination } from "@/components/shared/DataPagination";
-import AdminRoomDetailDialog from "@/components/admin/inventory/AdminRoomDetailDialog";
-import RoomEquipmentsDialog from "@/components/admin/inventory/RoomEquipmentsDialog";
-import RoomCreateDialog from "@/components/admin/inventory/RoomCreateDialog";
-import RoomBulkImportDialog from "@/components/admin/inventory/RoomBulkImportDialog";
-import RoomTable from "@/components/admin/inventory/RoomTable";
-import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from "@/components/admin/shared";
+
+import {
+  InventoryBulkActions,
+  AdminRoomDetailDialog,
+  RoomEquipmentsDialog,
+  RoomCreateDialog,
+  RoomBulkImportDialog,
+  RoomTable,
+} from "@/components/admin/inventory";
+
+import { DataPagination, ConfirmDeleteDialog, InlineErrorAlert } from "@/components/shared";
+
+import { AdminHistoryExportActions as AdminRecordExportActions } from "@/components/admin/history";
+
+import { Button, Input } from "@/components/ui";
+
 import { API_ROOMS_EXPORT } from "@/constants/api";
-import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
-import { useDeleteRoom } from "@/hooks/shared/resources/rooms/use-delete-room";
-import { mapRoom, useRooms, type RoomRow } from "@/hooks/shared/resources/rooms/use-rooms";
-import { usePicUsers } from "@/hooks/shared/resources/users/use-pic-users";
-import { ROOM_EXPORT_COLUMNS } from "@/lib/admin/export-config";
+
+import { useAdminRecordExport } from "@/hooks/admin";
+
+import { useDeleteRoom } from "@/hooks/shared/resources/rooms";
+
+import { mapRoom, useRooms, type RoomRow } from "@/hooks/shared/resources/rooms";
+
+import { usePicUsers } from "@/hooks/shared/resources/users";
+
+import { ROOM_EXPORT_COLUMNS } from "@/lib/admin";
+
 import {
   exportAdminRecordExcel,
   exportAdminRecordPdf,
-} from "@/lib/admin/export";
+} from "@/lib/admin";
 
 const PAGE_SIZE = 20;
 

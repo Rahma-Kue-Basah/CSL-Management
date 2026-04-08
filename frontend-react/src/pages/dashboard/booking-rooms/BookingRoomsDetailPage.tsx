@@ -1,4 +1,4 @@
-import BookingRoomsDetailPageContent from "@/components/dashboard/booking-rooms/content/BookingRoomsDetailPageContent";
+import { BookingRoomsDetailPageContent } from "@/components/dashboard/booking-rooms/content";
 
 export default function BookingRoomsDetailPage() {
   return <BookingRoomsDetailPageContent />;

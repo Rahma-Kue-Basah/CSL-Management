@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { extractApiErrorMessage } from "@/lib/core/api-error";
+import { extractApiErrorMessage } from "@/lib/core";
 import {
   roomsService,
   type CreateRoomPayload,
-} from "@/services/shared/resources/rooms.service";
+} from "@/services/shared/resources";
 
 export type { CreateRoomPayload };
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { faqService } from "@/services/information/faq.service";
+import { faqService } from "@/services/information";
 
 export function useDeleteFaq() {
   const [isDeleting, setIsDeleting] = useState(false);

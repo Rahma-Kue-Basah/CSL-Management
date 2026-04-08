@@ -3,12 +3,12 @@
 import type { ComponentType } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { DashboardUserMenu } from "@/components/dashboard/DashboardUserMenu";
+import { DashboardUserMenu } from "@/components/dashboard";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui";
 
 type DashboardSideNavbarProps = {
   menus: Array<{

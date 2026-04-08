@@ -1,6 +1,6 @@
 import { THESIS_PURPOSE } from "@/constants/request-purpose";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import { normalizeStatus } from "@/lib/request/status";
+import { normalizeStatus } from "@/lib/request";
 
 type MentorApprovalRecord = {
   purpose?: string | null;

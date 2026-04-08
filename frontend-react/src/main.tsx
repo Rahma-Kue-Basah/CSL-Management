@@ -1,12 +1,17 @@
 import React, { useEffect } from "react";
+
 import ReactDOM from "react-dom/client";
+
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
 import { RouterProvider } from "react-router-dom";
+
 import { toast } from "sonner";
 
 import { router } from "@/routes/router";
-import { Toaster } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
+
+import { Toaster, TooltipProvider } from "@/components/ui";
+
 import "@/styles/globals.css";
 
 const queryClient = new QueryClient();

@@ -1,66 +1,91 @@
 "use client";
 
+
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import type { DateRange } from "react-day-picker";
+
 import { ClipboardCheck, Eye, Trash2 } from "lucide-react";
+
 import { toast } from "sonner";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import AdminEquipmentBorrowHistoryDetailContent from "@/components/admin/history/content/AdminEquipmentBorrowHistoryDetailContent";
-import AdminHistoryBulkActions from "@/components/admin/history/AdminHistoryBulkActions";
-import AdminHistoryExportActions from "@/components/admin/history/AdminHistoryExportActions";
-import AdminHistorySummaryCards from "@/components/admin/history/AdminHistorySummaryCards";
-import AdminHistoryTable from "@/components/admin/history/AdminHistoryTable";
-import RelatedEquipmentDetailDialog from "@/components/admin/history/RelatedEquipmentDetailDialog";
-import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
-import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
-import { ActionTooltip } from "@/components/shared/ActionTooltip";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import { AdminFilterCard } from "@/components/admin/shared/AdminFilterCard";
-import { DataPagination } from "@/components/shared/DataPagination";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
+import { AdminPageHeader, AdminFilterCard } from "@/components/admin/shared";
+
+import { AdminEquipmentBorrowHistoryDetailContent } from "@/components/admin/history/content";
+
 import {
+  AdminHistoryBulkActions,
+  AdminHistoryExportActions,
+  AdminHistorySummaryCards,
+  AdminHistoryTable,
+  RelatedEquipmentDetailDialog,
+  RelatedUserDetailDialog,
+} from "@/components/admin/history";
+
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout";
+
+import {
+  ActionTooltip,
+  ConfirmDeleteDialog,
+  DataPagination,
+  InlineErrorAlert,
+} from "@/components/shared";
+
+import {
+  Button,
+  DateRangePicker,
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+  Input,
+} from "@/components/ui";
+
 import {
   API_BORROWS_ALL_REQUESTERS,
   API_BORROW_DETAIL,
   API_BORROWS_BULK_DELETE,
   API_BORROWS_EXPORT,
 } from "@/constants/api";
+
 import { DEPARTMENT_VALUES } from "@/constants/departments";
-import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
+
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments";
+
 import {
   mapBorrow,
   useBorrowDetail,
   useBorrows,
   type BorrowRow,
-} from "@/hooks/borrow-equipment/use-borrows";
-import { useHistoryRequesterOptions } from "@/hooks/admin/history/use-history-requester-options";
+} from "@/hooks/borrow-equipment";
+
+import { useHistoryRequesterOptions } from "@/hooks/admin/history";
+
 import { useDeleteRecord } from "@/hooks/use-delete-record";
+
 import {
   formatDateKey,
   toEndOfDay,
   toStartOfDay,
-} from "@/lib/date/utils";
-import { formatDateTimeWib } from "@/lib/date/format";
-import { isWaitingForMentorApproval } from "@/lib/request/mentor-approval";
-import { BORROW_EXPORT_COLUMNS } from "@/lib/admin/export-config";
-import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin/export";
+} from "@/lib/date";
+
+import { formatDateTimeWib } from "@/lib/date";
+
+import { isWaitingForMentorApproval } from "@/lib/request";
+
+import { BORROW_EXPORT_COLUMNS } from "@/lib/admin";
+
+import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin";
+
 import {
   BORROW_STATUS_OPTIONS,
   getStatusBadgeClass,
   getStatusDisplayLabel,
   shouldShowReviewAction,
-} from "@/lib/request/status";
-import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
+} from "@/lib/request";
+
+import { useAdminRecordExport } from "@/hooks/admin";
 
 const PAGE_SIZE = 20;
 const STATUS_OPTIONS = BORROW_STATUS_OPTIONS;

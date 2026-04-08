@@ -1,10 +1,11 @@
 "use client";
 
+
 import type { ReactNode } from "react";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import { AdminFilterCard } from "@/components/admin/shared/AdminFilterCard";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { AdminPageHeader, AdminFilterCard } from "@/components/admin/shared";
+
+import { InlineErrorAlert } from "@/components/shared";
 
 type TaskManagementPageShellProps = {
   title: string;

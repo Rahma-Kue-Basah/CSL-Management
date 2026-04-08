@@ -2,8 +2,8 @@
 
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { DashboardPageHeader } from "@/components/dashboard/layout/DashboardPageHeader";
-import { SidebarInset } from "@/components/ui/sidebar";
+import { SidebarInset } from "@/components/ui";
+import { DashboardPageHeader } from "./DashboardPageHeader";
 
 type DashboardMainLayoutProps = {
   pageTitle: string;

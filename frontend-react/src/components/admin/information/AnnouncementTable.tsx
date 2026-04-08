@@ -3,11 +3,11 @@
 import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import type { Announcement } from "@/hooks/information/announcements/use-announcements";
-import { formatDateTimeWib } from "@/lib/date/format";
-import { stripHtmlTags, summarizeText } from "@/lib/text/text";
+import { Button } from "@/components/ui";
+import { TableActionIconButton } from "@/components/shared";
+import type { Announcement } from "@/hooks/information/announcements";
+import { formatDateTimeWib } from "@/lib/date";
+import { stripHtmlTags, summarizeText } from "@/lib/text";
 
 type AnnouncementTableProps = {
   announcements: Announcement[];

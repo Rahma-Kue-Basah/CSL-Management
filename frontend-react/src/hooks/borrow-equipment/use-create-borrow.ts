@@ -5,11 +5,11 @@ import { useState } from "react";
 import {
   extractApiErrorMessage,
   extractApiErrorMessageFromText,
-} from "@/lib/core/api-error";
+} from "@/lib/core";
 import {
   borrowEquipmentService,
   type CreateBorrowPayload,
-} from "@/services/borrow-equipment/borrow-equipment.service";
+} from "@/services/borrow-equipment";
 
 function parseBorrowError(
   data: unknown,

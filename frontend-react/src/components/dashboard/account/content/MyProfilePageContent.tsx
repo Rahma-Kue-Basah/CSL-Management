@@ -1,16 +1,23 @@
 "use client";
 
+
 import { useEffect, useState, type ReactNode } from "react";
+
 import { usePathname, useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Button, Input } from "@/components/ui";
+
 import { BATCH_OPTIONS } from "@/constants/batches";
+
 import { DEPARTMENT_VALUES } from "@/constants/departments";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
-import { useUpdateMyProfile } from "@/hooks/shared/profile/use-update-my-profile";
-import { formatDateTimeIdWithZone } from "@/lib/date/format";
-import { formatRoleLabel, getInitialsFromNameOrEmail } from "@/lib/text/formatters";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
+
+import { useUpdateMyProfile } from "@/hooks/shared/profile";
+
+import { formatDateTimeIdWithZone } from "@/lib/date";
+
+import { formatRoleLabel, getInitialsFromNameOrEmail } from "@/lib/text";
 
 type ProfileFormData = {
   full_name: string;

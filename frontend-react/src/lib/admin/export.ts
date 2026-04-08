@@ -4,7 +4,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
 
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 type PaginatedResponse<TItem> = {
   count?: number;

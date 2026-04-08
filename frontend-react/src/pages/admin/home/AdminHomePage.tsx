@@ -1,4 +1,4 @@
-import AdminHomePageContent from "@/components/admin/home/content/AdminHomePageContent";
+import { AdminHomePageContent } from "@/components/admin/home/content";
 
 export default function AdminHomePage() {
   return <AdminHomePageContent />;

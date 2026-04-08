@@ -1,7 +1,10 @@
 "use client";
 
+
 import { useEffect, useRef, useState } from "react";
+
 import { Building2, ChevronDown, Plus, Trash2, X } from "lucide-react";
+
 import { toast } from "sonner";
 
 import {
@@ -9,30 +12,40 @@ import {
   AdminFilterGrid,
   ADMIN_FILTER_INPUT_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import AssignRoomPicDialog from "@/components/admin/task-management/AssignRoomPicDialog";
-import RoomPicDetailDialog from "@/components/admin/task-management/RoomPicDetailDialog";
-import TaskManagementPageShell from "@/components/admin/task-management/TaskManagementPageShell";
-import MentorTaskTable from "@/components/admin/user-management/MentorTaskTable";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/admin/shared";
+
 import {
+  AssignRoomPicDialog,
+  RoomPicDetailDialog,
+  TaskManagementPageShell,
+} from "@/components/admin/task-management";
+
+import { MentorTaskTable } from "@/components/admin/user-management";
+
+import { ConfirmDeleteDialog } from "@/components/shared";
+
+import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+  Input,
+} from "@/components/ui";
+
 import { DEPARTMENT_VALUES } from "@/constants/departments";
+
 import { ROLE_OPTIONS } from "@/constants/roles";
-import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
+
+import { useRoomOptions } from "@/hooks/shared/resources/rooms";
+
 import {
   bulkRemoveRoomPicAssignments,
   removeRoomPicAssignments,
   useRoomPicTaskUsers,
   type RoomPicTaskUserRow,
-} from "@/hooks/shared/resources/users/use-room-pic-task-users";
+} from "@/hooks/shared/resources/users";
 
 export default function TaskManagementRoomPicPage() {
   const selectAllRef = useRef<HTMLInputElement | null>(null);

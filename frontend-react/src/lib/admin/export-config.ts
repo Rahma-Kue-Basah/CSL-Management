@@ -1,15 +1,15 @@
 "use client";
 
-import type { BookingRow } from "@/hooks/booking-rooms/use-bookings";
-import type { UseRow } from "@/hooks/use-equipment/use-uses";
-import type { BorrowRow } from "@/hooks/borrow-equipment/use-borrows";
-import type { SampleTestingRow } from "@/hooks/sample-testing/use-sample-testing";
-import type { UserRow } from "@/hooks/shared/resources/users/use-users";
-import type { RoomRow } from "@/hooks/shared/resources/rooms/use-rooms";
-import type { EquipmentRow } from "@/hooks/shared/resources/equipments/use-equipments";
-import type { SoftwareRow } from "@/hooks/shared/resources/softwares/use-softwares";
-import { formatDateTimeId } from "@/lib/date/format";
-import { getStatusDisplayLabel } from "@/lib/request/status";
+import type { BookingRow } from "@/hooks/booking-rooms";
+import type { UseRow } from "@/hooks/use-equipment";
+import type { BorrowRow } from "@/hooks/borrow-equipment";
+import type { SampleTestingRow } from "@/hooks/sample-testing";
+import type { UserRow } from "@/hooks/shared/resources/users";
+import type { RoomRow } from "@/hooks/shared/resources/rooms";
+import type { EquipmentRow } from "@/hooks/shared/resources/equipments";
+import type { SoftwareRow } from "@/hooks/shared/resources/softwares";
+import { formatDateTimeId } from "@/lib/date";
+import { getStatusDisplayLabel } from "@/lib/request";
 
 export type ExportColumn<TRow> = {
   header: string;

@@ -1,7 +1,10 @@
 "use client";
 
+
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { ChevronDown, Trash2, UserPlus, Users, X } from "lucide-react";
+
 import { toast } from "sonner";
 
 import {
@@ -9,27 +12,33 @@ import {
   AdminFilterGrid,
   ADMIN_FILTER_INPUT_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import TaskManagementPageShell from "@/components/admin/task-management/TaskManagementPageShell";
-import AssignMentorDialog from "@/components/admin/user-management/AssignMentorDialog";
-import MentorTaskTable from "@/components/admin/user-management/MentorTaskTable";
-import UserDetailDialog from "@/components/admin/user-management/UserDetailDialog";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import { DataPagination } from "@/components/shared/DataPagination";
-import { Button } from "@/components/ui/button";
+} from "@/components/admin/shared";
+
+import { TaskManagementPageShell } from "@/components/admin/task-management";
+
+import { AssignMentorDialog, MentorTaskTable, UserDetailDialog } from "@/components/admin/user-management";
+
+import { ConfirmDeleteDialog, DataPagination } from "@/components/shared";
+
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
+  Input,
+} from "@/components/ui";
+
 import { DEPARTMENT_VALUES } from "@/constants/departments";
+
 import { isPrivilegedRole } from "@/constants/roles";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
-import { useUpdateUserProfile } from "@/hooks/shared/resources/users/use-update-user-profile";
-import { useUsers, type UserRow } from "@/hooks/shared/resources/users/use-users";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
+
+import { useUpdateUserProfile } from "@/hooks/shared/resources/users";
+
+import { useUsers, type UserRow } from "@/hooks/shared/resources/users";
 
 const PAGE_SIZE = 20;
 

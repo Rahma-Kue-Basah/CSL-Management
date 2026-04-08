@@ -1,6 +1,6 @@
 "use client";
 
-import SampleTestingListContent from "@/components/dashboard/sample-testing/content/SampleTestingListContent";
+import { SampleTestingListContent } from "@/components/dashboard/sample-testing/content";
 
 export default function SampleTestingListPage() {
   return (

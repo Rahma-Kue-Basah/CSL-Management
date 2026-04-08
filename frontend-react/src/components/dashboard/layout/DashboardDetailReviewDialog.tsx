@@ -4,12 +4,12 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-} from "@/components/ui/dialog";
+} from "@/components/ui";
 
 import {
   DashboardDetailReviewPanel,
   type ReviewContext,
-} from "@/components/dashboard/layout/DashboardDetailReviewPanel";
+} from "./DashboardDetailReviewPanel";
 
 function getReviewDialogTitle(context: Exclude<ReviewContext, null>) {
   switch (context.kind) {

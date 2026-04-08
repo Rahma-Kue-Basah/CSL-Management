@@ -1,24 +1,32 @@
 "use client";
 
+
 import { useState } from "react";
+
 import { ArrowLeft, ClipboardList, FlaskConical, UserRound } from "lucide-react";
+
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
-import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout";
+
 import {
   SampleTestingMetaItem,
   SampleTestingSectionCard,
-} from "@/components/dashboard/sample-testing/content/SampleTestingDetailContent";
-import SampleTestingDocumentsSection from "@/components/dashboard/sample-testing/SampleTestingDocumentsSection";
-import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
-import { RequestProgressDialog } from "@/components/shared/RequestProgressDialog";
-import { ProgressSteps } from "@/components/shared/ProgressSteps";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useSampleTestingDetail } from "@/hooks/sample-testing/use-sample-testing";
-import { formatDateTimeWib } from "@/lib/date/format";
-import { getSampleTestingProgressFlow } from "@/lib/request/progress";
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request/status";
+} from "@/components/dashboard/sample-testing/content";
+
+import { SampleTestingDocumentsSection } from "@/components/dashboard/sample-testing";
+
+import { RequestInformationCard, RequestProgressDialog, ProgressSteps } from "@/components/shared";
+
+import { Button, Skeleton } from "@/components/ui";
+
+import { useSampleTestingDetail } from "@/hooks/sample-testing";
+
+import { formatDateTimeWib } from "@/lib/date";
+
+import { getSampleTestingProgressFlow } from "@/lib/request";
+
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
 
 function SampleTestingDetailSkeleton() {
   return (

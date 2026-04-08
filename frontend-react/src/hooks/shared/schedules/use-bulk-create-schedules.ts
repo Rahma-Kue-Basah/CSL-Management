@@ -3,8 +3,8 @@
 import { useState } from "react";
 
 import { API_SCHEDULES_BULK_CREATE } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
-import { extractApiErrorMessage } from "@/lib/core/api-error";
+import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/core";
 
 export type BulkScheduleRow = {
   index: number;

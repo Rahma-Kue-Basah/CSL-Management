@@ -1,16 +1,20 @@
 "use client";
 
+
 import { useMemo, useState } from "react";
+
 import { CalendarDays, ChevronDown } from "lucide-react";
 
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Input, Skeleton } from "@/components/ui";
+
 import {
   useAnnouncements,
   type Announcement,
-} from "@/hooks/information/announcements/use-announcements";
-import { formatDateTimeWib } from "@/lib/date/format";
-import { stripHtmlTags } from "@/lib/text/text";
+} from "@/hooks/information/announcements";
+
+import { formatDateTimeWib } from "@/lib/date";
+
+import { stripHtmlTags } from "@/lib/text";
 
 function AnnouncementCard({ announcement }: { announcement: Announcement }) {
   const plainContent = stripHtmlTags(announcement.content || "");

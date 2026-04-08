@@ -4,7 +4,7 @@ import { useState } from "react";
 import {
   announcementsService,
   type Announcement,
-} from "@/services/information/announcements.service";
+} from "@/services/information";
 
 type UpdateAnnouncementPayload = Parameters<typeof announcementsService.update>[1];
 

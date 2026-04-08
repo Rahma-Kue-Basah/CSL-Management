@@ -1,22 +1,33 @@
 "use client";
 
+
 import { useEffect, useState } from "react";
+
 import { Eye, EyeOff, ShieldCheck, UserCircle2 } from "lucide-react";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { AdminPageHeader } from "@/components/admin/shared";
+
+import { Button, Input } from "@/components/ui";
+
 import { API_AUTH_USER_PROFILE_DETAIL } from "@/constants/api";
+
 import { BATCH_OPTIONS } from "@/constants/batches";
+
 import { DEPARTMENT_VALUES } from "@/constants/departments";
-import { useChangePassword } from "@/hooks/auth/use-change-password";
+
+import { useChangePassword } from "@/hooks/auth";
+
 import {
   persistProfileCache,
   useLoadProfile,
-} from "@/hooks/shared/profile/use-load-profile";
-import { authFetch } from "@/lib/auth/fetch";
-import { formatDateTimeIdWithZone } from "@/lib/date/format";
-import { formatRoleLabel, getInitialsFromNameOrEmail } from "@/lib/text/formatters";
+} from "@/hooks/shared/profile";
+
+import { authFetch } from "@/lib/auth";
+
+import { formatDateTimeIdWithZone } from "@/lib/date";
+
+import { formatRoleLabel, getInitialsFromNameOrEmail } from "@/lib/text";
+
 import { toast } from "sonner";
 
 export default function AdminMyProfilePage() {

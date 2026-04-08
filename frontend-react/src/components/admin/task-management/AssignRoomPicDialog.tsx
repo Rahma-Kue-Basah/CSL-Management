@@ -1,19 +1,25 @@
 "use client";
 
+
 import { useEffect, useMemo, useState } from "react";
+
 import { Plus, X } from "lucide-react";
+
 import { toast } from "sonner";
 
-import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/UserManagementFields";
-import { useRoomDetail } from "@/hooks/shared/resources/rooms/use-rooms";
-import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
-import { useUpdateRoom } from "@/hooks/shared/resources/rooms/use-update-room";
-import { usePicUsers } from "@/hooks/shared/resources/users/use-pic-users";
+import { AdminDetailDialogShell, InlineErrorAlert } from "@/components/shared";
+
+import { Button, DialogFooter, Input } from "@/components/ui";
+
+import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management";
+
+import { useRoomDetail } from "@/hooks/shared/resources/rooms";
+
+import { useRoomOptions } from "@/hooks/shared/resources/rooms";
+
+import { useUpdateRoom } from "@/hooks/shared/resources/rooms";
+
+import { usePicUsers } from "@/hooks/shared/resources/users";
 
 type AssignRoomPicDialogProps = {
   open: boolean;

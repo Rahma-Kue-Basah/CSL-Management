@@ -8,9 +8,9 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import SampleTestingDocumentsSection from "@/components/dashboard/sample-testing/SampleTestingDocumentsSection";
-import { useSampleTestingDetail } from "@/hooks/sample-testing/use-sample-testing";
+} from "@/components/ui";
+import { SampleTestingDocumentsSection } from "@/components/dashboard/sample-testing";
+import { useSampleTestingDetail } from "@/hooks/sample-testing";
 
 export default function SampleTestingDocumentsDialog({
   open,

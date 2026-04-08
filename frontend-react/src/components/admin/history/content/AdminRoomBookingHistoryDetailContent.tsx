@@ -15,14 +15,14 @@ import {
   AdminRecordDetailItem,
   AdminRecordDetailSection,
   AdminRecordDetailShell,
-} from "@/components/admin/history/AdminHistoryDetailLayout";
+} from "@/components/admin/history";
 import { WORKSHOP_PURPOSE } from "@/constants/request-purpose";
-import type { BookingRow } from "@/hooks/booking-rooms/use-bookings";
-import { formatDateTimeWib } from "@/lib/date/format";
+import type { BookingRow } from "@/hooks/booking-rooms";
+import { formatDateTimeWib } from "@/lib/date";
 import {
   getMentorApprovalStageLabel,
   hasMentorApprovalTrace,
-} from "@/lib/request/mentor-approval";
+} from "@/lib/request";
 
 type Props = {
   booking: BookingRow | null;

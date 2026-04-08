@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { useEquipmentService } from "@/services/use-equipment/use-equipment.service";
+import { useEquipmentService } from "@/services/use-equipment";
 
 export type UseFilters = {
   q?: string;

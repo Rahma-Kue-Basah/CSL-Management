@@ -7,15 +7,15 @@ import { toast } from "sonner";
 import {
   SubmissionConfirmDialog,
   SubmissionSummaryItem,
-} from "@/components/dialogs/SubmissionConfirmDialog";
-import { Button } from "@/components/ui/button";
+} from "@/components/dialogs";
+import { Button } from "@/components/ui";
 import {
   type SampleTestingDocument,
   type SampleTestingDocumentType,
   type SampleTestingRow,
-} from "@/hooks/sample-testing/use-sample-testing";
-import { useUploadSampleTestingDocument } from "@/hooks/sample-testing/use-upload-sample-testing-document";
-import { formatDateTimeWib } from "@/lib/date/format";
+} from "@/hooks/sample-testing";
+import { useUploadSampleTestingDocument } from "@/hooks/sample-testing";
+import { formatDateTimeWib } from "@/lib/date";
 
 import { SampleTestingSectionCard } from "./content/SampleTestingDetailContent";
 

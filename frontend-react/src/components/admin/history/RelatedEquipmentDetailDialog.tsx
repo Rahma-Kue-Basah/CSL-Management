@@ -1,7 +1,7 @@
 "use client";
 
-import AdminEquipmentDetailDialog from "@/components/admin/inventory/AdminEquipmentDetailDialog";
-import { useEquipmentDetail } from "@/hooks/shared/resources/equipments/use-equipments";
+import { AdminEquipmentDetailDialog } from "@/components/admin/inventory";
+import { useEquipmentDetail } from "@/hooks/shared/resources/equipments";
 
 type RelatedEquipmentDetailDialogProps = {
   equipmentId: string | number | null;

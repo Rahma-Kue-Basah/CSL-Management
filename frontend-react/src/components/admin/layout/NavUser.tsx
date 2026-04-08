@@ -1,26 +1,30 @@
 "use client";
 
+
 import { CircleArrowOutUpRight, LogOut, UserRound } from "lucide-react";
-import { useSidebar } from "@/components/ui/sidebar";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
 import {
+  useSidebar,
+  Avatar,
+  AvatarFallback,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-} from "@/components/ui/sidebar";
+} from "@/components/ui";
+
 import {
   useLoadProfile,
   type ProfileUserInput,
-} from "@/hooks/shared/profile/use-load-profile";
-import { useLogout } from "@/hooks/auth/use-logout";
+} from "@/hooks/shared/profile";
+
+import { useLogout } from "@/hooks/auth";
+
 import Link from "next/link";
 
 type NavUserProps = {

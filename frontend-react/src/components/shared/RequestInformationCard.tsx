@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request/status";
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
 
 function hasDisplayValue(value?: string | null) {
   if (!value) return false;

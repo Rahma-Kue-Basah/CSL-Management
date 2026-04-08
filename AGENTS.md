@@ -136,6 +136,24 @@ Saat menambah fitur, usahakan mengikuti pembagian domain yang sudah ada:
   - `DetailPage`
 - Saat rename file atau pindah folder, pastikan import path di `router.tsx`, page terkait, dan komponen domain ikut diperbarui lalu verifikasi minimal dengan `npm run build`.
 
+### Konvensi Barrel Export
+
+- Frontend sudah memakai barrel export untuk banyak folder di `src/components`, `src/hooks`, `src/lib`, dan `src/services`.
+- Jika sebuah folder sudah punya `index.ts`, utamakan import dari folder itu, bukan langsung ke file internalnya.
+- Contoh yang diutamakan:
+  - `@/components/ui`
+  - `@/components/shared`
+  - `@/components/admin/history`
+  - `@/components/admin/history/content`
+  - `@/components/dashboard/layout`
+  - `@/hooks/...`
+  - `@/lib/...`
+  - `@/services/...`
+- Untuk folder `content`, `layout`, `shared`, `inventory`, `history`, `schedules`, `user-management`, dan folder domain lain yang sudah punya barrel, pertahankan pola import per-folder tersebut.
+- Saat menambah file baru di folder yang sudah memakai barrel, update `index.ts` folder terkait bila file itu memang bagian dari public surface folder tersebut.
+- Jangan pakai barrel root yang terlalu lebar jika berisiko membuat nama komponen terlalu generik atau mudah bentrok. Prioritaskan barrel per domain/folder.
+- Jika sebuah helper atau util hanya dipakai internal di folder yang sama dan belum menjadi surface publik, tidak wajib dimasukkan ke barrel.
+
 ## Checklist Context Dasar Sebelum Mulai Kerja
 
 - pahami apakah perubahan ada di `backend`, `frontend-react`, atau keduanya

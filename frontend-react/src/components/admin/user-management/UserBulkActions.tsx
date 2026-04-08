@@ -1,15 +1,16 @@
 "use client";
 
+
 import { ChevronDown, Trash2, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui";
 
 type UserBulkActionsProps = {
   selectedCount: number;

@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { ClipboardCheck } from "lucide-react";
 
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request/status";
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
 
 type ReviewMetaItem = {
   label: string;

@@ -4,9 +4,9 @@ import { useEffect, useState } from "react";
 import { Image as AntdImage } from "antd";
 import { ChevronDown } from "lucide-react";
 
-import { Skeleton } from "@/components/ui/skeleton";
-import { useFaqs } from "@/hooks/information/faq/use-faqs";
-import type { Faq } from "@/hooks/information/faq/use-faqs";
+import { Skeleton } from "@/components/ui";
+import { useFaqs } from "@/hooks/information/faq";
+import type { Faq } from "@/hooks/information/faq";
 
 function FaqCard({
   item,

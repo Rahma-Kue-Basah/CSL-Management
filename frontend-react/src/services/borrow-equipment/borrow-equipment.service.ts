@@ -11,7 +11,7 @@ import {
   API_BORROWS_ALL,
   API_BORROWS_MY,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type BorrowServiceFilters = {
   q?: string;

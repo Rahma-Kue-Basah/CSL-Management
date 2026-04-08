@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-import { authFetch } from "@/lib/auth/fetch";
-import { extractApiErrorMessage } from "@/lib/core/api-error";
+import { authFetch } from "@/lib/auth";
+import { extractApiErrorMessage } from "@/lib/core";
 
 function parseDeleteError(
   data: unknown,

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   usersService,
   type MentorOption,
-} from "@/services/shared/resources/users.service";
+} from "@/services/shared/resources";
 
 export type { MentorOption };
 

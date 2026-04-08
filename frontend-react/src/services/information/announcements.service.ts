@@ -2,7 +2,7 @@ import {
   API_ANNOUNCEMENTS,
   API_ANNOUNCEMENTS_BULK_DELETE,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type Announcement = {
   id: string | number;

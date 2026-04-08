@@ -7,7 +7,7 @@ import {
   API_USES_ALL,
   API_USES_MY,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type UseServiceFilters = {
   q?: string;

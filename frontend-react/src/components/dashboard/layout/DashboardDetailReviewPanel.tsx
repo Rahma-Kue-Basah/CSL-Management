@@ -1,6 +1,8 @@
 "use client";
 
+
 import { useEffect, useState } from "react";
+
 import {
   Check,
   Handshake,
@@ -10,10 +12,13 @@ import {
   TriangleAlert,
   X,
 } from "lucide-react";
+
 import { toast } from "sonner";
 
-import StatusConfirmDialog from "@/components/dialogs/StatusConfirmDialog";
-import { RequestReviewCard } from "@/components/shared/RequestReviewCard";
+import { StatusConfirmDialog } from "@/components/dialogs";
+
+import { RequestReviewCard } from "@/components/shared";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,38 +28,53 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+  Button,
+  Textarea,
+} from "@/components/ui";
+
 import {
   API_BOOKING_REVIEW_CHECK,
   API_BORROW_REVIEW_CHECK,
   API_USE_REVIEW_CHECK,
 } from "@/constants/api";
+
 import { WORKSHOP_PURPOSE } from "@/constants/request-purpose";
+
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
-import { authFetch } from "@/lib/auth/fetch";
+
+import { authFetch } from "@/lib/auth";
+
 import {
   useBookingDetail,
   type BookingRow,
-} from "@/hooks/booking-rooms/use-bookings";
-import { useUpdateBookingStatus } from "@/hooks/booking-rooms/use-update-booking-status";
-import { useBorrowDetail, type BorrowRow } from "@/hooks/borrow-equipment/use-borrows";
-import { useUpdateBorrowStatus } from "@/hooks/borrow-equipment/use-update-borrow-status";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
+} from "@/hooks/booking-rooms";
+
+import { useUpdateBookingStatus } from "@/hooks/booking-rooms";
+
+import { useBorrowDetail, type BorrowRow } from "@/hooks/borrow-equipment";
+
+import { useUpdateBorrowStatus } from "@/hooks/borrow-equipment";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
+
 import {
   useSampleTestingDetail,
   type SampleTestingRow,
-} from "@/hooks/sample-testing/use-sample-testing";
-import { useUpdateSampleTestingStatus } from "@/hooks/sample-testing/use-update-sample-testing-status";
-import { useUseDetail, type UseRow } from "@/hooks/use-equipment/use-uses";
-import { useUpdateUseStatus } from "@/hooks/use-equipment/use-update-use-status";
-import { formatDateTimeWib } from "@/lib/date/format";
+} from "@/hooks/sample-testing";
+
+import { useUpdateSampleTestingStatus } from "@/hooks/sample-testing";
+
+import { useUseDetail, type UseRow } from "@/hooks/use-equipment";
+
+import { useUpdateUseStatus } from "@/hooks/use-equipment";
+
+import { formatDateTimeWib } from "@/lib/date";
+
 import {
   canCurrentUserReviewPendingRequest,
   canCurrentUserFinalizeRequest,
   isWaitingForMentorApproval,
-} from "@/lib/request/mentor-approval";
+} from "@/lib/request";
 
 export type ReviewContext =
   | { kind: "booking"; id: string }

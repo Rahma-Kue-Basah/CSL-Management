@@ -4,12 +4,12 @@ import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { Clock3 } from "lucide-react";
 
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useCalendarEvents } from "@/hooks/shared/calendar/use-calendar-events";
-import { parseDateKey } from "@/lib/date/utils";
-import { formatHourLabel } from "@/lib/date/format";
-import { normalizeText } from "@/lib/text/text";
+import { InlineErrorAlert } from "@/components/shared";
+import { Skeleton } from "@/components/ui";
+import { useCalendarEvents } from "@/hooks/shared/calendar";
+import { parseDateKey } from "@/lib/date";
+import { formatHourLabel } from "@/lib/date";
+import { normalizeText } from "@/lib/text";
 
 function isSameDay(left: Date, right: Date) {
   return (

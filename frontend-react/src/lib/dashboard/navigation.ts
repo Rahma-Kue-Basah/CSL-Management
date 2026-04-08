@@ -23,7 +23,7 @@ import {
   SAMPLE_TESTING_APPROVAL_ACCESS_ROLES,
   SAMPLE_TESTING_REQUESTER_ACCESS_ROLES,
   isApprovalOnlyRole,
-} from "@/lib/dashboard/access";
+} from "@/lib/dashboard";
 
 export type ShortcutAction = {
   id: string;

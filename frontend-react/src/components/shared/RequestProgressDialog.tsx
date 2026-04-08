@@ -1,7 +1,7 @@
 "use client";
 
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ProgressSteps, type ProgressStepItem } from "@/components/shared/ProgressSteps";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui";
+import { ProgressSteps, type ProgressStepItem } from "./ProgressSteps";
 
 type RequestProgressDialogProps = {
   open: boolean;

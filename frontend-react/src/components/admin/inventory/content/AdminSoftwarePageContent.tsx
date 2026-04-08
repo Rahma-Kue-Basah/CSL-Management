@@ -1,43 +1,57 @@
 "use client";
 
+
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { Box, FileUp, Plus, Upload } from "lucide-react";
+
 import { toast } from "sonner";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import { AdminFilterCard } from "@/components/admin/shared/AdminFilterCard";
 import {
+  AdminPageHeader,
+  AdminFilterCard,
   AdminFilterField,
   AdminFilterGrid,
   ADMIN_FILTER_INPUT_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
-import AdminSoftwareDetailDialog from "@/components/admin/inventory/AdminSoftwareDetailDialog";
-import SoftwareBulkImportDialog from "@/components/admin/inventory/SoftwareBulkImportDialog";
-import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
-import SoftwareCreateDialog from "@/components/admin/inventory/SoftwareCreateDialog";
-import SoftwareTable from "@/components/admin/inventory/SoftwareTable";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import { DataPagination } from "@/components/shared/DataPagination";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from "@/components/admin/shared";
+
+import { AdminHistoryExportActions as AdminRecordExportActions } from "@/components/admin/history";
+
+import {
+  AdminSoftwareDetailDialog,
+  SoftwareBulkImportDialog,
+  InventoryBulkActions,
+  SoftwareCreateDialog,
+  SoftwareTable,
+} from "@/components/admin/inventory";
+
+import { ConfirmDeleteDialog, DataPagination, InlineErrorAlert } from "@/components/shared";
+
+import { Button, Input } from "@/components/ui";
+
 import { API_SOFTWARES_EXPORT } from "@/constants/api";
-import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
-import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
-import { useDeleteSoftware } from "@/hooks/shared/resources/softwares/use-delete-software";
+
+import { useAdminRecordExport } from "@/hooks/admin";
+
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments";
+
+import { useDeleteSoftware } from "@/hooks/shared/resources/softwares";
+
 import {
   mapSoftware,
   useSoftwares,
   type SoftwareRow,
-} from "@/hooks/shared/resources/softwares/use-softwares";
-import { usePicUsers } from "@/hooks/shared/resources/users/use-pic-users";
-import { SOFTWARE_EXPORT_COLUMNS } from "@/lib/admin/export-config";
+} from "@/hooks/shared/resources/softwares";
+
+import { usePicUsers } from "@/hooks/shared/resources/users";
+
+import { SOFTWARE_EXPORT_COLUMNS } from "@/lib/admin";
+
 import {
   exportAdminRecordExcel,
   exportAdminRecordPdf,
-} from "@/lib/admin/export";
+} from "@/lib/admin";
 
 const PAGE_SIZE = 20;
 

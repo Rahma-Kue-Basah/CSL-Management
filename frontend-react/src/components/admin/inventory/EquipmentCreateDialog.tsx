@@ -1,17 +1,21 @@
 "use client";
 
+
 import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "react";
+
 import { Plus, Trash2, Wrench } from "lucide-react";
+
 import { toast } from "sonner";
 
-import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { DialogFooter } from "@/components/ui/dialog";
+import { AdminDetailDialogShell, InlineErrorAlert } from "@/components/shared";
+
+import { Button, Input, DialogFooter } from "@/components/ui";
+
 import { EQUIPMENT_CATEGORY_OPTIONS, MOVEABLE_OPTIONS } from "@/constants/equipments";
-import { useCreateEquipment } from "@/hooks/shared/resources/equipments/use-create-equipment";
-import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
+
+import { useCreateEquipment } from "@/hooks/shared/resources/equipments";
+
+import { useRoomOptions } from "@/hooks/shared/resources/rooms";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 

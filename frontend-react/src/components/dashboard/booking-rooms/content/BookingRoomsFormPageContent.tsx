@@ -1,38 +1,48 @@
 "use client";
 
+
 import { useEffect, useMemo, useState } from "react";
+
 import { Loader2, Plus, Trash2 } from "lucide-react";
+
 import { useRouter, useSearchParams } from "next/navigation";
+
 import { toast } from "sonner";
 
 import {
   SubmissionConfirmDialog,
   SubmissionSummaryItem,
-} from "@/components/dialogs/SubmissionConfirmDialog";
+} from "@/components/dialogs";
+
 import {
   DashboardComboboxField,
   DashboardDateTimePickerField,
-} from "@/components/shared/DashboardFormFields";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useCreateBookingRoom } from "@/hooks/booking-rooms/use-create-booking-room";
-import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
-import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
-import { useMentorOptions } from "@/hooks/shared/resources/users/use-mentor-options";
+  combineDateTime,
+  getMinSelectableTime,
+  startOfToday,
+  type SelectOption,
+} from "@/components/shared";
+
+import { Button, Input } from "@/components/ui";
+
+import { useCreateBookingRoom } from "@/hooks/booking-rooms";
+
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
+
+import { useRoomOptions } from "@/hooks/shared/resources/rooms";
+
+import { useMentorOptions } from "@/hooks/shared/resources/users";
+
 import {
   REQUEST_PURPOSE_OPTIONS_NO_WORKSHOP,
   REQUEST_PURPOSE_OPTIONS,
   THESIS_PURPOSE,
   WORKSHOP_PURPOSE,
 } from "@/constants/request-purpose";
-import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date/format";
-import {
-  combineDateTime,
-  getMinSelectableTime,
-  startOfToday,
-  type SelectOption,
-} from "@/components/shared/DashboardFormFields";
+
+import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date";
 
 type FormData = {
   roomId: string;

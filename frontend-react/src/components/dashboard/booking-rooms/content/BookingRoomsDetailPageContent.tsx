@@ -1,6 +1,8 @@
 "use client";
 
+
 import { useState } from "react";
+
 import {
   ArrowLeft,
   CalendarClock,
@@ -8,22 +10,27 @@ import {
   NotebookPen,
   UserRound,
 } from "lucide-react";
+
 import { useParams, usePathname, useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
-import { ProgressSteps } from "@/components/shared/ProgressSteps";
-import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
-import { RequestProgressDialog } from "@/components/shared/RequestProgressDialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useBookingDetail } from "@/hooks/booking-rooms/use-bookings";
-import { formatDateTimeWib } from "@/lib/date/format";
-import { getBookingProgressFlow } from "@/lib/request/progress";
+import { Button, Skeleton } from "@/components/ui";
+
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout";
+
+import { ProgressSteps, RequestInformationCard, RequestProgressDialog } from "@/components/shared";
+
+import { useBookingDetail } from "@/hooks/booking-rooms";
+
+import { formatDateTimeWib } from "@/lib/date";
+
+import { getBookingProgressFlow } from "@/lib/request";
+
 import {
   getMentorApprovalStageLabel,
   hasMentorApprovalTrace,
-} from "@/lib/request/mentor-approval";
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request/status";
+} from "@/lib/request";
+
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
 
 type BookingDetailParams = {
   id?: string | string[];

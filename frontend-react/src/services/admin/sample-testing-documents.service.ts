@@ -1,9 +1,9 @@
 import { API_PENGUJIAN_DOCUMENTS } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 import type {
   SampleTestingDocument,
   SampleTestingDocumentType,
-} from "@/hooks/sample-testing/use-sample-testing";
+} from "@/hooks/sample-testing";
 
 export type AdminSampleTestingDocumentGroup = {
   sampleTestingId: string | number;

@@ -1,4 +1,4 @@
-import UseEquipmentDetailPageContent from "@/components/dashboard/use-equipment/content/UseEquipmentDetailPageContent";
+import { UseEquipmentDetailPageContent } from "@/components/dashboard/use-equipment/content";
 
 export default function UseEquipmentDetailPage() {
   return <UseEquipmentDetailPageContent />;

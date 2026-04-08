@@ -1,6 +1,8 @@
 "use client";
 
+
 import { useEffect, useRef, useState, type FormEvent } from "react";
+
 import {
   Loader2,
   Megaphone,
@@ -8,35 +10,41 @@ import {
   Search,
 } from "lucide-react";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import { AdminFilterCard } from "@/components/admin/shared/AdminFilterCard";
 import {
+  AdminPageHeader,
+  AdminFilterCard,
   AdminFilterField,
   AdminFilterGrid,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import AnnouncementBulkActions from "@/components/admin/information/AnnouncementBulkActions";
-import AnnouncementTable from "@/components/admin/information/AnnouncementTable";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import { DataPagination } from "@/components/shared/DataPagination";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+} from "@/components/admin/shared";
+
 import {
+  AnnouncementBulkActions,
+  AnnouncementTable,
   AnnouncementCreateDialog,
   AnnouncementEditDialog,
   type AnnouncementDetailMode,
-} from "@/components/admin/information/AnnouncementDialogs";
-import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
-import { Input } from "@/components/ui/input";
+} from "@/components/admin/information";
+
+import { ConfirmDeleteDialog, DataPagination, InlineErrorAlert } from "@/components/shared";
+
+import { Button, DatePicker, Input } from "@/components/ui";
+
 import {
   useAnnouncements,
   type Announcement,
-} from "@/hooks/information/announcements/use-announcements";
-import { useCreateAnnouncement } from "@/hooks/information/announcements/use-create-announcement";
-import { useUpdateAnnouncement } from "@/hooks/information/announcements/use-update-announcement";
-import { useDeleteAnnouncement } from "@/hooks/information/announcements/use-delete-announcement";
-import { formatDateKey, parseDateKey } from "@/lib/date/utils";
-import { stripHtmlTags } from "@/lib/text/text";
+} from "@/hooks/information/announcements";
+
+import { useCreateAnnouncement } from "@/hooks/information/announcements";
+
+import { useUpdateAnnouncement } from "@/hooks/information/announcements";
+
+import { useDeleteAnnouncement } from "@/hooks/information/announcements";
+
+import { formatDateKey, parseDateKey } from "@/lib/date";
+
+import { stripHtmlTags } from "@/lib/text";
+
 import { toast } from "sonner";
 
 const PAGE_SIZE = 10;

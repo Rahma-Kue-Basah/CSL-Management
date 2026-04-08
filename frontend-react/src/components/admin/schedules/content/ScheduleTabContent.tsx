@@ -1,16 +1,20 @@
 "use client";
 
+
 import type { ReactNode, RefObject } from "react";
+
 import type { DateRange } from "react-day-picker";
 
-import ScheduleBulkActions from "@/components/admin/schedules/ScheduleBulkActions";
-import ScheduleFilters from "@/components/admin/schedules/ScheduleFilters";
 import {
+  ScheduleBulkActions,
+  ScheduleFilters,
   SchedulesTable,
   type ScheduleTableRow,
-} from "@/components/admin/schedules/SchedulesTable";
-import { DataPagination } from "@/components/shared/DataPagination";
-import type { ScheduleItem } from "@/hooks/shared/schedules/use-schedules";
+} from "@/components/admin/schedules";
+
+import { DataPagination } from "@/components/shared";
+
+import type { ScheduleItem } from "@/hooks/shared/schedules";
 
 type RoomOption = {
   id: string | number;

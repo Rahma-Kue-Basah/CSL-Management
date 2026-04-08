@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { FAQS_ENDPOINT } from "@/hooks/information/faq/utils";
-import { extractApiErrorMessage } from "@/lib/core/api-error";
-import { faqService, type Faq } from "@/services/information/faq.service";
+import { extractApiErrorMessage } from "@/lib/core";
+import { faqService, type Faq } from "@/services/information";
 
 type CreateFaqPayload = {
   question: string;

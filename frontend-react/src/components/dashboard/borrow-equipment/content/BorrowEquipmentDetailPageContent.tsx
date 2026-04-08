@@ -1,6 +1,8 @@
 "use client";
 
+
 import { useState } from "react";
+
 import {
   ArrowLeft,
   CalendarClock,
@@ -12,21 +14,27 @@ import {
   TriangleAlert,
   Wrench,
 } from "lucide-react";
+
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
-import { ProgressSteps } from "@/components/shared/ProgressSteps";
-import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
-import { RequestProgressDialog } from "@/components/shared/RequestProgressDialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useBorrowDetail } from "@/hooks/borrow-equipment/use-borrows";
-import { formatDateTimeWib } from "@/lib/date/format";
-import { getBorrowProgressFlow } from "@/lib/request/progress";
+
+import { Button, Skeleton } from "@/components/ui";
+
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout";
+
+import { ProgressSteps, RequestInformationCard, RequestProgressDialog } from "@/components/shared";
+
+import { useBorrowDetail } from "@/hooks/borrow-equipment";
+
+import { formatDateTimeWib } from "@/lib/date";
+
+import { getBorrowProgressFlow } from "@/lib/request";
+
 import {
   getMentorApprovalStageLabel,
   hasMentorApprovalTrace,
-} from "@/lib/request/mentor-approval";
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request/status";
+} from "@/lib/request";
+
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
 
 function hasDisplayValue(value?: string | null) {
   if (!value) return false;

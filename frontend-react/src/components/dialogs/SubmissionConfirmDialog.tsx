@@ -1,9 +1,12 @@
 "use client";
 
+
 import type { ReactNode } from "react";
+
 import { ClipboardCheck, Loader2 } from "lucide-react";
 
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
+import { InlineErrorAlert } from "@/components/shared";
+
 import {
   AlertDialog,
   AlertDialogCancel,
@@ -12,9 +15,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/core/utils";
+  Button,
+} from "@/components/ui";
+
+import { cn } from "@/lib/core";
 
 type SubmissionSummaryItemProps = {
   label: string;

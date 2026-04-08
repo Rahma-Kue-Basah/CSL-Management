@@ -3,8 +3,8 @@
 import { ArrowLeft, CalendarPlus2, Loader2 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { useRoomDetail } from "@/hooks/shared/resources/rooms/use-rooms";
+import { Button } from "@/components/ui";
+import { useRoomDetail } from "@/hooks/shared/resources/rooms";
 
 type RoomDetailParams = {
   id?: string | string[];

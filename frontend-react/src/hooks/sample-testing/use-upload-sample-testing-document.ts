@@ -5,8 +5,8 @@ import { useState } from "react";
 import {
   extractApiErrorMessage,
   extractApiErrorMessageFromText,
-} from "@/lib/core/api-error";
-import { sampleTestingService } from "@/services/sample-testing/sample-testing.service";
+} from "@/lib/core";
+import { sampleTestingService } from "@/services/sample-testing";
 
 import type { SampleTestingDocumentType } from "./use-sample-testing";
 

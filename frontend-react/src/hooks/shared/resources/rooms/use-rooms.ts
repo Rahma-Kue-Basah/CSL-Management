@@ -7,7 +7,7 @@ import {
   type RoomDetail,
   type RoomFilters,
   type RoomRow,
-} from "@/services/shared/resources/rooms.service";
+} from "@/services/shared/resources";
 
 export type { RoomDetail, RoomFilters, RoomRow };
 export { mapRoom };

@@ -3,9 +3,9 @@
 import type { RefObject } from "react";
 import { Eye, Loader2, Pencil, Trash2 } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import type { ScheduleItem } from "@/hooks/shared/schedules/use-schedules";
+import { Button } from "@/components/ui";
+import { TableActionIconButton } from "@/components/shared";
+import type { ScheduleItem } from "@/hooks/shared/schedules";
 
 export type ScheduleTableRow = {
   id: string | number;

@@ -1,21 +1,32 @@
 "use client";
 
+
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+
 import { ArrowUpRight, MapPinned, Trash2 } from "lucide-react";
+
 import { toast } from "sonner";
 
-import { PicMultiSelect } from "@/components/admin/inventory/PicMultiSelect";
-import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
-import AdminDetailActions from "@/components/shared/AdminDetailActions";
-import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useDeleteRoom } from "@/hooks/shared/resources/rooms/use-delete-room";
-import type { RoomRow } from "@/hooks/shared/resources/rooms/use-rooms";
-import { useUpdateRoom } from "@/hooks/shared/resources/rooms/use-update-room";
-import { usePicUsers } from "@/hooks/shared/resources/users/use-pic-users";
+import { PicMultiSelect } from "./PicMultiSelect";
+
+import { RelatedUserDetailDialog } from "@/components/admin/history";
+
+import {
+  AdminDetailActions,
+  AdminDetailDialogShell,
+  ConfirmDeleteDialog,
+  InlineErrorAlert,
+} from "@/components/shared";
+
+import { Button, Input } from "@/components/ui";
+
+import { useDeleteRoom } from "@/hooks/shared/resources/rooms";
+
+import type { RoomRow } from "@/hooks/shared/resources/rooms";
+
+import { useUpdateRoom } from "@/hooks/shared/resources/rooms";
+
+import { usePicUsers } from "@/hooks/shared/resources/users";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const INVENTORY_MODAL_WIDTH_CLASS =

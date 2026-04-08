@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { API_AUTH_PASSWORD_CHANGE } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 type ChangePasswordStatus = "idle" | "submitting" | "success" | "error";
 

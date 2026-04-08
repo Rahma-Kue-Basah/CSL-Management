@@ -12,14 +12,14 @@ import {
   AdminRecordDetailItem,
   AdminRecordDetailSection,
   AdminRecordDetailShell,
-} from "@/components/admin/history/AdminHistoryDetailLayout";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { BorrowRow } from "@/hooks/borrow-equipment/use-borrows";
-import { formatDateTimeWib } from "@/lib/date/format";
+} from "@/components/admin/history";
+import { Skeleton } from "@/components/ui";
+import type { BorrowRow } from "@/hooks/borrow-equipment";
+import { formatDateTimeWib } from "@/lib/date";
 import {
   getMentorApprovalStageLabel,
   hasMentorApprovalTrace,
-} from "@/lib/request/mentor-approval";
+} from "@/lib/request";
 
 type AdminEquipmentBorrowRecordDetailContentProps = {
   item: BorrowRow | null;

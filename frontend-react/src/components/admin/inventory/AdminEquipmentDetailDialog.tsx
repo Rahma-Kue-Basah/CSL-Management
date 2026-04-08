@@ -1,25 +1,36 @@
 "use client";
 
+
 import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+
 import { ArrowUpRight, Trash2, Wrench } from "lucide-react";
+
 import { toast } from "sonner";
 
-import RelatedRoomDetailDialog from "@/components/admin/history/RelatedRoomDetailDialog";
-import AdminDetailActions from "@/components/shared/AdminDetailActions";
-import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { RelatedRoomDetailDialog } from "@/components/admin/history";
+
+import {
+  AdminDetailActions,
+  AdminDetailDialogShell,
+  ConfirmDeleteDialog,
+  InlineErrorAlert,
+} from "@/components/shared";
+
+import { Button, Input } from "@/components/ui";
+
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
   EQUIPMENT_STATUS_OPTIONS,
   MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
-import { useDeleteEquipment } from "@/hooks/shared/resources/equipments/use-delete-equipment";
-import type { EquipmentRow } from "@/hooks/shared/resources/equipments/use-equipments";
-import { useUpdateEquipment } from "@/hooks/shared/resources/equipments/use-update-equipment";
-import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
+
+import { useDeleteEquipment } from "@/hooks/shared/resources/equipments";
+
+import type { EquipmentRow } from "@/hooks/shared/resources/equipments";
+
+import { useUpdateEquipment } from "@/hooks/shared/resources/equipments";
+
+import { useRoomOptions } from "@/hooks/shared/resources/rooms";
 
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const INVENTORY_MODAL_WIDTH_CLASS =

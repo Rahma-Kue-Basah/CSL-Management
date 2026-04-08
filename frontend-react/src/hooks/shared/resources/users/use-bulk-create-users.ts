@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { toCreateUserPayload, type UserFormState } from "@/components/admin/user-management/UserManagementFields";
+import { toCreateUserPayload, type UserFormState } from "@/components/admin/user-management";
 import {
   usersService,
   type CreateUserPayload,
-} from "@/services/shared/resources/users.service";
+} from "@/services/shared/resources";
 
 export type BulkRow = UserFormState & {
   index: number;

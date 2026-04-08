@@ -3,9 +3,9 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-import type { UserRow } from "@/hooks/shared/resources/users/use-users";
-import { useDeleteUser } from "@/hooks/shared/resources/users/use-delete-user";
-import type { UserDetailMode } from "@/components/admin/user-management/UserManagementFields";
+import type { UserRow } from "@/hooks/shared/resources/users";
+import { useDeleteUser } from "@/hooks/shared/resources/users";
+import type { UserDetailMode } from "@/components/admin/user-management";
 
 type DetailState = {
   user: UserRow | null;

@@ -1,6 +1,6 @@
 "use client";
 
-import BorrowEquipmentListContent from "@/components/dashboard/borrow-equipment/content/BorrowEquipmentListContent";
+import { BorrowEquipmentListContent } from "@/components/dashboard/borrow-equipment/content";
 
 export default function BorrowEquipmentListPage() {
   return (

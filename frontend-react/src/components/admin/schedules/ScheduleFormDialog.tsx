@@ -1,19 +1,25 @@
 "use client";
 
+
 import { format } from "date-fns";
+
 import { ArrowUpRight, CalendarDays } from "lucide-react";
+
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 
-import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/UserManagementFields";
-import AdminDetailActions from "@/components/shared/AdminDetailActions";
-import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { DatePicker } from "@/components/ui/date-picker";
-import { DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { toWibIsoString } from "@/lib/date/format";
+import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management";
+
+import { AdminDetailActions, AdminDetailDialogShell, InlineErrorAlert } from "@/components/shared";
+
+import {
+  Button,
+  DatePicker,
+  DialogFooter,
+  Input,
+  Textarea,
+} from "@/components/ui";
+
+import { toWibIsoString } from "@/lib/date";
 
 const DIALOG_WIDTH_CLASS = `${USER_MODAL_WIDTH_CLASS} gap-0 p-0 [--primary:#0048B4] [--primary-foreground:#FFFFFF] [--ring:#3B82F6]`;
 

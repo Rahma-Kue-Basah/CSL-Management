@@ -1,32 +1,44 @@
 "use client";
 
+
 import {
   useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+
 import { usePathname, useRouter } from "next/navigation";
+
 import { Outlet } from "react-router-dom";
+
 import { LayoutGrid, X } from "lucide-react";
+
 import { useIsMobile } from "@/hooks/use-mobile";
+
 import {
   DashboardTopNavbar,
-} from "@/components/dashboard/layout/DashboardTopNavbar";
-import { DashboardSideNavbar } from "@/components/dashboard/layout/DashboardSideNavbar";
-import { DashboardActionPanel } from "@/components/dashboard/layout/DashboardActionPanel";
-import { DashboardMainLayout } from "@/components/dashboard/layout/DashboardMainLayout";
+  DashboardSideNavbar,
+  DashboardActionPanel,
+  DashboardMainLayout,
+} from "@/components/dashboard/layout";
+
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
+} from "@/components/ui";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
+
 import Link from "next/link";
-import { cn } from "@/lib/core/utils";
+
+import { cn } from "@/lib/core";
+
 import { hasMenuAccess } from "@/constants/roles";
+
 import {
   canAccessAction,
   getHeaderIcon,
@@ -35,7 +47,7 @@ import {
   SIDEBAR_SHORTCUTS,
   type SidebarShortcut,
   toMenuHref,
-} from "@/lib/dashboard/navigation";
+} from "@/lib/dashboard";
 
 type UserLayoutProps = {
   children?: ReactNode;

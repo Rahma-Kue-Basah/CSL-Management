@@ -1,6 +1,8 @@
 "use client";
 
+
 import { useEffect, useState } from "react";
+
 import { CheckCircle2, Loader2, OctagonX } from "lucide-react";
 
 import {
@@ -13,8 +15,8 @@ import {
   AlertDialogHeader,
   AlertDialogMedia,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Textarea } from "@/components/ui/textarea";
+  Textarea,
+} from "@/components/ui";
 
 type StatusConfirmDialogProps = {
   open: boolean;

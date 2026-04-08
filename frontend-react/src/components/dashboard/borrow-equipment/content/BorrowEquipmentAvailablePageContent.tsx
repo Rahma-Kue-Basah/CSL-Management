@@ -1,12 +1,15 @@
 "use client";
 
+
 import { useEffect, useState } from "react";
+
 import { Eye, HandHelping, Loader2 } from "lucide-react";
+
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { DataPagination } from "@/components/shared/DataPagination";
-import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import { useEquipments } from "@/hooks/shared/resources/equipments/use-equipments";
+import { DataPagination, TableActionIconButton } from "@/components/shared";
+
+import { useEquipments } from "@/hooks/shared/resources/equipments";
 
 const PAGE_SIZE = 20;
 

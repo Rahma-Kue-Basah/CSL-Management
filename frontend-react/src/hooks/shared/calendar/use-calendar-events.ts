@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { API_CALENDAR } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type CalendarEvent = {
   id: string;

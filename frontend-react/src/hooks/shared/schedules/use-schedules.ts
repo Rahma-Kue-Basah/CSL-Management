@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { API_SCHEDULES } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type ScheduleCategory =
   | "Practicum";

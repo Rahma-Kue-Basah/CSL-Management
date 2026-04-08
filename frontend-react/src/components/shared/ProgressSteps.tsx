@@ -2,7 +2,7 @@
 
 import { Check, CircleAlert, Loader2 } from "lucide-react";
 
-import { cn } from "@/lib/core/utils";
+import { cn } from "@/lib/core";
 
 export type ProgressStepState = "finish" | "process" | "wait" | "error";
 

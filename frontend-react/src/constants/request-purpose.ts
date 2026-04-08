@@ -1,4 +1,4 @@
-import type { SelectOption } from "@/components/shared/DashboardFormFields";
+import type { SelectOption } from "@/components/shared";
 
 export const THESIS_PURPOSE = "Skripsi/TA";
 export const WORKSHOP_PURPOSE = "Workshop";

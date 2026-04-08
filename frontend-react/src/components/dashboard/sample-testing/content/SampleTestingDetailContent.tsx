@@ -3,9 +3,9 @@
 import type { ReactNode } from "react";
 import { FlaskConical, NotebookPen, UserRound } from "lucide-react";
 
-import type { SampleTestingRow } from "@/hooks/sample-testing/use-sample-testing";
-import { formatDateTimeWib } from "@/lib/date/format";
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request/status";
+import type { SampleTestingRow } from "@/hooks/sample-testing";
+import { formatDateTimeWib } from "@/lib/date";
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
 
 function hasDisplayValue(value?: string | null) {
   if (!value) return false;

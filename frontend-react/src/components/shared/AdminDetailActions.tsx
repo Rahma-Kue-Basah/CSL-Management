@@ -1,7 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { DialogFooter } from "@/components/ui/dialog";
+
+import { Button, DialogFooter } from "@/components/ui";
 
 type AdminDetailActionsProps = {
   isEditing: boolean;

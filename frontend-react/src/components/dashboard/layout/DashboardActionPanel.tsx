@@ -1,9 +1,14 @@
 "use client";
 
+
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+
 import type { DateRange } from "react-day-picker";
+
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
+
 import { Calendar as RsuiteCalendar } from "rsuite";
+
 import {
   ChevronRight,
   ChevronsLeft,
@@ -11,27 +16,36 @@ import {
   EyeOff,
   ShieldCheck,
 } from "lucide-react";
+
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { Input } from "@/components/ui/input";
+
+import { Button, DateRangePicker, Input } from "@/components/ui";
+
 import {
   API_BOOKINGS_ALL_REQUESTERS,
   API_BORROWS_ALL_REQUESTERS,
   API_USES_ALL_REQUESTERS,
 } from "@/constants/api";
+
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
   EQUIPMENT_STATUS_OPTIONS,
   MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
-import { useChangePassword } from "@/hooks/auth/use-change-password";
-import { useCalendarEvents } from "@/hooks/shared/calendar/use-calendar-events";
-import { useEquipmentOptions } from "@/hooks/shared/resources/equipments/use-equipment-options";
-import { useHistoryRequesterOptions } from "@/hooks/admin/history/use-history-requester-options";
-import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
-import { formatDateKey, parseDateKey } from "@/lib/date/utils";
-import { BORROW_STATUS_OPTIONS, REQUEST_STATUS_OPTIONS } from "@/lib/request/status";
+
+import { useChangePassword } from "@/hooks/auth";
+
+import { useCalendarEvents } from "@/hooks/shared/calendar";
+
+import { useEquipmentOptions } from "@/hooks/shared/resources/equipments";
+
+import { useHistoryRequesterOptions } from "@/hooks/admin/history";
+
+import { useRoomOptions } from "@/hooks/shared/resources/rooms";
+
+import { formatDateKey, parseDateKey } from "@/lib/date";
+
+import { BORROW_STATUS_OPTIONS, REQUEST_STATUS_OPTIONS } from "@/lib/request";
 
 type DashboardActionPanelProps = {
   width: string;

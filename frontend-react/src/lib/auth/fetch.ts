@@ -1,7 +1,7 @@
 "use client";
 
 import { API_AUTH_TOKEN_REFRESH } from "@/constants/api";
-import { removeCookieValue } from "@/lib/auth/cookies";
+import { removeCookieValue } from "@/lib/auth";
 
 type RefreshResponse = {
   access?: string;

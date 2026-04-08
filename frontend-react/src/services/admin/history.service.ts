@@ -1,4 +1,4 @@
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type HistoryRequesterOption = {
   id: string;

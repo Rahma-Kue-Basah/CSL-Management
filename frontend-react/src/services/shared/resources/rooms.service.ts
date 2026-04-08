@@ -8,7 +8,7 @@ import {
   API_ROOMS_BULK_DELETE,
   API_ROOMS_DROPDOWN,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type RoomFilters = {
   floor?: string;

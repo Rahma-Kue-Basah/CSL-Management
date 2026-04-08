@@ -2,7 +2,7 @@ import {
   API_AUTH_ADMIN_ACTIONS_MY,
   API_AUTH_ADMIN_ACTIONS_RECENT,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type AdminAction = {
   id: number;

@@ -8,8 +8,8 @@ import {
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field";
-import { useEmailVerification } from "@/hooks/auth/use-email-verification";
+} from "@/components/ui";
+import { useEmailVerification } from "@/hooks/auth";
 
 type VerifyParams = {
   key?: string | string[];

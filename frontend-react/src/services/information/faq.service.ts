@@ -3,7 +3,7 @@ import {
   API_IMAGE_DETAIL,
   API_IMAGES,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 import {
   buildFaqUrl,
   FAQS_BULK_DELETE_ENDPOINT,

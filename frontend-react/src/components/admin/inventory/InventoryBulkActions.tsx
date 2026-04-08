@@ -1,9 +1,10 @@
 "use client";
 
+
 import { ChevronDown, Download, FileSpreadsheet, Trash2, X } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
+  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -12,7 +13,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui";
 
 type InventoryBulkActionsProps = {
   selectedCount: number;

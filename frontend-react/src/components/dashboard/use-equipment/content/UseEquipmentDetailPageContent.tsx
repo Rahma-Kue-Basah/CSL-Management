@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useState } from "react";
 
 import {
@@ -9,22 +10,27 @@ import {
   NotebookPen,
   UserRound,
 } from "lucide-react";
+
 import { useParams, usePathname, useRouter } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
-import { DashboardDetailReviewPanel } from "@/components/dashboard/layout/DashboardDetailReviewPanel";
-import { ProgressSteps } from "@/components/shared/ProgressSteps";
-import { RequestInformationCard } from "@/components/shared/RequestInformationCard";
-import { RequestProgressDialog } from "@/components/shared/RequestProgressDialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import { useUseDetail } from "@/hooks/use-equipment/use-uses";
-import { formatDateTimeWib } from "@/lib/date/format";
-import { getUseProgressFlow } from "@/lib/request/progress";
+import { Button, Skeleton } from "@/components/ui";
+
+import { DashboardDetailReviewPanel } from "@/components/dashboard/layout";
+
+import { ProgressSteps, RequestInformationCard, RequestProgressDialog } from "@/components/shared";
+
+import { useUseDetail } from "@/hooks/use-equipment";
+
+import { formatDateTimeWib } from "@/lib/date";
+
+import { getUseProgressFlow } from "@/lib/request";
+
 import {
   getMentorApprovalStageLabel,
   hasMentorApprovalTrace,
-} from "@/lib/request/mentor-approval";
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request/status";
+} from "@/lib/request";
+
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
 
 type UseDetailParams = {
   id?: string | string[];

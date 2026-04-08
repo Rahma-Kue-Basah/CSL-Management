@@ -2,15 +2,15 @@
 
 import type { ReactNode } from "react";
 
-import AdminRoomBookingHistoryDetailContent from "@/components/admin/history/content/AdminRoomBookingHistoryDetailContent";
+import { AdminRoomBookingHistoryDetailContent } from "@/components/admin/history/content";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import type { BookingRow } from "@/hooks/booking-rooms/use-bookings";
+} from "@/components/ui";
+import type { BookingRow } from "@/hooks/booking-rooms";
 
 type AdminRoomBookingHistoryDetailDialogProps = {
   open: boolean;

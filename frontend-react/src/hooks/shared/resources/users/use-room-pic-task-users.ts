@@ -5,7 +5,7 @@ import {
   usersService,
   type RoomPicTaskUserRow,
   type RoomPicTaskUsersFilters as UseRoomPicTaskUsersFilters,
-} from "@/services/shared/resources/users.service";
+} from "@/services/shared/resources";
 
 export type { RoomPicTaskUserRow };
 

@@ -15,13 +15,13 @@ import {
   X,
 } from "lucide-react";
 
-import { useDashboardOverview } from "@/hooks/dashboard/use-dashboard-overview";
-import { formatDateTimeWib } from "@/lib/date/format";
+import { useDashboardOverview } from "@/hooks/dashboard";
+import { formatDateTimeWib } from "@/lib/date";
 import {
   getStatusBadgeClass,
   getStatusDisplayLabel,
   getStatusSummaryTone,
-} from "@/lib/request/status";
+} from "@/lib/request";
 
 type OverviewItem = {
   id: string;

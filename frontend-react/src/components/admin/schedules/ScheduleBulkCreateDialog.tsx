@@ -1,25 +1,31 @@
 "use client";
 
+
 import { useState, type ChangeEvent } from "react";
+
 import * as XLSX from "xlsx";
+
 import { toast } from "sonner";
 
 import {
   ADMIN_FILTER_LABEL_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import BulkImportDialogShell from "@/components/shared/BulkImportDialogShell";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
+} from "@/components/admin/shared";
+
+import { BulkImportDialogShell, InlineErrorAlert } from "@/components/shared";
+
+import { Button } from "@/components/ui";
+
 import {
   formatDateTimeLocalInput,
   validateScheduleForm,
   type ScheduleFormState,
-} from "@/components/admin/schedules/ScheduleFormDialog";
+} from "@/components/admin/schedules";
+
 import {
   useBulkCreateSchedules,
   type BulkScheduleRow,
-} from "@/hooks/shared/schedules/use-bulk-create-schedules";
+} from "@/hooks/shared/schedules";
 
 const HEADER_MAP: Record<string, "title" | "className" | "description" | "date" | "startTime" | "endTime"> = {
   "judul jadwal": "title",

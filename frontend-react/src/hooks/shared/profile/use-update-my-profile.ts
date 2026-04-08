@@ -3,7 +3,7 @@
 import { useState } from "react";
 
 import { API_AUTH_USER_PROFILE_DETAIL } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 type UpdateMyProfilePayload = {
   full_name: string;

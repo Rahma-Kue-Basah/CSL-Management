@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { extractApiErrorMessage } from "@/lib/core/api-error";
+import { extractApiErrorMessage } from "@/lib/core";
 import {
   equipmentsService,
   type CreateEquipmentPayload,
-} from "@/services/shared/resources/equipments.service";
+} from "@/services/shared/resources";
 
 export type { CreateEquipmentPayload };
 

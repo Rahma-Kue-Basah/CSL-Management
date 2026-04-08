@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { extractApiErrorMessage } from "@/lib/core/api-error";
-import { softwaresService } from "@/services/shared/resources/softwares.service";
+import { extractApiErrorMessage } from "@/lib/core";
+import { softwaresService } from "@/services/shared/resources";
 
 function parseDeleteSoftwareError(data: unknown, fallback = "Gagal menghapus software.") {
   return extractApiErrorMessage(data, fallback);

@@ -7,7 +7,7 @@ import {
   API_BOOKING_DETAIL,
   API_BOOKING_REJECT,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type BookingServiceFilters = {
   q?: string;

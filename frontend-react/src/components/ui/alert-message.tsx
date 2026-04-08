@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 import { X } from "lucide-react";
-import { cn } from "@/lib/core/utils";
+import { cn } from "@/lib/core";
 import { useState } from "react";
 
 type AlertMessageProps = {

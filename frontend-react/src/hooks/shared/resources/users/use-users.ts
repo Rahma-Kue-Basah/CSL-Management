@@ -7,7 +7,7 @@ import {
   type UserFilters,
   type UserRoleAggregates,
   type UserRow,
-} from "@/services/shared/resources/users.service";
+} from "@/services/shared/resources";
 
 export type { UserFilters, UserRoleAggregates, UserRow };
 export { mapUser };

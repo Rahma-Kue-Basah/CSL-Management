@@ -1,14 +1,22 @@
 "use client";
 
+
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+
 import { CalendarDays, FileUp, Plus, Upload } from "lucide-react";
+
 import type { DateRange } from "react-day-picker";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import CalendarTabContent from "@/components/admin/schedules/content/CalendarTabContent";
-import AdminRoomBookingRecordDetailDialog from "@/components/admin/history/AdminRoomBookingHistoryDetailDialog";
-import RelatedRoomDetailDialog from "@/components/admin/history/RelatedRoomDetailDialog";
-import RelatedUserDetailDialog from "@/components/admin/history/RelatedUserDetailDialog";
+import { AdminPageHeader } from "@/components/admin/shared";
+
+import { CalendarTabContent, ScheduleTabContent } from "@/components/admin/schedules/content";
+
+import {
+  AdminRoomBookingHistoryDetailDialog as AdminRoomBookingRecordDetailDialog,
+  RelatedRoomDetailDialog,
+  RelatedUserDetailDialog,
+} from "@/components/admin/history";
+
 import {
   formatDateTimeLocalInput,
   type ScheduleCategory,
@@ -16,26 +24,38 @@ import {
   ScheduleFormDialog,
   type ScheduleFormState,
   validateScheduleForm,
-} from "@/components/admin/schedules/ScheduleFormDialog";
-import ScheduleBulkCreateDialog from "@/components/admin/schedules/ScheduleBulkCreateDialog";
-import ScheduleTabContent from "@/components/admin/schedules/content/ScheduleTabContent";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { useBookingDetail } from "@/hooks/booking-rooms/use-bookings";
-import { useCalendarEvents } from "@/hooks/shared/calendar/use-calendar-events";
-import type { CalendarEvent } from "@/hooks/shared/calendar/use-calendar-events";
-import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
-import { useCreateSchedule } from "@/hooks/shared/schedules/use-create-schedule";
-import { useDeleteSchedule } from "@/hooks/shared/schedules/use-delete-schedule";
+  ScheduleBulkCreateDialog,
+  type ScheduleTableRow,
+} from "@/components/admin/schedules";
+
+import { ConfirmDeleteDialog, InlineErrorAlert } from "@/components/shared";
+
+import { Button } from "@/components/ui";
+
+import { useBookingDetail } from "@/hooks/booking-rooms";
+
+import { useCalendarEvents } from "@/hooks/shared/calendar";
+
+import type { CalendarEvent } from "@/hooks/shared/calendar";
+
+import { useRoomOptions } from "@/hooks/shared/resources/rooms";
+
+import { useCreateSchedule } from "@/hooks/shared/schedules";
+
+import { useDeleteSchedule } from "@/hooks/shared/schedules";
+
 import {
   type ScheduleItem,
-} from "@/hooks/shared/schedules/use-schedules";
-import { useScheduleFeed } from "@/hooks/shared/schedules/use-schedule-feed";
-import { useUpdateSchedule } from "@/hooks/shared/schedules/use-update-schedule";
-import type { ScheduleTableRow } from "@/components/admin/schedules/SchedulesTable";
-import { normalizeText } from "@/lib/text/text";
-import { toEndOfDay, toStartOfDay } from "@/lib/date/utils";
+} from "@/hooks/shared/schedules";
+
+import { useScheduleFeed } from "@/hooks/shared/schedules";
+
+import { useUpdateSchedule } from "@/hooks/shared/schedules";
+
+import { normalizeText } from "@/lib/text";
+
+import { toEndOfDay, toStartOfDay } from "@/lib/date";
+
 import { toast } from "sonner";
 
 const PAGE_SIZE = 20;

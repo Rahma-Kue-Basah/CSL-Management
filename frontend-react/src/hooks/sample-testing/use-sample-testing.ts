@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { sampleTestingService } from "@/services/sample-testing/sample-testing.service";
+import { sampleTestingService } from "@/services/sample-testing";
 
 export type SampleTestingFilters = {
   q?: string;

@@ -8,7 +8,7 @@ import {
   API_IMAGE_DETAIL,
   API_IMAGES,
 } from "@/constants/api";
-import { authFetch } from "@/lib/auth/fetch";
+import { authFetch } from "@/lib/auth";
 
 export type EquipmentFilters = {
   status?: string;

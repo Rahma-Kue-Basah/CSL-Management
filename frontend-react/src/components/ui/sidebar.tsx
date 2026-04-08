@@ -1,28 +1,33 @@
 "use client";
 
+
 import * as React from "react";
+
 import { cva, type VariantProps } from "class-variance-authority";
+
 import { Slot } from "radix-ui";
 
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/core/utils";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
+
+import { cn } from "@/lib/core";
+
 import {
+  Button,
+  Input,
+  Separator,
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle,
-} from "@/components/ui/sheet";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
+  Skeleton,
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@/components/ui/tooltip";
+} from "@/components/ui";
+
 import Image from "next/image";
+
 import { PanelLeftIcon } from "lucide-react";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";

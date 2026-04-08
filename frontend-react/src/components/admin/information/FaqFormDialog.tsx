@@ -1,20 +1,22 @@
 "use client";
 
+
 import { useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
+
 import { CircleHelp, ImagePlus, Trash2 } from "lucide-react";
 
-import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management/UserManagementFields";
-import AdminDetailActions from "@/components/shared/AdminDetailActions";
-import AdminDetailDialogShell from "@/components/shared/AdminDetailDialogShell";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
+import { USER_MODAL_WIDTH_CLASS } from "@/components/admin/user-management";
+
+import { AdminDetailActions, AdminDetailDialogShell, InlineErrorAlert } from "@/components/shared";
+
 import {
+  Button,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+  Input,
+  Textarea,
+} from "@/components/ui";
 
 export type FaqFormState = {
   question: string;

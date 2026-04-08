@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { extractApiErrorMessage } from "@/lib/core/api-error";
-import { equipmentsService } from "@/services/shared/resources/equipments.service";
+import { extractApiErrorMessage } from "@/lib/core";
+import { equipmentsService } from "@/services/shared/resources";
 
 function parseDeleteEquipmentError(data: unknown, fallback = "Gagal menghapus peralatan.") {
   return extractApiErrorMessage(data, fallback);

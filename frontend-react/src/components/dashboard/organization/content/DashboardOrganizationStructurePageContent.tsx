@@ -1,10 +1,16 @@
 "use client";
 
+
 import { useEffect, useState, type WheelEvent } from "react";
+
 import { FileImage, Network, Search, ZoomIn, ZoomOut } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui";
 
 const ORGANIZATION_STRUCTURE_IMAGE_SRC = "";
 const MIN_SCALE = 1;

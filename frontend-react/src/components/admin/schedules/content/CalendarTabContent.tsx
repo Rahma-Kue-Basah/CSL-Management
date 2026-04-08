@@ -1,11 +1,11 @@
 "use client";
 
+
 import type { DateRange } from "react-day-picker";
 
-import Calendar from "@/components/admin/schedules/Calendar";
-import { HourlyScheduleTable } from "@/components/admin/schedules/HourlyScheduleTable";
-import ScheduleFilters from "@/components/admin/schedules/ScheduleFilters";
-import type { CalendarEvent } from "@/hooks/shared/calendar/use-calendar-events";
+import { Calendar, HourlyScheduleTable, ScheduleFilters } from "@/components/admin/schedules";
+
+import type { CalendarEvent } from "@/hooks/shared/calendar";
 
 type RoomOption = {
   id: string | number;

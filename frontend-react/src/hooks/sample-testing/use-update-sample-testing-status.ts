@@ -5,11 +5,11 @@ import { useState } from "react";
 import {
   extractApiErrorMessage,
   extractApiErrorMessageFromText,
-} from "@/lib/core/api-error";
+} from "@/lib/core";
 import {
   sampleTestingService,
   type SampleTestingStatusActionType as ActionType,
-} from "@/services/sample-testing/sample-testing.service";
+} from "@/services/sample-testing";
 
 export function useUpdateSampleTestingStatus() {
   const [pendingAction, setPendingAction] = useState<{

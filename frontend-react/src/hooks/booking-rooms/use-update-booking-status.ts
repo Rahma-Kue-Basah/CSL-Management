@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 
-import { extractApiErrorMessage } from "@/lib/core/api-error";
+import { extractApiErrorMessage } from "@/lib/core";
 import {
   bookingRoomsService,
   type BookingStatusActionType,
-} from "@/services/booking-rooms/booking-rooms.service";
+} from "@/services/booking-rooms";
 
 function parseBookingStatusError(
   data: unknown,

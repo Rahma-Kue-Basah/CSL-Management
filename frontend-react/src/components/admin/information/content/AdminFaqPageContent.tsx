@@ -6,6 +6,7 @@ import {
   useState,
   type FormEvent,
 } from "react";
+
 import {
   CircleHelp,
   Loader2,
@@ -13,30 +14,34 @@ import {
   Search,
 } from "lucide-react";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import { AdminFilterCard } from "@/components/admin/shared/AdminFilterCard";
 import {
+  AdminPageHeader,
+  AdminFilterCard,
   AdminFilterField,
   AdminFilterGrid,
-  ADMIN_FILTER_INPUT_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import FaqBulkActions from "@/components/admin/information/FaqBulkActions";
-import FaqFormDialog, {
+} from "@/components/admin/shared";
+
+import {
+  FaqBulkActions,
+  FaqFormDialog,
   type FaqDetailMode,
   type FaqFormState,
-} from "@/components/admin/information/FaqFormDialog";
-import FaqTable from "@/components/admin/information/FaqTable";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import { DataPagination } from "@/components/shared/DataPagination";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useCreateFaq } from "@/hooks/information/faq/use-create-faq";
-import { useDeleteFaq } from "@/hooks/information/faq/use-delete-faq";
-import { useFaqs, type Faq } from "@/hooks/information/faq/use-faqs";
-import { useUpdateFaq } from "@/hooks/information/faq/use-update-faq";
-import { normalizeText } from "@/lib/text/text";
+  FaqTable,
+} from "@/components/admin/information";
+
+import { ConfirmDeleteDialog, DataPagination, InlineErrorAlert } from "@/components/shared";
+
+import { Button, Input } from "@/components/ui";
+
+import { useCreateFaq } from "@/hooks/information/faq";
+
+import { useDeleteFaq } from "@/hooks/information/faq";
+
+import { useFaqs, type Faq } from "@/hooks/information/faq";
+
+import { useUpdateFaq } from "@/hooks/information/faq";
+
 import { toast } from "sonner";
 
 const EMPTY_FORM: FaqFormState = {

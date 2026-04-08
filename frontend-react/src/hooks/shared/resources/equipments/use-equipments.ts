@@ -7,7 +7,7 @@ import {
   type EquipmentDetail,
   type EquipmentFilters,
   type EquipmentRow,
-} from "@/services/shared/resources/equipments.service";
+} from "@/services/shared/resources";
 
 export type { EquipmentDetail, EquipmentFilters, EquipmentRow };
 export { mapEquipment };

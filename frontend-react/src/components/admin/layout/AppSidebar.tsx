@@ -19,7 +19,7 @@ import {
   SidebarMenuSubButton,
   SidebarMenuSubItem,
   SidebarFooter,
-} from "@/components/ui/sidebar";
+} from "@/components/ui";
 import {
   CalendarDays,
   ChevronDown,
@@ -33,7 +33,7 @@ import {
   Search,
   Users,
 } from "lucide-react";
-import { NavUser } from "@/components/admin/layout/NavUser";
+import { NavUser } from "@/components/admin/layout";
 
 type MenuItem = {
   key?: string;

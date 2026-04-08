@@ -1,38 +1,55 @@
 "use client";
 
+
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { FileUp, Plus, UserPlus } from "lucide-react";
+
 import { useSearchParams } from "react-router-dom";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
-import AdminRecordSummaryCards from "@/components/admin/history/AdminHistorySummaryCards";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { AdminFilterCard } from "@/components/admin/shared/AdminFilterCard";
 import {
+  AdminPageHeader,
+  AdminFilterCard,
   AdminFilterField,
   AdminFilterGrid,
   ADMIN_FILTER_INPUT_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import BulkCreateDialog from "@/components/admin/user-management/BulkCreateDialog";
-import CreateUserDialog from "@/components/admin/user-management/CreateUserDialog";
-import UserBulkActions from "@/components/admin/user-management/UserBulkActions";
-import UserDetailDialog from "@/components/admin/user-management/UserDetailDialog";
-import UserTable from "@/components/admin/user-management/UserTable";
-import { DataPagination } from "@/components/shared/DataPagination";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from "@/components/admin/shared";
+
+import {
+  AdminHistoryExportActions as AdminRecordExportActions,
+  AdminHistorySummaryCards as AdminRecordSummaryCards,
+} from "@/components/admin/history";
+
+import { ConfirmDeleteDialog, InlineErrorAlert, DataPagination } from "@/components/shared";
+
+import {
+  BulkCreateDialog,
+  CreateUserDialog,
+  UserBulkActions,
+  UserDetailDialog,
+  UserTable,
+} from "@/components/admin/user-management";
+
+import { Button, Input } from "@/components/ui";
+
 import { API_AUTH_USERS_EXPORT } from "@/constants/api";
+
 import { BATCH_OPTIONS } from "@/constants/batches";
+
 import { DEPARTMENT_VALUES } from "@/constants/departments";
+
 import { ROLE_FILTER_OPTIONS, isPrivilegedRole, normalizeRoleValue } from "@/constants/roles";
-import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
-import { useLoadProfile } from "@/hooks/shared/profile/use-load-profile";
-import { useUserManagementActions } from "@/hooks/shared/resources/users/use-user-management-actions";
-import { mapUser, useUsers } from "@/hooks/shared/resources/users/use-users";
-import { USER_EXPORT_COLUMNS } from "@/lib/admin/export-config";
+
+import { useAdminRecordExport } from "@/hooks/admin";
+
+import { useLoadProfile } from "@/hooks/shared/profile";
+
+import { useUserManagementActions } from "@/hooks/shared/resources/users";
+
+import { mapUser, useUsers } from "@/hooks/shared/resources/users";
+
+import { USER_EXPORT_COLUMNS } from "@/lib/admin";
 
 type FiltersState = {
   department: string;

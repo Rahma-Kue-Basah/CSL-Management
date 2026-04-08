@@ -1,49 +1,65 @@
 "use client";
 
+
 import { useEffect, useMemo, useRef, useState } from "react";
+
 import { FileUp, Plus, Upload } from "lucide-react";
+
 import { toast } from "sonner";
 
-import { AdminPageHeader } from "@/components/admin/shared/AdminPageHeader";
-import { AdminFilterCard } from "@/components/admin/shared/AdminFilterCard";
 import {
+  AdminPageHeader,
+  AdminFilterCard,
   AdminFilterField,
   AdminFilterGrid,
   ADMIN_FILTER_INPUT_CLASS,
   ADMIN_FILTER_SELECT_CLASS,
-} from "@/components/admin/shared/AdminFilterFields";
-import EquipmentCreateDialog from "@/components/admin/inventory/EquipmentCreateDialog";
-import EquipmentBulkImportDialog from "@/components/admin/inventory/EquipmentBulkImportDialog";
-import AdminEquipmentDetailDialog from "@/components/admin/inventory/AdminEquipmentDetailDialog";
-import EquipmentTable from "@/components/admin/inventory/EquipmentTable";
-import InventoryBulkActions from "@/components/admin/inventory/InventoryBulkActions";
-import { DataPagination } from "@/components/shared/DataPagination";
-import AdminRecordExportActions from "@/components/admin/history/AdminHistoryExportActions";
-import ConfirmDeleteDialog from "@/components/shared/ConfirmDeleteDialog";
-import InlineErrorAlert from "@/components/shared/InlineErrorAlert";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+} from "@/components/admin/shared";
+
+import {
+  EquipmentCreateDialog,
+  EquipmentBulkImportDialog,
+  AdminEquipmentDetailDialog,
+  EquipmentTable,
+  InventoryBulkActions,
+} from "@/components/admin/inventory";
+
+import { DataPagination, ConfirmDeleteDialog, InlineErrorAlert } from "@/components/shared";
+
+import { AdminHistoryExportActions as AdminRecordExportActions } from "@/components/admin/history";
+
+import { Button, Input } from "@/components/ui";
+
 import {
   EQUIPMENT_CATEGORY_OPTIONS,
   EQUIPMENT_STATUS_OPTIONS,
   MOVEABLE_OPTIONS,
 } from "@/constants/equipments";
+
 import { API_EQUIPMENTS_EXPORT } from "@/constants/api";
-import { useAdminRecordExport } from "@/hooks/admin/use-admin-record-export";
-import { useDeleteEquipment } from "@/hooks/shared/resources/equipments/use-delete-equipment";
+
+import { useAdminRecordExport } from "@/hooks/admin";
+
+import { useDeleteEquipment } from "@/hooks/shared/resources/equipments";
+
 import {
   mapEquipment,
   useEquipments,
   type EquipmentRow,
-} from "@/hooks/shared/resources/equipments/use-equipments";
-import { useUpdateEquipment } from "@/hooks/shared/resources/equipments/use-update-equipment";
-import { useRoomOptions } from "@/hooks/shared/resources/rooms/use-room-options";
-import { usePicUsers } from "@/hooks/shared/resources/users/use-pic-users";
-import { EQUIPMENT_EXPORT_COLUMNS } from "@/lib/admin/export-config";
+} from "@/hooks/shared/resources/equipments";
+
+import { useUpdateEquipment } from "@/hooks/shared/resources/equipments";
+
+import { useRoomOptions } from "@/hooks/shared/resources/rooms";
+
+import { usePicUsers } from "@/hooks/shared/resources/users";
+
+import { EQUIPMENT_EXPORT_COLUMNS } from "@/lib/admin";
+
 import {
   exportAdminRecordExcel,
   exportAdminRecordPdf,
-} from "@/lib/admin/export";
+} from "@/lib/admin";
 
 const PAGE_SIZE = 20;
 

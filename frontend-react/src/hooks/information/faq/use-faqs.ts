@@ -5,7 +5,7 @@ import {
   faqService,
   type Faq,
   type FaqFilters,
-} from "@/services/information/faq.service";
+} from "@/services/information";
 
 export type { Faq, FaqFilters };
 

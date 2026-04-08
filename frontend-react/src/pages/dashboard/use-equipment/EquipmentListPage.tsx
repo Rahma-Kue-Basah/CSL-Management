@@ -1,12 +1,15 @@
 "use client";
 
+
 import { useEffect, useState } from "react";
+
 import { ClipboardPlus, Eye, Loader2 } from "lucide-react";
+
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { DataPagination } from "@/components/shared/DataPagination";
-import { TableActionIconButton } from "@/components/shared/TableActionIconButton";
-import { useEquipments } from "@/hooks/shared/resources/equipments/use-equipments";
+import { DataPagination, TableActionIconButton } from "@/components/shared";
+
+import { useEquipments } from "@/hooks/shared/resources/equipments";
 
 const PAGE_SIZE = 20;
 

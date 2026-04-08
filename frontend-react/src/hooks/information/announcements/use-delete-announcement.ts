@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { announcementsService } from "@/services/information/announcements.service";
+import { announcementsService } from "@/services/information";
 
 export function useDeleteAnnouncement() {
   const [isDeleting, setIsDeleting] = useState(false);

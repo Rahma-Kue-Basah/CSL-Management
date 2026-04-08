@@ -2,9 +2,9 @@ import type { ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
 import { Steps } from "rsuite";
 
-import { AdminDetailHeader } from "@/components/admin/shared/AdminDetailHeader";
-import { formatDateTimeWib } from "@/lib/date/format";
-import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request/status";
+import { AdminDetailHeader } from "@/components/admin/shared";
+import { formatDateTimeWib } from "@/lib/date";
+import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
 
 type AdminRecordFlowStep = {
   key: string;

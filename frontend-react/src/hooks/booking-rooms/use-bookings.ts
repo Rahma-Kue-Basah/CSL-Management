@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { bookingRoomsService } from "@/services/booking-rooms/booking-rooms.service";
+import { bookingRoomsService } from "@/services/booking-rooms";
 
 export type BookingFilters = {
   q?: string;

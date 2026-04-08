@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-import { cn } from "@/lib/core/utils";
+import { cn } from "@/lib/core";
 
 const ADMIN_FILTER_LABEL_CLASS = "mb-0.5 block text-[11px] font-semibold text-slate-900/90";
 const ADMIN_FILTER_INPUT_CLASS =

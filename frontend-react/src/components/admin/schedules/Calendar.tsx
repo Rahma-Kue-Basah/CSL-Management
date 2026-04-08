@@ -2,7 +2,7 @@
 
 import { Badge, Calendar as RsuiteCalendar } from "rsuite";
 
-import type { CalendarEvent } from "@/hooks/shared/calendar/use-calendar-events";
+import type { CalendarEvent } from "@/hooks/shared/calendar";
 
 function isSameDay(left: Date, right: Date) {
   return (

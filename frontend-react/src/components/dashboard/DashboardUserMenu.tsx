@@ -1,23 +1,31 @@
 "use client";
 
+
 import { ArrowBigUpDashIcon, LogOut, UserRound, UserRoundSearch } from "lucide-react";
+
 import Link from "next/link";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+
 import {
+  Avatar,
+  AvatarFallback,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui";
+
 import {
   useLoadProfile,
   type ProfileUserInput,
-} from "@/hooks/shared/profile/use-load-profile";
-import { useLogout } from "@/hooks/auth/use-logout";
+} from "@/hooks/shared/profile";
+
+import { useLogout } from "@/hooks/auth";
+
 import { isPrivilegedRole } from "@/constants/roles";
-import { cn } from "@/lib/core/utils";
+
+import { cn } from "@/lib/core";
 
 type DashboardUserMenuProps = {
   user?: ProfileUserInput | null;

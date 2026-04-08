@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import {
   equipmentsService,
   type EquipmentOption,
-} from "@/services/shared/resources/equipments.service";
+} from "@/services/shared/resources";
 
 export type { EquipmentOption };
 

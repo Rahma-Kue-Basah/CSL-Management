@@ -1,9 +1,9 @@
-import type { ProgressStepItem } from "@/components/shared/ProgressSteps";
-import { formatDateTimeWib } from "@/lib/date/format";
+import type { ProgressStepItem } from "@/components/shared";
+import { formatDateTimeWib } from "@/lib/date";
 import {
   getMentorApprovalStageLabel,
   hasMentorApprovalTrace,
-} from "@/lib/request/mentor-approval";
+} from "@/lib/request";
 
 type BasicProgressInput = {
   status: string;

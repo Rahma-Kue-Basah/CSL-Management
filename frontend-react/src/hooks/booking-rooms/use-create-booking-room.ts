@@ -5,11 +5,11 @@ import { useState } from "react";
 import {
   extractApiErrorMessage,
   extractApiErrorMessageFromText,
-} from "@/lib/core/api-error";
+} from "@/lib/core";
 import {
   bookingRoomsService,
   type CreateBookingRoomPayload,
-} from "@/services/booking-rooms/booking-rooms.service";
+} from "@/services/booking-rooms";
 
 function parseBookingError(data: unknown, fallback = "Gagal membuat peminjaman lab.") {
   return extractApiErrorMessage(data, fallback, [
