@@ -29,9 +29,6 @@ export default defineConfig({
                     if (id.includes("rsuite")) {
                         return "rsuite-vendor";
                     }
-                    if (id.includes("@fullcalendar")) {
-                        return "calendar-vendor";
-                    }
                     if (id.includes("ckeditor5") || id.includes("@ckeditor/ckeditor5-react")) {
                         return "editor-vendor";
                     }
