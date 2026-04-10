@@ -68,15 +68,13 @@ import { useRoomOptions } from "@/hooks/shared/resources/rooms";
 
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 
-import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin";
-
 import { formatDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 
 import { formatDateTimeWib } from "@/lib/date";
 
 import { isWaitingForMentorApproval } from "@/lib/request";
 
-import { BOOKING_EXPORT_COLUMNS } from "@/lib/admin";
+import { BOOKING_EXPORT_COLUMNS } from "@/lib/admin/export-config";
 
 import {
   getStatusBadgeClass,
@@ -313,7 +311,8 @@ export default function AdminRoomBookingHistoryPage() {
     if (!selectedRows.length) return;
     try {
       setIsExportingSelectedPdf(true);
-      exportAdminRecordPdf({
+      const { exportAdminRecordPdf } = await import("@/lib/admin/export");
+      await exportAdminRecordPdf({
         title: "Riwayat Peminjaman Lab Terpilih",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "record-booking-ruangan-terpilih.pdf",
@@ -334,7 +333,8 @@ export default function AdminRoomBookingHistoryPage() {
     if (!selectedRows.length) return;
     try {
       setIsExportingSelectedExcel(true);
-      exportAdminRecordExcel({
+      const { exportAdminRecordExcel } = await import("@/lib/admin/export");
+      await exportAdminRecordExcel({
         title: "Riwayat Peminjaman Lab Terpilih",
         filename: "record-booking-ruangan-terpilih.xlsx",
         columns: BOOKING_EXPORT_COLUMNS,

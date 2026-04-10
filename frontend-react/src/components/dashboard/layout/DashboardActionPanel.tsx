@@ -7,8 +7,6 @@ import type { DateRange } from "react-day-picker";
 
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 
-import { Calendar as RsuiteCalendar } from "rsuite";
-
 import {
   ChevronRight,
   ChevronsLeft,
@@ -18,6 +16,8 @@ import {
 } from "lucide-react";
 
 import Link from "next/link";
+
+import { MonthCalendar } from "@/components/shared";
 
 import { Button, DateRangePicker, Input } from "@/components/ui";
 
@@ -731,23 +731,19 @@ export function DashboardActionPanel({
           {menu.id === "schedule" && (
             <>
               <FilterCard title="">
-                <div className="overflow-hidden rounded-lg border border-slate-200 bg-white p-2">
-                  <RsuiteCalendar
-                    compact
-                    value={scheduleDate ? parseDateKey(scheduleDate) : new Date()}
-                    onSelect={(value) =>
-                      updateScheduleFilter("date", value ? formatDateKey(value) : "")
-                    }
-                    renderCell={(date) =>
-                      visibleScheduleCalendarDates.has(formatDateKey(date)) ? (
-                        <div className="mt-1 flex justify-center">
-                          <span className="block h-1.5 w-1.5 rounded-full bg-[#0048B4]" />
-                        </div>
-                      ) : null
-                    }
-                    style={{ width: "100%" }}
-                  />
-                </div>
+                <MonthCalendar
+                  value={scheduleDate ? (parseDateKey(scheduleDate) ?? new Date()) : new Date()}
+                  onSelect={(value) => updateScheduleFilter("date", formatDateKey(value))}
+                  renderMarker={(date, { isToday }) =>
+                    visibleScheduleCalendarDates.has(formatDateKey(date)) ? (
+                      <span
+                        className={`block h-2 w-2 rounded-full ${isToday ? "bg-slate-900" : "bg-sky-500"}`}
+                      />
+                    ) : null
+                  }
+                  className="overflow-hidden rounded-lg border border-slate-200 shadow-none"
+                  contentClassName="p-2"
+                />
               </FilterCard>
               <FilterCard title="Filter Jadwal">
               <FilterField label="Cari Jadwal">

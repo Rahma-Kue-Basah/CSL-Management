@@ -1,8 +1,8 @@
 import type { ReactNode } from "react";
 import { ArrowUpRight } from "lucide-react";
-import { Steps } from "rsuite";
 
 import { AdminDetailHeader } from "@/components/admin/shared";
+import { ProgressSteps } from "@/components/shared";
 import { formatDateTimeWib } from "@/lib/date";
 import { getStatusBadgeClass, getStatusDisplayLabel } from "@/lib/request";
 
@@ -208,25 +208,9 @@ export function AdminRecordAsideItem({
 }
 
 export function AdminRecordFlow({ steps }: { steps: AdminRecordFlowStep[] }) {
-  const currentIndex = Math.max(
-    0,
-    steps.findIndex(
-      (step) => step.state === "process" || step.state === "error",
-    ),
-  );
-
   return (
-    <div className="admin-record-flow overflow-x-auto pb-1">
-      <Steps current={currentIndex} className="min-w-[720px]">
-        {steps.map((step) => (
-          <Steps.Item
-            key={step.key}
-            title={step.label}
-            status={step.state}
-            description={step.time || " "}
-          />
-        ))}
-      </Steps>
+    <div className="admin-record-flow">
+      <ProgressSteps steps={steps} minWidthClassName="min-w-[720px]" />
     </div>
   );
 }

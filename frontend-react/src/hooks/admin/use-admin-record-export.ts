@@ -3,12 +3,8 @@
 import { useState } from "react";
 import { toast } from "sonner";
 
-import {
-  exportAdminRecordExcel,
-  exportAdminRecordPdf,
-  fetchExportRecords,
-} from "@/lib/admin";
-import type { ExportColumn } from "@/lib/admin";
+import { fetchExportRecords } from "@/lib/admin/export-fetch";
+import type { ExportColumn } from "@/lib/admin/export-config";
 
 type UseAdminRecordExportOptions<TApiItem, TRow> = {
   endpoint: string;
@@ -56,7 +52,8 @@ export function useAdminRecordExport<TApiItem, TRow>({
     try {
       setIsExportingPdf(true);
       const rows = await loadRows();
-      exportAdminRecordPdf({
+      const { exportAdminRecordPdf } = await import("@/lib/admin/export");
+      await exportAdminRecordPdf({
         title,
         subtitle: `Total data: ${rows.length}`,
         filename: pdfFilename,
@@ -75,7 +72,8 @@ export function useAdminRecordExport<TApiItem, TRow>({
     try {
       setIsExportingExcel(true);
       const rows = await loadRows();
-      exportAdminRecordExcel({
+      const { exportAdminRecordExcel } = await import("@/lib/admin/export");
+      await exportAdminRecordExcel({
         title,
         filename: excelFilename,
         columns,

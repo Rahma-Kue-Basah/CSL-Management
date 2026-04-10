@@ -46,12 +46,7 @@ import {
 
 import { usePicUsers } from "@/hooks/shared/resources/users";
 
-import { SOFTWARE_EXPORT_COLUMNS } from "@/lib/admin";
-
-import {
-  exportAdminRecordExcel,
-  exportAdminRecordPdf,
-} from "@/lib/admin";
+import { SOFTWARE_EXPORT_COLUMNS } from "@/lib/admin/export-config";
 
 const PAGE_SIZE = 20;
 
@@ -221,7 +216,8 @@ export default function AdminSoftwarePage() {
       setIsExportingSelectedPdf(true);
       if (!selectedRows.length)
         throw new Error("Pilih minimal satu software untuk diunduh.");
-      exportAdminRecordPdf({
+      const { exportAdminRecordPdf } = await import("@/lib/admin/export");
+      await exportAdminRecordPdf({
         title: "Inventarisasi Software",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "inventarisasi-software-selected.pdf",
@@ -241,7 +237,8 @@ export default function AdminSoftwarePage() {
       setIsExportingSelectedExcel(true);
       if (!selectedRows.length)
         throw new Error("Pilih minimal satu software untuk diunduh.");
-      exportAdminRecordExcel({
+      const { exportAdminRecordExcel } = await import("@/lib/admin/export");
+      await exportAdminRecordExcel({
         title: "Inventarisasi Software",
         filename: "inventarisasi-software-selected.xlsx",
         columns: SOFTWARE_EXPORT_COLUMNS,

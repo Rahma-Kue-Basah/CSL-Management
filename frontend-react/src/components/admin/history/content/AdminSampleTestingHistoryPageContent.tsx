@@ -63,14 +63,9 @@ import {
 
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 
-import { SAMPLE_TESTING_EXPORT_COLUMNS } from "@/lib/admin";
+import { SAMPLE_TESTING_EXPORT_COLUMNS } from "@/lib/admin/export-config";
 
 import { formatDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
-
-import {
-  exportAdminRecordExcel,
-  exportAdminRecordPdf,
-} from "@/lib/admin";
 
 import {
   getStatusBadgeClass,
@@ -324,7 +319,8 @@ export default function AdminSampleTestingHistoryPage() {
     if (!selectedRows.length) return;
     try {
       setIsExportingSelectedPdf(true);
-      exportAdminRecordPdf({
+      const { exportAdminRecordPdf } = await import("@/lib/admin/export");
+      await exportAdminRecordPdf({
         title: "Riwayat Pengujian Sampel Terpilih",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "record-pengujian-sampel-terpilih.pdf",
@@ -347,7 +343,8 @@ export default function AdminSampleTestingHistoryPage() {
     if (!selectedRows.length) return;
     try {
       setIsExportingSelectedExcel(true);
-      exportAdminRecordExcel({
+      const { exportAdminRecordExcel } = await import("@/lib/admin/export");
+      await exportAdminRecordExcel({
         title: "Riwayat Pengujian Sampel Terpilih",
         filename: "record-pengujian-sampel-terpilih.xlsx",
         columns: SAMPLE_TESTING_EXPORT_COLUMNS,

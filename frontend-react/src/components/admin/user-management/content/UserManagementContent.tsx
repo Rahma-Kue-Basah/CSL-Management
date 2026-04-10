@@ -49,7 +49,7 @@ import { useUserManagementActions } from "@/hooks/shared/resources/users";
 
 import { mapUser, useUsers } from "@/hooks/shared/resources/users";
 
-import { USER_EXPORT_COLUMNS } from "@/lib/admin";
+import { USER_EXPORT_COLUMNS } from "@/lib/admin/export-config";
 
 type FiltersState = {
   department: string;

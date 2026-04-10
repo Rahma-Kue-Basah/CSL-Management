@@ -1,7 +1,6 @@
 "use client";
 
-import { Badge, Calendar as RsuiteCalendar } from "rsuite";
-
+import { MonthCalendar } from "@/components/shared";
 import type { CalendarEvent } from "@/hooks/shared/calendar";
 
 function isSameDay(left: Date, right: Date) {
@@ -47,22 +46,18 @@ export default function Calendar({
 
     return (
       <div className="mt-1 flex justify-center">
-        <Badge className="!mr-0">
-          <span className={`block h-2 w-2 rounded-full ${markerClass}`} />
-        </Badge>
+        <span className={`block h-2 w-2 rounded-full ${markerClass}`} />
       </div>
     );
   };
 
   return (
-    <div className="inline-block w-fit max-w-full justify-self-start rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
-      <RsuiteCalendar
-        compact
-        value={selectedDate}
-        onSelect={(value) => onSelect(value ?? new Date())}
-        renderCell={renderCell}
-        style={{ width: 388 }}
-      />
-    </div>
+    <MonthCalendar
+      value={selectedDate}
+      onSelect={onSelect}
+      renderMarker={renderCell}
+      className="inline-block w-fit max-w-full justify-self-start"
+      contentClassName="w-[388px] max-w-full"
+    />
   );
 }

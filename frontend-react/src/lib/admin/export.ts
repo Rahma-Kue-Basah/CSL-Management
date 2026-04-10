@@ -1,25 +1,8 @@
 "use client";
 
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx";
-
-import { authFetch } from "@/lib/auth";
-
-type PaginatedResponse<TItem> = {
-  count?: number;
-  results?: TItem[];
-};
-
 type PdfColumn<TRow> = {
   header: string;
   cell: (row: TRow) => string;
-};
-
-type FetchAllPaginatedRecordsOptions<TItem, TRow> = {
-  endpoint: string;
-  filters?: Record<string, string>;
-  mapItem: (item: TItem) => TRow;
 };
 
 type ExportAdminRecordPdfOptions<TRow> = {
@@ -52,39 +35,27 @@ function getNormalizedFilename(filename: string) {
   return filename.replace(/\.(pdf|xlsx)$/i, "");
 }
 
-export async function fetchExportRecords<TItem, TRow>({
-  endpoint,
-  filters = {},
-  mapItem,
-}: FetchAllPaginatedRecordsOptions<TItem, TRow>): Promise<TRow[]> {
-  const url = new URL(endpoint, window.location.origin);
+async function loadPdfModules() {
+  const [{ default: jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
 
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value) url.searchParams.set(key, value);
-  });
-
-  const response = await authFetch(url.toString(), { method: "GET" });
-  if (!response.ok) {
-    throw new Error(`Gagal memuat data export (${response.status})`);
-  }
-
-  const payload = (await response.json()) as PaginatedResponse<TItem> | TItem[];
-  const list = Array.isArray(payload)
-    ? payload
-    : Array.isArray(payload.results)
-      ? payload.results
-      : [];
-
-  return list.map(mapItem);
+  return { jsPDF, autoTable };
 }
 
-export function exportAdminRecordPdf<TRow>({
+async function loadExcelModule() {
+  return import("xlsx");
+}
+
+export async function exportAdminRecordPdf<TRow>({
   title,
   filename,
   subtitle,
   columns,
   rows,
 }: ExportAdminRecordPdfOptions<TRow>) {
+  const { jsPDF, autoTable } = await loadPdfModules();
   const pdf = new jsPDF({
     orientation: "landscape",
     unit: "pt",
@@ -152,12 +123,13 @@ export function exportAdminRecordPdf<TRow>({
   pdf.save(`${normalizedFilename}-${filenameTimestamp}.pdf`);
 }
 
-export function exportAdminRecordExcel<TRow>({
+export async function exportAdminRecordExcel<TRow>({
   title,
   filename,
   columns,
   rows,
 }: ExportAdminRecordExcelOptions<TRow>) {
+  const XLSX = await loadExcelModule();
   const now = new Date();
   const filenameTimestamp = getExportTimestamp(now);
   const normalizedFilename = getNormalizedFilename(filename);

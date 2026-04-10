@@ -9,6 +9,9 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          if (id.includes("vite/preload-helper")) {
+            return "preload-helper";
+          }
           if (!id.includes("node_modules")) return undefined;
           if (
             id.includes("/node_modules/react/") ||

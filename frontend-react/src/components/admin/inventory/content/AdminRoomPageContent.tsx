@@ -41,12 +41,7 @@ import { mapRoom, useRooms, type RoomRow } from "@/hooks/shared/resources/rooms"
 
 import { usePicUsers } from "@/hooks/shared/resources/users";
 
-import { ROOM_EXPORT_COLUMNS } from "@/lib/admin";
-
-import {
-  exportAdminRecordExcel,
-  exportAdminRecordPdf,
-} from "@/lib/admin";
+import { ROOM_EXPORT_COLUMNS } from "@/lib/admin/export-config";
 
 const PAGE_SIZE = 20;
 
@@ -217,7 +212,8 @@ export default function AdminRoomsPage() {
       if (!selectedRows.length) {
         throw new Error("Pilih minimal satu ruangan untuk diunduh.");
       }
-      exportAdminRecordPdf({
+      const { exportAdminRecordPdf } = await import("@/lib/admin/export");
+      await exportAdminRecordPdf({
         title: "Inventarisasi Ruangan",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "inventarisasi-ruangan-selected.pdf",
@@ -238,7 +234,8 @@ export default function AdminRoomsPage() {
       if (!selectedRows.length) {
         throw new Error("Pilih minimal satu ruangan untuk diunduh.");
       }
-      exportAdminRecordExcel({
+      const { exportAdminRecordExcel } = await import("@/lib/admin/export");
+      await exportAdminRecordExcel({
         title: "Inventarisasi Ruangan",
         filename: "inventarisasi-ruangan-selected.xlsx",
         columns: ROOM_EXPORT_COLUMNS,

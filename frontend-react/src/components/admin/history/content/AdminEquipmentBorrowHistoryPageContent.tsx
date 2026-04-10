@@ -74,9 +74,7 @@ import { formatDateTimeWib } from "@/lib/date";
 
 import { isWaitingForMentorApproval } from "@/lib/request";
 
-import { BORROW_EXPORT_COLUMNS } from "@/lib/admin";
-
-import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin";
+import { BORROW_EXPORT_COLUMNS } from "@/lib/admin/export-config";
 
 import {
   BORROW_STATUS_OPTIONS,
@@ -314,7 +312,8 @@ export default function AdminEquipmentBorrowHistoryPage() {
     if (!selectedRows.length) return;
     try {
       setIsExportingSelectedPdf(true);
-      exportAdminRecordPdf({
+      const { exportAdminRecordPdf } = await import("@/lib/admin/export");
+      await exportAdminRecordPdf({
         title: "Riwayat Peminjaman Alat Terpilih",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "record-peminjaman-alat-terpilih.pdf",
@@ -335,7 +334,8 @@ export default function AdminEquipmentBorrowHistoryPage() {
     if (!selectedRows.length) return;
     try {
       setIsExportingSelectedExcel(true);
-      exportAdminRecordExcel({
+      const { exportAdminRecordExcel } = await import("@/lib/admin/export");
+      await exportAdminRecordExcel({
         title: "Riwayat Peminjaman Alat Terpilih",
         filename: "record-peminjaman-alat-terpilih.xlsx",
         columns: BORROW_EXPORT_COLUMNS,

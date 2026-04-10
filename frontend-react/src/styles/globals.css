@@ -1,7 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "rsuite/dist/rsuite-no-reset.min.css";
 
 @custom-variant dark (&:is(.dark *));
 

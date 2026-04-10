@@ -54,12 +54,7 @@ import { useRoomOptions } from "@/hooks/shared/resources/rooms";
 
 import { usePicUsers } from "@/hooks/shared/resources/users";
 
-import { EQUIPMENT_EXPORT_COLUMNS } from "@/lib/admin";
-
-import {
-  exportAdminRecordExcel,
-  exportAdminRecordPdf,
-} from "@/lib/admin";
+import { EQUIPMENT_EXPORT_COLUMNS } from "@/lib/admin/export-config";
 
 const PAGE_SIZE = 20;
 
@@ -316,7 +311,8 @@ export default function AdminEquipmentsPage() {
       if (!selectedRows.length) {
         throw new Error("Pilih minimal satu peralatan untuk diunduh.");
       }
-      exportAdminRecordPdf({
+      const { exportAdminRecordPdf } = await import("@/lib/admin/export");
+      await exportAdminRecordPdf({
         title: "Inventarisasi Peralatan",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "inventarisasi-peralatan-selected.pdf",
@@ -337,7 +333,8 @@ export default function AdminEquipmentsPage() {
       if (!selectedRows.length) {
         throw new Error("Pilih minimal satu peralatan untuk diunduh.");
       }
-      exportAdminRecordExcel({
+      const { exportAdminRecordExcel } = await import("@/lib/admin/export");
+      await exportAdminRecordExcel({
         title: "Inventarisasi Peralatan",
         filename: "inventarisasi-peralatan-selected.xlsx",
         columns: EQUIPMENT_EXPORT_COLUMNS,

@@ -63,15 +63,13 @@ import { mapUse, useUseDetail, useUses, type UseRow } from "@/hooks/use-equipmen
 
 import { useDeleteRecord } from "@/hooks/use-delete-record";
 
-import { exportAdminRecordExcel, exportAdminRecordPdf } from "@/lib/admin";
-
 import { formatDateKey, toEndOfDay, toStartOfDay } from "@/lib/date";
 
 import { formatDateTimeWib } from "@/lib/date";
 
 import { isWaitingForMentorApproval } from "@/lib/request";
 
-import { USE_EXPORT_COLUMNS } from "@/lib/admin";
+import { USE_EXPORT_COLUMNS } from "@/lib/admin/export-config";
 
 import {
   getStatusBadgeClass,
@@ -303,7 +301,8 @@ export default function AdminEquipmentUsageHistoryPage() {
     if (!selectedRows.length) return;
     try {
       setIsExportingSelectedPdf(true);
-      exportAdminRecordPdf({
+      const { exportAdminRecordPdf } = await import("@/lib/admin/export");
+      await exportAdminRecordPdf({
         title: "Riwayat Penggunaan Alat Terpilih",
         subtitle: `Total data: ${selectedRows.length}`,
         filename: "record-penggunaan-alat-terpilih.pdf",
@@ -324,7 +323,8 @@ export default function AdminEquipmentUsageHistoryPage() {
     if (!selectedRows.length) return;
     try {
       setIsExportingSelectedExcel(true);
-      exportAdminRecordExcel({
+      const { exportAdminRecordExcel } = await import("@/lib/admin/export");
+      await exportAdminRecordExcel({
         title: "Riwayat Penggunaan Alat Terpilih",
         filename: "record-penggunaan-alat-terpilih.xlsx",
         columns: USE_EXPORT_COLUMNS,
