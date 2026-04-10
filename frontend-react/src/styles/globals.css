@@ -253,6 +253,21 @@ body {
     box-shadow: inset 0 0 0 1px #0284c7;
   }
 
+  .announcement-rich-text-editor .ck-content .image {
+    margin: 1rem 0;
+  }
+
+  .announcement-rich-text-editor .ck-content .image img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+  }
+
+  .announcement-rich-text-editor .ck-content figcaption {
+    color: #64748b;
+    font-size: 0.75rem;
+  }
+
   .ck-body-wrapper {
     z-index: 60;
   }
@@ -317,6 +332,24 @@ body {
 
   .announcement-rich-text-content a:hover {
     color: #075985;
+  }
+
+  .announcement-rich-text-content figure.image {
+    margin: 1rem 0;
+  }
+
+  .announcement-rich-text-content figure.image img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+    border-radius: 0.75rem;
+  }
+
+  .announcement-rich-text-content figure.image figcaption {
+    margin-top: 0.45rem;
+    font-size: 0.75rem;
+    color: #64748b;
+    text-align: center;
   }
 }
 

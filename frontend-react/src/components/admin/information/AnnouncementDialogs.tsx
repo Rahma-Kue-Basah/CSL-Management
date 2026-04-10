@@ -60,6 +60,14 @@ function AnnouncementEditorFallback() {
   );
 }
 
+function AnnouncementImageRecommendation() {
+  return (
+    <p className="text-xs text-slate-500">
+      Format gambar yang direkomendasikan: landscape agar tampil lebih proporsional di kartu pengumuman.
+    </p>
+  );
+}
+
 export type AnnouncementDetailMode = "view" | "edit";
 
 type CreateDialogProps = {
@@ -142,6 +150,7 @@ export function AnnouncementCreateDialog({
             <label className="text-sm font-medium text-slate-700">
               Isi Pengumuman
             </label>
+            <AnnouncementImageRecommendation />
             <Suspense fallback={<AnnouncementEditorFallback />}>
               <AnnouncementRichTextEditor
                 value={contentValue}
@@ -292,6 +301,7 @@ export function AnnouncementEditDialog({
                 <label className="text-sm font-medium text-slate-700">
                   Isi Pengumuman
                 </label>
+                <AnnouncementImageRecommendation />
                 <Suspense fallback={<AnnouncementEditorFallback />}>
                   <AnnouncementRichTextEditor
                     value={contentValue}

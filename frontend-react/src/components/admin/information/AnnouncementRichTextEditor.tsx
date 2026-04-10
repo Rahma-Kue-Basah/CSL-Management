@@ -11,6 +11,14 @@ import {
   type Editor,
   Essentials,
   Heading,
+  ImageBlock,
+  ImageCaption,
+  ImageInsert,
+  ImageResize,
+  ImageStyle,
+  ImageTextAlternative,
+  ImageToolbar,
+  ImageUpload,
   Italic,
   Link,
   List,
@@ -20,6 +28,60 @@ import {
 } from "ckeditor5";
 
 import "ckeditor5/ckeditor5.css";
+
+import { uploadAnnouncementImage } from "@/lib/information/announcement-images";
+
+type EditorWithUploadAdapter = Editor & {
+  plugins: {
+    get: (name: "FileRepository") => {
+      createUploadAdapter?: (
+        loader: AnnouncementImageLoader,
+      ) => AnnouncementImageUploadAdapter;
+    };
+  };
+};
+
+type AnnouncementImageLoader = {
+  file?: Promise<File | null>;
+};
+
+class AnnouncementImageUploadAdapter {
+  private loader: AnnouncementImageLoader;
+  private aborted = false;
+
+  constructor(loader: AnnouncementImageLoader) {
+    this.loader = loader;
+  }
+
+  async upload() {
+    const file = await this.loader.file;
+
+    if (!file || this.aborted) {
+      throw new Error("Unggah gambar dibatalkan.");
+    }
+
+    const { url } = await uploadAnnouncementImage(file);
+
+    if (this.aborted) {
+      throw new Error("Unggah gambar dibatalkan.");
+    }
+
+    return { default: url };
+  }
+
+  abort() {
+    this.aborted = true;
+  }
+}
+
+function announcementImageUploadPlugin(editor: Editor) {
+  const fileRepository = (editor as EditorWithUploadAdapter).plugins.get(
+    "FileRepository",
+  );
+
+  fileRepository.createUploadAdapter = (loader) =>
+    new AnnouncementImageUploadAdapter(loader);
+}
 
 const ANNOUNCEMENT_EDITOR_CONFIG: EditorConfig = {
   licenseKey: "GPL",
@@ -33,7 +95,16 @@ const ANNOUNCEMENT_EDITOR_CONFIG: EditorConfig = {
     AutoLink,
     List,
     ListProperties,
+    ImageBlock,
+    ImageCaption,
+    ImageInsert,
+    ImageResize,
+    ImageStyle,
+    ImageTextAlternative,
+    ImageToolbar,
+    ImageUpload,
   ],
+  extraPlugins: [announcementImageUploadPlugin],
   toolbar: [
     "heading",
     "|",
@@ -41,6 +112,8 @@ const ANNOUNCEMENT_EDITOR_CONFIG: EditorConfig = {
     "italic",
     "|",
     "link",
+    "|",
+    "uploadImage",
     "|",
     "bulletedList",
     "numberedList",
@@ -91,6 +164,33 @@ const ANNOUNCEMENT_EDITOR_CONFIG: EditorConfig = {
       startIndex: true,
       reversed: true,
     },
+  },
+  image: {
+    toolbar: [
+      "imageTextAlternative",
+      "|",
+      "toggleImageCaption",
+      "|",
+      "imageStyle:block",
+      "imageStyle:inline",
+    ],
+    resizeOptions: [
+      {
+        name: "resizeImage:original",
+        value: null,
+        label: "Asli",
+      },
+      {
+        name: "resizeImage:50",
+        value: "50",
+        label: "50%",
+      },
+      {
+        name: "resizeImage:75",
+        value: "75",
+        label: "75%",
+      },
+    ],
   },
 };
 

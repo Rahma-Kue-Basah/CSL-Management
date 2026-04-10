@@ -1,24 +1,98 @@
 "use client";
 
+import React, {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 
-import { useMemo, useState } from "react";
-
-import { CalendarDays, ChevronDown } from "lucide-react";
+import { Image as AntdImage } from "antd";
+import { CalendarDays, ChevronDown, Loader2 } from "lucide-react";
 
 import { Skeleton } from "@/components/ui";
-
 import {
-  useAnnouncements,
+  useInfiniteAnnouncements,
   type Announcement,
 } from "@/hooks/information/announcements";
-
 import { formatDateTimeWib } from "@/lib/date";
-
 import { stripHtmlTags } from "@/lib/text";
 
-function AnnouncementCard({ announcement }: { announcement: Announcement }) {
+function renderAnnouncementNode(node: ChildNode, key: string): ReactNode {
+  if (node.nodeType === Node.TEXT_NODE) {
+    return node.textContent;
+  }
+
+  if (node.nodeType !== Node.ELEMENT_NODE) {
+    return null;
+  }
+
+  const element = node as HTMLElement;
+  const children = Array.from(element.childNodes).map((child, index) =>
+    renderAnnouncementNode(child, `${key}-${index}`),
+  );
+
+  if (element.tagName.toLowerCase() === "img") {
+    const src = element.getAttribute("src") || "";
+    if (!src) return null;
+
+    return (
+      <AntdImage
+        key={key}
+        src={src}
+        alt={element.getAttribute("alt") || "Gambar pengumuman"}
+        className="rounded-xl"
+      />
+    );
+  }
+
+  const props: Record<string, unknown> = { key };
+  const className = element.getAttribute("class");
+  if (className) {
+    props.className = className;
+  }
+
+  if (element.tagName.toLowerCase() === "a") {
+    const href = element.getAttribute("href");
+    if (href) props.href = href;
+    const target = element.getAttribute("target");
+    if (target) props.target = target;
+    const rel = element.getAttribute("rel");
+    if (rel) props.rel = rel;
+  }
+
+  return React.createElement(element.tagName.toLowerCase(), props, ...children);
+}
+
+function renderAnnouncementContent(content: string): ReactNode {
+  if (typeof window === "undefined") {
+    return content;
+  }
+
+  const document = new DOMParser().parseFromString(content, "text/html");
+  return Array.from(document.body.childNodes).map((node, index) =>
+    renderAnnouncementNode(node, `announcement-node-${index}`),
+  );
+}
+
+function AnnouncementCard({
+  announcement,
+  defaultOpen = false,
+}: {
+  announcement: Announcement;
+  defaultOpen?: boolean;
+}) {
   const plainContent = stripHtmlTags(announcement.content || "");
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const content = useMemo(
+    () => renderAnnouncementContent(announcement.content || ""),
+    [announcement.content],
+  );
+
+  useEffect(() => {
+    setIsOpen(defaultOpen);
+  }, [defaultOpen, announcement.id]);
 
   return (
     <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
@@ -50,10 +124,9 @@ function AnnouncementCard({ announcement }: { announcement: Announcement }) {
       {isOpen ? (
         <div className="border-t border-slate-200 px-5 py-4">
           {plainContent ? (
-            <div
-              className="announcement-rich-text-content break-words text-sm text-slate-700"
-              dangerouslySetInnerHTML={{ __html: announcement.content || "" }}
-            />
+            <div className="announcement-rich-text-content break-words text-sm text-slate-700">
+              {content}
+            </div>
           ) : (
             <p className="text-sm leading-relaxed text-slate-700">-</p>
           )}
@@ -81,8 +154,10 @@ function AnnouncementSkeleton() {
 }
 
 export default function DashboardAnnouncementsPage() {
-  const { announcements, isLoading, error } = useAnnouncements();
   const [search] = useState("");
+  const { announcements, isLoading, isFetchingMore, hasMore, error, loadMore } =
+    useInfiniteAnnouncements();
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const filteredAnnouncements = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -106,6 +181,29 @@ export default function DashboardAnnouncementsPage() {
     );
   }, [announcements, search]);
 
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry?.isIntersecting) {
+          void loadMore();
+        }
+      },
+      {
+        rootMargin: "160px 0px",
+      },
+    );
+
+    observer.observe(sentinel);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [hasMore, loadMore]);
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -116,7 +214,7 @@ export default function DashboardAnnouncementsPage() {
     );
   }
 
-  if (error) {
+  if (error && !filteredAnnouncements.length) {
     return (
       <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
         {error}
@@ -128,10 +226,11 @@ export default function DashboardAnnouncementsPage() {
     <section className="space-y-5">
       <div className="space-y-3">
         {filteredAnnouncements.length ? (
-          filteredAnnouncements.map((announcement) => (
+          filteredAnnouncements.map((announcement, index) => (
             <AnnouncementCard
               key={announcement.id}
               announcement={announcement}
+              defaultOpen={index === 0}
             />
           ))
         ) : (
@@ -140,6 +239,23 @@ export default function DashboardAnnouncementsPage() {
           </div>
         )}
       </div>
+
+      {error && filteredAnnouncements.length ? (
+        <div className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-sm text-destructive">
+          {error}
+        </div>
+      ) : null}
+
+      {hasMore ? (
+        <div ref={sentinelRef} className="flex min-h-12 items-center justify-center">
+          {isFetchingMore ? (
+            <div className="inline-flex items-center gap-2 text-sm text-slate-500">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Memuat pengumuman berikutnya...
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -1,5 +1,7 @@
 import os
+import re
 from datetime import datetime, timedelta
+from urllib.parse import urlparse
 
 from django.contrib.admin.models import ADDITION, CHANGE, DELETION
 from django.utils import timezone
@@ -110,12 +112,40 @@ PENGUJIAN_NEXT_DOCUMENT_TYPES = {
     "invoice": "payment_proof",
     "payment_proof": "test_result_letter",
 }
+ANNOUNCEMENT_IMAGE_SRC_RE = re.compile(
+    r"""<img[^>]+src=["'](?P<src>[^"']+)["']""",
+    re.IGNORECASE,
+)
 
 # region Support Classes
 class DefaultPagination(PageNumberPagination):
     page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 100
+
+
+def extract_announcement_image_refs(content: str | None) -> set[str]:
+    if not content:
+        return set()
+
+    refs: set[str] = set()
+
+    for match in ANNOUNCEMENT_IMAGE_SRC_RE.finditer(content):
+        raw_src = (match.group("src") or "").strip()
+        if not raw_src:
+            continue
+
+        path = urlparse(raw_src).path or raw_src
+        marker = "/images/"
+        marker_index = path.find(marker)
+        if marker_index == -1:
+            continue
+
+        relative_path = f"images/{path[marker_index + len(marker):].lstrip('/')}"
+        if relative_path != "images/":
+            refs.add(relative_path)
+
+    return refs
 
 
 # endregion
@@ -1997,6 +2027,35 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
 
+    def _cleanup_announcement_images(self, instance):
+        image_refs = extract_announcement_image_refs(instance.content)
+        if not image_refs:
+            return
+
+        other_refs: set[str] = set()
+        other_contents = (
+            Announcement.objects
+            .exclude(pk=instance.pk)
+            .values_list("content", flat=True)
+        )
+        for content in other_contents:
+            other_refs.update(extract_announcement_image_refs(content))
+
+        removable_refs = image_refs - other_refs
+        if not removable_refs:
+            return
+
+        images = Image.objects.filter(image__in=removable_refs)
+
+        for image in images:
+            image_name = image.image.name if image.image else ""
+            if image_name not in removable_refs:
+                continue
+
+            if image.image:
+                image.image.delete(save=False)
+            image.delete()
+
     def get_queryset(self):
         qs = super().get_queryset()
         search = (self.request.query_params.get('search') or '').strip()
@@ -2055,6 +2114,7 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             DELETION,
             "Deleted announcement via CSL Admin.",
         )
+        self._cleanup_announcement_images(instance)
         super().perform_destroy(instance)
 
     def perform_destroy(self, instance):
