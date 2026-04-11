@@ -37,6 +37,8 @@ import { useRoomOptions } from "@/hooks/shared/resources/rooms";
 import { useMentorOptions } from "@/hooks/shared/resources/users";
 
 import {
+  canAccessPracticumPurpose,
+  canAccessThesisPurpose,
   getRequestPurposeOptions,
   THESIS_PURPOSE,
   WORKSHOP_PURPOSE,
@@ -99,7 +101,8 @@ export default function BookingRoomsFormPage() {
   const [validationMessage, setValidationMessage] = useState("");
   const normalizedRole = normalizeRoleValue(profile.role);
   const isGuestUser = normalizedRole === ROLE_VALUES.GUEST;
-  const isLecturerUser = normalizedRole === ROLE_VALUES.LECTURER;
+  const canSelectPracticumPurpose = canAccessPracticumPurpose(profile.role);
+  const canSelectThesisPurpose = canAccessThesisPurpose(profile.role);
   const isWorkshopPurpose = formData.purpose === WORKSHOP_PURPOSE;
   const isThesisPurpose = formData.purpose === THESIS_PURPOSE;
   const {
@@ -123,10 +126,11 @@ export default function BookingRoomsFormPage() {
   const availablePurposeOptions = useMemo(
     () =>
       getRequestPurposeOptions({
+        includePracticum: canSelectPracticumPurpose,
         includeWorkshop: !isGuestUser,
-        includeThesis: !isLecturerUser,
+        includeThesis: canSelectThesisPurpose,
       }),
-    [isGuestUser, isLecturerUser],
+    [canSelectPracticumPurpose, canSelectThesisPurpose, isGuestUser],
   );
 
   const minEndDate = startDate ? new Date(startDate) : new Date(today);

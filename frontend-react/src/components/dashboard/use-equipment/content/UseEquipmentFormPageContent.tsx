@@ -36,6 +36,8 @@ import { useMentorOptions } from "@/hooks/shared/resources/users";
 import { useCreateUse } from "@/hooks/use-equipment";
 
 import {
+  canAccessPracticumPurpose,
+  canAccessThesisPurpose,
   getRequestPurposeOptions,
   THESIS_PURPOSE,
 } from "@/constants/request-purpose";
@@ -84,7 +86,8 @@ export default function UseEquipmentFormPage() {
   const [validationMessage, setValidationMessage] = useState("");
   const normalizedRole = normalizeRoleValue(profile.role);
   const isGuestUser = normalizedRole === ROLE_VALUES.GUEST;
-  const isLecturerUser = normalizedRole === ROLE_VALUES.LECTURER;
+  const canSelectPracticumPurpose = canAccessPracticumPurpose(profile.role);
+  const canSelectThesisPurpose = canAccessThesisPurpose(profile.role);
   const isThesisPurpose = formData.purpose === THESIS_PURPOSE;
   const {
     equipments,
@@ -101,10 +104,11 @@ export default function UseEquipmentFormPage() {
   const availablePurposeOptions = useMemo(
     () =>
       getRequestPurposeOptions({
+        includePracticum: canSelectPracticumPurpose,
         includeWorkshop: false,
-        includeThesis: !isLecturerUser,
+        includeThesis: canSelectThesisPurpose,
       }),
-    [isLecturerUser],
+    [canSelectPracticumPurpose, canSelectThesisPurpose],
   );
 
   const minEndDate = startDate ? new Date(startDate) : new Date(today);

@@ -142,7 +142,6 @@ class IsLecturerOrAbove(permissions.BasePermission):
         return (
             getattr(user, "is_superuser", False)
             or has_role(user, LECTURER)
-            or has_role(user, STAFF)
             or has_role(user, ADMINISTRATOR)
             or has_role(user, SUPER_ADMINISTRATOR)
         )

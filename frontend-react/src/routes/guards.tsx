@@ -5,7 +5,6 @@ import { API_AUTH_USER_PROFILE } from "@/constants/api";
 import {
   hasMenuAccess,
   isPrivilegedRole,
-  isStaffOrAboveRole,
   normalizeRoleValue,
 } from "@/constants/roles";
 import {
@@ -160,15 +159,6 @@ export function RequireAuth({ children }: { children: ReactElement }) {
 export function RequireAdmin({ children }: { children: ReactElement }) {
   const profile = getProfile();
   if (!isPrivilegedRole(profile.role)) {
-    return <Navigate to="/dashboard" replace />;
-  }
-
-  return children;
-}
-
-export function RequireStaffOrAbove({ children }: { children: ReactElement }) {
-  const profile = getProfile();
-  if (!isStaffOrAboveRole(profile.role)) {
     return <Navigate to="/dashboard" replace />;
   }
 

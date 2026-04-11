@@ -10,7 +10,6 @@ import {
   RequireAuth,
   RequireFeatureScope,
   RequireMenuAccess,
-  RequireStaffOrAbove,
 } from "@/routes/guards";
 
 const LoginPage = lazy(() => import("@/pages/auth/LoginPage"));
@@ -241,9 +240,7 @@ export const router = createBrowserRouter([
             path: "approval",
             element: (
               <RequireFeatureScope featurePath="/booking-rooms" scope="approval">
-                <RequireStaffOrAbove>
-                  {renderPage(BookingRoomsAllListPage)}
-                </RequireStaffOrAbove>
+                {renderPage(BookingRoomsAllListPage)}
               </RequireFeatureScope>
             ),
           },
@@ -251,9 +248,7 @@ export const router = createBrowserRouter([
             path: "approval/:id",
             element: (
               <RequireFeatureScope featurePath="/booking-rooms" scope="approval">
-                <RequireStaffOrAbove>
-                  {renderPage(BookingRoomsDetailPage)}
-                </RequireStaffOrAbove>
+                {renderPage(BookingRoomsDetailPage)}
               </RequireFeatureScope>
             ),
           },
@@ -311,9 +306,7 @@ export const router = createBrowserRouter([
             path: "approval",
             element: (
               <RequireFeatureScope featurePath="/use-equipment" scope="approval">
-                <RequireStaffOrAbove>
-                  {renderPage(UseEquipmentAllListPage)}
-                </RequireStaffOrAbove>
+                {renderPage(UseEquipmentAllListPage)}
               </RequireFeatureScope>
             ),
           },
@@ -321,9 +314,7 @@ export const router = createBrowserRouter([
             path: "approval/:id",
             element: (
               <RequireFeatureScope featurePath="/use-equipment" scope="approval">
-                <RequireStaffOrAbove>
-                  {renderPage(UseEquipmentDetailPage)}
-                </RequireStaffOrAbove>
+                {renderPage(UseEquipmentDetailPage)}
               </RequireFeatureScope>
             ),
           },
@@ -397,9 +388,7 @@ export const router = createBrowserRouter([
             path: "approval",
             element: (
               <RequireFeatureScope featurePath="/sample-testing" scope="approval">
-                <RequireStaffOrAbove>
-                  {renderPage(SampleTestingAllListPage)}
-                </RequireStaffOrAbove>
+                {renderPage(SampleTestingAllListPage)}
               </RequireFeatureScope>
             ),
           },
@@ -407,9 +396,7 @@ export const router = createBrowserRouter([
             path: "approval/:id",
             element: (
               <RequireFeatureScope featurePath="/sample-testing" scope="approval">
-                <RequireStaffOrAbove>
-                  {renderPage(SampleTestingDetailPage)}
-                </RequireStaffOrAbove>
+                {renderPage(SampleTestingDetailPage)}
               </RequireFeatureScope>
             ),
           },
@@ -444,9 +431,7 @@ export const router = createBrowserRouter([
             path: "approval",
             element: (
               <RequireFeatureScope featurePath="/borrow-equipment" scope="approval">
-                <RequireStaffOrAbove>
-                  {renderPage(BorrowEquipmentAllListPage)}
-                </RequireStaffOrAbove>
+                {renderPage(BorrowEquipmentAllListPage)}
               </RequireFeatureScope>
             ),
           },
@@ -454,9 +439,7 @@ export const router = createBrowserRouter([
             path: "approval/:id",
             element: (
               <RequireFeatureScope featurePath="/borrow-equipment" scope="approval">
-                <RequireStaffOrAbove>
-                  {renderPage(BorrowEquipmentDetailPage)}
-                </RequireStaffOrAbove>
+                {renderPage(BorrowEquipmentDetailPage)}
               </RequireFeatureScope>
             ),
           },

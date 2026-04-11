@@ -69,7 +69,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             room=self.other_room,
             is_moveable=True,
         )
-        self.room.pics.add(self.staff_profile)
+        self.room.pics.add(self.admin_profile)
         self.other_room.pics.add(self.lecturer_profile)
 
     def create_user_with_profile(self, email, role, full_name):
@@ -280,38 +280,32 @@ class CsluseWorkflowRegressionTests(APITestCase):
             approved_by=approved_by,
         )
 
-    def test_staff_approval_booking_all_only_shows_rooms_where_user_is_pic(self):
-        own_scope_booking = self.create_booking_for_room(self.student_profile, self.room)
+    def test_staff_cannot_access_booking_approval_scope(self):
+        self.create_booking_for_room(self.student_profile, self.room)
         self.create_booking_for_room(self.student_profile, self.other_room)
 
         self.client.force_authenticate(self.staff_user)
         response = self.client.get("/api/bookings/all/")
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["count"], 1)
-        self.assertEqual(response.data["results"][0]["id"], str(own_scope_booking.id))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_staff_approval_use_all_only_shows_equipment_in_rooms_where_user_is_pic(self):
-        own_scope_use = self.create_use_for_equipment(self.student_profile, self.equipment)
+    def test_staff_cannot_access_use_approval_scope(self):
+        self.create_use_for_equipment(self.student_profile, self.equipment)
         self.create_use_for_equipment(self.student_profile, self.other_equipment)
 
         self.client.force_authenticate(self.staff_user)
         response = self.client.get("/api/uses/all/")
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["count"], 1)
-        self.assertEqual(response.data["results"][0]["id"], str(own_scope_use.id))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_staff_approval_borrow_all_only_shows_equipment_in_rooms_where_user_is_pic(self):
-        own_scope_borrow = self.create_borrow_for_equipment(self.student_profile, self.equipment)
+    def test_staff_cannot_access_borrow_approval_scope(self):
+        self.create_borrow_for_equipment(self.student_profile, self.equipment)
         self.create_borrow_for_equipment(self.student_profile, self.other_equipment)
 
         self.client.force_authenticate(self.staff_user)
         response = self.client.get("/api/borrows/all/")
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data["count"], 1)
-        self.assertEqual(response.data["results"][0]["id"], str(own_scope_borrow.id))
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_lecturer_can_access_approval_scope_for_their_pic_room(self):
         self.create_booking_for_room(self.student_profile, self.room)
@@ -324,7 +318,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["results"][0]["id"], str(scoped_booking.id))
 
-    def test_pengujian_can_be_created_and_approved(self):
+    def test_staff_cannot_approve_pengujian_and_admin_can(self):
         self.client.force_authenticate(self.student_user)
         create_response = self.client.post(
             "/api/pengujians/",
@@ -340,6 +334,14 @@ class CsluseWorkflowRegressionTests(APITestCase):
         pengujian_id = create_response.data["id"]
 
         self.client.force_authenticate(self.staff_user)
+        denied_response = self.client.post(
+            f"/api/pengujians/{pengujian_id}/approve/",
+            {},
+            format="json",
+        )
+        self.assertEqual(denied_response.status_code, status.HTTP_403_FORBIDDEN)
+
+        self.client.force_authenticate(self.admin_user)
         approve_response = self.client.post(
             f"/api/pengujians/{pengujian_id}/approve/",
             {},
@@ -396,7 +398,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         use_item = self.create_use(
             self.student_profile,
             status="Approved",
-            approved_by=self.staff_profile,
+            approved_by=self.admin_profile,
         )
 
         self.client.force_authenticate(self.student_user)
@@ -425,7 +427,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
     def test_use_rejection_creates_notification_for_requester(self):
         use_item = self.create_use(self.student_profile)
 
-        self.client.force_authenticate(self.staff_user)
+        self.client.force_authenticate(self.admin_user)
         response = self.client.post(f"/api/uses/{use_item.id}/reject/", {}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -440,7 +442,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         borrow = self.create_borrow(
             self.student_profile,
             status="Borrowed",
-            approved_by=self.staff_profile,
+            approved_by=self.admin_profile,
         )
         Borrow.objects.filter(pk=borrow.pk).update(
             start_time=timezone.now() - timedelta(days=2),
@@ -462,7 +464,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         borrow = self.create_borrow(
             self.student_profile,
             status="Borrowed",
-            approved_by=self.staff_profile,
+            approved_by=self.admin_profile,
         )
         Borrow.objects.filter(pk=borrow.pk).update(
             start_time=timezone.now() - timedelta(days=2),
@@ -485,7 +487,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
     def test_borrow_approval_email_uses_detail_route(self):
         borrow = self.create_borrow(self.student_profile)
 
-        self.client.force_authenticate(self.staff_user)
+        self.client.force_authenticate(self.admin_user)
         response = self.client.post(f"/api/borrows/{borrow.id}/approve/", {}, format="json")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -521,7 +523,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             requester_mentor_profile=self.lecturer_profile,
         )
 
-        self.client.force_authenticate(self.staff_user)
+        self.client.force_authenticate(self.admin_user)
         early_response = self.client.post(f"/api/bookings/{booking.id}/approve/", {}, format="json")
         self.assertEqual(early_response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -535,7 +537,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         self.assertEqual(mentor_response.data["status"], "Pending")
         self.assertTrue(mentor_response.data["is_approved_by_mentor"])
 
-        self.client.force_authenticate(self.staff_user)
+        self.client.force_authenticate(self.admin_user)
         final_response = self.client.post(f"/api/bookings/{booking.id}/approve/", {}, format="json")
         self.assertEqual(final_response.status_code, status.HTTP_200_OK)
         self.assertEqual(final_response.data["status"], "Approved")
@@ -547,7 +549,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             requester_mentor_profile=self.lecturer_profile,
         )
 
-        self.client.force_authenticate(self.staff_user)
+        self.client.force_authenticate(self.admin_user)
         early_response = self.client.post(f"/api/uses/{use_item.id}/approve/", {}, format="json")
         self.assertEqual(early_response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -557,7 +559,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         self.assertEqual(mentor_response.data["status"], "Pending")
         self.assertTrue(mentor_response.data["is_approved_by_mentor"])
 
-        self.client.force_authenticate(self.staff_user)
+        self.client.force_authenticate(self.admin_user)
         final_response = self.client.post(f"/api/uses/{use_item.id}/approve/", {}, format="json")
         self.assertEqual(final_response.status_code, status.HTTP_200_OK)
         self.assertEqual(final_response.data["status"], "Approved")
@@ -583,7 +585,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
             requester_mentor_profile=self.lecturer_profile,
         )
 
-        self.client.force_authenticate(self.staff_user)
+        self.client.force_authenticate(self.admin_user)
         early_response = self.client.post(f"/api/borrows/{borrow.id}/approve/", {}, format="json")
         self.assertEqual(early_response.status_code, status.HTTP_400_BAD_REQUEST)
 
@@ -593,7 +595,7 @@ class CsluseWorkflowRegressionTests(APITestCase):
         self.assertEqual(mentor_response.data["status"], "Pending")
         self.assertTrue(mentor_response.data["is_approved_by_mentor"])
 
-        self.client.force_authenticate(self.staff_user)
+        self.client.force_authenticate(self.admin_user)
         final_response = self.client.post(f"/api/borrows/{borrow.id}/approve/", {}, format="json")
         self.assertEqual(final_response.status_code, status.HTTP_200_OK)
         self.assertEqual(final_response.data["status"], "Approved")

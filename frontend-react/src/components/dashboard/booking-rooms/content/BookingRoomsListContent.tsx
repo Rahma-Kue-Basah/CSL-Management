@@ -189,8 +189,7 @@ export default function BookingRoomsListContent({
   const canReviewBookings =
     scope === "all" &&
     (normalizedRole === ROLE_VALUES.ADMIN ||
-      normalizedRole === ROLE_VALUES.LECTURER ||
-      normalizedRole === ROLE_VALUES.STAFF);
+      normalizedRole === ROLE_VALUES.LECTURER);
   const showRequesterColumn = scope === "all";
   const currentProfileId = String(profile?.id ?? "");
 

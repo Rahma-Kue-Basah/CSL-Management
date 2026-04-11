@@ -5,6 +5,7 @@ import { normalizeStatus } from "@/lib/request";
 type MentorApprovalRecord = {
   purpose?: string | null;
   status?: string | null;
+  requesterId?: string | null;
   requesterMentorProfileId?: string | null;
   isApprovedByMentor?: boolean | null;
   mentorApprovedAt?: string | null;
@@ -55,7 +56,16 @@ export function canCurrentUserReviewPendingRequest(
 
   const normalizedRole = normalizeRoleValue(role);
   const currentProfileId = String(profileId ?? "").trim();
+  const requesterId = String(item.requesterId ?? "").trim();
   const mentorProfileId = String(item.requesterMentorProfileId ?? "").trim();
+
+  if (
+    normalizedRole !== ROLE_VALUES.ADMIN &&
+    Boolean(currentProfileId) &&
+    currentProfileId === requesterId
+  ) {
+    return false;
+  }
 
   if (isWaitingForMentorApproval(item)) {
     return (
@@ -67,7 +77,6 @@ export function canCurrentUserReviewPendingRequest(
 
   return (
     normalizedRole === ROLE_VALUES.ADMIN ||
-    normalizedRole === ROLE_VALUES.STAFF ||
     normalizedRole === ROLE_VALUES.LECTURER
   );
 }
@@ -78,7 +87,18 @@ export function canCurrentUserFinalizeRequest(
   role: string | null | undefined,
 ) {
   const normalizedRole = normalizeRoleValue(role);
-  if (normalizedRole === ROLE_VALUES.ADMIN || normalizedRole === ROLE_VALUES.STAFF) {
+  const currentProfileId = String(profileId ?? "").trim();
+  const requesterId = String(item.requesterId ?? "").trim();
+
+  if (
+    normalizedRole !== ROLE_VALUES.ADMIN &&
+    Boolean(currentProfileId) &&
+    currentProfileId === requesterId
+  ) {
+    return false;
+  }
+
+  if (normalizedRole === ROLE_VALUES.ADMIN) {
     return true;
   }
 
@@ -86,7 +106,6 @@ export function canCurrentUserFinalizeRequest(
     return false;
   }
 
-  const currentProfileId = String(profileId ?? "").trim();
   return Array.isArray(item.roomPicIds)
     ? item.roomPicIds.includes(currentProfileId)
     : false;

@@ -126,17 +126,6 @@ function isPrivilegedRole(role?: string | null): boolean {
   );
 }
 
-function isStaffOrAboveRole(role?: string | null): boolean {
-  const normalized = normalizeRoleValue(role);
-  if (!normalized) return false;
-  return (
-    normalized === ROLE_VALUES.LECTURER ||
-    normalized === ROLE_VALUES.STAFF ||
-    normalized === ROLE_VALUES.ADMIN ||
-    normalized === ROLE_VALUES.SUPER_ADMINISTRATOR
-  );
-}
-
 function hasMenuAccess(
   role: string | null | undefined,
   menuId: keyof typeof MENU_ACCESS_RULES,
@@ -154,6 +143,5 @@ export {
   MENU_ACCESS_RULES,
   normalizeRoleValue,
   isPrivilegedRole,
-  isStaffOrAboveRole,
   hasMenuAccess,
 };

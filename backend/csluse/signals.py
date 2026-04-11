@@ -8,7 +8,6 @@ from django.utils import timezone
 from csluse_auth.models import Profile
 from csluse_auth.permissions import (
     ADMINISTRATOR,
-    STAFF,
     SUPER_ADMINISTRATOR,
     has_role,
 )
@@ -87,15 +86,6 @@ def is_admin_approver(profile):
         or has_role(approver_user, ADMINISTRATOR)
         or has_role(approver_user, SUPER_ADMINISTRATOR)
     )
-
-
-def is_staff_or_admin_approver(profile):
-    if is_admin_approver(profile):
-        return True
-
-    approver_role = str(getattr(profile, "role", "") or "").upper()
-    approver_user = getattr(profile, "user", None)
-    return approver_role == "STAFF" or has_role(approver_user, STAFF)
 
 
 @receiver(post_delete, sender=Image)
@@ -252,16 +242,24 @@ def validate_pengujians(sender, instance, **kwargs):
     """
     Pengujian rules:
     - Rejected/completed requests are locked.
-    - approved_by must be Staff/Admin (when set).
+    - approved_by must be Admin (when set).
     """
     previous_instance = None
     if instance.pk:
         previous_instance = Pengujian.objects.filter(pk=instance.pk).only(
             "status",
+            "approved_by_id",
         ).first()
 
     if previous_instance and previous_instance.status in {"Rejected", "Completed"}:
         raise ValidationError("Pengujian yang sudah selesai diproses tidak dapat diubah.")
 
-    if instance.approved_by_id and not is_staff_or_admin_approver(instance.approved_by):
-        raise ValidationError("Approver harus Admin atau Staff.")
+    if (
+        instance.approved_by_id
+        and not is_admin_approver(instance.approved_by)
+        and (
+            previous_instance is None
+            or previous_instance.approved_by_id != instance.approved_by_id
+        )
+    ):
+        raise ValidationError("Approver harus Admin.")

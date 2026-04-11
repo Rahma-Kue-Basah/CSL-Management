@@ -236,8 +236,7 @@ export default function BorrowEquipmentListContent({
   const canReviewBorrows =
     scope === "all" &&
     (normalizedRole === ROLE_VALUES.ADMIN ||
-      normalizedRole === ROLE_VALUES.LECTURER ||
-      normalizedRole === ROLE_VALUES.STAFF);
+      normalizedRole === ROLE_VALUES.LECTURER);
   const showRequesterColumn = scope === "all";
   const currentProfileId = String(profile?.id ?? "");
   const mentorBorrows = useMemo(

@@ -933,7 +933,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     pagination_class = DefaultPagination
 
-    def _is_staff_or_above(self):
+    def _can_access_booking_approval_scope(self):
         return is_reviewer_or_above(self.request.user)
 
     def _can_manage_all_bookings(self):
@@ -1041,7 +1041,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     def get_serializer_class(self):
         if self.action == "list":
-            if self._is_staff_or_above():
+            if self._can_access_booking_approval_scope():
                 return BookingListSerializer
             return BookingUserListSerializer
         if self.action == "by_month":
@@ -1154,7 +1154,7 @@ class BookingViewSet(viewsets.ModelViewSet):
         qs = super().get_queryset()
         profile = self._current_profile()
 
-        if not self._is_staff_or_above():
+        if not self._can_access_booking_approval_scope():
             qs = qs.filter(requested_by=profile)
             return self._apply_list_filters(qs, allow_requester_filter=False)
 
@@ -1179,7 +1179,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
     def bulk_delete(self, request):
-        if not self._is_staff_or_above():
+        if not self._can_access_booking_approval_scope():
             raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data booking.")
 
         serializer = RecordBulkDeleteSerializer(data=request.data)
@@ -1234,7 +1234,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all')
     def all(self, request):
-        if not self._is_staff_or_above():
+        if not self._can_access_booking_approval_scope():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data booking.")
 
         self._auto_update_booking_statuses()
@@ -1249,7 +1249,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all/export')
     def export_all(self, request):
-        if not self._is_staff_or_above():
+        if not self._can_access_booking_approval_scope():
             raise PermissionDenied("Anda tidak memiliki akses untuk export data booking.")
 
         self._auto_update_booking_statuses()
@@ -1264,7 +1264,7 @@ class BookingViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all/requesters')
     def requester_options(self, request):
-        if not self._is_staff_or_above():
+        if not self._can_access_booking_approval_scope():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon booking.")
         self._auto_update_booking_statuses()
         return build_requester_dropdown_response(self.get_queryset())
@@ -1791,7 +1791,7 @@ class BorrowViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all/export')
     def export(self, request):
-        if not is_staff_or_above(request.user):
+        if not self._can_access_borrow_approval():
             raise PermissionDenied("Anda tidak memiliki akses untuk export data peminjaman alat.")
         qs = self._apply_export_search(self.get_queryset())
         serializer = BorrowListSerializer(qs, many=True)
@@ -2291,7 +2291,7 @@ class ScheduleViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
     def bulk_delete(self, request):
-        if not is_staff_or_above(request.user):
+        if not has_staff_management_access(request.user):
             raise PermissionDenied("Anda tidak memiliki akses untuk menghapus jadwal.")
 
         serializer = RecordBulkDeleteSerializer(data=request.data)
@@ -2932,8 +2932,8 @@ class PengujianViewSet(viewsets.ModelViewSet):
         )
         instance.delete()
 
-    def _is_staff_or_above(self):
-        return is_staff_or_above(self.request.user)
+    def _can_manage_sample_testing_approval(self):
+        return is_administrator_or_above(self.request.user)
 
     def _current_profile(self):
         return getattr(self.request.user, "profile", None)
@@ -2943,9 +2943,9 @@ class PengujianViewSet(viewsets.ModelViewSet):
         return bool(current_profile and pengujian.requested_by_id == current_profile.id)
 
     def _ensure_review_permission(self, pengujian):
-        if not self._is_staff_or_above():
+        if not self._can_manage_sample_testing_approval():
             raise PermissionDenied(
-                "Hanya Staff, Admin, atau SuperAdministrator yang dapat memproses pengujian sampel."
+                "Hanya Admin atau SuperAdministrator yang dapat memproses pengujian sampel."
             )
 
         current_profile = self._current_profile()
@@ -3122,16 +3122,16 @@ class PengujianViewSet(viewsets.ModelViewSet):
             return self._apply_list_filters(qs, allow_requester_filter=False)
 
         if self.action in {"all", "export"}:
-            return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
+            return self._apply_list_filters(qs, allow_requester_filter=self._can_manage_sample_testing_approval())
 
         if self.action == "list":
-            if not self._is_staff_or_above():
+            if not self._can_manage_sample_testing_approval():
                 qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
-            return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
+            return self._apply_list_filters(qs, allow_requester_filter=self._can_manage_sample_testing_approval())
 
-        if not self._is_staff_or_above():
+        if not self._can_manage_sample_testing_approval():
             qs = qs.filter(requested_by=getattr(self.request.user, "profile", None))
-        return self._apply_list_filters(qs, allow_requester_filter=self._is_staff_or_above())
+        return self._apply_list_filters(qs, allow_requester_filter=self._can_manage_sample_testing_approval())
 
     def _apply_export_search(self, qs):
         query = (self.request.query_params.get('q') or '').strip()
@@ -3198,7 +3198,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
     def bulk_delete(self, request):
-        if not is_staff_or_above(request.user):
+        if not self._can_manage_sample_testing_approval():
             raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data pengujian sampel.")
 
         serializer = RecordBulkDeleteSerializer(data=request.data)
@@ -3252,7 +3252,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all')
     def all(self, request):
-        if not self._is_staff_or_above():
+        if not self._can_manage_sample_testing_approval():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data pengujian sampel.")
 
         base_qs = super().get_queryset()
@@ -3282,7 +3282,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all/export')
     def export(self, request):
-        if not is_staff_or_above(request.user):
+        if not self._can_manage_sample_testing_approval():
             raise PermissionDenied("Anda tidak memiliki akses untuk export data pengujian sampel.")
         qs = self._apply_export_search(self.get_queryset())
         serializer = PengujianListSerializer(qs, many=True)
@@ -3294,7 +3294,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all/requesters')
     def requester_options(self, request):
-        if not self._is_staff_or_above():
+        if not self._can_manage_sample_testing_approval():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon pengujian sampel.")
         return build_requester_dropdown_response(super().get_queryset())
 
@@ -3312,7 +3312,7 @@ class PengujianViewSet(viewsets.ModelViewSet):
     )
     @action(detail=False, methods=['get'], url_path='all/documents')
     def all_documents(self, request):
-        if not self._is_staff_or_above():
+        if not self._can_manage_sample_testing_approval():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat dokumen pengujian sampel.")
 
         document_queryset = (
@@ -3497,7 +3497,7 @@ class UseViewSet(viewsets.ModelViewSet):
         )
         instance.delete()
 
-    def _is_staff_or_above(self):
+    def _can_access_use_approval_scope(self):
         return is_reviewer_or_above(self.request.user)
 
     def _can_manage_all_uses(self):
@@ -3679,7 +3679,7 @@ class UseViewSet(viewsets.ModelViewSet):
             qs = qs.filter(requested_by=profile)
             return self._apply_list_filters(qs, allow_requester_filter=False)
 
-        if not self._is_staff_or_above():
+        if not self._can_access_use_approval_scope():
             qs = qs.filter(requested_by=profile)
             return self._apply_list_filters(qs, allow_requester_filter=False)
 
@@ -3722,7 +3722,7 @@ class UseViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
     def bulk_delete(self, request):
-        if not is_staff_or_above(request.user):
+        if not self._can_access_use_approval_scope():
             raise PermissionDenied("Anda tidak memiliki akses untuk menghapus data penggunaan alat.")
 
         serializer = RecordBulkDeleteSerializer(data=request.data)
@@ -3777,7 +3777,7 @@ class UseViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all')
     def all(self, request):
-        if not self._is_staff_or_above():
+        if not self._can_access_use_approval_scope():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat seluruh data penggunaan alat.")
 
         self._auto_update_use_statuses()
@@ -3792,7 +3792,7 @@ class UseViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all/export')
     def export(self, request):
-        if not is_staff_or_above(request.user):
+        if not self._can_access_use_approval_scope():
             raise PermissionDenied("Anda tidak memiliki akses untuk export data penggunaan alat.")
 
         self._auto_update_use_statuses()
@@ -3806,7 +3806,7 @@ class UseViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='all/requesters')
     def requester_options(self, request):
-        if not self._is_staff_or_above():
+        if not self._can_access_use_approval_scope():
             raise PermissionDenied("Anda tidak memiliki akses untuk melihat daftar pemohon penggunaan alat.")
         self._auto_update_use_statuses()
         return build_requester_dropdown_response(self.get_queryset())
@@ -4278,7 +4278,7 @@ def _borrow_review_result(borrow):
     return _review_result(issues=issues, passed_indicators=passed_indicators)
 
 
-def is_staff_or_above(user):
+def has_staff_management_access(user):
     return (
         user
         and user.is_authenticated
@@ -4298,7 +4298,6 @@ def is_reviewer_or_above(user):
         and (
             getattr(user, "is_superuser", False)
             or has_role(user, LECTURER)
-            or has_role(user, STAFF)
             or has_role(user, ADMINISTRATOR)
             or has_role(user, SUPER_ADMINISTRATOR)
         )

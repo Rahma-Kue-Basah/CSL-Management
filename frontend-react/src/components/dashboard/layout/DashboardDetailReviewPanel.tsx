@@ -301,9 +301,12 @@ function isReviewerRole(role: string | null | undefined) {
   const normalizedRole = normalizeRoleValue(role);
   return (
     normalizedRole === ROLE_VALUES.ADMIN ||
-    normalizedRole === ROLE_VALUES.LECTURER ||
-    normalizedRole === ROLE_VALUES.STAFF
+    normalizedRole === ROLE_VALUES.LECTURER
   );
+}
+
+function isSampleTestingApproverRole(role: string | null | undefined) {
+  return normalizeRoleValue(role) === ROLE_VALUES.ADMIN;
 }
 
 function getMentorApprovalHint(
@@ -1503,11 +1506,11 @@ function PengujianReviewPanel({
   }
 
   const canReviewSampleTesting =
-    isReviewerRole(profile?.role) && isPendingStatus(sampleTesting.status);
+    isSampleTestingApproverRole(profile?.role) && isPendingStatus(sampleTesting.status);
   const isGuestRequester = isGuestRole(sampleTesting.requesterRole);
   const sampleTestingStatusHint = getPengujianStatusHint(
     sampleTesting.status,
-    isReviewerRole(profile?.role),
+    isSampleTestingApproverRole(profile?.role),
   );
 
   const handlePengujianAction = async () => {
