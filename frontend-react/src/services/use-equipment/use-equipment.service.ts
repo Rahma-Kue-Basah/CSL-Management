@@ -111,29 +111,32 @@ export const useEquipmentService = {
   },
 
   async create(payload: CreateUsePayload) {
-    const body: Record<string, string | number> = {
-      equipment: payload.equipmentId,
-      quantity: payload.quantity,
-      start_time: payload.startTime,
-      purpose: payload.purpose.trim(),
-    };
-
-    if (payload.endTime?.trim()) body.end_time = payload.endTime.trim();
-    if (payload.note?.trim()) body.note = payload.note.trim();
-    if (payload.requesterPhone?.trim()) body.requester_phone = payload.requesterPhone.trim();
-    if (payload.requesterMentor?.trim()) body.requester_mentor = payload.requesterMentor.trim();
-    if (payload.requesterMentorProfileId?.trim()) {
-      body.requester_mentor_profile = payload.requesterMentorProfileId.trim();
-    }
-    if (payload.institution?.trim()) body.institution = payload.institution.trim();
-    if (payload.institutionAddress?.trim()) {
-      body.institution_address = payload.institutionAddress.trim();
-    }
+    const body = buildUsePayload(payload);
 
     const response = await authFetch(API_USES, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+    });
+
+    return parseMutationResponse(response);
+  },
+
+  async update(useId: string | number, payload: CreateUsePayload) {
+    const body = buildUsePayload(payload);
+
+    const response = await authFetch(API_USE_DETAIL(useId), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    return parseMutationResponse(response);
+  },
+
+  async remove(useId: string | number) {
+    const response = await authFetch(API_USE_DETAIL(useId), {
+      method: "DELETE",
     });
 
     return parseMutationResponse(response);
@@ -164,3 +167,25 @@ export const useEquipmentService = {
     return parseMutationResponse(response);
   },
 };
+
+function buildUsePayload(payload: CreateUsePayload) {
+    const body: Record<string, string | number> = {
+      equipment: payload.equipmentId,
+      quantity: payload.quantity,
+      start_time: payload.startTime,
+      purpose: payload.purpose.trim(),
+    };
+
+    if (payload.endTime?.trim()) body.end_time = payload.endTime.trim();
+    if (payload.note?.trim()) body.note = payload.note.trim();
+    if (payload.requesterPhone?.trim()) body.requester_phone = payload.requesterPhone.trim();
+    if (payload.requesterMentor?.trim()) body.requester_mentor = payload.requesterMentor.trim();
+    if (payload.requesterMentorProfileId?.trim()) {
+      body.requester_mentor_profile = payload.requesterMentorProfileId.trim();
+    }
+    if (payload.institution?.trim()) body.institution = payload.institution.trim();
+    if (payload.institutionAddress?.trim()) {
+      body.institution_address = payload.institutionAddress.trim();
+    }
+    return body;
+}

@@ -66,7 +66,81 @@ export function useCreateUse() {
     }
   };
 
-  return { createUse, isSubmitting, errorMessage, setErrorMessage };
+  const updateUse = async (
+    useId: string | number,
+    payload: CreateUsePayload,
+  ) => {
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await useEquipmentService.update(useId, payload);
+
+      if (result.ok) {
+        return { ok: true as const };
+      }
+
+      let message = "Gagal memperbarui pengajuan penggunaan alat.";
+      if (typeof result.data !== "undefined") {
+        message = parseUseError(result.data, message);
+      } else if (result.text) {
+        message = extractApiErrorMessageFromText(result.text, message);
+      }
+
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan jaringan. Coba lagi.";
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const deleteUse = async (useId: string | number) => {
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await useEquipmentService.remove(useId);
+
+      if (result.ok) {
+        return { ok: true as const };
+      }
+
+      let message = "Gagal menghapus pengajuan penggunaan alat.";
+      if (typeof result.data !== "undefined") {
+        message = parseUseError(result.data, message);
+      } else if (result.text) {
+        message = extractApiErrorMessageFromText(result.text, message);
+      }
+
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan jaringan. Coba lagi.";
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return {
+    createUse,
+    updateUse,
+    deleteUse,
+    isSubmitting,
+    errorMessage,
+    setErrorMessage,
+  };
 }
 
 export default useCreateUse;

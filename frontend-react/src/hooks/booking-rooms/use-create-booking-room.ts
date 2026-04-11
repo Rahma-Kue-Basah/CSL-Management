@@ -64,7 +64,75 @@ export function useCreateBookingRoom() {
     }
   };
 
-  return { createBookingRoom, isSubmitting, errorMessage, setErrorMessage };
+  const updateBookingRoom = async (
+    bookingId: string | number,
+    payload: CreateBookingRoomPayload,
+  ) => {
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await bookingRoomsService.update(bookingId, payload);
+
+      if (result.ok) {
+        return { ok: true as const };
+      }
+
+      let message = "Gagal memperbarui peminjaman lab. Periksa data lalu coba lagi.";
+      if (typeof result.data !== "undefined") {
+        message = parseBookingError(result.data, message);
+      } else if (result.text) {
+        message = extractApiErrorMessageFromText(result.text, message);
+      }
+
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Terjadi kesalahan jaringan. Coba lagi.";
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const deleteBookingRoom = async (bookingId: string | number) => {
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await bookingRoomsService.remove(bookingId);
+
+      if (result.ok) {
+        return { ok: true as const };
+      }
+
+      let message = "Gagal menghapus peminjaman lab.";
+      if (typeof result.data !== "undefined") {
+        message = parseBookingError(result.data, message);
+      } else if (result.text) {
+        message = extractApiErrorMessageFromText(result.text, message);
+      }
+
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Terjadi kesalahan jaringan. Coba lagi.";
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return {
+    createBookingRoom,
+    updateBookingRoom,
+    deleteBookingRoom,
+    isSubmitting,
+    errorMessage,
+    setErrorMessage,
+  };
 }
 
 export default useCreateBookingRoom;

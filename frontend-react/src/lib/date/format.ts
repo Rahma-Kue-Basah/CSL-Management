@@ -55,6 +55,49 @@ export function formatLocalDateTimeAsWib(value: string) {
   return formatDateTimeWib(toWibIsoString(value));
 }
 
+export function toWibLocalDateTimeParts(value?: string | null) {
+  if (!value || value === "-") {
+    return {
+      date: undefined as Date | undefined,
+      time: "",
+      value: "",
+    };
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return {
+      date: undefined as Date | undefined,
+      time: "",
+      value: "",
+    };
+  }
+
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: WIB_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const year = values.year ?? "";
+  const month = values.month ?? "";
+  const day = values.day ?? "";
+  const hour = values.hour ?? "";
+  const minute = values.minute ?? "";
+  const localValue = `${year}-${month}-${day}T${hour}:${minute}`;
+
+  return {
+    date: new Date(`${year}-${month}-${day}T00:00:00`),
+    time: `${hour}:${minute}`,
+    value: localValue,
+  };
+}
+
 export function formatHourLabel(hour: number) {
   return `${String(hour).padStart(2, "0")}:00`;
 }

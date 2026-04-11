@@ -120,29 +120,32 @@ export const borrowEquipmentService = {
   },
 
   async create(payload: CreateBorrowPayload) {
-    const body: Record<string, string | number> = {
-      equipment: payload.equipmentId,
-      quantity: payload.quantity,
-      start_time: payload.startTime,
-      end_time: payload.endTime,
-      purpose: payload.purpose.trim(),
-      note: payload.note?.trim() ?? "",
-    };
-
-    if (payload.requesterPhone?.trim()) body.requester_phone = payload.requesterPhone.trim();
-    if (payload.requesterMentor?.trim()) body.requester_mentor = payload.requesterMentor.trim();
-    if (payload.requesterMentorProfileId?.trim()) {
-      body.requester_mentor_profile = payload.requesterMentorProfileId.trim();
-    }
-    if (payload.institution?.trim()) body.institution = payload.institution.trim();
-    if (payload.institutionAddress?.trim()) {
-      body.institution_address = payload.institutionAddress.trim();
-    }
+    const body = buildBorrowPayload(payload);
 
     const response = await authFetch(API_BORROWS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+    });
+
+    return parseMutationResponse(response);
+  },
+
+  async update(borrowId: string | number, payload: CreateBorrowPayload) {
+    const body = buildBorrowPayload(payload);
+
+    const response = await authFetch(API_BORROW_DETAIL(borrowId), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    return parseMutationResponse(response);
+  },
+
+  async remove(borrowId: string | number) {
+    const response = await authFetch(API_BORROW_DETAIL(borrowId), {
+      method: "DELETE",
     });
 
     return parseMutationResponse(response);
@@ -191,3 +194,25 @@ export const borrowEquipmentService = {
     return parseMutationResponse(response);
   },
 };
+
+function buildBorrowPayload(payload: CreateBorrowPayload) {
+    const body: Record<string, string | number> = {
+      equipment: payload.equipmentId,
+      quantity: payload.quantity,
+      start_time: payload.startTime,
+      end_time: payload.endTime,
+      purpose: payload.purpose.trim(),
+      note: payload.note?.trim() ?? "",
+    };
+
+    if (payload.requesterPhone?.trim()) body.requester_phone = payload.requesterPhone.trim();
+    if (payload.requesterMentor?.trim()) body.requester_mentor = payload.requesterMentor.trim();
+    if (payload.requesterMentorProfileId?.trim()) {
+      body.requester_mentor_profile = payload.requesterMentorProfileId.trim();
+    }
+    if (payload.institution?.trim()) body.institution = payload.institution.trim();
+    if (payload.institutionAddress?.trim()) {
+      body.institution_address = payload.institutionAddress.trim();
+    }
+    return body;
+}

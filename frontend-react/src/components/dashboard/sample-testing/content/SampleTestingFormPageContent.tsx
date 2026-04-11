@@ -3,7 +3,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { useRouter } from "next/navigation";
+import { Loader2 } from "lucide-react";
+
+import { useParams, useRouter } from "next/navigation";
 
 import { toast } from "sonner";
 
@@ -16,7 +18,10 @@ import { InlineErrorAlert } from "@/components/shared";
 
 import { Button, Input, Textarea } from "@/components/ui";
 
-import { useCreateSampleTesting } from "@/hooks/sample-testing";
+import {
+  useCreateSampleTesting,
+  useSampleTestingDetail,
+} from "@/hooks/sample-testing";
 
 import { useLoadProfile } from "@/hooks/shared/profile";
 
@@ -53,6 +58,15 @@ const initialFormData: FormData = {
   sampleTestingMethod: "",
   sampleTestingType: "",
 };
+
+type SampleTestingFormParams = {
+  id?: string;
+};
+
+function sanitizeFormValue(value?: string | null) {
+  const normalized = String(value ?? "").trim();
+  return normalized === "-" ? "" : normalized;
+}
 
 const REQUIRED_FIELD_LABELS: Array<{
   key: keyof FormData;
@@ -94,13 +108,28 @@ function FormField({
 }
 
 export default function SampleTestingFormPage() {
+  const { id } = useParams<SampleTestingFormParams>();
   const router = useRouter();
+  const sampleTestingId = typeof id === "string" ? id : "";
+  const isEditMode = sampleTestingId.length > 0;
   const { profile } = useLoadProfile();
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const [validationMessage, setValidationMessage] = useState("");
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
-  const { createSampleTesting, isSubmitting, errorMessage, setErrorMessage } =
-    useCreateSampleTesting();
+  const {
+    sampleTesting,
+    isLoading: isLoadingSampleTestingDetail,
+    error: sampleTestingDetailError,
+  } = useSampleTestingDetail(sampleTestingId, {
+    enabled: isEditMode,
+  });
+  const {
+    createSampleTesting,
+    updateSampleTesting,
+    isSubmitting,
+    errorMessage,
+    setErrorMessage,
+  } = useCreateSampleTesting();
 
   useEffect(() => {
     setFormData((prev) => ({
@@ -109,6 +138,27 @@ export default function SampleTestingFormPage() {
       email: prev.email || profile.email || "",
     }));
   }, [profile.email, profile.name]);
+
+  useEffect(() => {
+    if (!isEditMode || !sampleTesting) return;
+
+    setFormData({
+      name: sanitizeFormValue(sampleTesting.name),
+      institution: sanitizeFormValue(sampleTesting.institution),
+      institutionAddress: sanitizeFormValue(sampleTesting.institutionAddress),
+      email: sanitizeFormValue(sampleTesting.email),
+      phoneNumber: sanitizeFormValue(sampleTesting.phoneNumber),
+      sampleName: sanitizeFormValue(sampleTesting.sampleName),
+      sampleType: sanitizeFormValue(sampleTesting.sampleType),
+      sampleBrand: sanitizeFormValue(sampleTesting.sampleBrand),
+      samplePackaging: sanitizeFormValue(sampleTesting.samplePackaging),
+      sampleWeight: sanitizeFormValue(sampleTesting.sampleWeight),
+      sampleQuantity: sanitizeFormValue(sampleTesting.sampleQuantity),
+      sampleTestingServing: sanitizeFormValue(sampleTesting.sampleTestingServing),
+      sampleTestingMethod: sanitizeFormValue(sampleTesting.sampleTestingMethod),
+      sampleTestingType: sanitizeFormValue(sampleTesting.sampleTestingType),
+    });
+  }, [isEditMode, sampleTesting]);
 
   const displaySampleLabel = useMemo(() => {
     if (formData.sampleName.trim()) return formData.sampleName.trim();
@@ -152,7 +202,7 @@ export default function SampleTestingFormPage() {
   };
 
   const handleConfirmSubmit = async () => {
-    const result = await createSampleTesting({
+    const payload = {
       name: formData.name,
       institution: formData.institution,
       institutionAddress: formData.institutionAddress,
@@ -167,10 +217,17 @@ export default function SampleTestingFormPage() {
       sampleTestingServing: formData.sampleTestingServing,
       sampleTestingMethod: formData.sampleTestingMethod,
       sampleTestingType: formData.sampleTestingType,
-    });
+    };
+    const result = isEditMode
+      ? await updateSampleTesting(sampleTestingId, payload)
+      : await createSampleTesting(payload);
 
     if (result.ok) {
-      toast.success("Pengajuan pengujian sampel berhasil dikirim.");
+      toast.success(
+        isEditMode
+          ? "Pengajuan pengujian sampel berhasil diperbarui."
+          : "Pengajuan pengujian sampel berhasil dikirim.",
+      );
       setFormData({
         ...initialFormData,
         name: profile.name || "",
@@ -183,6 +240,25 @@ export default function SampleTestingFormPage() {
     }
   };
 
+  if (isEditMode && isLoadingSampleTestingDetail && !sampleTesting) {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-500 shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Memuat data pengujian sampel...
+        </div>
+      </section>
+    );
+  }
+
+  if (isEditMode && sampleTestingDetailError && !sampleTesting) {
+    return (
+      <section className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 text-sm text-destructive shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+        {sampleTestingDetailError}
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-4">
       <form
@@ -191,7 +267,7 @@ export default function SampleTestingFormPage() {
       >
         <div className="border-b border-slate-200 pb-4">
           <p className="text-base font-semibold text-slate-900">
-            Form Pengujian Sampel
+            {isEditMode ? "Edit Pengujian Sampel" : "Form Pengujian Sampel"}
           </p>
         </div>
 
@@ -371,10 +447,14 @@ export default function SampleTestingFormPage() {
         <div className="flex justify-end border-t border-slate-200 pt-4">
           <Button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isLoadingSampleTestingDetail}
             className="rounded-md bg-[#0052C7] text-white hover:bg-[#0048B4]"
           >
-            Ajukan Pengujian
+            {isSubmitting
+              ? "Menyimpan..."
+              : isEditMode
+                ? "Simpan Perubahan"
+                : "Ajukan Pengujian"}
           </Button>
         </div>
       </form>
@@ -385,8 +465,16 @@ export default function SampleTestingFormPage() {
           if (isSubmitting) return;
           setIsConfirmOpen(open);
         }}
-        title="Konfirmasi Pengajuan Pengujian Sampel"
-        description="Pastikan seluruh informasi pengujian sampel sudah benar sebelum dikirim."
+        title={
+          isEditMode
+            ? "Konfirmasi Perubahan Pengujian Sampel"
+            : "Konfirmasi Pengajuan Pengujian Sampel"
+        }
+        description={
+          isEditMode
+            ? "Pastikan seluruh perubahan pengujian sampel sudah benar sebelum disimpan."
+            : "Pastikan seluruh informasi pengujian sampel sudah benar sebelum dikirim."
+        }
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={handleConfirmSubmit}

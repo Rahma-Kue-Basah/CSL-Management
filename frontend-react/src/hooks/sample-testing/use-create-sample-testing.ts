@@ -70,7 +70,82 @@ export function useCreateSampleTesting() {
     }
   };
 
-  return { createSampleTesting, isSubmitting, errorMessage, setErrorMessage };
+  const updateSampleTesting = async (
+    sampleTestingId: string | number,
+    payload: CreateSampleTestingPayload,
+  ) => {
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await sampleTestingService.update(sampleTestingId, payload);
+
+      if (result.ok) {
+        return { ok: true as const };
+      }
+
+      let message =
+        "Gagal memperbarui pengajuan pengujian sampel. Periksa data lalu coba lagi.";
+      if (typeof result.data !== "undefined") {
+        message = parseSampleTestingError(result.data, message);
+      } else if (result.text) {
+        message = extractApiErrorMessageFromText(result.text, message);
+      }
+
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan jaringan. Coba lagi.";
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const deleteSampleTesting = async (sampleTestingId: string | number) => {
+    setErrorMessage("");
+    setIsSubmitting(true);
+
+    try {
+      const result = await sampleTestingService.remove(sampleTestingId);
+
+      if (result.ok) {
+        return { ok: true as const };
+      }
+
+      let message = "Gagal menghapus pengajuan pengujian sampel.";
+      if (typeof result.data !== "undefined") {
+        message = parseSampleTestingError(result.data, message);
+      } else if (result.text) {
+        message = extractApiErrorMessageFromText(result.text, message);
+      }
+
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan jaringan. Coba lagi.";
+      setErrorMessage(message);
+      return { ok: false as const, message };
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return {
+    createSampleTesting,
+    updateSampleTesting,
+    deleteSampleTesting,
+    isSubmitting,
+    errorMessage,
+    setErrorMessage,
+  };
 }
 
 export default useCreateSampleTesting;

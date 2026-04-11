@@ -11,8 +11,10 @@ import {
   FlaskConical,
   Loader2,
   PackageSearch,
+  Pencil,
   RotateCcw,
   Settings2,
+  Trash2,
 } from "lucide-react";
 
 import { useRouter, useSearchParams } from "next/navigation";
@@ -24,6 +26,7 @@ import {
   type ProgressStepItem,
   TableActionIconButton,
 } from "@/components/shared";
+import { DeleteRequestConfirmDialog } from "@/components/dialogs";
 
 import {
   SampleTestingDocumentsDialog,
@@ -44,6 +47,7 @@ import {
 import { toEndOfDay, toStartOfDay } from "@/lib/date";
 
 import {
+  useCreateSampleTesting,
   useSampleTestingList,
   type SampleTestingListScope,
 } from "@/hooks/sample-testing";
@@ -69,6 +73,7 @@ export default function SampleTestingListContent({
   const searchParams = useSearchParams();
   const router = useRouter();
   const [page, setPage] = useState(1);
+  const [reloadKey, setReloadKey] = useState(0);
   const [progressState, setProgressState] = useState<{
     code: string;
     steps: ProgressStepItem[];
@@ -76,6 +81,10 @@ export default function SampleTestingListContent({
   const [documentsSampleTestingId, setDocumentsSampleTestingId] = useState<
     string | null
   >(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    code: string;
+  } | null>(null);
   const status = searchParams.get("status") ?? "";
   const search = searchParams.get("q") ?? "";
   const createdAfter = searchParams.get("created_after") ?? "";
@@ -85,6 +94,8 @@ export default function SampleTestingListContent({
     setPage(1);
   }, [status, search, createdAfter, createdBefore]);
 
+  const { deleteSampleTesting, isSubmitting: isDeletingSampleTesting } =
+    useCreateSampleTesting();
   const {
     sampleTestings,
     totalCount,
@@ -101,7 +112,7 @@ export default function SampleTestingListContent({
       createdAfter: createdAfter ? toStartOfDay(createdAfter) : "",
       createdBefore: createdBefore ? toEndOfDay(createdBefore) : "",
     },
-    0,
+    reloadKey,
     scope,
   );
 
@@ -114,6 +125,19 @@ export default function SampleTestingListContent({
     1,
     Math.ceil((totalCount || filteredSampleTestings.length) / PAGE_SIZE),
   );
+
+  const canManageSampleTesting = (statusValue: string) =>
+    scope !== "all" && normalizeStatus(statusValue) === "pending";
+
+  const handleDeleteSampleTesting = async () => {
+    if (!deleteTarget) return;
+
+    const result = await deleteSampleTesting(deleteTarget.id);
+    if (!result.ok) return;
+
+    setDeleteTarget(null);
+    setReloadKey((prev) => prev + 1);
+  };
 
   return (
     <section className="space-y-4">
@@ -258,6 +282,29 @@ export default function SampleTestingListContent({
                           }
                         />
                       ) : null}
+                      {canManageSampleTesting(item.status) ? (
+                        <>
+                          <TableActionIconButton
+                            type="button"
+                            label="Edit"
+                            icon={<Pencil className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-amber-200 bg-amber-50 p-0 text-amber-700 shadow-none hover:bg-amber-100"
+                            onClick={() => router.push(`/sample-testing/${item.id}/edit`)}
+                          />
+                          <TableActionIconButton
+                            type="button"
+                            label="Hapus"
+                            icon={<Trash2 className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
+                            onClick={() =>
+                              setDeleteTarget({
+                                id: String(item.id),
+                                code: item.code,
+                              })
+                            }
+                          />
+                        </>
+                      ) : null}
                       <TableActionIconButton
                         type="button"
                         label="Lihat detail"
@@ -311,6 +358,20 @@ export default function SampleTestingListContent({
         }}
         sampleTestingId={documentsSampleTestingId}
         viewerRole="requester"
+      />
+      <DeleteRequestConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={() => void handleDeleteSampleTesting()}
+        isSubmitting={isDeletingSampleTesting}
+        title="Hapus Pengajuan Pengujian Sampel"
+        description={
+          deleteTarget
+            ? `Pengajuan ${deleteTarget.code} akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`
+            : "Pengajuan ini akan dihapus permanen."
+        }
       />
     </section>
   );

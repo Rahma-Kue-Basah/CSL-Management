@@ -9,14 +9,17 @@ import {
   CheckCircle2,
   Eye,
   Loader2,
+  Pencil,
   RotateCcw,
   ShieldCheck,
+  Trash2,
   X,
 } from "lucide-react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { DashboardDetailReviewDialog } from "@/components/dashboard/layout";
+import { DeleteRequestConfirmDialog } from "@/components/dialogs";
 
 import {
   DataPagination,
@@ -26,6 +29,7 @@ import {
 } from "@/components/shared";
 
 import {
+  useCreateBookingRoom,
   useBookings,
   type BookingListScope,
 } from "@/hooks/booking-rooms";
@@ -52,6 +56,7 @@ import {
   getRequestStatusDisplayLabel,
   getStatusBadgeClass,
   getStatusSummaryTone,
+  normalizeStatus,
   shouldShowReviewAction,
 } from "@/lib/request";
 
@@ -149,6 +154,10 @@ export default function BookingRoomsListContent({
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [reviewBookingId, setReviewBookingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    code: string;
+  } | null>(null);
   const [progressState, setProgressState] = useState<{
     code: string;
     steps: ProgressStepItem[];
@@ -186,6 +195,8 @@ export default function BookingRoomsListContent({
   );
 
   const normalizedRole = normalizeRoleValue(profile?.role);
+  const { deleteBookingRoom, isSubmitting: isDeletingBooking } =
+    useCreateBookingRoom();
   const canReviewBookings =
     scope === "all" &&
     (normalizedRole === ROLE_VALUES.ADMIN ||
@@ -234,6 +245,19 @@ export default function BookingRoomsListContent({
     }
 
     return true;
+  };
+
+  const canManageBooking = (booking: (typeof filteredBookings)[number]) =>
+    scope !== "all" && normalizeStatus(booking.status) === "pending";
+
+  const handleDeleteBooking = async () => {
+    if (!deleteTarget) return;
+
+    const result = await deleteBookingRoom(deleteTarget.id);
+    if (!result.ok) return;
+
+    setDeleteTarget(null);
+    setReloadKey((prev) => prev + 1);
   };
 
   return (
@@ -486,6 +510,29 @@ export default function BookingRoomsListContent({
                           onClick={() => setReviewBookingId(String(booking.id))}
                         />
                       ) : null}
+                      {canManageBooking(booking) ? (
+                        <>
+                          <TableActionIconButton
+                            type="button"
+                            label="Edit"
+                            icon={<Pencil className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-amber-200 bg-amber-50 p-0 text-amber-700 shadow-none hover:bg-amber-100"
+                            onClick={() => router.push(`/booking-rooms/${booking.id}/edit`)}
+                          />
+                          <TableActionIconButton
+                            type="button"
+                            label="Hapus"
+                            icon={<Trash2 className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
+                            onClick={() =>
+                              setDeleteTarget({
+                                id: String(booking.id),
+                                code: booking.code,
+                              })
+                            }
+                          />
+                        </>
+                      ) : null}
                       <TableActionIconButton
                         type="button"
                         label="Lihat detail"
@@ -536,6 +583,20 @@ export default function BookingRoomsListContent({
           reviewBookingId
             ? { kind: "booking", id: reviewBookingId }
             : null
+        }
+      />
+      <DeleteRequestConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={() => void handleDeleteBooking()}
+        isSubmitting={isDeletingBooking}
+        title="Hapus Pengajuan Booking"
+        description={
+          deleteTarget
+            ? `Pengajuan ${deleteTarget.code} akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`
+            : "Pengajuan ini akan dihapus permanen."
         }
       />
       <RequestProgressDialog

@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Loader2, Plus, Trash2 } from "lucide-react";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { toast } from "sonner";
 
@@ -26,7 +26,10 @@ import {
 import { Button, Input } from "@/components/ui";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 
-import { useCreateBookingRoom } from "@/hooks/booking-rooms";
+import {
+  useBookingDetail,
+  useCreateBookingRoom,
+} from "@/hooks/booking-rooms";
 
 import { useEquipmentOptions } from "@/hooks/shared/resources/equipments";
 
@@ -44,7 +47,11 @@ import {
   WORKSHOP_PURPOSE,
 } from "@/constants/request-purpose";
 
-import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date";
+import {
+  formatLocalDateTimeAsWib,
+  toWibIsoString,
+  toWibLocalDateTimeParts,
+} from "@/lib/date";
 
 type FormData = {
   roomId: string;
@@ -87,9 +94,21 @@ const initialFormData: FormData = {
   equipmentItems: [],
 };
 
+type BookingFormParams = {
+  id?: string;
+};
+
+function sanitizeFormValue(value?: string | null) {
+  const normalized = String(value ?? "").trim();
+  return normalized === "-" ? "" : normalized;
+}
+
 export default function BookingRoomsFormPage() {
+  const { id } = useParams<BookingFormParams>();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const bookingId = typeof id === "string" ? id : "";
+  const isEditMode = bookingId.length > 0;
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const { profile } = useLoadProfile();
@@ -120,8 +139,18 @@ export default function BookingRoomsFormPage() {
     isLoading: isLoadingMentors,
     error: mentorError,
   } = useMentorOptions(!isGuestUser && isThesisPurpose);
-  const { createBookingRoom, isSubmitting, errorMessage, setErrorMessage } =
-    useCreateBookingRoom();
+  const {
+    booking,
+    isLoading: isLoadingBookingDetail,
+    error: bookingDetailError,
+  } = useBookingDetail(bookingId, 0, { enabled: isEditMode });
+  const {
+    createBookingRoom,
+    updateBookingRoom,
+    isSubmitting,
+    errorMessage,
+    setErrorMessage,
+  } = useCreateBookingRoom();
   const preselectedRoomId = searchParams.get("room") ?? "";
   const availablePurposeOptions = useMemo(
     () =>
@@ -187,9 +216,43 @@ export default function BookingRoomsFormPage() {
 
   useEffect(() => {
     if (!preselectedRoomId || formData.roomId) return;
+    if (isEditMode) return;
     if (!rooms.some((room) => room.id === preselectedRoomId)) return;
     setFormData((prev) => ({ ...prev, roomId: preselectedRoomId }));
-  }, [formData.roomId, preselectedRoomId, rooms]);
+  }, [formData.roomId, isEditMode, preselectedRoomId, rooms]);
+
+  useEffect(() => {
+    if (!isEditMode || !booking) return;
+
+    const start = toWibLocalDateTimeParts(booking.startTime);
+    const end = toWibLocalDateTimeParts(booking.endTime);
+
+    setFormData({
+      roomId: sanitizeFormValue(booking.roomId),
+      purpose: sanitizeFormValue(booking.purpose) || "Penelitian",
+      startTime: start.value,
+      endTime: end.value,
+      attendeeCount: sanitizeFormValue(booking.attendeeCount) || "1",
+      attendeeNames: sanitizeFormValue(booking.attendeeNames),
+      note: sanitizeFormValue(booking.note),
+      requesterPhone: sanitizeFormValue(booking.requesterPhone),
+      requesterMentor: sanitizeFormValue(booking.requesterMentor),
+      requesterMentorProfileId: sanitizeFormValue(booking.requesterMentorProfileId),
+      institution: sanitizeFormValue(booking.institution),
+      institutionAddress: sanitizeFormValue(booking.institutionAddress),
+      workshopInstitution: sanitizeFormValue(booking.workshopInstitution),
+      workshopPic: sanitizeFormValue(booking.workshopPic),
+      workshopTitle: sanitizeFormValue(booking.workshopTitle),
+      equipmentItems: booking.equipmentItems.map((item) => ({
+        equipmentId: sanitizeFormValue(item.equipmentId),
+        quantity: sanitizeFormValue(item.quantity),
+      })),
+    });
+    setStartDate(start.date);
+    setStartTime(start.time);
+    setEndDate(end.date);
+    setEndTime(end.time);
+  }, [booking, isEditMode]);
 
   useEffect(() => {
     if (availablePurposeOptions.some((option) => option.value === formData.purpose)) return;
@@ -425,7 +488,7 @@ export default function BookingRoomsFormPage() {
   };
 
   const handleConfirmSubmit = async () => {
-    const result = await createBookingRoom({
+    const payload = {
       roomId: formData.roomId,
       purpose: formData.purpose,
       startTime: toWibIsoString(formData.startTime),
@@ -445,10 +508,17 @@ export default function BookingRoomsFormPage() {
         equipmentId: item.equipmentId,
         quantity: Number(item.quantity),
       })),
-    });
+    };
+    const result = isEditMode
+      ? await updateBookingRoom(bookingId, payload)
+      : await createBookingRoom(payload);
 
     if (result.ok) {
-      toast.success("Pengajuan peminjaman lab berhasil dikirim.");
+      toast.success(
+        isEditMode
+          ? "Pengajuan peminjaman lab berhasil diperbarui."
+          : "Pengajuan peminjaman lab berhasil dikirim.",
+      );
       setFormData(initialFormData);
       setStartDate(undefined);
       setStartTime("");
@@ -461,6 +531,25 @@ export default function BookingRoomsFormPage() {
     }
   };
 
+  if (isEditMode && isLoadingBookingDetail && !booking) {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-500 shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Memuat data booking...
+        </div>
+      </section>
+    );
+  }
+
+  if (isEditMode && bookingDetailError && !booking) {
+    return (
+      <section className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 text-sm text-destructive shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+        {bookingDetailError}
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-4">
       <form
@@ -469,7 +558,7 @@ export default function BookingRoomsFormPage() {
       >
         <div className="border-b border-slate-200 pb-4">
           <p className="text-base font-semibold text-slate-900">
-            Form Peminjaman Lab
+            {isEditMode ? "Edit Peminjaman Lab" : "Form Peminjaman Lab"}
           </p>
         </div>
 
@@ -808,15 +897,15 @@ export default function BookingRoomsFormPage() {
           <Button
             type="submit"
             className="min-w-[180px] gap-2"
-            disabled={isSubmitting || isLoadingRooms}
+            disabled={isSubmitting || isLoadingRooms || isLoadingBookingDetail}
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Mengirim...
+                Menyimpan...
               </>
             ) : (
-              "Ajukan Booking"
+              (isEditMode ? "Simpan Perubahan" : "Ajukan Booking")
             )}
           </Button>
         </div>
@@ -836,8 +925,12 @@ export default function BookingRoomsFormPage() {
       <SubmissionConfirmDialog
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
-        title="Konfirmasi Pengajuan"
-        description="Periksa kembali data peminjaman lab sebelum pengajuan dikirim."
+        title={isEditMode ? "Konfirmasi Perubahan" : "Konfirmasi Pengajuan"}
+        description={
+          isEditMode
+            ? "Periksa kembali perubahan data peminjaman lab sebelum disimpan."
+            : "Periksa kembali data peminjaman lab sebelum pengajuan dikirim."
+        }
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={() => void handleConfirmSubmit()}

@@ -117,41 +117,32 @@ export const bookingRoomsService = {
   },
 
   async create(payload: CreateBookingRoomPayload) {
-    const body: Record<string, unknown> = {
-      room: payload.roomId,
-      purpose: payload.purpose.trim(),
-      start_time: payload.startTime,
-      end_time: payload.endTime,
-      attendee_count: payload.attendeeCount,
-    };
-
-    if (payload.attendeeNames?.trim()) body.attendee_names = payload.attendeeNames.trim();
-    if (payload.note?.trim()) body.note = payload.note.trim();
-    if (payload.requesterPhone?.trim()) body.requester_phone = payload.requesterPhone.trim();
-    if (payload.requesterMentor?.trim()) body.requester_mentor = payload.requesterMentor.trim();
-    if (payload.requesterMentorProfileId?.trim()) {
-      body.requester_mentor_profile = payload.requesterMentorProfileId.trim();
-    }
-    if (payload.institution?.trim()) body.institution = payload.institution.trim();
-    if (payload.institutionAddress?.trim()) {
-      body.institution_address = payload.institutionAddress.trim();
-    }
-    if (payload.workshopTitle?.trim()) body.workshop_title = payload.workshopTitle.trim();
-    if (payload.workshopPic?.trim()) body.workshop_pic = payload.workshopPic.trim();
-    if (payload.workshopInstitution?.trim()) {
-      body.workshop_institution = payload.workshopInstitution.trim();
-    }
-    if (Array.isArray(payload.equipmentItems) && payload.equipmentItems.length > 0) {
-      body.equipment_items = payload.equipmentItems.map((item) => ({
-        equipment: item.equipmentId.trim(),
-        quantity: item.quantity,
-      }));
-    }
+    const body = buildBookingPayload(payload);
 
     const response = await authFetch(API_BOOKINGS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+    });
+
+    return parseMutationResponse(response);
+  },
+
+  async update(bookingId: string | number, payload: CreateBookingRoomPayload) {
+    const body = buildBookingPayload(payload);
+
+    const response = await authFetch(API_BOOKING_DETAIL(bookingId), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    return parseMutationResponse(response);
+  },
+
+  async remove(bookingId: string | number) {
+    const response = await authFetch(API_BOOKING_DETAIL(bookingId), {
+      method: "DELETE",
     });
 
     return parseMutationResponse(response);
@@ -182,3 +173,37 @@ export const bookingRoomsService = {
     return parseMutationResponse(response);
   },
 };
+
+function buildBookingPayload(payload: CreateBookingRoomPayload) {
+    const body: Record<string, unknown> = {
+      room: payload.roomId,
+      purpose: payload.purpose.trim(),
+      start_time: payload.startTime,
+      end_time: payload.endTime,
+      attendee_count: payload.attendeeCount,
+    };
+
+    if (payload.attendeeNames?.trim()) body.attendee_names = payload.attendeeNames.trim();
+    if (payload.note?.trim()) body.note = payload.note.trim();
+    if (payload.requesterPhone?.trim()) body.requester_phone = payload.requesterPhone.trim();
+    if (payload.requesterMentor?.trim()) body.requester_mentor = payload.requesterMentor.trim();
+    if (payload.requesterMentorProfileId?.trim()) {
+      body.requester_mentor_profile = payload.requesterMentorProfileId.trim();
+    }
+    if (payload.institution?.trim()) body.institution = payload.institution.trim();
+    if (payload.institutionAddress?.trim()) {
+      body.institution_address = payload.institutionAddress.trim();
+    }
+    if (payload.workshopTitle?.trim()) body.workshop_title = payload.workshopTitle.trim();
+    if (payload.workshopPic?.trim()) body.workshop_pic = payload.workshopPic.trim();
+    if (payload.workshopInstitution?.trim()) {
+      body.workshop_institution = payload.workshopInstitution.trim();
+    }
+    if (Array.isArray(payload.equipmentItems) && payload.equipmentItems.length > 0) {
+      body.equipment_items = payload.equipmentItems.map((item) => ({
+        equipment: item.equipmentId.trim(),
+        quantity: item.quantity,
+      }));
+    }
+    return body;
+}

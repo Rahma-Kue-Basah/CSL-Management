@@ -253,6 +253,14 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: ":id/edit",
+            element: (
+              <RequireFeatureScope featurePath="/booking-rooms" scope="requester">
+                {renderPage(BookingRoomsFormPage)}
+              </RequireFeatureScope>
+            ),
+          },
+          {
             path: ":id",
             element: (
               <RequireFeatureScope featurePath="/booking-rooms" scope="requester">
@@ -319,6 +327,14 @@ export const router = createBrowserRouter([
             ),
           },
           {
+            path: ":id/edit",
+            element: (
+              <RequireFeatureScope featurePath="/use-equipment" scope="requester">
+                {renderPage(UseEquipmentFormPage)}
+              </RequireFeatureScope>
+            ),
+          },
+          {
             path: ":id",
             element: (
               <RequireFeatureScope featurePath="/use-equipment" scope="requester">
@@ -370,6 +386,14 @@ export const router = createBrowserRouter([
           },
           {
             path: "form",
+            element: (
+              <RequireFeatureScope featurePath="/sample-testing" scope="requester">
+                {renderPage(SampleTestingFormPage)}
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: ":id/edit",
             element: (
               <RequireFeatureScope featurePath="/sample-testing" scope="requester">
                 {renderPage(SampleTestingFormPage)}
@@ -440,6 +464,14 @@ export const router = createBrowserRouter([
             element: (
               <RequireFeatureScope featurePath="/borrow-equipment" scope="approval">
                 {renderPage(BorrowEquipmentDetailPage)}
+              </RequireFeatureScope>
+            ),
+          },
+          {
+            path: ":id/edit",
+            element: (
+              <RequireFeatureScope featurePath="/borrow-equipment" scope="requester">
+                {renderPage(BorrowEquipmentFormPage)}
               </RequireFeatureScope>
             ),
           },

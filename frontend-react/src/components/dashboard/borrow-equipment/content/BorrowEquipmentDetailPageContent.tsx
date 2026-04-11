@@ -125,6 +125,7 @@ function BorrowDetailSkeleton() {
               <Skeleton className="h-16 w-full rounded-md" />
               <Skeleton className="h-16 w-full rounded-md" />
               <Skeleton className="h-16 w-full rounded-md" />
+              <Skeleton className="h-16 w-full rounded-md" />
               <Skeleton className="h-20 w-full rounded-md" />
             </div>
           </div>
@@ -137,6 +138,7 @@ function BorrowDetailSkeleton() {
               </div>
             </div>
             <div className="mt-4 space-y-2">
+              <Skeleton className="h-14 w-full rounded-md" />
               <Skeleton className="h-14 w-full rounded-md" />
               <Skeleton className="h-14 w-full rounded-md" />
               <Skeleton className="h-14 w-full rounded-md" />
@@ -153,6 +155,7 @@ function BorrowDetailSkeleton() {
               </div>
             </div>
             <div className="mt-4 space-y-2">
+              <Skeleton className="h-14 w-full rounded-md" />
               <Skeleton className="h-14 w-full rounded-md" />
               <Skeleton className="h-14 w-full rounded-md" />
               <Skeleton className="h-20 w-full rounded-md" />

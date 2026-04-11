@@ -10,8 +10,10 @@ import {
   Hourglass,
   Loader2,
   Package,
+  Pencil,
   RotateCcw,
   ShieldCheck,
+  Trash2,
   Truck,
   Undo2,
   X,
@@ -20,6 +22,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { DashboardDetailReviewDialog } from "@/components/dashboard/layout";
+import { DeleteRequestConfirmDialog } from "@/components/dialogs";
 
 import {
   DataPagination,
@@ -30,7 +33,7 @@ import {
 
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 
-import { useBorrows } from "@/hooks/borrow-equipment";
+import { useBorrows, useCreateBorrow } from "@/hooks/borrow-equipment";
 
 import { useLoadProfile } from "@/hooks/shared/profile";
 
@@ -49,6 +52,7 @@ import {
   getBorrowStatusDisplayLabel,
   getStatusBadgeClass,
   getStatusSummaryTone,
+  normalizeStatus,
   shouldShowReviewAction,
 } from "@/lib/request";
 
@@ -181,6 +185,10 @@ export default function BorrowEquipmentListContent({
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [reviewBorrowId, setReviewBorrowId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    code: string;
+  } | null>(null);
   const [progressState, setProgressState] = useState<{
     code: string;
     steps: ProgressStepItem[];
@@ -233,6 +241,7 @@ export default function BorrowEquipmentListContent({
   );
 
   const normalizedRole = normalizeRoleValue(profile?.role);
+  const { deleteBorrow, isSubmitting: isDeletingBorrow } = useCreateBorrow();
   const canReviewBorrows =
     scope === "all" &&
     (normalizedRole === ROLE_VALUES.ADMIN ||
@@ -269,6 +278,19 @@ export default function BorrowEquipmentListContent({
     }
 
     return true;
+  };
+
+  const canManageBorrow = (item: (typeof filteredBorrows)[number]) =>
+    scope !== "all" && normalizeStatus(item.status) === "pending";
+
+  const handleDeleteBorrow = async () => {
+    if (!deleteTarget) return;
+
+    const result = await deleteBorrow(deleteTarget.id);
+    if (!result.ok) return;
+
+    setDeleteTarget(null);
+    setReloadKey((prev) => prev + 1);
   };
 
   return (
@@ -548,6 +570,29 @@ export default function BorrowEquipmentListContent({
                           onClick={() => setReviewBorrowId(String(item.id))}
                         />
                       ) : null}
+                      {canManageBorrow(item) ? (
+                        <>
+                          <TableActionIconButton
+                            type="button"
+                            label="Edit"
+                            icon={<Pencil className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-amber-200 bg-amber-50 p-0 text-amber-700 shadow-none hover:bg-amber-100"
+                            onClick={() => router.push(`/borrow-equipment/${item.id}/edit`)}
+                          />
+                          <TableActionIconButton
+                            type="button"
+                            label="Hapus"
+                            icon={<Trash2 className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
+                            onClick={() =>
+                              setDeleteTarget({
+                                id: String(item.id),
+                                code: item.code,
+                              })
+                            }
+                          />
+                        </>
+                      ) : null}
                       <TableActionIconButton
                         type="button"
                         label="Lihat detail"
@@ -595,6 +640,20 @@ export default function BorrowEquipmentListContent({
         }}
         onActionComplete={() => setReloadKey((prev) => prev + 1)}
         context={reviewBorrowId ? { kind: "borrow", id: reviewBorrowId } : null}
+      />
+      <DeleteRequestConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={() => void handleDeleteBorrow()}
+        isSubmitting={isDeletingBorrow}
+        title="Hapus Pengajuan Peminjaman Alat"
+        description={
+          deleteTarget
+            ? `Pengajuan ${deleteTarget.code} akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`
+            : "Pengajuan ini akan dihapus permanen."
+        }
       />
       <RequestProgressDialog
         open={Boolean(progressState)}

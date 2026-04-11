@@ -9,14 +9,17 @@ import {
   Eye,
   Loader2,
   Package,
+  Pencil,
   RotateCcw,
   ShieldCheck,
+  Trash2,
   X,
 } from "lucide-react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { DashboardDetailReviewDialog } from "@/components/dashboard/layout";
+import { DeleteRequestConfirmDialog } from "@/components/dialogs";
 
 import {
   DataPagination,
@@ -29,7 +32,7 @@ import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 
 import { useLoadProfile } from "@/hooks/shared/profile";
 
-import { useUses } from "@/hooks/use-equipment";
+import { useCreateUse, useUses } from "@/hooks/use-equipment";
 
 import { formatDateTimeWib } from "@/lib/date";
 
@@ -44,6 +47,7 @@ import {
   getRequestStatusDisplayLabel,
   getStatusBadgeClass,
   getStatusSummaryTone,
+  normalizeStatus,
   shouldShowReviewAction,
 } from "@/lib/request";
 
@@ -144,6 +148,10 @@ export default function UseEquipmentListContent({
   const [page, setPage] = useState(1);
   const [reloadKey, setReloadKey] = useState(0);
   const [reviewUseId, setReviewUseId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string;
+    code: string;
+  } | null>(null);
   const [progressState, setProgressState] = useState<{
     code: string;
     steps: ProgressStepItem[];
@@ -196,6 +204,7 @@ export default function UseEquipmentListContent({
   );
 
   const normalizedRole = normalizeRoleValue(profile?.role);
+  const { deleteUse, isSubmitting: isDeletingUse } = useCreateUse();
   const canReviewUses =
     scope === "all" &&
     (normalizedRole === ROLE_VALUES.ADMIN ||
@@ -237,6 +246,19 @@ export default function UseEquipmentListContent({
     }
 
     return true;
+  };
+
+  const canManageUse = (item: (typeof filteredUses)[number]) =>
+    scope !== "all" && normalizeStatus(item.status) === "pending";
+
+  const handleDeleteUse = async () => {
+    if (!deleteTarget) return;
+
+    const result = await deleteUse(deleteTarget.id);
+    if (!result.ok) return;
+
+    setDeleteTarget(null);
+    setReloadKey((prev) => prev + 1);
   };
 
   return (
@@ -463,6 +485,29 @@ export default function UseEquipmentListContent({
                           onClick={() => setReviewUseId(String(item.id))}
                         />
                       ) : null}
+                      {canManageUse(item) ? (
+                        <>
+                          <TableActionIconButton
+                            type="button"
+                            label="Edit"
+                            icon={<Pencil className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-amber-200 bg-amber-50 p-0 text-amber-700 shadow-none hover:bg-amber-100"
+                            onClick={() => router.push(`/use-equipment/${item.id}/edit`)}
+                          />
+                          <TableActionIconButton
+                            type="button"
+                            label="Hapus"
+                            icon={<Trash2 className="h-3.5 w-3.5" />}
+                            className="w-8 rounded-md border border-rose-200 bg-rose-50 p-0 text-rose-700 shadow-none hover:bg-rose-100"
+                            onClick={() =>
+                              setDeleteTarget({
+                                id: String(item.id),
+                                code: item.code,
+                              })
+                            }
+                          />
+                        </>
+                      ) : null}
                       <TableActionIconButton
                         type="button"
                         label="Lihat detail"
@@ -510,6 +555,20 @@ export default function UseEquipmentListContent({
           reviewUseId
             ? { kind: "use", id: reviewUseId }
             : null
+        }
+      />
+      <DeleteRequestConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        onConfirm={() => void handleDeleteUse()}
+        isSubmitting={isDeletingUse}
+        title="Hapus Pengajuan Penggunaan Alat"
+        description={
+          deleteTarget
+            ? `Pengajuan ${deleteTarget.code} akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`
+            : "Pengajuan ini akan dihapus permanen."
         }
       />
       <RequestProgressDialog

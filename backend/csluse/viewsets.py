@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
-from rest_framework.exceptions import PermissionDenied, MethodNotAllowed, ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiTypes
 
 from .models import (
@@ -969,6 +969,21 @@ class BookingViewSet(viewsets.ModelViewSet):
             return
         raise PermissionDenied("Anda tidak memiliki akses ke pengajuan peminjaman lab ini.")
 
+    def _ensure_requester_mutation_permission(self, booking):
+        profile = self._current_profile()
+        if profile is None or booking.requested_by_id != profile.id:
+            raise PermissionDenied(
+                "Anda hanya dapat mengubah atau menghapus pengajuan peminjaman lab milik sendiri."
+            )
+        if booking.status != "Pending":
+            raise ValidationError(
+                {
+                    "status": (
+                        "Hanya pengajuan peminjaman lab dengan status Pending yang dapat diubah atau dihapus."
+                    )
+                }
+            )
+
     def _ensure_review_permission(self, booking):
         if not self._can_review_booking(booking):
             raise PermissionDenied(
@@ -1174,7 +1189,18 @@ class BookingViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self._ensure_requester_mutation_permission(instance)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self._ensure_requester_mutation_permission(instance)
+        return super().partial_update(request, *args, **kwargs)
+
     def perform_destroy(self, instance):
+        self._ensure_requester_mutation_permission(instance)
         self._delete_booking_instance(instance)
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
@@ -1447,6 +1473,21 @@ class BorrowViewSet(viewsets.ModelViewSet):
             return
         raise PermissionDenied("Anda tidak memiliki akses ke pengajuan peminjaman alat ini.")
 
+    def _ensure_requester_mutation_permission(self, borrow):
+        profile = self._current_profile()
+        if profile is None or borrow.requested_by_id != profile.id:
+            raise PermissionDenied(
+                "Anda hanya dapat mengubah atau menghapus pengajuan peminjaman alat milik sendiri."
+            )
+        if borrow.status != "Pending":
+            raise ValidationError(
+                {
+                    "status": (
+                        "Hanya pengajuan peminjaman alat dengan status Pending yang dapat diubah atau dihapus."
+                    )
+                }
+            )
+
     def _ensure_review_permission(self, borrow):
         if self._can_review_borrow(borrow):
             profile = self._current_profile()
@@ -1678,12 +1719,17 @@ class BorrowViewSet(viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def update(self, request, *args, **kwargs):
-        raise MethodNotAllowed("PUT", detail="Gunakan action borrow yang spesifik untuk memproses lifecycle.")
+        instance = self.get_object()
+        self._ensure_requester_mutation_permission(instance)
+        return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
-        raise MethodNotAllowed("PATCH", detail="Gunakan action borrow yang spesifik untuk memproses lifecycle.")
+        instance = self.get_object()
+        self._ensure_requester_mutation_permission(instance)
+        return super().partial_update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
+        self._ensure_requester_mutation_permission(instance)
         self._delete_borrow_instance(instance)
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
@@ -2942,6 +2988,20 @@ class PengujianViewSet(viewsets.ModelViewSet):
         current_profile = self._current_profile()
         return bool(current_profile and pengujian.requested_by_id == current_profile.id)
 
+    def _ensure_requester_mutation_permission(self, pengujian):
+        if not self._is_request_owner(pengujian):
+            raise PermissionDenied(
+                "Anda hanya dapat mengubah atau menghapus pengajuan pengujian sampel milik sendiri."
+            )
+        if pengujian.status != "Pending":
+            raise ValidationError(
+                {
+                    "status": (
+                        "Hanya pengajuan pengujian sampel dengan status Pending yang dapat diubah atau dihapus."
+                    )
+                }
+            )
+
     def _ensure_review_permission(self, pengujian):
         if not self._can_manage_sample_testing_approval():
             raise PermissionDenied(
@@ -3193,7 +3253,18 @@ class PengujianViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(requested_by=getattr(self.request.user, 'profile', None))
 
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self._ensure_requester_mutation_permission(instance)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self._ensure_requester_mutation_permission(instance)
+        return super().partial_update(request, *args, **kwargs)
+
     def perform_destroy(self, instance):
+        self._ensure_requester_mutation_permission(instance)
         self._delete_pengujian_instance(instance)
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')
@@ -3534,6 +3605,21 @@ class UseViewSet(viewsets.ModelViewSet):
             return
         raise PermissionDenied("Anda tidak memiliki akses ke pengajuan penggunaan alat ini.")
 
+    def _ensure_requester_mutation_permission(self, use_item):
+        current_profile = self._current_profile()
+        if current_profile is None or use_item.requested_by_id != current_profile.id:
+            raise PermissionDenied(
+                "Anda hanya dapat mengubah atau menghapus pengajuan penggunaan alat milik sendiri."
+            )
+        if use_item.status != "Pending":
+            raise ValidationError(
+                {
+                    "status": (
+                        "Hanya pengajuan penggunaan alat dengan status Pending yang dapat diubah atau dihapus."
+                    )
+                }
+            )
+
     def _ensure_review_permission(self, use_item):
         if not self._can_review_use(use_item):
             raise PermissionDenied(
@@ -3717,7 +3803,18 @@ class UseViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
 
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self._ensure_requester_mutation_permission(instance)
+        return super().update(request, *args, **kwargs)
+
+    def partial_update(self, request, *args, **kwargs):
+        instance = self.get_object()
+        self._ensure_requester_mutation_permission(instance)
+        return super().partial_update(request, *args, **kwargs)
+
     def perform_destroy(self, instance):
+        self._ensure_requester_mutation_permission(instance)
         self._delete_use_instance(instance)
 
     @action(detail=False, methods=['post'], url_path='bulk-delete')

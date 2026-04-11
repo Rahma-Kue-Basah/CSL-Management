@@ -110,40 +110,35 @@ export const sampleTestingService = {
   },
 
   async create(payload: CreateSampleTestingPayload) {
-    const body: Record<string, string> = {
-      name: payload.name.trim(),
-      email: payload.email.trim(),
-      sample_type: payload.sampleType.trim(),
-    };
-
-    if (payload.institution?.trim()) body.institution = payload.institution.trim();
-    if (payload.institutionAddress?.trim()) {
-      body.institution_address = payload.institutionAddress.trim();
-    }
-    if (payload.phoneNumber?.trim()) body.phone_number = payload.phoneNumber.trim();
-    if (payload.sampleName?.trim()) body.sample_name = payload.sampleName.trim();
-    if (payload.sampleBrand?.trim()) body.sample_brand = payload.sampleBrand.trim();
-    if (payload.samplePackaging?.trim()) {
-      body.sample_packaging = payload.samplePackaging.trim();
-    }
-    if (payload.sampleWeight?.trim()) body.sample_weight = payload.sampleWeight.trim();
-    if (payload.sampleQuantity?.trim()) {
-      body.sample_quantity = payload.sampleQuantity.trim();
-    }
-    if (payload.sampleTestingServing?.trim()) {
-      body.sample_testing_serving = payload.sampleTestingServing.trim();
-    }
-    if (payload.sampleTestingMethod?.trim()) {
-      body.sample_testing_method = payload.sampleTestingMethod.trim();
-    }
-    if (payload.sampleTestingType?.trim()) {
-      body.sample_testing_type = payload.sampleTestingType.trim();
-    }
+    const body = buildSampleTestingPayload(payload);
 
     const response = await authFetch(API_PENGUJIANS, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+    });
+
+    return parseMutationResponse(response);
+  },
+
+  async update(
+    sampleTestingId: string | number,
+    payload: CreateSampleTestingPayload,
+  ) {
+    const body = buildSampleTestingPayload(payload);
+
+    const response = await authFetch(API_PENGUJIAN_DETAIL(sampleTestingId), {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    return parseMutationResponse(response);
+  },
+
+  async remove(sampleTestingId: string | number) {
+    const response = await authFetch(API_PENGUJIAN_DETAIL(sampleTestingId), {
+      method: "DELETE",
     });
 
     return parseMutationResponse(response);
@@ -180,3 +175,36 @@ export const sampleTestingService = {
     return parseMutationResponse(response);
   },
 };
+
+function buildSampleTestingPayload(payload: CreateSampleTestingPayload) {
+    const body: Record<string, string> = {
+      name: payload.name.trim(),
+      email: payload.email.trim(),
+      sample_type: payload.sampleType.trim(),
+    };
+
+    if (payload.institution?.trim()) body.institution = payload.institution.trim();
+    if (payload.institutionAddress?.trim()) {
+      body.institution_address = payload.institutionAddress.trim();
+    }
+    if (payload.phoneNumber?.trim()) body.phone_number = payload.phoneNumber.trim();
+    if (payload.sampleName?.trim()) body.sample_name = payload.sampleName.trim();
+    if (payload.sampleBrand?.trim()) body.sample_brand = payload.sampleBrand.trim();
+    if (payload.samplePackaging?.trim()) {
+      body.sample_packaging = payload.samplePackaging.trim();
+    }
+    if (payload.sampleWeight?.trim()) body.sample_weight = payload.sampleWeight.trim();
+    if (payload.sampleQuantity?.trim()) {
+      body.sample_quantity = payload.sampleQuantity.trim();
+    }
+    if (payload.sampleTestingServing?.trim()) {
+      body.sample_testing_serving = payload.sampleTestingServing.trim();
+    }
+    if (payload.sampleTestingMethod?.trim()) {
+      body.sample_testing_method = payload.sampleTestingMethod.trim();
+    }
+    if (payload.sampleTestingType?.trim()) {
+      body.sample_testing_type = payload.sampleTestingType.trim();
+    }
+    return body;
+}

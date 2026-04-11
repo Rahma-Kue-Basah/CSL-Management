@@ -280,6 +280,26 @@ class CsluseWorkflowRegressionTests(APITestCase):
             approved_by=approved_by,
         )
 
+    def create_pengujian(self, requested_by, *, status="Pending"):
+        return Pengujian.objects.create(
+            requested_by=requested_by,
+            name="Pemohon Uji",
+            institution="CSL",
+            institution_address="Jl. Contoh",
+            email="pemohon@example.com",
+            phone_number="08123456789",
+            sample_name="Sampel A",
+            sample_type="Food Sample",
+            sample_brand="Brand A",
+            sample_packaging="Box",
+            sample_weight="1 kg",
+            sample_quantity="2",
+            sample_testing_serving="Dingin",
+            sample_testing_method="Metode A",
+            sample_testing_type="Kimia",
+            status=status,
+        )
+
     def test_staff_cannot_access_booking_approval_scope(self):
         self.create_booking_for_room(self.student_profile, self.room)
         self.create_booking_for_room(self.student_profile, self.other_room)
@@ -613,6 +633,106 @@ class CsluseWorkflowRegressionTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["count"], 1)
         self.assertEqual(response.data["results"][0]["id"], str(borrow.id))
+
+    def test_requester_can_update_own_pending_booking(self):
+        booking = self.create_booking(self.student_profile)
+
+        self.client.force_authenticate(self.student_user)
+        response = self.client.patch(
+            f"/api/bookings/{booking.id}/",
+            {"attendee_count": 3, "note": "Update catatan"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        booking.refresh_from_db()
+        self.assertEqual(booking.attendee_count, 3)
+        self.assertEqual(booking.note, "Update catatan")
+
+    def test_requester_cannot_delete_other_pending_booking(self):
+        booking = self.create_booking(self.student_profile)
+
+        self.client.force_authenticate(self.staff_user)
+        response = self.client.delete(f"/api/bookings/{booking.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(Booking.objects.filter(id=booking.id).exists())
+
+    def test_requester_can_update_own_pending_borrow(self):
+        borrow = self.create_borrow(self.student_profile)
+
+        self.client.force_authenticate(self.student_user)
+        response = self.client.patch(
+            f"/api/borrows/{borrow.id}/",
+            {"quantity": 2, "note": "Dipakai untuk riset"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        borrow.refresh_from_db()
+        self.assertEqual(borrow.quantity, 2)
+        self.assertEqual(borrow.note, "Dipakai untuk riset")
+
+    def test_requester_cannot_update_non_pending_borrow(self):
+        borrow = self.create_borrow(self.student_profile, status="Approved")
+
+        self.client.force_authenticate(self.student_user)
+        response = self.client.patch(
+            f"/api/borrows/{borrow.id}/",
+            {"note": "Tidak boleh berubah"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        borrow.refresh_from_db()
+        self.assertNotEqual(borrow.note, "Tidak boleh berubah")
+
+    def test_requester_can_delete_own_pending_use(self):
+        use_item = self.create_use(self.student_profile)
+
+        self.client.force_authenticate(self.student_user)
+        response = self.client.delete(f"/api/uses/{use_item.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(Use.objects.filter(id=use_item.id).exists())
+
+    def test_requester_cannot_update_other_pending_use(self):
+        use_item = self.create_use(self.student_profile)
+
+        self.client.force_authenticate(self.staff_user)
+        response = self.client.patch(
+            f"/api/uses/{use_item.id}/",
+            {"quantity": 4},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        use_item.refresh_from_db()
+        self.assertEqual(use_item.quantity, 1)
+
+    def test_requester_can_update_own_pending_pengujian(self):
+        pengujian = self.create_pengujian(self.student_profile)
+
+        self.client.force_authenticate(self.student_user)
+        response = self.client.patch(
+            f"/api/pengujians/{pengujian.id}/",
+            {"sample_name": "Sampel Update", "sample_quantity": "5"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        pengujian.refresh_from_db()
+        self.assertEqual(pengujian.sample_name, "Sampel Update")
+        self.assertEqual(pengujian.sample_quantity, "5")
+
+    def test_requester_cannot_delete_non_pending_pengujian(self):
+        pengujian = self.create_pengujian(self.student_profile, status="Approved")
+
+        self.client.force_authenticate(self.student_user)
+        response = self.client.delete(f"/api/pengujians/{pengujian.id}/")
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(Pengujian.objects.filter(id=pengujian.id).exists())
 
     def test_notifications_endpoint_returns_current_user_notifications(self):
         booking = self.create_booking(self.student_profile)

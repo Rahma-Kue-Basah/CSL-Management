@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from "
 
 import { Loader2 } from "lucide-react";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { toast } from "sonner";
 
@@ -28,7 +28,7 @@ import {
 import { Button, Input, Textarea } from "@/components/ui";
 import { ROLE_VALUES, normalizeRoleValue } from "@/constants/roles";
 
-import { useCreateBorrow } from "@/hooks/borrow-equipment";
+import { useBorrowDetail, useCreateBorrow } from "@/hooks/borrow-equipment";
 
 import { useEquipmentOptions } from "@/hooks/shared/resources/equipments";
 
@@ -43,7 +43,11 @@ import {
   THESIS_PURPOSE,
 } from "@/constants/request-purpose";
 
-import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date";
+import {
+  formatLocalDateTimeAsWib,
+  toWibIsoString,
+  toWibLocalDateTimeParts,
+} from "@/lib/date";
 
 type FormData = {
   equipmentId: string;
@@ -73,9 +77,21 @@ const initialFormData: FormData = {
   institutionAddress: "",
 };
 
+type BorrowFormParams = {
+  id?: string;
+};
+
+function sanitizeFormValue(value?: string | null) {
+  const normalized = String(value ?? "").trim();
+  return normalized === "-" ? "" : normalized;
+}
+
 export default function BorrowEquipmentFormPage() {
+  const { id } = useParams<BorrowFormParams>();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const borrowId = typeof id === "string" ? id : "";
+  const isEditMode = borrowId.length > 0;
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const { profile } = useLoadProfile();
@@ -94,14 +110,24 @@ export default function BorrowEquipmentFormPage() {
     equipments,
     isLoading: isLoadingEquipments,
     error: equipmentError,
-  } = useEquipmentOptions("Available", "", true, true);
+  } = useEquipmentOptions(isEditMode ? "" : "Available", "", true, true);
   const {
     mentors,
     isLoading: isLoadingMentors,
     error: mentorError,
   } = useMentorOptions(!isGuestUser && isThesisPurpose);
-  const { createBorrow, isSubmitting, errorMessage, setErrorMessage } =
-    useCreateBorrow();
+  const {
+    borrow,
+    isLoading: isLoadingBorrowDetail,
+    error: borrowDetailError,
+  } = useBorrowDetail(borrowId, 0, { enabled: isEditMode });
+  const {
+    createBorrow,
+    updateBorrow,
+    isSubmitting,
+    errorMessage,
+    setErrorMessage,
+  } = useCreateBorrow();
   const preselectedEquipmentId = searchParams.get("equipment") ?? "";
   const availablePurposeOptions = useMemo(
     () =>
@@ -139,9 +165,35 @@ export default function BorrowEquipmentFormPage() {
 
   useEffect(() => {
     if (!preselectedEquipmentId || formData.equipmentId) return;
+    if (isEditMode) return;
     if (!equipments.some((equipment) => equipment.id === preselectedEquipmentId)) return;
     setFormData((prev) => ({ ...prev, equipmentId: preselectedEquipmentId }));
-  }, [equipments, formData.equipmentId, preselectedEquipmentId]);
+  }, [equipments, formData.equipmentId, isEditMode, preselectedEquipmentId]);
+
+  useEffect(() => {
+    if (!isEditMode || !borrow) return;
+
+    const start = toWibLocalDateTimeParts(borrow.startTime);
+    const end = toWibLocalDateTimeParts(borrow.endTime);
+
+    setFormData({
+      equipmentId: sanitizeFormValue(borrow.equipmentId),
+      quantity: sanitizeFormValue(borrow.quantity) || "1",
+      startTime: start.value,
+      endTime: end.value,
+      purpose: sanitizeFormValue(borrow.purpose) || "Penelitian",
+      note: sanitizeFormValue(borrow.note),
+      requesterPhone: sanitizeFormValue(borrow.requesterPhone),
+      requesterMentor: sanitizeFormValue(borrow.requesterMentor),
+      requesterMentorProfileId: sanitizeFormValue(borrow.requesterMentorProfileId),
+      institution: sanitizeFormValue(borrow.institution),
+      institutionAddress: sanitizeFormValue(borrow.institutionAddress),
+    });
+    setStartDate(start.date);
+    setStartTime(start.time);
+    setEndDate(end.date);
+    setEndTime(end.time);
+  }, [borrow, isEditMode]);
 
   useEffect(() => {
     if (availablePurposeOptions.some((option) => option.value === formData.purpose)) return;
@@ -277,7 +329,7 @@ export default function BorrowEquipmentFormPage() {
   };
 
   const handleConfirmSubmit = async () => {
-    const result = await createBorrow({
+    const payload = {
       equipmentId: formData.equipmentId,
       quantity: Number(formData.quantity),
       startTime: toWibIsoString(formData.startTime),
@@ -289,14 +341,40 @@ export default function BorrowEquipmentFormPage() {
       requesterMentorProfileId: formData.requesterMentorProfileId,
       institution: formData.institution,
       institutionAddress: formData.institutionAddress,
-    });
+    };
+    const result = isEditMode
+      ? await updateBorrow(borrowId, payload)
+      : await createBorrow(payload);
 
     if (!result.ok) return;
 
-    toast.success("Pengajuan peminjaman alat berhasil dibuat.");
+    toast.success(
+      isEditMode
+        ? "Pengajuan peminjaman alat berhasil diperbarui."
+        : "Pengajuan peminjaman alat berhasil dibuat.",
+    );
     setIsConfirmOpen(false);
     router.push("/borrow-equipment");
   };
+
+  if (isEditMode && isLoadingBorrowDetail && !borrow) {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-500 shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Memuat data peminjaman alat...
+        </div>
+      </section>
+    );
+  }
+
+  if (isEditMode && borrowDetailError && !borrow) {
+    return (
+      <section className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 text-sm text-destructive shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+        {borrowDetailError}
+      </section>
+    );
+  }
 
   return (
     <section className="space-y-4">
@@ -306,7 +384,7 @@ export default function BorrowEquipmentFormPage() {
       >
         <div className="border-b border-slate-200 pb-4">
           <p className="text-base font-semibold text-slate-900">
-            Form Peminjaman Alat
+            {isEditMode ? "Edit Peminjaman Alat" : "Form Peminjaman Alat"}
           </p>
         </div>
 
@@ -507,16 +585,16 @@ export default function BorrowEquipmentFormPage() {
         <div className="mt-5 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Button
             type="submit"
-            disabled={isSubmitting || isLoadingEquipments}
+            disabled={isSubmitting || isLoadingEquipments || isLoadingBorrowDetail}
             className="gap-2"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Mengirim...
+                Menyimpan...
               </>
             ) : (
-              "Ajukan Peminjaman"
+              (isEditMode ? "Simpan Perubahan" : "Ajukan Peminjaman")
             )}
           </Button>
         </div>
@@ -525,8 +603,12 @@ export default function BorrowEquipmentFormPage() {
       <SubmissionConfirmDialog
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
-        title="Konfirmasi Pengajuan"
-        description="Periksa kembali data peminjaman alat sebelum pengajuan dikirim."
+        title={isEditMode ? "Konfirmasi Perubahan" : "Konfirmasi Pengajuan"}
+        description={
+          isEditMode
+            ? "Periksa kembali perubahan data peminjaman alat sebelum disimpan."
+            : "Periksa kembali data peminjaman alat sebelum pengajuan dikirim."
+        }
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={() => void handleConfirmSubmit()}

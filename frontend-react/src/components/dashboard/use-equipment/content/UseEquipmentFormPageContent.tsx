@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Loader2 } from "lucide-react";
 
-import { useRouter, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { toast } from "sonner";
 
@@ -33,7 +33,7 @@ import { useLoadProfile } from "@/hooks/shared/profile";
 
 import { useMentorOptions } from "@/hooks/shared/resources/users";
 
-import { useCreateUse } from "@/hooks/use-equipment";
+import { useCreateUse, useUseDetail } from "@/hooks/use-equipment";
 
 import {
   canAccessPracticumPurpose,
@@ -42,7 +42,11 @@ import {
   THESIS_PURPOSE,
 } from "@/constants/request-purpose";
 
-import { formatLocalDateTimeAsWib, toWibIsoString } from "@/lib/date";
+import {
+  formatLocalDateTimeAsWib,
+  toWibIsoString,
+  toWibLocalDateTimeParts,
+} from "@/lib/date";
 
 type FormData = {
   equipmentId: string;
@@ -72,9 +76,21 @@ const initialFormData: FormData = {
   institutionAddress: "",
 };
 
+type UseFormParams = {
+  id?: string;
+};
+
+function sanitizeFormValue(value?: string | null) {
+  const normalized = String(value ?? "").trim();
+  return normalized === "-" ? "" : normalized;
+}
+
 export default function UseEquipmentFormPage() {
+  const { id } = useParams<UseFormParams>();
   const router = useRouter();
   const searchParams = useSearchParams();
+  const useId = typeof id === "string" ? id : "";
+  const isEditMode = useId.length > 0;
   const today = useMemo(() => startOfToday(), []);
   const [formData, setFormData] = useState<FormData>(initialFormData);
   const { profile } = useLoadProfile();
@@ -93,13 +109,24 @@ export default function UseEquipmentFormPage() {
     equipments,
     isLoading: isLoadingEquipments,
     error: equipmentError,
-  } = useEquipmentOptions("Available");
+  } = useEquipmentOptions(isEditMode ? "" : "Available");
   const {
     mentors,
     isLoading: isLoadingMentors,
     error: mentorError,
   } = useMentorOptions(!isGuestUser && isThesisPurpose);
-  const { createUse, isSubmitting, errorMessage, setErrorMessage } = useCreateUse();
+  const {
+    useItem,
+    isLoading: isLoadingUseDetail,
+    error: useDetailError,
+  } = useUseDetail(useId, 0, { enabled: isEditMode });
+  const {
+    createUse,
+    updateUse,
+    isSubmitting,
+    errorMessage,
+    setErrorMessage,
+  } = useCreateUse();
   const preselectedEquipmentId = searchParams.get("equipment") ?? "";
   const availablePurposeOptions = useMemo(
     () =>
@@ -140,9 +167,35 @@ export default function UseEquipmentFormPage() {
 
   useEffect(() => {
     if (!preselectedEquipmentId || formData.equipmentId) return;
+    if (isEditMode) return;
     if (!equipments.some((equipment) => equipment.id === preselectedEquipmentId)) return;
     setFormData((prev) => ({ ...prev, equipmentId: preselectedEquipmentId }));
-  }, [equipments, formData.equipmentId, preselectedEquipmentId]);
+  }, [equipments, formData.equipmentId, isEditMode, preselectedEquipmentId]);
+
+  useEffect(() => {
+    if (!isEditMode || !useItem) return;
+
+    const start = toWibLocalDateTimeParts(useItem.startTime);
+    const end = toWibLocalDateTimeParts(useItem.endTime);
+
+    setFormData({
+      equipmentId: sanitizeFormValue(useItem.equipmentId),
+      quantity: sanitizeFormValue(useItem.quantity) || "1",
+      purpose: sanitizeFormValue(useItem.purpose) || "Penelitian",
+      startTime: start.value,
+      endTime: end.value,
+      note: sanitizeFormValue(useItem.note),
+      requesterPhone: sanitizeFormValue(useItem.requesterPhone),
+      requesterMentor: sanitizeFormValue(useItem.requesterMentor),
+      requesterMentorProfileId: sanitizeFormValue(useItem.requesterMentorProfileId),
+      institution: sanitizeFormValue(useItem.institution),
+      institutionAddress: sanitizeFormValue(useItem.institutionAddress),
+    });
+    setStartDate(start.date);
+    setStartTime(start.time);
+    setEndDate(end.date);
+    setEndTime(end.time);
+  }, [isEditMode, useItem]);
 
   useEffect(() => {
     if (availablePurposeOptions.some((option) => option.value === formData.purpose)) return;
@@ -275,7 +328,7 @@ export default function UseEquipmentFormPage() {
   };
 
   const handleConfirmSubmit = async () => {
-    const result = await createUse({
+    const payload = {
       equipmentId: formData.equipmentId,
       quantity: Number(formData.quantity),
       purpose: formData.purpose,
@@ -287,10 +340,17 @@ export default function UseEquipmentFormPage() {
       requesterMentorProfileId: formData.requesterMentorProfileId,
       institution: formData.institution,
       institutionAddress: formData.institutionAddress,
-    });
+    };
+    const result = isEditMode
+      ? await updateUse(useId, payload)
+      : await createUse(payload);
 
     if (result.ok) {
-      toast.success("Pengajuan penggunaan alat berhasil dikirim.");
+      toast.success(
+        isEditMode
+          ? "Pengajuan penggunaan alat berhasil diperbarui."
+          : "Pengajuan penggunaan alat berhasil dikirim.",
+      );
       setFormData(initialFormData);
       setStartDate(undefined);
       setStartTime("");
@@ -303,6 +363,25 @@ export default function UseEquipmentFormPage() {
     }
   };
 
+  if (isEditMode && isLoadingUseDetail && !useItem) {
+    return (
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 text-slate-500 shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Memuat data penggunaan alat...
+        </div>
+      </section>
+    );
+  }
+
+  if (isEditMode && useDetailError && !useItem) {
+    return (
+      <section className="rounded-2xl border border-destructive/20 bg-destructive/5 p-6 text-sm text-destructive shadow-[0_6px_18px_rgba(15,23,42,0.05)]">
+        {useDetailError}
+      </section>
+    );
+  }
+
   return (
     <section className="space-y-4">
       <form
@@ -310,7 +389,9 @@ export default function UseEquipmentFormPage() {
         onSubmit={handleOpenConfirmation}
       >
         <div className="border-b border-slate-200 pb-4">
-          <p className="text-base font-semibold text-slate-900">Form Penggunaan Alat</p>
+          <p className="text-base font-semibold text-slate-900">
+            {isEditMode ? "Edit Penggunaan Alat" : "Form Penggunaan Alat"}
+          </p>
         </div>
 
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
@@ -490,15 +571,15 @@ export default function UseEquipmentFormPage() {
           <Button
             type="submit"
             className="min-w-[180px] gap-2"
-            disabled={isSubmitting || isLoadingEquipments}
+            disabled={isSubmitting || isLoadingEquipments || isLoadingUseDetail}
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="h-4 w-4 animate-spin" />
-                Mengirim...
+                Menyimpan...
               </>
             ) : (
-              "Ajukan Penggunaan"
+              (isEditMode ? "Simpan Perubahan" : "Ajukan Penggunaan")
             )}
           </Button>
         </div>
@@ -513,8 +594,12 @@ export default function UseEquipmentFormPage() {
       <SubmissionConfirmDialog
         open={isConfirmOpen}
         onOpenChange={setIsConfirmOpen}
-        title="Konfirmasi Pengajuan"
-        description="Periksa kembali data penggunaan alat sebelum pengajuan dikirim."
+        title={isEditMode ? "Konfirmasi Perubahan" : "Konfirmasi Pengajuan"}
+        description={
+          isEditMode
+            ? "Periksa kembali perubahan data penggunaan alat sebelum disimpan."
+            : "Periksa kembali data penggunaan alat sebelum pengajuan dikirim."
+        }
         isSubmitting={isSubmitting}
         errorMessage={errorMessage}
         onConfirm={() => void handleConfirmSubmit()}
