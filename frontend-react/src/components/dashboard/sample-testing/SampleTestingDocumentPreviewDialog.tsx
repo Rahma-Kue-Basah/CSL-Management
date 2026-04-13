@@ -1,0 +1,131 @@
+"use client";
+
+import { Download, FileText, ImageIcon } from "lucide-react";
+
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui";
+import { type SampleTestingDocument } from "@/hooks/sample-testing";
+
+function isImageDocument(document: SampleTestingDocument) {
+  const mimeType = String(document.mimeType || "").toLowerCase();
+  const fileName = String(document.originalName || "").toLowerCase();
+
+  return (
+    mimeType.startsWith("image/") ||
+    fileName.endsWith(".png") ||
+    fileName.endsWith(".jpg") ||
+    fileName.endsWith(".jpeg") ||
+    fileName.endsWith(".webp")
+  );
+}
+
+function isPdfDocument(document: SampleTestingDocument) {
+  const mimeType = String(document.mimeType || "").toLowerCase();
+  const fileName = String(document.originalName || "").toLowerCase();
+
+  return mimeType === "application/pdf" || fileName.endsWith(".pdf");
+}
+
+export default function SampleTestingDocumentPreviewDialog({
+  open,
+  onOpenChange,
+  document,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  document: SampleTestingDocument | null;
+}) {
+  const canRenderImage = document ? isImageDocument(document) : false;
+  const canRenderPdf = document ? isPdfDocument(document) : false;
+
+  const handleDownload = () => {
+    if (!document) return;
+
+    const link = window.document.createElement("a");
+    link.href = document.url;
+    link.target = "_blank";
+    link.rel = "noreferrer";
+    link.download = document.originalName || "document";
+    window.document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent
+        showCloseButton={false}
+        className="flex max-h-[96vh] w-[calc(100vw-1rem)] !max-w-[1200px] flex-col overflow-hidden border-slate-200 p-0 shadow-[0_24px_60px_rgba(15,23,42,0.18)] sm:w-[96vw]"
+      >
+        <DialogHeader className="border-b border-slate-200 px-4 py-4 text-left sm:px-6 sm:py-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-700">
+              {canRenderImage ? (
+                <ImageIcon className="h-4 w-4" />
+              ) : (
+                <FileText className="h-4 w-4" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="text-sm font-semibold text-slate-900 sm:truncate">
+                {document?.documentLabel ?? "Preview Dokumen"}
+              </DialogTitle>
+              <DialogDescription className="mt-1 break-words text-sm leading-5 text-slate-500">
+                {document?.originalName ?? "Dokumen tidak tersedia."}
+              </DialogDescription>
+            </div>
+            {document ? (
+              <Button
+                type="button"
+                className="w-full border-blue-600 bg-blue-600 text-white hover:bg-blue-700 sm:w-auto sm:shrink-0"
+                onClick={handleDownload}
+              >
+                <Download className="h-4 w-4" />
+                Download
+              </Button>
+            ) : null}
+          </div>
+        </DialogHeader>
+
+        <div className="min-h-0 flex-1 overflow-auto bg-slate-100 p-3 sm:p-6">
+          {document ? (
+            canRenderImage ? (
+              <div className="flex min-h-full items-center justify-center">
+                <img
+                  src={document.url}
+                  alt={document.originalName}
+                  className="max-h-[60vh] w-auto max-w-full rounded-md border border-slate-200 bg-white object-contain shadow-sm sm:max-h-[70vh]"
+                />
+              </div>
+            ) : canRenderPdf ? (
+              <iframe
+                title={document.originalName}
+                src={document.url}
+                className="h-[65vh] w-full rounded-md border border-slate-200 bg-white sm:h-[70vh]"
+              />
+            ) : (
+              <div className="flex min-h-[32vh] items-center justify-center sm:h-[40vh]">
+                <div className="max-w-md rounded-lg border border-slate-200 bg-white px-4 py-4 text-center text-sm text-slate-600 shadow-sm sm:px-5">
+                  Format dokumen ini belum bisa dipreview di dalam modal.
+                  Gunakan tombol download untuk melihat file.
+                </div>
+              </div>
+            )
+          ) : (
+            <div className="flex min-h-[32vh] items-center justify-center sm:h-[40vh]">
+              <div className="rounded-lg border border-slate-200 bg-white px-4 py-4 text-sm text-slate-600 shadow-sm sm:px-5">
+                Dokumen tidak tersedia.
+              </div>
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

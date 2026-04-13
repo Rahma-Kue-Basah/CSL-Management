@@ -17,6 +17,7 @@ import {
 import { useUploadSampleTestingDocument } from "@/hooks/sample-testing";
 import { formatDateTimeWib } from "@/lib/date";
 
+import SampleTestingDocumentPreviewDialog from "./SampleTestingDocumentPreviewDialog";
 import { SampleTestingSectionCard } from "./content/SampleTestingDetailContent";
 
 type DocumentDefinition = {
@@ -186,6 +187,8 @@ export default function SampleTestingDocumentsSection({
     label: string;
     file: File;
   } | null>(null);
+  const [previewDocument, setPreviewDocument] =
+    useState<SampleTestingDocument | null>(null);
 
   if (!canShowSection(item.status)) {
     return null;
@@ -249,24 +252,31 @@ export default function SampleTestingDocumentsSection({
                     {definition.label}
                   </p>
                   {document ? (
-                    <div className="flex items-center gap-2 text-xs">
-                      <p className="text-emerald-700">
+                    <p className="text-xs text-emerald-700">
+                      <span>
                         Diunggah oleh {document.uploadedByName} pada{" "}
                         {formatDateTimeWib(document.createdAt)}
-                      </p>
+                      </span>
                       {allowActions && isOwner && canReplace ? (
-                        <button
-                          type="button"
-                          className="text-sky-700 underline-offset-2 hover:underline"
-                          disabled={
-                            pendingDocumentType === definition.type || !canUpload
-                          }
-                          onClick={() => inputRefs.current[definition.type]?.click()}
-                        >
-                          Ganti Dokumen
-                        </button>
+                        <>
+                          <span className="mx-2 text-slate-300" aria-hidden="true">
+                            |
+                          </span>
+                          <button
+                            type="button"
+                            className="inline text-sky-700 underline-offset-2 hover:underline"
+                            disabled={
+                              pendingDocumentType === definition.type || !canUpload
+                            }
+                            onClick={() =>
+                              inputRefs.current[definition.type]?.click()
+                            }
+                          >
+                            Ganti Dokumen
+                          </button>
+                        </>
                       ) : null}
-                    </div>
+                    </p>
                   ) : (
                     <p className="text-xs italic text-slate-400">
                       Dokumen belum diunggah.
@@ -277,29 +287,25 @@ export default function SampleTestingDocumentsSection({
                 <div className="w-full max-w-sm space-y-2">
                   {document ? (
                     <Button
-                      asChild
                       type="button"
                       variant="outline"
-                      className="h-auto w-full py-3"
+                      className="h-auto w-full whitespace-normal py-3"
+                      onClick={() => setPreviewDocument(document)}
                     >
-                      <a
-                        href={document.url}
-                        target={canPreview ? "_blank" : undefined}
-                        rel={canPreview ? "noreferrer" : undefined}
-                        download={canPreview ? undefined : document.originalName || true}
-                      >
-                        <span className="flex items-start gap-3 text-left">
-                          <ExternalLink className="mt-0.5 h-4 w-4 shrink-0" />
-                          <span className="min-w-0">
-                            <span className="mb-1 block text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
-                              {canPreview ? "Lihat Dokumen" : "Unduh Dokumen"}
-                            </span>
-                            <span className="block break-all text-sm font-medium text-slate-900">
-                              {document.originalName}
-                            </span>
+                      <span className="flex min-w-0 items-start gap-3 text-left">
+                        <ExternalLink className="mt-0.5 h-4 w-4 shrink-0" />
+                        <span className="min-w-0 flex-1">
+                          <span className="mb-1 block text-xs font-medium uppercase tracking-[0.12em] text-slate-500">
+                            {canPreview ? "Lihat Dokumen" : "Lihat Detail Dokumen"}
+                          </span>
+                          <span
+                            className="line-clamp-2 block text-sm font-medium text-slate-900"
+                            title={document.originalName}
+                          >
+                            {document.originalName}
                           </span>
                         </span>
-                      </a>
+                      </span>
                     </Button>
                   ) : null}
 
@@ -397,6 +403,16 @@ export default function SampleTestingDocumentsSection({
           }
         />
       </SubmissionConfirmDialog>
+
+      <SampleTestingDocumentPreviewDialog
+        open={Boolean(previewDocument)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewDocument(null);
+          }
+        }}
+        document={previewDocument}
+      />
     </>
   );
 
