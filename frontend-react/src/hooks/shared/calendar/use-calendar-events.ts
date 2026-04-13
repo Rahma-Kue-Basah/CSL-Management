@@ -14,6 +14,8 @@ export type CalendarEvent = {
   room_id?: string | null;
   room_name?: string | null;
   requested_by_name?: string | null;
+  attendee_count?: number | null;
+  purpose?: string | null;
 };
 
 export function useCalendarEvents(

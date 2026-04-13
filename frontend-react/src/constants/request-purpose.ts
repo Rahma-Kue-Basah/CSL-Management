@@ -18,7 +18,12 @@ type RequestPurposeOptionsConfig = {
 };
 
 export function canAccessThesisPurpose(role?: string | null): boolean {
-  return normalizeRoleValue(role) === ROLE_VALUES.STUDENT;
+  const normalized = normalizeRoleValue(role);
+  return (
+    normalized === ROLE_VALUES.STUDENT ||
+    normalized === ROLE_VALUES.ADMIN ||
+    normalized === ROLE_VALUES.SUPER_ADMINISTRATOR
+  );
 }
 
 export function canAccessPracticumPurpose(role?: string | null): boolean {

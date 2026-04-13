@@ -1,6 +1,7 @@
 import re
 from typing import Optional
 
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -620,14 +621,22 @@ class BookingSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"approved_by": "approved_by tidak boleh diubah langsung."}
                 )
-            if "is_approved_by_mentor" in attrs and not self.context.get("allow_mentor_transition"):
-                raise serializers.ValidationError(
-                    {"is_approved_by_mentor": "Status approval dosen pembimbing tidak boleh diubah langsung."}
-                )
-            if "mentor_approved_at" in attrs and not self.context.get("allow_mentor_transition"):
-                raise serializers.ValidationError(
-                    {"mentor_approved_at": "mentor_approved_at tidak boleh diubah langsung."}
-                )
+            current_purpose = attrs.get("purpose") or (instance.purpose if instance else None)
+            if not self.context.get("allow_mentor_transition"):
+                if "is_approved_by_mentor" in attrs:
+                    if current_purpose == "Skripsi/TA":
+                        raise serializers.ValidationError(
+                            {"is_approved_by_mentor": "Status approval dosen pembimbing tidak boleh diubah langsung."}
+                        )
+                    else:
+                        attrs.pop("is_approved_by_mentor")
+                if "mentor_approved_at" in attrs:
+                    if current_purpose == "Skripsi/TA":
+                        raise serializers.ValidationError(
+                            {"mentor_approved_at": "mentor_approved_at tidak boleh diubah langsung."}
+                        )
+                    else:
+                        attrs.pop("mentor_approved_at")
 
             if instance.status != "Pending" and not self.context.get("allow_status_transition"):
                 raise serializers.ValidationError(
@@ -671,23 +680,51 @@ class BookingSerializer(serializers.ModelSerializer):
                     }
                 )
 
-            overlapping_bookings = Booking.objects.filter(
+            EXCLUSIVE_PURPOSES = {"Praktikum", "Workshop"}
+
+            current_purpose = attrs.get("purpose") or (instance.purpose if instance else None)
+
+            overlapping_approved = Booking.objects.filter(
                 room=room,
                 status="Approved",
                 start_time__lt=end_time,
                 end_time__gt=start_time,
             )
             if instance:
-                overlapping_bookings = overlapping_bookings.exclude(pk=instance.pk)
+                overlapping_approved = overlapping_approved.exclude(pk=instance.pk)
 
-            if overlapping_bookings.exists():
-                raise serializers.ValidationError(
-                    {
-                        "non_field_errors": [
-                            "Ruangan sudah memiliki booking yang disetujui pada rentang waktu tersebut."
-                        ]
-                    }
-                )
+            if overlapping_approved.exists():
+                if overlapping_approved.filter(purpose__in=EXCLUSIVE_PURPOSES).exists():
+                    raise serializers.ValidationError(
+                        {
+                            "non_field_errors": [
+                                "Ruangan sudah memiliki booking Praktikum/Workshop yang disetujui pada rentang waktu tersebut."
+                            ]
+                        }
+                    )
+
+                if current_purpose in EXCLUSIVE_PURPOSES:
+                    raise serializers.ValidationError(
+                        {
+                            "non_field_errors": [
+                                "Ruangan sudah memiliki booking yang disetujui pada rentang waktu tersebut."
+                            ]
+                        }
+                    )
+
+                # Both current and existing are Penelitian/Skripsi/TA — check combined capacity
+                total_approved = overlapping_approved.aggregate(
+                    total=Sum("attendee_count")
+                )["total"] or 0
+                if total_approved + attendee_count > room.capacity:
+                    raise serializers.ValidationError(
+                        {
+                            "non_field_errors": [
+                                f"Total peserta melebihi kapasitas ruangan ({room.capacity} orang) "
+                                f"jika digabung dengan booking lain yang sudah disetujui pada waktu yang sama."
+                            ]
+                        }
+                    )
 
         if equipment_items is None:
             return attrs
@@ -979,10 +1016,22 @@ class BorrowSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 {"approved_by": "approved_by tidak boleh diubah langsung."}
             )
-        if "mentor_approved_at" in attrs and not self.context.get("allow_mentor_transition"):
-            raise serializers.ValidationError(
-                {"mentor_approved_at": "mentor_approved_at tidak boleh diubah langsung."}
-            )
+        current_purpose = attrs.get("purpose") or (instance.purpose if instance else None)
+        if not self.context.get("allow_mentor_transition"):
+            if "is_approved_by_mentor" in attrs:
+                if current_purpose == "Skripsi/TA":
+                    raise serializers.ValidationError(
+                        {"is_approved_by_mentor": "Status approval dosen pembimbing tidak boleh diubah langsung."}
+                    )
+                else:
+                    attrs.pop("is_approved_by_mentor")
+            if "mentor_approved_at" in attrs:
+                if current_purpose == "Skripsi/TA":
+                    raise serializers.ValidationError(
+                        {"mentor_approved_at": "mentor_approved_at tidak boleh diubah langsung."}
+                    )
+                else:
+                    attrs.pop("mentor_approved_at")
 
         if "inspection_note" in attrs:
             raise serializers.ValidationError(
@@ -1157,6 +1206,8 @@ class CalendarEventSerializer(serializers.Serializer):
         allow_null=True,
         required=False,
     )
+    attendee_count = serializers.IntegerField(allow_null=True, required=False)
+    purpose = serializers.CharField(allow_blank=True, allow_null=True, required=False)
 
 
 class ScheduleFeedItemSerializer(serializers.Serializer):
@@ -1335,10 +1386,22 @@ class UseSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(
                     {"approved_by": "approved_by tidak boleh diubah langsung."}
                 )
-            if "mentor_approved_at" in attrs and not self.context.get("allow_mentor_transition"):
-                raise serializers.ValidationError(
-                    {"mentor_approved_at": "mentor_approved_at tidak boleh diubah langsung."}
-                )
+            current_purpose = attrs.get("purpose") or (instance.purpose if instance else None)
+            if not self.context.get("allow_mentor_transition"):
+                if "is_approved_by_mentor" in attrs:
+                    if current_purpose == "Skripsi/TA":
+                        raise serializers.ValidationError(
+                            {"is_approved_by_mentor": "Status approval dosen pembimbing tidak boleh diubah langsung."}
+                        )
+                    else:
+                        attrs.pop("is_approved_by_mentor")
+                if "mentor_approved_at" in attrs:
+                    if current_purpose == "Skripsi/TA":
+                        raise serializers.ValidationError(
+                            {"mentor_approved_at": "mentor_approved_at tidak boleh diubah langsung."}
+                        )
+                    else:
+                        attrs.pop("mentor_approved_at")
 
             if instance.status != "Pending" and not self.context.get("allow_status_transition"):
                 raise serializers.ValidationError(

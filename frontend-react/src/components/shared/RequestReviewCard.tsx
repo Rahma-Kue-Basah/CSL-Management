@@ -15,10 +15,17 @@ type ReviewChecklistItem = {
   value: string;
 };
 
+type ReviewInfoItem = {
+  label: string;
+  value: string;
+  variant?: "default" | "success" | "danger";
+};
+
 type RequestReviewCardProps = {
   status: string;
   code: string;
   meta?: ReviewMetaItem[];
+  reviewInfoItems?: ReviewInfoItem[];
   checklist?: ReviewChecklistItem[];
   checklistLoading?: boolean;
   checklistEmptyMessage?: string;
@@ -37,6 +44,7 @@ export function RequestReviewCard({
   status,
   code,
   meta = [],
+  reviewInfoItems = [],
   checklist = [],
   checklistLoading = false,
   checklistEmptyMessage,
@@ -86,6 +94,39 @@ export function RequestReviewCard({
       ) : null}
 
       <div className="mt-4 border-t border-slate-200 pt-4">
+        {reviewInfoItems.length ? (
+          <div className="mb-4 grid gap-2">
+            {reviewInfoItems.map((item) => {
+              const containerClass =
+                item.variant === "success"
+                  ? "border-emerald-200 bg-emerald-50/80"
+                  : item.variant === "danger"
+                    ? "border-rose-200 bg-rose-50/80"
+                    : "border-slate-200 bg-slate-50/80";
+              const labelClass =
+                item.variant === "success"
+                  ? "text-emerald-700"
+                  : item.variant === "danger"
+                    ? "text-rose-700"
+                    : "text-slate-500";
+              const valueClass =
+                item.variant === "success"
+                  ? "text-emerald-900 font-semibold"
+                  : item.variant === "danger"
+                    ? "text-rose-900 font-semibold"
+                    : "text-slate-800 font-medium";
+              return (
+                <div
+                  key={`${item.label}-${item.value}`}
+                  className={`grid gap-1 rounded-md border px-4 py-3 md:grid-cols-[180px_minmax(0,1fr)] md:items-center md:gap-4 ${containerClass}`}
+                >
+                  <p className={`text-xs ${labelClass}`}>{item.label}</p>
+                  <p className={`text-xs ${valueClass}`}>{item.value}</p>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
         {showChecklistSection ? (
           <>
         {checklistLoading ? (

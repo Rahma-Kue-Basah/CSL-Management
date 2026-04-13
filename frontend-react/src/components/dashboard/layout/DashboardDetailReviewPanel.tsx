@@ -344,9 +344,18 @@ type ReviewIssue = {
   value: string;
 };
 
+type OverlapInfo = {
+  shared_booking_count: number;
+  existing_attendees: number;
+  current_attendees: number;
+  total_attendees: number;
+  room_capacity: number;
+};
+
 type ReviewCheckResponse = {
   issues?: ReviewIssue[];
   passed_indicators?: string[];
+  overlap_info?: OverlapInfo;
 };
 
 async function loadReviewIssues(url: string) {
@@ -360,6 +369,7 @@ async function loadReviewIssues(url: string) {
     passedIndicators: Array.isArray(payload.passed_indicators)
       ? payload.passed_indicators
       : [],
+    overlapInfo: payload.overlap_info ?? null,
   };
 }
 
@@ -399,6 +409,7 @@ function BookingReviewPanel({
   const { updateBookingStatus, pendingAction } = useUpdateBookingStatus();
   const [reviewIssues, setReviewIssues] = useState<ReviewIssue[]>([]);
   const [passedIndicators, setPassedIndicators] = useState<string[]>([]);
+  const [overlapInfo, setOverlapInfo] = useState<OverlapInfo | null>(null);
   const [issuesLoading, setIssuesLoading] = useState(true);
   const [confirmType, setConfirmType] = useState<
     "approve" | "reject" | "complete" | null
@@ -413,6 +424,7 @@ function BookingReviewPanel({
         if (isMounted) {
           setReviewIssues([]);
           setPassedIndicators([]);
+          setOverlapInfo(null);
           setIssuesLoading(false);
         }
         return;
@@ -422,6 +434,7 @@ function BookingReviewPanel({
         if (isMounted) {
           setReviewIssues([]);
           setPassedIndicators([]);
+          setOverlapInfo(null);
           setIssuesLoading(false);
         }
         return;
@@ -436,6 +449,7 @@ function BookingReviewPanel({
         if (isMounted) {
           setReviewIssues(result.issues);
           setPassedIndicators(result.passedIndicators);
+          setOverlapInfo(result.overlapInfo);
           setIssuesLoading(false);
         }
       } catch {
@@ -448,6 +462,7 @@ function BookingReviewPanel({
             },
           ]);
           setPassedIndicators([]);
+          setOverlapInfo(null);
           setIssuesLoading(false);
         }
       }
@@ -625,6 +640,17 @@ function BookingReviewPanel({
               ]
             : []),
         ]}
+        reviewInfoItems={
+          showBookingReviewCheck && overlapInfo
+            ? [
+                {
+                  label: "Total Peserta Booking Aktif",
+                  value: `${overlapInfo.total_attendees}/${overlapInfo.room_capacity}${overlapInfo.shared_booking_count > 0 ? ` (${overlapInfo.existing_attendees} peserta lain + ${overlapInfo.current_attendees} pengajuan ini)` : ""}`,
+                  variant: overlapInfo.total_attendees > overlapInfo.room_capacity ? "danger" : "success",
+                },
+              ]
+            : []
+        }
         checklist={showBookingReviewCheck ? reviewIssues : []}
         checklistLoading={showBookingReviewCheck ? issuesLoading : false}
         showChecklistSection={showBookingReviewCheck}

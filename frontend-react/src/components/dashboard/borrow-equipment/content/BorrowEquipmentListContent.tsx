@@ -638,7 +638,10 @@ export default function BorrowEquipmentListContent({
         onOpenChange={(open) => {
           if (!open) setReviewBorrowId(null);
         }}
-        onActionComplete={() => setReloadKey((prev) => prev + 1)}
+        onActionComplete={() => {
+          setReloadKey((prev) => prev + 1);
+          setReviewBorrowId(null);
+        }}
         context={reviewBorrowId ? { kind: "borrow", id: reviewBorrowId } : null}
       />
       <DeleteRequestConfirmDialog

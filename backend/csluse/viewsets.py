@@ -2587,6 +2587,8 @@ class CalendarViewSet(viewsets.ViewSet):
                 'room_id': item.room_id,
                 'room_name': item.room.name if item.room else None,
                 'requested_by_name': item.class_name,
+                'attendee_count': None,
+                'purpose': None,
             })
 
         for item in booking_qs:
@@ -2601,6 +2603,8 @@ class CalendarViewSet(viewsets.ViewSet):
                 'room_id': item.room_id,
                 'room_name': item.room.name if item.room else None,
                 'requested_by_name': _profile_display_name(item.requested_by),
+                'attendee_count': item.attendee_count,
+                'purpose': item.purpose,
             })
 
         items.sort(key=lambda item: (item['start_time'], item['title']))
@@ -4033,11 +4037,14 @@ def _review_issue(label, value):
     }
 
 
-def _review_result(*, issues=None, passed_indicators=None):
-    return {
+def _review_result(*, issues=None, passed_indicators=None, overlap_info=None):
+    result = {
         "issues": issues or [],
         "passed_indicators": passed_indicators or [],
     }
+    if overlap_info is not None:
+        result["overlap_info"] = overlap_info
+    return result
 
 
 def _requires_mentor_approval(instance):
@@ -4082,12 +4089,12 @@ def _booking_review_result(booking):
                 "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
             )
         )
-    if not _has_review_value(booking.requester_mentor):
+    if str(booking.purpose or "").strip() == "Skripsi/TA" and not _has_review_value(booking.requester_mentor):
         required_fields_complete = False
         issues.append(
             _review_issue(
                 "Dosen pembimbing belum diisi",
-                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
+                "Field dosen pembimbing belum dilengkapi pada pengajuan Skripsi/TA ini.",
             )
         )
     if (booking.attendee_count or 0) > 1 and not _has_review_value(booking.attendee_names):
@@ -4124,8 +4131,14 @@ def _booking_review_result(booking):
                 )
             )
 
+    _SHARED_PURPOSES = {"Penelitian", "Skripsi/TA"}
+    _BLOCKING_PURPOSES = {"Praktikum", "Workshop"}
+
+    current_purpose = str(booking.purpose or "").strip()
     practicum_count = 0
-    approved_booking_count = 0
+    booking_overlap_ok = True
+    overlap_info = None
+
     if booking.room_id and booking.start_time and booking.end_time:
         practicum_count = Schedule.objects.filter(
             room_id=booking.room_id,
@@ -4140,7 +4153,7 @@ def _booking_review_result(booking):
                 )
             )
 
-        approved_booking_count = (
+        overlapping_bookings = (
             Booking.objects.filter(
                 room_id=booking.room_id,
                 status="Approved",
@@ -4148,24 +4161,83 @@ def _booking_review_result(booking):
                 end_time__gt=booking.start_time,
             )
             .exclude(pk=booking.pk)
-            .count()
         )
-        if approved_booking_count:
-            issues.append(
-                _review_issue(
-                    "Bentrok booking aktif",
-                    f"Ruangan juga memiliki {approved_booking_count} booking lain yang sudah disetujui pada rentang waktu ini.",
+
+        if current_purpose in _BLOCKING_PURPOSES:
+            # Praktikum/Workshop baru: blocked jika ada overlap apapun
+            blocking_count = overlapping_bookings.count()
+            if blocking_count:
+                booking_overlap_ok = False
+                issues.append(
+                    _review_issue(
+                        "Bentrok booking aktif",
+                        f"Pengajuan {current_purpose} tidak dapat dijadwalkan bersamaan dengan booking lain "
+                        f"({blocking_count} booking aktif pada rentang waktu ini).",
+                    )
                 )
-            )
+        else:
+            # Penelitian/Skripsi: blocked jika ada overlap dengan Praktikum/Workshop
+            hard_blocking = overlapping_bookings.filter(purpose__in=list(_BLOCKING_PURPOSES))
+            hard_blocking_count = hard_blocking.count()
+            if hard_blocking_count:
+                booking_overlap_ok = False
+                issues.append(
+                    _review_issue(
+                        "Bentrok dengan booking Praktikum/Workshop",
+                        f"Ruangan sudah dipakai untuk {hard_blocking_count} booking Praktikum/Workshop "
+                        f"yang sudah disetujui pada rentang waktu ini.",
+                    )
+                )
+            else:
+                # Cek kapasitas: total attendee_count semua booking Penelitian/Skripsi yang overlap + ini
+                room_capacity = getattr(booking.room, "capacity", None)
+                shared_bookings = overlapping_bookings.filter(purpose__in=list(_SHARED_PURPOSES))
+                existing_total = shared_bookings.aggregate(
+                    total=Sum("attendee_count")
+                )["total"] or 0
+                current_attendees = booking.attendee_count or 0
+                total_attendees = existing_total + current_attendees
+                shared_count = shared_bookings.count()
+
+                if room_capacity is not None:
+                    overlap_info = {
+                        "shared_booking_count": shared_count,
+                        "existing_attendees": existing_total,
+                        "current_attendees": current_attendees,
+                        "total_attendees": total_attendees,
+                        "room_capacity": room_capacity,
+                    }
+                    if total_attendees > room_capacity:
+                        booking_overlap_ok = False
+                        issues.append(
+                            _review_issue(
+                                "Melebihi kapasitas ruangan",
+                                f"Total peserta ({total_attendees} orang) melebihi kapasitas ruangan "
+                                f"({room_capacity} orang) jika digabung dengan booking lain yang sudah disetujui "
+                                f"pada rentang waktu ini.",
+                            )
+                        )
+                    elif shared_count > 0:
+                        passed_indicators.append(
+                            f"Kapasitas ruangan mencukupi "
+                            f"({total_attendees}/{room_capacity} peserta dari {shared_count} booking {current_purpose} aktif)"
+                        )
 
     if practicum_count == 0:
-        passed_indicators.append("Tidak bentrok dengan jadwal praktikum pada ruangan yang sama")
-    if approved_booking_count == 0:
-        passed_indicators.append("Tidak bentrok dengan booking lain yang sudah disetujui")
+        passed_indicators.append("Tidak bentrok dengan jadwal praktikum/workshop pada ruangan yang sama")
+    if booking_overlap_ok:
+        if overlap_info is not None:
+            remaining = overlap_info["room_capacity"] - overlap_info["total_attendees"]
+            passed_indicators.append(
+                f"Tidak bentrok dengan booking lain yang sudah disetujui "
+                f"(sisa slot kapasitas: {remaining} orang)"
+            )
+        else:
+            passed_indicators.append("Tidak bentrok dengan booking lain yang sudah disetujui")
     if required_fields_complete:
         passed_indicators.append("Field penting untuk approval sudah terisi semua")
 
-    return _review_result(issues=issues, passed_indicators=passed_indicators)
+    return _review_result(issues=issues, passed_indicators=passed_indicators, overlap_info=overlap_info)
 
 
 def _equipment_review_overlap_issues(
@@ -4256,12 +4328,12 @@ def _use_review_result(use_item):
                 "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
             )
         )
-    if not _has_review_value(use_item.requester_mentor):
+    if str(use_item.purpose or "").strip() == "Skripsi/TA" and not _has_review_value(use_item.requester_mentor):
         required_fields_complete = False
         issues.append(
             _review_issue(
                 "Dosen pembimbing belum diisi",
-                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
+                "Field dosen pembimbing belum dilengkapi pada pengajuan Skripsi/TA ini.",
             )
         )
 
@@ -4322,12 +4394,12 @@ def _borrow_review_result(borrow):
                 "Pemohon belum mengisi nomor telepon yang bisa dihubungi.",
             )
         )
-    if not _has_review_value(borrow.requester_mentor):
+    if str(borrow.purpose or "").strip() == "Skripsi/TA" and not _has_review_value(borrow.requester_mentor):
         required_fields_complete = False
         issues.append(
             _review_issue(
                 "Dosen pembimbing belum diisi",
-                "Field dosen pembimbing belum dilengkapi pada pengajuan ini.",
+                "Field dosen pembimbing belum dilengkapi pada pengajuan Skripsi/TA ini.",
             )
         )
 

@@ -578,7 +578,10 @@ export default function BookingRoomsListContent({
         onOpenChange={(open) => {
           if (!open) setReviewBookingId(null);
         }}
-        onActionComplete={() => setReloadKey((prev) => prev + 1)}
+        onActionComplete={() => {
+          setReloadKey((prev) => prev + 1);
+          setReviewBookingId(null);
+        }}
         context={
           reviewBookingId
             ? { kind: "booking", id: reviewBookingId }

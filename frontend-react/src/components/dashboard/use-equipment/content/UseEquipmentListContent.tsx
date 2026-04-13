@@ -550,7 +550,10 @@ export default function UseEquipmentListContent({
         onOpenChange={(open) => {
           if (!open) setReviewUseId(null);
         }}
-        onActionComplete={() => setReloadKey((prev) => prev + 1)}
+        onActionComplete={() => {
+          setReloadKey((prev) => prev + 1);
+          setReviewUseId(null);
+        }}
         context={
           reviewUseId
             ? { kind: "use", id: reviewUseId }
