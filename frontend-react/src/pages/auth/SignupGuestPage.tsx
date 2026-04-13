@@ -38,6 +38,20 @@ export default function SignupGuestPage({ className, ...props }: SignupGuestForm
   const [successOpen, setSuccessOpen] = useState(false);
   const router = useRouter();
 
+  const passwordErrors: string[] = [];
+  if (formData.password.length > 0 && formData.password.length < 8) {
+    passwordErrors.push("Password minimal 8 karakter.");
+  }
+  if (formData.password.length > 0 && !/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+    passwordErrors.push("Password harus mengandung huruf besar, huruf kecil, dan angka.");
+  }
+  const confirmPasswordError =
+    formData.confirmPassword.length > 0 && formData.password !== formData.confirmPassword
+      ? "Password dan konfirmasi password tidak sama."
+      : null;
+
+  const hasValidationError = passwordErrors.length > 0 || !!confirmPasswordError;
+
   useEffect(() => {
     if (status === "success") {
       setSuccessOpen(true);
@@ -132,6 +146,13 @@ export default function SignupGuestPage({ className, ...props }: SignupGuestForm
               )}
             </button>
           </div>
+          {passwordErrors.length > 0 && (
+            <ul className="mt-1 space-y-0.5">
+              {passwordErrors.map((err) => (
+                <li key={err} className="text-xs text-red-500">{err}</li>
+              ))}
+            </ul>
+          )}
         </Field>
 
         <Field>
@@ -159,10 +180,13 @@ export default function SignupGuestPage({ className, ...props }: SignupGuestForm
               )}
             </button>
           </div>
+          {confirmPasswordError && (
+            <p className="mt-1 text-xs text-red-500">{confirmPasswordError}</p>
+          )}
         </Field>
 
         <Field>
-          <Button type="submit" disabled={status === "submitting"}>
+          <Button type="submit" disabled={status === "submitting" || hasValidationError}>
             {status === "submitting" ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
