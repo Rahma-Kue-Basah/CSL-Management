@@ -8,6 +8,7 @@ import {
   SubmissionConfirmDialog,
   SubmissionSummaryItem,
 } from "@/components/dialogs";
+import { DocumentPreviewDialog } from "@/components/shared";
 import { Button } from "@/components/ui";
 import {
   type SampleTestingDocument,
@@ -17,7 +18,6 @@ import {
 import { useUploadSampleTestingDocument } from "@/hooks/sample-testing";
 import { formatDateTimeWib } from "@/lib/date";
 
-import SampleTestingDocumentPreviewDialog from "./SampleTestingDocumentPreviewDialog";
 import { SampleTestingSectionCard } from "./content/SampleTestingDetailContent";
 
 type DocumentDefinition = {
@@ -404,7 +404,7 @@ export default function SampleTestingDocumentsSection({
         />
       </SubmissionConfirmDialog>
 
-      <SampleTestingDocumentPreviewDialog
+      <DocumentPreviewDialog
         open={Boolean(previewDocument)}
         onOpenChange={(open) => {
           if (!open) {

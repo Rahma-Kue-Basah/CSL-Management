@@ -32,7 +32,7 @@ function isPdfDocument(document: SampleTestingDocument) {
   return mimeType === "application/pdf" || fileName.endsWith(".pdf");
 }
 
-export default function SampleTestingDocumentPreviewDialog({
+export default function DocumentPreviewDialog({
   open,
   onOpenChange,
   document,

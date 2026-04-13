@@ -11,4 +11,5 @@ export { default as AdminDetailDialogShell } from "./AdminDetailDialogShell";
 export { default as BulkImportDialogShell } from "./BulkImportDialogShell";
 export { default as ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 export { default as DataPagination } from "./DataPagination";
+export { default as DocumentPreviewDialog } from "./DocumentPreviewDialog";
 export { default as InlineErrorAlert } from "./InlineErrorAlert";

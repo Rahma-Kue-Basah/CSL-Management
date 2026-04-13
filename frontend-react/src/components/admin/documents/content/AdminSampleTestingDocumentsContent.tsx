@@ -13,7 +13,7 @@ import { AdminPageHeader, AdminFilterCard } from "@/components/admin/shared";
 
 import { AdminHistorySummaryCards, AdminHistoryTable } from "@/components/admin/history";
 
-import { DataPagination, InlineErrorAlert } from "@/components/shared";
+import { DataPagination, DocumentPreviewDialog, InlineErrorAlert } from "@/components/shared";
 
 import { Button, DateRangePicker, Input } from "@/components/ui";
 
@@ -23,7 +23,10 @@ import { useAdminSampleTestingDocuments } from "@/hooks/admin/documents";
 
 import { useHistoryRequesterOptions } from "@/hooks/admin/history";
 
-import { type SampleTestingDocumentType } from "@/hooks/sample-testing";
+import {
+  type SampleTestingDocument,
+  type SampleTestingDocumentType,
+} from "@/hooks/sample-testing";
 
 import { API_PENGUJIANS_ALL_REQUESTERS } from "@/constants/api";
 
@@ -65,6 +68,9 @@ export default function AdminSampleTestingDocumentsContent({
   const [createdRange, setCreatedRange] = useState<DateRange | undefined>();
   const [filterOpen, setFilterOpen] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const [previewDocument, setPreviewDocument] = useState<SampleTestingDocument | null>(
+    null,
+  );
   const createdAfter = createdRange?.from ? formatDateKey(createdRange.from) : "";
   const createdBefore = createdRange?.to
     ? formatDateKey(createdRange.to)
@@ -501,6 +507,16 @@ export default function AdminSampleTestingDocumentsContent({
                                   <td className="px-3 py-2">
                                     <div className="flex justify-center gap-2">
                                       <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="icon-sm"
+                                        className="border-sky-200 text-sky-600 hover:bg-sky-50 hover:text-sky-700"
+                                        onClick={() => setPreviewDocument(item)}
+                                        aria-label={`Preview dokumen ${item.originalName}`}
+                                      >
+                                        <Eye className="h-4 w-4" />
+                                      </Button>
+                                      <Button
                                         asChild
                                         variant="outline"
                                         size="icon-sm"
@@ -538,6 +554,16 @@ export default function AdminSampleTestingDocumentsContent({
             itemLabel="dokumen"
             isLoading={isLoading}
             onPageChange={setPage}
+          />
+
+          <DocumentPreviewDialog
+            open={Boolean(previewDocument)}
+            onOpenChange={(open) => {
+              if (!open) {
+                setPreviewDocument(null);
+              }
+            }}
+            document={previewDocument}
           />
         </div>
       </div>
